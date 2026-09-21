@@ -77,6 +77,7 @@ mod spans;
 mod table;
 mod table_attributes;
 mod table_cell_source;
+mod table_pipes;
 mod whitespace;
 
 #[cfg(test)]

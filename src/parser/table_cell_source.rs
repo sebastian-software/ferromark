@@ -1,6 +1,7 @@
 use crate::allocator::{Allocator, Vec};
 use crate::ast::{MdxJsxAttributeEntry, MdxJsxAttributeValue, Node, Span};
-use memchr::memchr;
+
+use super::table_pipes::{EscapedPipes, PipeCursor};
 
 pub(super) struct TableCellContent<'a> {
     pub content: &'a str,
@@ -73,15 +74,17 @@ impl<'a> TableCellSourceMap<'a> {
 /// GFM treats `\|` as a literal pipe even inside code spans. Normal inline
 /// parsing already handles the escape in prose, but code spans preserve
 /// backslashes, so the table parser must consume it first.
+///
+/// `escapes` is what the row splitter already saw inside this cell. An empty
+/// record means the cell holds no `\|` and is returned borrowed without any
+/// scan; otherwise only the stretch between the first and the last recorded
+/// escape is walked, instead of the whole cell twice.
 pub(super) fn unescape_table_pipes<'a>(
     allocator: &'a Allocator,
     content: &'a str,
+    escapes: EscapedPipes,
 ) -> TableCellContent<'a> {
-    let bytes = content.as_bytes();
-    // Most cells contain no pipe at all. Search only actual pipe positions
-    // instead of examining every byte, then reuse the first escaped match
-    // when constructing the remapped source below.
-    let Some(first_pipe) = escaped_pipe_scan_start(bytes) else {
+    let Some((first, last)) = escapes.bounds() else {
         return TableCellContent {
             content,
             source_map: None,
@@ -91,16 +94,22 @@ pub(super) fn unescape_table_pipes<'a>(
     let mut unescaped = crate::allocator::String::with_capacity_in(content.len(), allocator.bump());
     let mut source_map = TableCellSourceMap::new(allocator);
     let mut copied_through = 0;
-    let mut search_start = first_pipe;
-    while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
-        let pipe = search_start + relative;
-        if is_escaped_table_pipe(bytes, pipe) {
-            push_unescaped_table_cell_slice(content, copied_through, pipe - 1, &mut unescaped);
+    let mut cursor = PipeCursor::new(content.as_bytes(), first);
+    while let Some(pipe) = cursor.next_pipe() {
+        if pipe.offset > last {
+            break;
+        }
+        if pipe.escaped {
+            push_unescaped_table_cell_slice(
+                content,
+                copied_through,
+                pipe.offset - 1,
+                &mut unescaped,
+            );
             source_map.record_removed(unescaped.len());
             unescaped.push('|');
-            copied_through = pipe + 1;
+            copied_through = pipe.offset + 1;
         }
-        search_start = pipe + 1;
     }
     push_unescaped_table_cell_slice(content, copied_through, content.len(), &mut unescaped);
     source_map.finish(unescaped.len());
@@ -108,20 +117,6 @@ pub(super) fn unescape_table_pipes<'a>(
         content: unescaped.into_bump_str(),
         source_map: Some(source_map),
     }
-}
-
-#[inline]
-fn escaped_pipe_scan_start(bytes: &[u8]) -> Option<usize> {
-    // Vector dispatch costs more than the scan for short labels. Keep the
-    // scalar path there; long prose cells benefit from skipping whole runs.
-    if bytes.len() < 64 {
-        return bytes
-            .iter()
-            .enumerate()
-            .any(|(index, &byte)| byte == b'|' && is_escaped_table_pipe(bytes, index))
-            .then_some(0);
-    }
-    memchr::memchr_iter(b'|', bytes).find(|&index| is_escaped_table_pipe(bytes, index))
 }
 
 fn push_unescaped_table_cell_slice(
@@ -267,16 +262,6 @@ fn remap_table_cell_mdx_attribute_entry(
 fn remap_table_cell_span(span: &mut Span, source_offset: u32, source_map: &TableCellSourceMap<'_>) {
     span.start = source_offset + source_map.boundary_offset(span.start as usize);
     span.end = source_offset + source_map.boundary_offset(span.end as usize);
-}
-
-pub(super) fn is_escaped_table_pipe(bytes: &[u8], pipe: usize) -> bool {
-    bytes[..pipe]
-        .iter()
-        .rev()
-        .take_while(|&&byte| byte == b'\\')
-        .count()
-        % 2
-        == 1
 }
 
 #[cfg(test)]

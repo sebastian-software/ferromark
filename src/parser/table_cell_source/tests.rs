@@ -1,8 +1,15 @@
 // Test fixtures deliberately use owned formatting outside parser hot paths.
 #![allow(clippy::disallowed_macros)]
 
-use super::{escaped_pipe_scan_start, is_escaped_table_pipe, unescape_table_pipes};
+use super::unescape_table_pipes;
 use crate::allocator::Allocator;
+use crate::parser::table_pipes::{EscapedPipes, is_escaped_table_pipe};
+
+/// Decodes a standalone cell the way the row splitter would: with the record
+/// of the escaped pipes it passed over inside that cell.
+fn decode<'a>(allocator: &'a Allocator, content: &'a str) -> super::TableCellContent<'a> {
+    unescape_table_pipes(allocator, content, EscapedPipes::scan(content.as_bytes()))
+}
 
 #[test]
 fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
@@ -18,18 +25,12 @@ fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
                 let expected = bytes.iter().enumerate().find_map(|(index, &byte)| {
                     (byte == b'|' && is_escaped_table_pipe(bytes, index)).then_some(index)
                 });
-                let scan_start = escaped_pipe_scan_start(bytes);
-                assert_eq!(scan_start.is_some(), expected.is_some(), "{source:?}");
-                if let (Some(start), Some(first)) = (scan_start, expected) {
-                    assert!(
-                        start <= first,
-                        "must not skip the first escaped pipe: {source:?}"
-                    );
-                }
+                let scan_start = EscapedPipes::scan(bytes).bounds().map(|(first, _)| first);
+                assert_eq!(scan_start, expected, "{source:?}");
             }
         }
         assert_eq!(
-            escaped_pipe_scan_start("x".repeat(prefix_len).as_bytes()),
+            EscapedPipes::scan("x".repeat(prefix_len).as_bytes()).bounds(),
             None
         );
     }
@@ -41,7 +42,7 @@ fn skipped_unescaped_pipes_keep_content_and_sparse_source_map() {
         let prefix = "x".repeat(prefix_len);
         let source = format!("{prefix}|日本語\\|end");
         let allocator = Allocator::new();
-        let result = unescape_table_pipes(&allocator, &source);
+        let result = decode(&allocator, &source);
         assert_eq!(result.content, format!("{prefix}|日本語|end"));
         let source_map = result.source_map.unwrap();
         let removed_at = prefix_len + "|日本語".len();
@@ -64,7 +65,7 @@ fn skipped_unescaped_pipes_keep_content_and_sparse_source_map() {
 #[test]
 fn adjacent_escaped_pipes_map_each_generated_boundary() {
     let allocator = Allocator::new();
-    let result = unescape_table_pipes(&allocator, r"a\|\|b");
+    let result = decode(&allocator, r"a\|\|b");
     assert_eq!(result.content, "a||b");
     let source_map = result.source_map.unwrap();
     assert_eq!(source_map.removed_total, 2);
@@ -82,7 +83,7 @@ fn sparse_map_matches_dense_scalar_oracle() {
         r"\|\|\|",
         r"slashes \\| and escaped \| pipes",
     ] {
-        let result = unescape_table_pipes(&allocator, source);
+        let result = decode(&allocator, source);
         let bytes = source.as_bytes();
         let mut expected_content = allocator.new_string();
         let mut expected_offsets = [0usize; 128];

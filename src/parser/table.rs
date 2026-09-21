@@ -4,11 +4,23 @@ use memchr::memchr;
 
 use super::Parser;
 use super::line_scan::{line_end, line_terminator_end};
-use super::table_cell_source::{
-    is_escaped_table_pipe, remap_table_cell_inline_spans, unescape_table_pipes,
-};
+use super::table_cell_source::{remap_table_cell_inline_spans, unescape_table_pipes};
+use super::table_pipes::{EscapedPipes, PipeCursor, is_escaped_table_pipe};
 use super::whitespace;
 use crate::parser::error::ParseResult;
+
+/// One cell of a table row, as the row splitter found it.
+///
+/// `escapes` records the `\|` occurrences the splitter passed over on its
+/// way to this cell's terminator, in the coordinates of `content`, so the
+/// cell decoder does not have to look for them a second time.
+struct RowCell<'a> {
+    content: &'a str,
+    start: usize,
+    end: usize,
+    escapes: EscapedPipes,
+    colspan: usize,
+}
 
 impl<'a> Parser<'a> {
     /// Returns true when the next two lines look like a GFM table header.
@@ -54,7 +66,7 @@ impl<'a> Parser<'a> {
     pub(super) fn table_header_cells(merged_table_cells: bool, line: &'a str) -> usize {
         if merged_table_cells {
             Self::table_row_cells_with_spans(line)
-                .map(|(_, _, _, span)| span)
+                .map(|cell| cell.colspan)
                 .sum()
         } else {
             Self::table_row_cells(line).count()
@@ -165,33 +177,17 @@ impl<'a> Parser<'a> {
         let line_end = line_start + line.len();
         let mut logical_columns = 0;
         if merged {
-            for (cell_content, cell_start, cell_end, requested_span) in
-                Self::table_row_cells_with_spans(line)
-            {
+            for cell in Self::table_row_cells_with_spans(line) {
                 if logical_columns >= column_count {
                     break;
                 }
-                let colspan = requested_span.min(column_count - logical_columns);
-                cells.push(self.parse_table_cell(
-                    cell_content,
-                    line_start,
-                    cell_start,
-                    cell_end,
-                    colspan,
-                )?);
+                let colspan = cell.colspan.min(column_count - logical_columns);
+                cells.push(self.parse_table_cell(&cell, line_start, colspan)?);
                 logical_columns += colspan;
             }
         } else {
-            for (cell_content, cell_start, cell_end) in
-                Self::table_row_cells_with_offsets(line).take(column_count)
-            {
-                cells.push(self.parse_table_cell(
-                    cell_content,
-                    line_start,
-                    cell_start,
-                    cell_end,
-                    1,
-                )?);
+            for cell in Self::table_row_cells_with_offsets(line).take(column_count) {
+                cells.push(self.parse_table_cell(&cell, line_start, 1)?);
                 logical_columns += 1;
             }
         }
@@ -211,28 +207,26 @@ impl<'a> Parser<'a> {
 
     fn parse_table_cell(
         &self,
-        cell_content: &'a str,
+        cell: &RowCell<'a>,
         line_start: usize,
-        cell_start: usize,
-        cell_end: usize,
         colspan: usize,
     ) -> ParseResult<TableCell<'a>> {
-        let cell_content = unescape_table_pipes(self.allocator, cell_content);
+        let cell_content = unescape_table_pipes(self.allocator, cell.content, cell.escapes);
         let cell_children = if let Some(source_map) = &cell_content.source_map {
             let mut children = self.parse_inline_block(cell_content.content, 0)?;
-            let source_offset = (line_start + cell_start) as u32;
+            let source_offset = (line_start + cell.start) as u32;
             for child in &mut children {
                 remap_table_cell_inline_spans(child, source_offset, source_map);
             }
             children
         } else {
-            self.parse_inline_block(cell_content.content, line_start + cell_start)?
+            self.parse_inline_block(cell_content.content, line_start + cell.start)?
         };
         Ok(TableCell {
             children: cell_children,
             span: Span::new(
-                (line_start + cell_start) as u32,
-                (line_start + cell_end) as u32,
+                (line_start + cell.start) as u32,
+                (line_start + cell.end) as u32,
             ),
             colspan,
         })
@@ -243,12 +237,10 @@ impl<'a> Parser<'a> {
     /// Leading/trailing pipes are syntax delimiters, not empty cells in this
     /// parser's table model, so they are stripped once before splitting.
     pub(super) fn table_row_cells(line: &'a str) -> impl Iterator<Item = &'a str> {
-        Self::table_row_cells_with_offsets(line).map(|(cell, _, _)| cell)
+        Self::table_row_cells_with_offsets(line).map(|cell| cell.content)
     }
 
-    fn table_row_cells_with_offsets(
-        line: &'a str,
-    ) -> impl Iterator<Item = (&'a str, usize, usize)> {
+    fn table_row_cells_with_offsets(line: &'a str) -> impl Iterator<Item = RowCell<'a>> {
         let (trimmed, trimmed_start) = whitespace::trim_with_leading(line);
         let mut content_start = trimmed_start;
         let mut content_end = trimmed_start + trimmed.len();
@@ -267,28 +259,44 @@ impl<'a> Parser<'a> {
         let content = &line[content_start..content_end];
         let bytes = content.as_bytes();
         let mut cell_start = 0;
+        // One cursor walks the whole row. Every pipe it reports already
+        // carries its escape state, and the escaped ones it passes over are
+        // handed to the cell decoder instead of being looked for again.
+        let mut pipes = PipeCursor::new(bytes, 0);
 
         std::iter::from_fn(move || {
             if cell_start > bytes.len() {
                 return None;
             }
 
-            let mut search_start = cell_start;
-            while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
-                let pipe = search_start + relative;
-                if !is_escaped_table_pipe(bytes, pipe) {
-                    let raw = &content[cell_start..pipe];
-                    let (cell, start, end) = trim_cell(raw, content_start + cell_start);
-                    cell_start = pipe + 1;
-                    return Some((cell, start, end));
+            let mut escapes = EscapedPipes::default();
+            while let Some(pipe) = pipes.next_pipe() {
+                if pipe.escaped {
+                    escapes.record(pipe.offset);
+                    continue;
                 }
-                search_start = pipe + 1;
+                let raw = &content[cell_start..pipe.offset];
+                let (cell, start, end) = trim_cell(raw, content_start + cell_start);
+                cell_start = pipe.offset + 1;
+                return Some(RowCell {
+                    content: cell,
+                    start,
+                    end,
+                    escapes: escapes.shifted(start - content_start),
+                    colspan: 1,
+                });
             }
 
             let raw = &content[cell_start..];
             let (cell, start, end) = trim_cell(raw, content_start + cell_start);
             cell_start = bytes.len() + 1;
-            Some((cell, start, end))
+            Some(RowCell {
+                content: cell,
+                start,
+                end,
+                escapes: escapes.shifted(start - content_start),
+                colspan: 1,
+            })
         })
     }
 
@@ -296,9 +304,7 @@ impl<'a> Parser<'a> {
     /// horizontal spans. A terminal run is kept intact so `value ||` can
     /// express a span even though the final pipe is also the usual row
     /// boundary marker.
-    fn table_row_cells_with_spans(
-        line: &'a str,
-    ) -> impl Iterator<Item = (&'a str, usize, usize, usize)> {
+    fn table_row_cells_with_spans(line: &'a str) -> impl Iterator<Item = RowCell<'a>> {
         let (trimmed, trimmed_start) = whitespace::trim_with_leading(line);
         let mut content_start = trimmed_start;
         let mut content_end = trimmed_start + trimmed.len();
@@ -327,42 +333,59 @@ impl<'a> Parser<'a> {
         let content = &line[content_start..content_end];
         let bytes = content.as_bytes();
         let mut cell_start = 0;
+        let mut pipes = PipeCursor::new(bytes, 0);
 
         std::iter::from_fn(move || {
             if cell_start > bytes.len() {
                 return None;
             }
 
-            let mut search_start = cell_start;
-            while let Some(relative) = memchr(b'|', &bytes[search_start..]) {
-                let pipe = search_start + relative;
-                if !is_escaped_table_pipe(bytes, pipe) {
-                    let raw = &content[cell_start..pipe];
-                    let (cell, start, end) = trim_cell(raw, content_start + cell_start);
-                    let mut pipe_count = 1;
-                    while pipe + pipe_count < bytes.len()
-                        && bytes[pipe + pipe_count] == b'|'
-                        && !is_escaped_table_pipe(bytes, pipe + pipe_count)
-                    {
-                        pipe_count += 1;
-                    }
-                    // A preserved terminal run is the complete remainder of
-                    // the row. Mark the iterator finished after yielding it;
-                    // otherwise the next call fabricates an empty cell.
-                    cell_start = if pipe + pipe_count == bytes.len() {
-                        bytes.len() + 1
-                    } else {
-                        pipe + pipe_count
-                    };
-                    return Some((cell, start, end, pipe_count));
+            let mut escapes = EscapedPipes::default();
+            while let Some(pipe) = pipes.next_pipe() {
+                if pipe.escaped {
+                    escapes.record(pipe.offset);
+                    continue;
                 }
-                search_start = pipe + 1;
+                let raw = &content[cell_start..pipe.offset];
+                let (cell, start, end) = trim_cell(raw, content_start + cell_start);
+                let mut pipe_count = 1;
+                // Adjacent unescaped pipes widen the cell. Peeking leaves
+                // the pipe that ends the run, escaped or not, for the cell
+                // that follows it.
+                while let Some(next) = pipes.peek_pipe() {
+                    if next.escaped || next.offset != pipe.offset + pipe_count {
+                        break;
+                    }
+                    pipes.take_peeked();
+                    pipe_count += 1;
+                }
+                // A preserved terminal run is the complete remainder of
+                // the row. Mark the iterator finished after yielding it;
+                // otherwise the next call fabricates an empty cell.
+                cell_start = if pipe.offset + pipe_count == bytes.len() {
+                    bytes.len() + 1
+                } else {
+                    pipe.offset + pipe_count
+                };
+                return Some(RowCell {
+                    content: cell,
+                    start,
+                    end,
+                    escapes: escapes.shifted(start - content_start),
+                    colspan: pipe_count,
+                });
             }
 
             let raw = &content[cell_start..];
             let (cell, start, end) = trim_cell(raw, content_start + cell_start);
             cell_start = bytes.len() + 1;
-            Some((cell, start, end, 1))
+            Some(RowCell {
+                content: cell,
+                start,
+                end,
+                escapes: escapes.shifted(start - content_start),
+                colspan: 1,
+            })
         })
     }
 }
