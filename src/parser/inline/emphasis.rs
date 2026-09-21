@@ -206,7 +206,7 @@ impl<'a> Parser<'a> {
         // same budget as the nodes pairing is about to build, and so does
         // everything the sequence itself is nested in. Both are read once:
         // the scan is finished, so neither can change from here on.
-        let nested = self.nested_depth_cell();
+        let nested = &self.nested_inline_depth;
         let inside = nested.get() as u32;
         let enclosing = self.inline_depth.get().saturating_sub(1);
         let mut produced = inside;

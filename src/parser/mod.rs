@@ -250,12 +250,15 @@ pub struct Parser<'a> {
     /// the enclosing level on exit (`inline::InlineDepthGuard`), so a level
     /// only ever reads the subtrees nested directly inside it.
     ///
-    /// Shared with container sub-parsers rather than copied, because an
-    /// inline note builds one from inside an inline parse and its content
-    /// nests inside the node the parent is about to wrap. It is allocated
-    /// on the first inline context instead of at construction, so a parser
-    /// that only probes blocks still touches the arena not at all.
-    nested_inline_depth: std::cell::Cell<Option<&'a std::cell::Cell<usize>>>,
+    /// Every parser owns its counter outright. Only a sub-parser built from
+    /// inside an inline context — an inline note (`^[...]`), and nothing
+    /// else — holds content that lands inside the node the parent is about
+    /// to wrap, and that one site hands its result back explicitly
+    /// (`Parser::inline_note_sub_parser` and
+    /// `inline::Parser::fold_nested_inline_depth`). Sharing one arena cell
+    /// by pointer instead charged every parse an arena allocation and an
+    /// indirection on each access for a case almost no document has.
+    nested_inline_depth: std::cell::Cell<usize>,
 
     /// Link reference definitions collected by the root parser's
     /// pre-pass, shared with sub-parsers (block quote and list item
@@ -438,7 +441,7 @@ impl<'a> Parser<'a> {
             position: 0,
             nesting_depth: 0,
             inline_depth: std::cell::Cell::new(0),
-            nested_inline_depth: std::cell::Cell::new(None),
+            nested_inline_depth: std::cell::Cell::new(0),
             definitions: None,
             phase,
             footnote_labels: None,
@@ -469,13 +472,48 @@ impl<'a> Parser<'a> {
     /// parser's reference definitions instead of re-collecting them.
     /// Sub-parser that also knows which of its lines were added by lazy
     /// continuation (offsets into `source`).
+    pub(in crate::parser) fn sub_parser_with_lazy_lines(
+        &self,
+        source: &'a str,
+        lazy_lines: rustc_hash::FxHashSet<u32>,
+    ) -> Parser<'a> {
+        // Block constructs are entered with no inline context open, so
+        // nothing this sub-parser nests can end up inside a node the caller
+        // is still building, and its `nested_inline_depth` is its own. An
+        // inline note is the one construct that re-enters the parser from
+        // inline content; it goes through `inline_note_sub_parser`, which
+        // says how the count gets back. Anything else that starts doing so
+        // has to do the same, and this is what says so.
+        debug_assert_eq!(
+            self.inline_depth.get(),
+            0,
+            "a sub-parser built from inside an inline context must fold its \
+             nested inline depth back (see Parser::inline_note_sub_parser)"
+        );
+        self.nested_sub_parser(source, lazy_lines)
+    }
+
+    /// Sub-parser for an inline note's body, which is the one sub-source
+    /// entered from inside an inline context.
+    ///
+    /// The note's content becomes children of a node the enclosing inline
+    /// level is still building, so the depth this parser finishes with
+    /// counts toward the same budget. The caller reads it back with
+    /// `inline::Parser::fold_nested_inline_depth` on every exit, including
+    /// the error one, which is what the previously shared counter cell did
+    /// when the guard in the sub-parse dropped.
+    pub(in crate::parser) fn inline_note_sub_parser(&self, source: &'a str) -> Parser<'a> {
+        self.nested_sub_parser(source, rustc_hash::FxHashSet::default())
+    }
+
+    /// Builds either kind of sub-parser.
     ///
     /// Every sub-source is one block level deeper than its parent, so the
     /// depth is raised here rather than at each call site: this is the only
-    /// way a block construct re-enters the parser, and counting it in one
-    /// place is what makes [`ParserOptions::max_nesting_depth`] apply to
-    /// all of them.
-    pub(in crate::parser) fn sub_parser_with_lazy_lines(
+    /// way a construct re-enters the parser on a sub-source, and counting it
+    /// in one place is what makes [`ParserOptions::max_nesting_depth`] apply
+    /// to all of them.
+    fn nested_sub_parser(
         &self,
         source: &'a str,
         lazy_lines: rustc_hash::FxHashSet<u32>,
@@ -501,9 +539,11 @@ impl<'a> Parser<'a> {
             // from inside `parse_inline`, and carrying the count is what
             // keeps a chain of them bounded.
             inline_depth: std::cell::Cell::new(self.inline_depth.get()),
-            // Shared, not copied: an inline note's content is parsed by a
-            // sub-parser and still ends up inside the node the enclosing
-            // inline level is building, so its depth has to reach that level.
+            // Copied, so that an inline note's body starts from what the
+            // enclosing level has already finished, exactly as the shared
+            // cell handed it over. Its own result travels back the other way
+            // (see `inline_note_sub_parser`); a block sub-source has no
+            // enclosing inline level to report to.
             nested_inline_depth: std::cell::Cell::new(self.nested_inline_depth.get()),
             definitions: self.definitions.clone(),
             phase: self.phase,
