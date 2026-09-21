@@ -1,6 +1,11 @@
 import { Link } from "react-router";
 
-import { NativeBenchmarkFigures, nativeBenchmarks } from "../components/native-benchmarks";
+import {
+  formatSpeed,
+  nativeBenchmarkFigure,
+  NativeBenchmarkFigures,
+  nativeBenchmarks,
+} from "../components/native-benchmarks";
 import { PlatformChoices } from "../components/platform-choices";
 import { version } from "../version";
 import "../styles/home.css";
@@ -15,9 +20,10 @@ function LandingIntro() {
         <span>Ready for your pipeline.</span>
       </h1>
       <p className="landing-lead">
-        Turn Markdown into HTML, with the metadata your application needs. A fast, focused Rust
-        engine with CommonMark correctness, explicit rendering policies, and practical publishing
-        features.
+        Ferromark turns Markdown into HTML and the metadata around it: front matter, heading IDs,
+        footnotes, tables your CSS can address. A focused Rust engine that puts the CommonMark
+        specification before speed, measures itself against the fastest native parsers before any
+        number is published, and leaves the trust decisions to you, on purpose.
       </p>
       <p className="landing-aside">
         <strong>Version {version}.</strong> V2 is a breaking upgrade from v1.{" "}
@@ -34,64 +40,96 @@ function LandingIntro() {
   );
 }
 
-function PrincipleList() {
+const storyBeats = [
+  {
+    title: "Conformance first, speed second",
+    text: (
+      <>
+        Ferromark v2 started from a fast core that strayed from the specification: corrupted line
+        endings, five failing GFM examples, seven cmark discrepancies, reference definitions lost
+        inside lists. Every one of them was closed before the first release candidate. Today all 652
+        CommonMark examples agree, along with the GFM extension examples, 1,304 CR and CRLF
+        variants, and the original cmark corpus. Where a reference and the specification disagree,
+        the specification decides, and a decision record says why.
+      </>
+    ),
+    to: "/guide/correctness",
+    call: "Inspect the correctness checks",
+  },
+  {
+    title: "Fast, and measured before it is said",
+    text: (
+      <>
+        Same input, equivalent HTML, six native engines in one executable:{" "}
+        {formatSpeed(nativeBenchmarkFigure("v1").fresh)} the speed of Ferromark v1 and{" "}
+        {formatSpeed(nativeBenchmarkFigure("pulldown-cmark").fresh)} the speed of pulldown-cmark on{" "}
+        {nativeBenchmarkFigure("v1").documents} real documents. Every report keeps its source
+        revisions, flags, raw timing windows, and reproduction commands. A speed claim without a
+        report does not ship.
+      </>
+    ),
+    to: "/guide/benchmarks",
+    call: "Read the measurements",
+  },
+  {
+    title: "Trust is a decision, not a surprise",
+    text: (
+      <>
+        Recognizing raw HTML and permission to emit it are separate choices. Rust passes raw HTML
+        through until you turn on sanitizing; Node.js escapes it and filters unsafe URL schemes
+        until you declare the source trusted. MDX syntax lands in the tree as data and is never
+        executed.
+      </>
+    ),
+    to: "/guide/rendering",
+    call: "Choose your rendering policy",
+  },
+  {
+    title: "The pieces publishing needs, nothing your app should own",
+    text: (
+      <>
+        Front matter, heading IDs, footnotes, callouts, and inline tables of contents. Tables with
+        classes, captions, merged cells, and named columns. Translation, templates, routing, and
+        your highlighter stay yours, connected through rendering hooks.
+      </>
+    ),
+    to: "/guide/features",
+    call: "Explore the Markdown syntax",
+  },
+];
+
+function StoryList() {
   return (
     <div className="landing-principle-list">
-      <article>
-        <span className="landing-index" aria-hidden="true">
-          01
-        </span>
-        <div>
-          <h3>A core with a clear job</h3>
-          <p>
-            Parse Markdown. Render HTML. Keep translation and code presentation at explicit
-            integration points. Arena allocation and reusable buffers keep the engine focused.
-          </p>
-          <Link to="/guide/architecture">Understand the design →</Link>
-        </div>
-      </article>
-      <article>
-        <span className="landing-index" aria-hidden="true">
-          02
-        </span>
-        <div>
-          <h3>Correctness you can inspect</h3>
-          <p>
-            The explicit CommonMark profile agrees with all 652 specification examples. Output
-            comparisons with cmark and cmark-gfm expose edge cases and keep fixes reproducible.
-          </p>
-          <Link to="/guide/correctness">Inspect correctness checks →</Link>
-        </div>
-      </article>
-      <article>
-        <span className="landing-index" aria-hidden="true">
-          03
-        </span>
-        <div>
-          <h3>The pieces publishing needs</h3>
-          <p>
-            Front matter, headings for navigation, footnotes, callouts, table classes, and merged
-            cells. Enable the syntax your authors need and get the output your application can use.
-          </p>
-          <Link to="/guide/features">Explore Markdown syntax →</Link>
-        </div>
-      </article>
+      {storyBeats.map((beat, index) => (
+        <article key={beat.to}>
+          <span className="landing-index" aria-hidden="true">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <div>
+            <h3>{beat.title}</h3>
+            <p>{beat.text}</p>
+            <Link to={beat.to}>{beat.call} →</Link>
+          </div>
+        </article>
+      ))}
     </div>
   );
 }
 
-function LandingPrinciples() {
+function LandingStory() {
   return (
-    <section className="landing-principles" aria-labelledby="principles-title">
+    <section className="landing-principles" aria-labelledby="story-title">
       <div className="landing-section-head">
-        <p className="landing-kicker">Why Ferromark</p>
-        <h2 id="principles-title">Built for real publishing work.</h2>
+        <p className="landing-kicker">What sets it apart</p>
+        <h2 id="story-title">Built for the documents that get complicated.</h2>
         <p>
-          Render articles, extract front matter, and build navigation from headings. Keep control
-          over syntax, trust, and how code blocks are presented.
+          Nested lists, reference links, tables with real content, the page that looked fine until
+          an author added one more footnote. A Markdown engine earns its place there, and it has to
+          prove it.
         </p>
       </div>
-      <PrincipleList />
+      <StoryList />
     </section>
   );
 }
@@ -115,6 +153,74 @@ function LandingEvidence() {
         </p>
       </div>
       <NativeBenchmarkFigures />
+    </section>
+  );
+}
+
+const guardrails = [
+  [
+    "The core does one job.",
+    "Parse Markdown, render HTML. Site assembly, translation, and syntax highlighting connect through explicit hooks and never move into the engine.",
+  ],
+  [
+    "No semantic change without a record.",
+    "Snapshot output and conformance baselines survive every optimization. An intended change to rendered output gets its own decision record and review, with the specification as the tie-breaker.",
+  ],
+  [
+    "No unmeasured speed claims.",
+    "One optimization per commit, output equality verified before timing, a control run before every round, and the patches that lost archived next to the ones that won.",
+  ],
+  [
+    "Hostile input stays linear.",
+    "Nesting is capped, quadratic shapes are bounded, and the pre-release review that found a regression repaired it before the release and documented what it cost.",
+  ],
+  [
+    "Provenance travels with the code.",
+    "Ferromark v2 starts from the MIT-licensed OX-Content core, imported by commit and checksum. Every comparison names the engines, revisions, and flags it measured.",
+  ],
+  [
+    "Rust and Node.js share one contract.",
+    "Syntax, trust policies, and output semantics are documented once and hold in both, so what you learn in one runtime carries over.",
+  ],
+] as const;
+
+function GuardrailList() {
+  return (
+    <ul className="landing-guardrail-list">
+      {guardrails.map(([rule, detail]) => (
+        <li key={rule}>
+          <strong>{rule}</strong> {detail}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function LandingGuardrails() {
+  return (
+    <section className="landing-guardrails" aria-labelledby="guardrails-title">
+      <div className="landing-section-head">
+        <p className="landing-kicker">How we work</p>
+        <h2 id="guardrails-title">Guardrails we keep.</h2>
+        <p>
+          Speed is easy to claim and easy to lose. These rules keep the engine correct while it gets
+          faster, and they are written down in the repository, not only here.
+        </p>
+      </div>
+      <GuardrailList />
+      <p className="landing-aside">
+        The rules live in{" "}
+        <a href="https://github.com/sebastian-software/ferromark/blob/main/AGENTS.md">AGENTS.md</a>,
+        the{" "}
+        <a href="https://github.com/sebastian-software/ferromark/tree/main/docs/decisions">
+          decision records
+        </a>
+        , and the{" "}
+        <a href="https://github.com/sebastian-software/ferromark/tree/main/docs/reports">
+          measurement reports
+        </a>
+        .
+      </p>
     </section>
   );
 }
@@ -150,8 +256,9 @@ export default function HomePage() {
   return (
     <main className="landing">
       <LandingIntro />
-      <LandingPrinciples />
+      <LandingStory />
       <LandingEvidence />
+      <LandingGuardrails />
       <LandingReference />
     </main>
   );

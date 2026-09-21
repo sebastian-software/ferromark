@@ -127,6 +127,33 @@
   line-height: 1;
   color: var(--rust);
 }
+.landing-guardrails {
+  border-top: 2px solid var(--line-heavy);
+  padding-top: 2rem;
+  margin-block: 4rem;
+}
+.landing-guardrail-list {
+  list-style: none;
+  margin: 2rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem 3rem;
+}
+.landing-guardrail-list li {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+.landing-guardrail-list strong {
+  display: block;
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+.landing-guardrails > .landing-aside {
+  margin-top: 2rem;
+}
 .landing-reference {
   border-top: 2px solid var(--line-heavy);
   padding-top: 2rem;
@@ -159,7 +186,8 @@
     gap: 1.5rem;
     margin-block: 3rem;
   }
-  .landing-reference-links {
+  .landing-reference-links,
+  .landing-guardrail-list {
     grid-template-columns: 1fr;
   }
 }
