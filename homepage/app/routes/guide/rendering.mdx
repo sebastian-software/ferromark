@@ -36,8 +36,10 @@ correctness on every possible document. MDX support is bounded syntax capture.
 
 Block nesting defaults to 100 levels. Exceeding that limit returns a parse error.
 Rust callers can configure it; avoid unlimited recursion on untrusted source.
-Node rejects input exceeding 4,294,967,294 UTF-8 bytes. Applications should also
-bound request sizes and concurrency for their deployment.
+Source positions are compact `u32` offsets, so the parser addresses just under
+4 GB of Markdown; Node.js strings stop far below that, so no JavaScript input
+can reach the limit and the binding does not check for it. Applications should
+also bound request sizes and concurrency for their deployment.
 
 V2 is a breaking release. Heading slugs, extension output, site
 routing, and Rust API signatures differ from v1. The

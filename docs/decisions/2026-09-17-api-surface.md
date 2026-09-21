@@ -82,6 +82,17 @@ have been frozen by 2.0.0.
 `#[non_exhaustive]` on `ParseErrorKind` is what makes this safe: a real error
 path can reintroduce any of these variants in a minor release.
 
+The five incremental fragment methods on `HtmlRenderer` were reviewed in the
+same pass and kept: `render_incremental_fragment`,
+`render_incremental_fragment_with_hooks`, `render_provisional_fragment`,
+`render_provisional_fragment_with_hooks` and `reset_incremental_state`. Unlike
+the items above they are implemented and exercised, and they express something
+`render` cannot: a streaming caller commits a document in pieces and needs
+heading IDs and footnote numbering to continue across them, while a provisional
+piece that the next update replaces must leave that state unclaimed. They stay
+in the frozen surface and are documented in the
+[Rust API guide](../rust-api.md#incremental-fragments).
+
 ## `ParserOptions.gfm` and `HtmlRendererOptions.highlight` removed
 
 Both fields were documented configuration that did nothing.
@@ -143,8 +154,10 @@ The renderer now follows the parser:
   autolinking, link targets and fence metadata cleanup.
 
 Parser names do not change: they are the ones that were already right, and both
-types now answer to the same four names, so `commonmark()`, `gfm_spec()` and
-`gfm()` pair with themselves.
+types now answer to the same three shared names, so `commonmark()`, `gfm_spec()`
+and `gfm()` pair with themselves. `ParserOptions::mdx()` stays parser-only and
+gets no renderer counterpart, because the renderer emits MDX nodes without a
+flag of its own.
 
 This is a semantic change for anyone calling the renderer's `gfm()`, which is
 why it lands before 2.0.0 rather than after. Every internal caller that relied

@@ -28,11 +28,14 @@ See [the contributor guide](../readme-theme.md) for commands.
 
 ## Theme badge placement
 
-The project pins mdtheme 0.4.0 and uses one `mdtheme:badges:start` /
-`mdtheme:badges:end` comment pair in `README.md.src`. Sebastian's
-`badges-prepend.md` places its badge before the authored project badges.
-Ferramenta's header and footer stay unchanged. Upgrade the CLI and lockfile
-before adopting this theme revision. Keep badge markup outside raw HTML blocks.
+The project pins mdtheme 0.4.0. `README.md.src` carries no badge markers and no
+authored badges; its only HTML comments are the Release Please version markers.
+All branding therefore comes from the frames pinned in `mdtheme.yaml`: the
+generated `README.md` opens with the Ferramenta family line and the
+`Powered by Sebastian Software` badge above the authored title, and closes with
+the Ferramenta family tables and the Sebastian Software footer. Upgrade the CLI
+and lockfile before adopting a new theme revision. Keep any authored badge
+markup outside raw HTML blocks.
 
 ## Content ownership
 

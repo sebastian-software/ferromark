@@ -36,7 +36,9 @@ let html = to_html_with_options(
 ```
 
 Parser options select the Markdown dialect; renderer options control HTML.
-Both types name the same four profiles, so a pair is built from one name:
+Both types share the three names `commonmark()`, `gfm_spec()` and `gfm()`, so a
+pair is built from one name; `mdx()` is parser-only, because the renderer handles
+MDX nodes without a profile of its own:
 
 | Profile | Parser | Renderer |
 | --- | --- | --- |
@@ -114,6 +116,47 @@ The source and allocator must outlive the document. Drop the document before
 resetting its allocator. Use AST visitors and `HtmlRenderHooks` when a caller
 needs document structure or custom output. Reuse `HtmlRenderer` and reset the
 allocator between documents to retain their buffers explicitly.
+
+## Incremental fragments
+
+A streaming caller renders one document in committed pieces. `HtmlRenderer`
+carries the state that has to survive those pieces — generated heading IDs and
+semantic footnote numbering and slugs — so a later fragment continues the
+document instead of restarting at the first ID:
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, Parser};
+
+let mut renderer = HtmlRenderer::new();
+let mut page = String::new();
+for chunk in ["# Notes\n", "More text.\n"] {
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, chunk).parse()?;
+    page.push_str(&renderer.render_incremental_fragment(&document));
+}
+renderer.reset_incremental_state();
+```
+
+- `render_incremental_fragment` renders a committed fragment and keeps the
+  cross-fragment heading-ID and footnote state, so repeated headings and
+  colliding footnote labels keep getting unique anchors across the whole stream.
+  For a single document the output matches `render` with the same options.
+- `render_incremental_fragment_with_hooks` is the same entry point through
+  `HtmlRenderHooks`.
+- `render_provisional_fragment` renders an unstable fragment that the next
+  streaming update may replace. It leaves the committed heading-ID and footnote
+  state untouched, so a provisional render never claims an ID or a footnote
+  number that the committed render then has to skip.
+- `render_provisional_fragment_with_hooks` is the hooked provisional entry
+  point.
+- `reset_incremental_state` clears the carried state so the next document starts
+  from a clean renderer. Caches derived from the immutable options, such as the
+  autolink index, are kept.
+
+These entry points are deliberately separate from `render`, which resets that
+state for every document and keeps its exact one-shot setup cost. Each fragment
+is parsed on its own, in an arena that outlives the render call, and the
+fragments are concatenated by the caller.
 
 ## The arena is single-threaded, and bumpalo is public
 
