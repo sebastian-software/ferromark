@@ -12,8 +12,9 @@ pub(super) struct ParsedListItem<'a> {
     pub(super) content_source_end: usize,
     /// Column (relative to the marker line's start) where continuation
     /// lines must be indented to belong to this item: marker indent +
-    /// marker width + following spaces (one column when the item is
-    /// empty or starts with indented code).
+    /// marker width + the columns of whitespace that follow, tabs
+    /// expanded to a tab stop of four (one column when the item is empty
+    /// or starts with indented code).
     pub(super) content_indent: usize,
     pub(super) checked: Option<bool>,
 }
@@ -156,11 +157,9 @@ impl<'a> Parser<'a> {
             .take_while(|&&byte| matches!(byte, b' ' | b'\t'))
             .count();
         if after_marker[..ws_run].contains(&b'\t') {
-            // Tabs after the marker expand from the marker's original
-            // column; everything beyond the single separator column
-            // becomes content spaces so alignment survives the item
-            // re-parse (`-\t\tfoo` is an item holding two-space-indented
-            // code).
+            // Tabs after the marker expand to a tab stop of four columns
+            // from the marker's original column (CommonMark 0.31.2
+            // section 2.2).
             let marker_end_col = marker_indent + marker_width;
             let mut end_col = marker_end_col;
             for &byte in &after_marker[..ws_run] {
@@ -170,8 +169,41 @@ impl<'a> Parser<'a> {
                     end_col + 1
                 };
             }
-            let extra_columns = end_col.saturating_sub(marker_end_col + 1);
             let rest = &trimmed[marker_width + ws_run..];
+            // Section 5.2: one to four columns of separation start the
+            // content at the column the whitespace run ends on, so a tab
+            // after `-` in column 0 puts the content at column 4 and
+            // continuation lines need that much indentation.
+            //
+            // Only the document's own parser can measure that column. A
+            // container re-parses its content with the prefix stripped, so
+            // column 0 of `line` is not column 0 of the source line and the
+            // width of a tab is no longer recoverable: the tab in `> -\tfoo`
+            // is one column wide, the one in `-\tfoo` three. A sub-source
+            // therefore keeps the narrowest reading a tab can have, one
+            // separating column, which never splits an item that the real
+            // column would hold together. Whether the run is wide enough for
+            // indented code does not depend on the starting column — one tab
+            // always lands one to four columns on, two always five or more —
+            // so the branch below is the same either way.
+            if self.nesting_depth == 0 && end_col - marker_end_col <= 4 && !rest.trim().is_empty() {
+                return Some(ParsedListItem {
+                    ordered,
+                    marker,
+                    start,
+                    content: rest,
+                    content_offset: trimmed_offset + marker_width + ws_run,
+                    content_source_end: line_start + line.len(),
+                    content_indent: end_col,
+                    checked: None,
+                });
+            }
+            // Five or more columns (or no content at all) mean the item
+            // starts with indented code: the content starts one column
+            // after the marker and everything beyond it becomes content
+            // spaces so alignment survives the item re-parse (`-\t\tfoo`
+            // is an item holding two-space-indented code).
+            let extra_columns = end_col.saturating_sub(marker_end_col + 1);
             let mut expanded = self.allocator.new_string();
             for _ in 0..extra_columns {
                 expanded.push(' ');

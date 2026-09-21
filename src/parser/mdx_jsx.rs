@@ -51,6 +51,14 @@ impl<'a> Parser<'a> {
             else {
                 return Ok(None);
             };
+            // A flow element owns its line: anything but whitespace after
+            // the matching closer makes the tag text JSX inside a
+            // paragraph, the same way a tag that does not start the line
+            // is handled. Checked before the children are parsed so the
+            // rejected line costs nothing.
+            if !scan::only_ws_until_eol(self.source.as_bytes(), close_end) {
+                return Ok(None);
+            }
             let children = self.parse_jsx_flow_children(open.end, close_start)?;
             (false, children, close_end)
         };

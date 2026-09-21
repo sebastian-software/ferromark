@@ -123,7 +123,10 @@ generated npm manifests, which must leave the lockfile byte-identical.
 `python3 -m unittest discover -s scripts` guards the `include` allow-list that
 now decides what reaches crates.io, and
 `python3 scripts/rehearse-rust-packages.py <new-directory>` builds and verifies
-the actual archive from the root package.
+the actual archive from the root package: metadata and attribution, an isolated
+consumer linked against the unpacked archive, and `cargo check --all-targets`
+inside that archive, which is the only step that compiles the `tests/`,
+`benches/` and `examples/` targets the crate ships.
 
 Three things are observable only on GitHub and were not rehearsed here: the
 crates.io and npm Trusted Publishing exchanges, the two cross-compiled musl

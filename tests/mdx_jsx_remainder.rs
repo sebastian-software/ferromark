@@ -75,16 +75,17 @@ fn named_fragment_component_stays_pascal_case() {
 
 #[test]
 fn nested_fragments_match_by_depth() {
+    // The outer fragment closes on the *second* `</>`, so its span covers
+    // the whole line: matching by depth is what keeps the inner `</>` from
+    // ending it. The inner fragment is followed by `outer` on the same
+    // line, so it is text JSX inside the outer element's paragraph rather
+    // than a nested flow element (see `mdx_jsx_flow_lines.rs`).
     let tree = mdx_tree("<><>inner</>outer</>\n");
-    let flow = tree.matches("MdxJsxFlowElement name=None").count();
-    assert!(flow >= 2, "expected nested fragments:\n{tree}");
-    assert!(
-        tree.contains("Text \"inner\""),
-        "expected inner text:\n{tree}"
-    );
-    assert!(
-        tree.contains("Text \"outer\""),
-        "expected outer text:\n{tree}"
+    assert_eq!(
+        tree,
+        "Document [0..21]\n  MdxJsxFlowElement name=None self_closing=false [0..21]\n    \
+         Paragraph [2..17]\n      MdxJsxTextElement name=None self_closing=false [2..12]\n        \
+         Text \"inner\" [4..9]\n      Text \"outer\" [12..17]\n"
     );
 }
 

@@ -13,34 +13,14 @@ pub(in crate::parser) enum HtmlBlockStart {
     /// A processing instruction, declaration, or CDATA block: consumes
     /// lines until one contains the given terminator.
     Terminated(&'static str),
-    /// A type-1 raw HTML block whose closing tag can appear after blank lines.
-    Type1(Type1HtmlBlockTag),
+    /// A type-1 raw HTML block whose end tag can appear after blank lines.
+    ///
+    /// The opening tag is not carried along: CommonMark 0.31.2 section 4.6
+    /// closes every type-1 block on any of `</pre>`, `</script>`,
+    /// `</style>` and `</textarea>`, whichever one opened it.
+    Type1,
     /// A regular supported HTML block that ends before the next blank line.
     Other,
-}
-
-/// Supported type-1 HTML block tags.
-///
-/// These are stored as an enum instead of a borrowed `&str` so
-/// `parse_html_block` can keep mutating the parser cursor without holding an
-/// immutable borrow into `self.source`.
-#[derive(Clone, Copy)]
-pub(in crate::parser) enum Type1HtmlBlockTag {
-    Pre,
-    Script,
-    Style,
-    Textarea,
-}
-
-impl Type1HtmlBlockTag {
-    pub(super) fn closing_name(self) -> &'static [u8] {
-        match self {
-            Self::Pre => b"pre",
-            Self::Script => b"script",
-            Self::Style => b"style",
-            Self::Textarea => b"textarea",
-        }
-    }
 }
 
 impl<'a> Parser<'a> {
@@ -74,7 +54,7 @@ impl<'a> Parser<'a> {
         match Self::html_block_start_for_tag(tag_name) {
             // Type 1 starts only on open tags; a lone `</pre>` is a
             // type-7 candidate that must not interrupt paragraphs.
-            Some(HtmlBlockStart::Type1(_)) if closing => None,
+            Some(HtmlBlockStart::Type1) if closing => None,
             other => other,
         }
     }
@@ -131,20 +111,17 @@ impl<'a> Parser<'a> {
     /// every `<...>` opener. Length bucketing keeps this allocation-free and
     /// trims comparisons on generated API docs with many HTML blocks.
     fn html_block_start_for_tag(tag_name: &str) -> Option<HtmlBlockStart> {
-        match tag_name.len() {
-            3 if tag_name.eq_ignore_ascii_case("pre") => {
-                return Some(HtmlBlockStart::Type1(Type1HtmlBlockTag::Pre));
-            }
-            5 if tag_name.eq_ignore_ascii_case("style") => {
-                return Some(HtmlBlockStart::Type1(Type1HtmlBlockTag::Style));
-            }
-            6 if tag_name.eq_ignore_ascii_case("script") => {
-                return Some(HtmlBlockStart::Type1(Type1HtmlBlockTag::Script));
-            }
-            8 if tag_name.eq_ignore_ascii_case("textarea") => {
-                return Some(HtmlBlockStart::Type1(Type1HtmlBlockTag::Textarea));
-            }
-            _ => {}
+        // The raw-text tags of start condition 1 (spec 4.6), bucketed by
+        // length like the type-6 list below.
+        let type1 = match tag_name.len() {
+            3 => tag_name.eq_ignore_ascii_case("pre"),
+            5 => tag_name.eq_ignore_ascii_case("style"),
+            6 => tag_name.eq_ignore_ascii_case("script"),
+            8 => tag_name.eq_ignore_ascii_case("textarea"),
+            _ => false,
+        };
+        if type1 {
+            return Some(HtmlBlockStart::Type1);
         }
         // The CommonMark type-6 tag list (spec 4.6), length-bucketed to
         // keep classification allocation-free.
