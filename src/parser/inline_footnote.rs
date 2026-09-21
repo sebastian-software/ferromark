@@ -40,10 +40,16 @@ impl<'a> Parser<'a> {
                 // An inline note cannot cross a paragraph boundary. Block parsing
                 // usually enforces this already; this also covers inline callers.
                 if !body.lines().any(|line| line.trim().is_empty()) {
-                    let mut parser =
-                        self.sub_parser_with_lazy_lines(body, rustc_hash::FxHashSet::default());
+                    let mut parser = self.inline_note_sub_parser(body);
                     parser.options.inline_footnotes = false;
-                    let inline = parser.parse_inline_block(body, offset + body_start)?;
+                    let parsed = parser.parse_inline_block(body, offset + body_start);
+                    // The body becomes children of the node this level is
+                    // about to wrap, so what it nested counts against the
+                    // same budget. Folded before the `?`, because the shared
+                    // counter cell this replaced was written by the
+                    // sub-parse's guard on the failing exit too.
+                    self.fold_nested_inline_depth(parser.nested_inline_depth());
+                    let inline = parsed?;
                     let span = Span::new((offset + start) as u32, (offset + close + 1) as u32);
                     let mut blocks = self.allocator.new_vec_with_capacity(1);
                     blocks.push(Node::Paragraph(self.allocator.boxed(Paragraph {

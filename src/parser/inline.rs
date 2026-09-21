@@ -116,7 +116,7 @@ impl<'a> Parser<'a> {
             .into());
         }
         self.inline_depth.set(depth + 1);
-        let nested = self.nested_depth_cell();
+        let nested = &self.nested_inline_depth;
         Ok(InlineDepthGuard {
             depth: &self.inline_depth,
             nested,
@@ -124,36 +124,31 @@ impl<'a> Parser<'a> {
         })
     }
 
-    /// The nested-inline-depth counter as it stands, without allocating it.
+    /// The nested-inline-depth counter as it stands.
     ///
     /// An inline context that is opened and then thrown away whole — the
     /// in-place bracket walk that finds a construct reaching past its
     /// closing bracket — has to leave the counter as it found it, or the
     /// probe that settles the same text afterwards would be counted twice.
     pub(super) fn nested_inline_depth(&self) -> usize {
-        self.nested_inline_depth
-            .get()
-            .map_or(0, std::cell::Cell::get)
+        self.nested_inline_depth.get()
     }
 
     /// Puts back a value from [`Self::nested_inline_depth`].
     pub(super) fn restore_nested_inline_depth(&self, depth: usize) {
-        if let Some(cell) = self.nested_inline_depth.get() {
-            cell.set(depth);
-        }
+        self.nested_inline_depth.set(depth);
     }
 
-    /// The shared depth cell, allocated on the first inline context of a
-    /// parse. A parser that never reaches inline content — the definition
-    /// pre-pass, and every rejected block probe — leaves the arena
-    /// untouched, which its own tests hold it to.
-    fn nested_depth_cell(&self) -> &'a std::cell::Cell<usize> {
-        if let Some(cell) = self.nested_inline_depth.get() {
-            return cell;
-        }
-        let cell: &'a std::cell::Cell<usize> = &*self.allocator.alloc(std::cell::Cell::new(0));
-        self.nested_inline_depth.set(Some(cell));
-        cell
+    /// Folds the depth a sub-parser finished with into this level's count.
+    ///
+    /// An inline note's body is parsed by a sub-parser and still becomes
+    /// children of the node this level is about to wrap, so the deeper of
+    /// the two is what the level has below it. Taking the maximum is what
+    /// the counter cell the two parsers used to share did on the way out of
+    /// the sub-parse, and it keeps the count monotonic on either exit.
+    pub(super) fn fold_nested_inline_depth(&self, depth: usize) {
+        self.nested_inline_depth
+            .set(self.nested_inline_depth.get().max(depth));
     }
 
     pub(super) fn parse_inline(
