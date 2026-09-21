@@ -71,9 +71,10 @@ pub(in crate::parser) fn html_block_bounds(
             block_end_past(bytes, start, terminator.as_bytes())
         }
         // Type 1 blocks (`<pre>`, `<script>`, `<style>`, `<textarea>`) close
-        // on the first line containing `</tag`, searched case-insensitively
-        // across the whole remaining source in one scan.
-        HtmlBlockStart::Type1(tag) => match find_closing_tag(bytes, start, tag.closing_name()) {
+        // on the first line containing any one of the four end tags,
+        // searched case-insensitively across the whole remaining source in
+        // one scan.
+        HtmlBlockStart::Type1 => match find_type1_end_tag(bytes, start) {
             Some(at) => (end_of_line_after(bytes, at), true),
             None => (bytes.len(), false),
         },
@@ -122,24 +123,39 @@ fn block_end_before_blank(bytes: &[u8], from: usize) -> (usize, bool) {
     }
 }
 
-/// Position of the first case-insensitive `</tag` at or after `from`.
+/// The end tags that close a type-1 HTML block, as CommonMark 0.31.2
+/// section 4.6 lists them for start condition 1.
+const TYPE1_END_TAGS: [&[u8]; 4] = [b"pre", b"script", b"style", b"textarea"];
+
+/// Position of the first `</pre>`, `</script>`, `</style>` or `</textarea>`
+/// at or after `from`, compared case-insensitively.
 ///
-/// Type-1 HTML blocks close on the first line containing their closing
-/// tag; searching for `<` with `memchr` skips the common case of long
-/// text/code runs that contain no tag-looking byte at all.
-pub(in crate::parser) fn find_closing_tag(bytes: &[u8], from: usize, tag: &[u8]) -> Option<usize> {
+/// The end condition of a type-1 block is a *complete* end tag, and any of
+/// the four closes the block whatever tag opened it, so a `<pre>` block
+/// ends on a line holding `</script>` and an unterminated `</pre` does not
+/// end anything. Searching for `<` with `memchr` skips the common case of
+/// long text/code runs that contain no tag-looking byte at all.
+pub(in crate::parser) fn find_type1_end_tag(bytes: &[u8], from: usize) -> Option<usize> {
     let mut search = from;
     while let Some(off) = memchr(b'<', &bytes[search..]) {
         let at = search + off;
-        if at + tag.len() + 2 <= bytes.len()
-            && bytes[at + 1] == b'/'
-            && bytes[at + 2..at + 2 + tag.len()].eq_ignore_ascii_case(tag)
+        if bytes.get(at + 1) == Some(&b'/')
+            && TYPE1_END_TAGS
+                .iter()
+                .any(|tag| is_end_tag_name(bytes, at + 2, tag))
         {
             return Some(at);
         }
         search = at + 1;
     }
     None
+}
+
+/// True when `tag` followed by `>` starts at `at`, ignoring ASCII case.
+#[inline]
+fn is_end_tag_name(bytes: &[u8], at: usize, tag: &[u8]) -> bool {
+    let name_end = at + tag.len();
+    bytes.get(name_end) == Some(&b'>') && bytes[at..name_end].eq_ignore_ascii_case(tag)
 }
 
 /// True when `line` holds only spaces, tabs, and carriage returns
