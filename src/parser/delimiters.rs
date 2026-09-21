@@ -43,40 +43,83 @@ impl<'a> Parser<'a> {
     /// The balanced scans (`scan_balanced` for `]`, `skip_braces` for `}`)
     /// only report that nothing closed after walking to the end of the
     /// content, so a run of unclosed openers pays one full walk each and
-    /// costs O(n²). The position of the last closer settles it for every
-    /// opener in the slice at once, so the run costs one scan in total.
+    /// costs O(n²). A forward window settles the run instead: the answer is
+    /// monotone in `from` — a closer at or after `from` is one at or after
+    /// every earlier position too — so the bytes one opener reads answer for
+    /// every opener behind it, and the run costs one scan in total.
+    ///
+    /// See [`CloserWindow`] for the invariant and for why the window is kept
+    /// in addresses. Keeping it that way is what lets the same window answer
+    /// for a slice and for the sub-slices of it that nested content is
+    /// parsed from, instead of being rebuilt for each.
     pub(super) fn has_closer_from(&self, content: &'a str, from: usize, closer: u8) -> bool {
-        let key = (content.as_ptr() as usize, content.len(), closer);
-
-        // Every `[` and `<` of a paragraph asks about the same slice, so the
-        // answer given last is the answer wanted next: one cell in front of
-        // the table saves the hash and the probe for all but the first ask.
-        // The table stays the record; the cell only mirrors its last entry.
-        if let Some((hit_key, last)) = self.closer_hit.get()
-            && hit_key == key
-        {
-            return last.is_some_and(|last| last >= from);
+        let bytes = content.as_bytes();
+        if from >= bytes.len() {
+            return false;
         }
-        let cached = self.last_closer().borrow().get(&key).copied();
-        let last = if let Some(last) = cached {
-            last
-        } else {
-            let last = memchr::memrchr(closer, content.as_bytes());
-            self.last_closer().borrow_mut().insert(key, last);
-            last
-        };
-        self.closer_hit.set(Some((key, last)));
+        let base = bytes.as_ptr() as usize;
+        // The question and the end of the slice, as addresses.
+        let at = base + from;
+        let end = base + bytes.len();
 
-        last.is_some_and(|last| last >= from)
+        let cell = &self.closer_windows[closer_slot(closer)];
+        let cached = cell.get();
+        let known = cached.closer == closer;
+
+        // The bytes this question still has to read, and the window that
+        // decides it when they hold no closer.
+        let (start, stop, beyond) = if known && at >= cached.lo && at <= cached.hi {
+            if cached.hi >= end {
+                // Clean from here past the end of this slice.
+                return false;
+            }
+            if cached.found {
+                // The closer at `hi` is at or after `at` and inside the slice.
+                return true;
+            }
+            // Clean up to `hi`, unread from there on.
+            (cached.hi - base, bytes.len(), None)
+        } else if known && at < cached.lo && cached.lo <= end && (cached.found || cached.hi >= end)
+        {
+            // Behind the window: only `at..lo` is unread, and what the window
+            // knows from `lo` on already settles the rest of the slice.
+            (from, cached.lo - base, Some(cached))
+        } else {
+            (from, bytes.len(), None)
+        };
+
+        let next = memchr(closer, &bytes[start..stop]).map(|offset| base + start + offset);
+        let window = match (next, beyond) {
+            // A closer inside the bytes just read, so inside the slice.
+            (Some(hit), _) => CloserWindow {
+                closer,
+                lo: at,
+                hi: hit,
+                found: true,
+            },
+            // Nothing up to `lo`, so the window's own answer stands, now
+            // reaching back to `at`.
+            (None, Some(settled)) => CloserWindow { lo: at, ..settled },
+            // Nothing in `at..stop`, and `stop` is the end of the slice.
+            (None, None) => CloserWindow {
+                closer,
+                lo: at,
+                hi: base + stop,
+                found: false,
+            },
+        };
+        cell.set(window);
+        window.found && window.hi < end
     }
 
     /// Reports whether `]]` occurs at or after `from` in `content`.
     ///
     /// The wiki-link scan walks to the end of the content to find that
     /// nothing closes a `[[`, so a run of unclosed openers paid one walk each
-    /// — `[`×n `a]` cost 8 s at 128 KB with wiki links on. Like
-    /// [`Self::has_closer_from`], the position of the last closer settles it
-    /// for every opener in the slice at once.
+    /// — `[`×n `a]` cost 8 s at 128 KB with wiki links on. The position of
+    /// the last closer settles it for every opener in the slice at once,
+    /// which is the bound [`Self::has_closer_from`] carries for the plain
+    /// closers.
     pub(super) fn has_wiki_closer_from(&self, content: &'a str, from: usize) -> bool {
         let key = (content.as_ptr() as usize, content.len());
 
@@ -317,6 +360,60 @@ pub(super) struct ForwardMemo {
     len: usize,
     origin: usize,
     hit: usize,
+}
+
+/// One forward window over the bytes a parser reads, for
+/// [`Parser::has_closer_from`]: no `closer` occurs at any address in
+/// `lo..hi`, and when `found`, the byte at `hi` is one.
+///
+/// Same shape as [`ForwardMemo`] and the same reason: the answer is monotone
+/// in the position asked about, so the closer found once ahead of `lo`
+/// answers for every position up to it, and only a question that leaves the
+/// window reads anything.
+///
+/// It is kept in addresses rather than in offsets of one named slice because
+/// nested content is parsed as slices of one buffer, and a statement about a
+/// range of that buffer holds for every slice that covers the range. A window
+/// built for a paragraph therefore still answers inside a bracket text cut
+/// out of it, and one built for the whole source still answers inside the
+/// paragraphs of it — which a window naming one slice would have to rebuild,
+/// re-reading the same bytes once per alternation. Live slices never overlap
+/// across buffers, so a window can only be read where it was written.
+///
+/// A default window names the empty range at address zero with `closer` 0,
+/// which no question can match: every closer asked about is an ASCII
+/// punctuation byte.
+#[derive(Clone, Copy, Default)]
+pub(super) struct CloserWindow {
+    /// The closing byte this window answers for.
+    closer: u8,
+    /// Whether a `closer` sits at `hi`. When it does not, `hi` is only as
+    /// far as the bytes behind the window have been read.
+    found: bool,
+    /// First address the window covers.
+    lo: usize,
+    /// One past the last address known to hold no `closer`.
+    hi: usize,
+}
+
+/// Number of windows [`Parser::has_closer_from`] keeps, one per closer.
+pub(super) const CLOSER_SLOTS: usize = 3;
+
+/// The window slot a closer's answers live in.
+///
+/// The `[`, `<` and `{` of one paragraph ask about the same slice in turn, so
+/// a single window between them would be rebuilt by every other question, and
+/// a run of openers that nothing closes would read the content once each —
+/// the quadratic shape the window exists to bound. A slot per closer keeps
+/// the three questions on their own forward walk. Any other byte shares the
+/// last slot, and since the slot names the closer it answers for, sharing
+/// costs a scan and never a wrong answer.
+const fn closer_slot(closer: u8) -> usize {
+    match closer {
+        b']' => 0,
+        b'>' => 1,
+        _ => 2,
+    }
 }
 
 /// Bytes that can change the outcome of [`Parser::scan_balanced`]: the
