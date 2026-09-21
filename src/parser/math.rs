@@ -150,7 +150,7 @@ impl<'a> Parser<'a> {
     /// [`scan_inline_math_close`] reports "nothing closes this" only after
     /// reading to the end of the content — and, unlike the `^`/`~` script
     /// spans, it keeps going past a `$` that cannot close — so a run of
-    /// openers paid one walk each: 128 KiB of `$a ` took 6.4 s, x16 for
+    /// openers paid one walk each: 128 KiB of `$a ` took 6.2 s, x16 for
     /// every x4 of input.
     ///
     /// The memo is what one scan settles for every later opener. A `$` can

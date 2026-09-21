@@ -262,9 +262,8 @@ impl<'a> Parser<'a> {
                     }
                     let generated_start = body_source.len();
                     body_source.push('\n');
-                    source_map.push_line(
+                    source_map.push_blank_line(
                         generated_start,
-                        1,
                         cursor,
                         blank_next.saturating_sub(cursor),
                     );
@@ -327,7 +326,8 @@ impl<'a> Parser<'a> {
         let body_source = body_source.into_bump_str();
         let sub_doc = self
             .sub_parser_with_source_map(body_source, lazy_lines, &source_map)
-            .parse()?;
+            .parse()
+            .map_err(|error| error.remapped(&source_map))?;
         let mut children = sub_doc.children;
         for child in &mut children {
             source_map.remap_node_spans(child);
@@ -372,8 +372,8 @@ impl<'a> Parser<'a> {
     /// term scan behind it walks forward to the next blank line: a run of
     /// lazy lines with a `:` marker somewhere later in the document — which
     /// keeps `next_definition_marker` from settling it — re-walked the rest
-    /// of the run for every line, so 119 KB of them took 1.25 s, x4 for
-    /// every x2 of input. A scan that ends without an item ends the same way
+    /// of the run for every line, so 128 KiB of them took 0.75 s, x16 for
+    /// every x4 of input. A scan that ends without an item ends the same way
     /// for every start inside the run it walked, so recording that window
     /// examines each line once.
     fn can_start_definition_item_at(&self, start: usize) -> bool {

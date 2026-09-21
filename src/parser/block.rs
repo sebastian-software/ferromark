@@ -390,7 +390,12 @@ impl<'a> Parser<'a> {
         } else {
             start
         };
-        let mut children = self.parse_inline_block(content, offset)?;
+        let mut children =
+            self.parse_inline_block(content, offset)
+                .map_err(|error| match &source_map {
+                    Some(map) => error.remapped(map),
+                    None => error,
+                })?;
         if let Some(map) = source_map {
             for child in &mut children {
                 map.remap_node_spans(child);

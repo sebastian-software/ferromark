@@ -222,7 +222,7 @@ fn walk_close<const RECORD: bool>(
 ///
 /// [`skip_braces`] reports that nothing closes a brace only after reading to
 /// the end of the slice, so a run of them cost one walk each: 128 KiB of
-/// `<A>` followed by `{` took 6.6 s. The first failure settles the rest of
+/// `<A>` followed by `{` took 5.9 s. The first failure settles the rest of
 /// the run — past the last `}` nothing can close a brace either — for the
 /// price of one backward search.
 fn skip_open_brace(bytes: &[u8], cursor: usize, braces_end: &mut Option<usize>) -> (usize, bool) {

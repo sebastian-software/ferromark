@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the Cargo archive and verify an isolated consumer of its contents."""
+"""Build the Cargo archive, compile its own targets and verify an isolated consumer."""
 import argparse
 import hashlib
 import json
@@ -15,6 +15,34 @@ ROOT = Path(__file__).resolve().parents[1]
 def run(args, log):
     with log.open('w') as stream:
         subprocess.run(args, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, check=True)
+
+
+def packaged_targets_command(package):
+    """Compiles every target of the unpacked archive, not only its library.
+
+    `tests/`, `benches/` and `examples/` ship, so a consumer running
+    `cargo test` on the published crate compiles files the `include`
+    allow-list has to cover: an `include_str!` reaching outside the package
+    fails there and nowhere else. The isolated consumer below links the
+    library alone and never sees it.
+
+    `--offline` is enough because the dev-dependencies resolve from the same
+    lockfile `cargo fetch --locked` populated. The command runs from the
+    repository root through `--manifest-path`, so `rust-toolchain.toml` still
+    selects the pinned toolchain for a package unpacked outside the checkout.
+    """
+    return ['cargo', 'check', '--all-targets', '--locked', '--offline',
+            '--manifest-path', str(package / 'Cargo.toml')]
+
+
+def rehearsal_result(version, artifacts):
+    """What this rehearsal proved. Every step above raises on failure."""
+    return dict(version=version, packages=artifacts, packaged_consumer='passed',
+        packaged_targets='passed',
+        method='Full cargo package --locked, including packaged builds; an isolated consumer '
+               'links the unpacked archives, and the unpacked archive compiles its own test, '
+               'bench and example targets.',
+        limits='No registry upload or publishing credentials were tested.')
 
 
 def main():
@@ -84,11 +112,12 @@ ferromark = {{ path = {json.dumps(str(unpacked / f"ferromark-{version}"))}, vers
                        for candidate in original), f'Unexpected registry dependency: {package["name"]}'
         elif package['name'] != 'ferromark-packaged-consumer':
             assert package['name'] in names and package['version'] == version
-    result = dict(version=version, packages=artifacts, packaged_consumer='passed',
-        method='Full cargo package --locked, including packaged builds; additional isolated consumer uses unpacked archives.',
-        limits='No registry upload or publishing credentials were tested.')
+    for name in names:
+        run(packaged_targets_command(unpacked / f'{name}-{version}'),
+            output / f'{name}-targets.log')
+    result = rehearsal_result(version, artifacts)
     (output / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
-    print(f'Verified ferromark Cargo archive and isolated packaged consumer: {output}')
+    print(f'Verified ferromark Cargo archive, its own targets and an isolated packaged consumer: {output}')
 
 
 if __name__ == '__main__':

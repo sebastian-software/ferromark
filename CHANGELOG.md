@@ -14,7 +14,6 @@
 
 ### Performance Improvements
 
-* accelerate parsing and rendering on Apple Silicon (rounds 2 and 3) ([71a051d](https://github.com/sebastian-software/ferromark/commit/71a051de4a26ef7b2ca62c7375991f48c3c09421))
 * accelerate parsing and rendering on Apple Silicon (rounds 2 and 3) ([#323](https://github.com/sebastian-software/ferromark/issues/323)) ([71a051d](https://github.com/sebastian-software/ferromark/commit/71a051de4a26ef7b2ca62c7375991f48c3c09421))
 * **parser:** drive the definition pre-pass from `]:` occurrences ([c8a118f](https://github.com/sebastian-software/ferromark/commit/c8a118f2f847c280f077eef3685c3e478d5e8887))
 * **parser:** reuse the line the block dispatchers already scanned ([e3215b7](https://github.com/sebastian-software/ferromark/commit/e3215b7cd8196f45e88a187dac2162d1c079309d))
@@ -43,7 +42,7 @@ First release candidate for the new arena-allocated Markdown parser and HTML
 renderer, based on the MIT-licensed OX-Content core. This is a breaking Rust API
 change and a candidate for testing before the stable v2 release.
 
-## Install
+### Install
 
 ```sh
 npm install ferromark@next
@@ -56,7 +55,7 @@ The RC does not replace npm's stable `latest` tag.
 The Rust distribution is a single `ferromark` crate with public allocator, AST,
 parser and renderer modules. Node continues to install its native platform package.
 
-## What to test
+### What to test
 
 - Real documents through the Rust convenience functions or arena AST API.
 - Node's rendering, reusable renderer, metadata extraction and highlighter APIs.
@@ -67,7 +66,7 @@ Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/
 for removed options, changed defaults and the v2 API. The v1 CLI and MDX component
 compiler APIs are not part of v2. MDX syntax capture does not execute JavaScript.
 
-## Validation and known limits
+### Validation and known limits
 
 The release requires the full platform CI, a verified Rust package build, and all
 nine npm archives. Six native targets have runtime tests; the two musl targets

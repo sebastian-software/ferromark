@@ -19,10 +19,11 @@ repository root package, and the release follows the organization's
    the changelog section that becomes the release notes.
 3. Merge it. Release Please writes the version commit, creates the `v<version>`
    tag and the GitHub release, and sets `releases_created`.
-4. The gated jobs in the same workflow run from that tag: the crate goes to
-   crates.io, then the eight native addons are built, assembled, verified and
-   published to npm, sidecars before the facade, and the published versions are
-   confirmed on the registry.
+4. The gated jobs in the same workflow run from that tag. They gate on Release
+   Please alone, so the crates.io publication and the native addon pipeline start
+   in parallel: the crate goes to crates.io while the eight native addons are
+   built, assembled, verified and published to npm, sidecars before the facade,
+   and the published versions are confirmed on the registry.
 
 Nothing else publishes. Merging ordinary source still only opens or updates the
 release pull request.
@@ -182,11 +183,21 @@ unpacked archive. External versions must remain within the workspace lockfile.
 The README, the upstream `LICENSE` notice, the `LICENSE-MIT` text and
 `UPSTREAM.md` ship with the package. This does not test registry credentials.
 
+Finally it runs `cargo check --all-targets --locked --offline` inside the
+unpacked archive. The consumer only links the library, but `tests/`, `benches/`
+and `examples/` ship too, so anyone running `cargo test` on the published crate
+compiles them: a test that embeds a file the `include` list leaves out fails
+there and nowhere else. `--offline` needs the dev-dependencies, which the
+`cargo fetch --locked` above resolves.
+
 Because the crate sits at the repository root, a narrow `include` list in
 `Cargo.toml` decides what the archive contains. Compare `cargo package --list`
 before and after any change to it; `scripts/test_release_package.py` guards the
 allow-list and keeps `docs/`, `benchmarks/`, `homepage/`, `node/`, `scripts/`
-and `.github/` out.
+and `.github/` out as directories. Three regression corpora that shipped tests
+embed with `include_str!` are the sole exception, named there as individual
+files; the same test checks that no shipped target embeds anything else from
+outside the archive.
 
 ## The pre-merge rehearsal
 

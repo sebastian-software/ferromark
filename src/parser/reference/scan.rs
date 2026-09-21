@@ -51,20 +51,6 @@ pub(super) fn next_blank_line(bytes: &[u8], mut pos: usize) -> usize {
     bytes.len()
 }
 
-/// Lines that close an open paragraph without themselves opening one:
-/// ATX headings and setext/thematic marker runs. Everything else that is
-/// non-blank keeps (or opens) paragraph-like context for the pre-pass.
-pub(in crate::parser) fn closes_paragraph_context(trimmed: &str) -> bool {
-    if trimmed.starts_with('#') {
-        return true;
-    }
-    let bytes = trimmed.trim_end().as_bytes();
-    !bytes.is_empty()
-        && (bytes.iter().all(|&byte| byte == b'-')
-            || bytes.iter().all(|&byte| byte == b'=')
-            || bytes.iter().all(|&byte| byte == b'*' || byte == b' '))
-}
-
 pub(in crate::parser) fn fence_open(trimmed: &str) -> Option<(u8, usize)> {
     let bytes = trimmed.as_bytes();
     let first = *bytes.first()?;

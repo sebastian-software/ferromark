@@ -47,6 +47,14 @@ impl<'a> Parser<'a> {
             else {
                 return Ok(None);
             };
+            // A flow element owns its line: anything but whitespace after
+            // the matching closer makes the tag text JSX inside a
+            // paragraph, the same way a tag that does not start the line
+            // is handled. Checked before the children are parsed so the
+            // rejected line costs nothing.
+            if !scan::only_ws_until_eol(self.source.as_bytes(), close_end) {
+                return Ok(None);
+            }
             let children = self.parse_jsx_flow_children(open.end, close_start)?;
             (false, children, close_end)
         };
@@ -206,7 +214,13 @@ impl<'a> Parser<'a> {
         let child_source = children::normalize_indentation(self.allocator, inner);
         let sub =
             self.sub_parser_with_lazy_lines(child_source.source, rustc_hash::FxHashSet::default());
-        let mut children = sub.parse()?.children;
+        let mut children = sub
+            .parse()
+            .map_err(|error| match &child_source.offsets {
+                Some(offsets) => children::remap_error(error, inner_start as u32, offsets),
+                None => error.remapped(&super::spans::OffsetMap(inner_start as u32)),
+            })?
+            .children;
         for child in &mut children {
             if let Some(offsets) = &child_source.offsets {
                 children::remap_node_spans(child, inner_start as u32, offsets);

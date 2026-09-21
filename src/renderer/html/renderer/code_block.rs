@@ -59,10 +59,16 @@ impl HtmlRenderer {
         };
 
         if self.options.code_annotations && !info.meta.is_empty() {
+            // Both metadata syntaxes select lines of this block, so the line
+            // count bounds what either of them can expand. See
+            // `parse_line_numbers`.
+            let line_count = lines.len();
+
             if syntax.includes_attribute() {
                 let annotations = parse_code_annotations(
                     info.meta.as_str(),
                     self.options.code_annotation_meta_key(),
+                    line_count,
                 );
                 apply_btree_annotations(&mut lines, &annotations);
             }
@@ -71,7 +77,7 @@ impl HtmlRenderer {
                 for token in split_code_block_meta(info.meta.as_str()) {
                     match token.kind {
                         MetaTokenKind::Braces => {
-                            let line_numbers = parse_line_numbers(token.value);
+                            let line_numbers = parse_line_numbers(token.value, line_count);
                             apply_annotation_numbers(
                                 &mut lines,
                                 &line_numbers,
@@ -190,9 +196,14 @@ impl HtmlRenderer {
             self.write_display(line_number);
             self.write("\"");
 
+            // `:line-numbers=<n>` accepts any `usize`, so a start near the end
+            // of the range plus the line offset can leave it. Saturating keeps
+            // the last representable number instead of panicking under
+            // overflow checks and wrapping to 0 in release; every start a real
+            // listing uses is far from the boundary and counts up as before.
             let visible_line_number = state
                 .line_numbers_start
-                .map_or(line_number, |start| start + index);
+                .map_or(line_number, |start| start.saturating_add(index));
             if let Some(prefix) = state.line_link_prefix.as_deref() {
                 self.write(" id=\"");
                 self.write_attribute_escaped(prefix);
@@ -205,9 +216,9 @@ impl HtmlRenderer {
                 self.write("\"");
             }
 
-            if let Some(start) = state.line_numbers_start {
+            if state.line_numbers_start.is_some() {
                 self.write(" data-line-number=\"");
-                self.write_display(start + index);
+                self.write_display(visible_line_number);
                 self.write("\"");
             }
 

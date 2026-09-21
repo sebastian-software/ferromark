@@ -23,7 +23,7 @@ pub(super) struct BraceWalk {
 /// reaches the end of the content, so a run of them cost one walk each —
 /// and one `}` anywhere behind the run is enough to defeat a cheap
 /// last-closer guard in front of it: 128 KiB of `{` followed by a single
-/// `}` took 6.5 s. Every decision below depends on the position alone and
+/// `}` took 5.3 s. Every decision below depends on the position alone and
 /// never on where the walk began, so the `}` that returns the walk to a
 /// brace's own depth is the `}` a walk starting at that brace stops at, and
 /// a brace this walk leaves open is one such a walk leaves open too. One

@@ -4,13 +4,15 @@
 //! Measured on the release build before the fix, at 32 KiB and 128 KiB —
 //! x16 for every x4 of input, which is the signature:
 //!
-//! - math: `$a ` 0.48 s / 6.4 s, `$1 ` 0.46 s / 6.8 s, `$$a ` 0.53 s /
-//!   8.1 s, and `$$ a` lines 0.30 s / 4.3 s;
-//! - MDX: `<A>` with one closer behind the run 0.78 s / 11.1 s, the same
-//!   inline 0.74 s / 13.1 s, `<A>` followed by `{` 0.41 s / 6.6 s, and a
-//!   brace run with one `}` behind it 0.42 s / 6.5 s, 0.41 s / 6.4 s
+//! - math: `$a ` 0.41 s / 6.2 s, `$1 ` 0.37 s / 6.0 s, `$$a ` 0.42 s /
+//!   7.0 s, and `$$ a` lines 0.23 s / 3.7 s;
+//! - MDX: `<A>` with one closer behind the run 0.70 s / 9.1 s, the same
+//!   inline 0.57 s / 9.9 s, `<A>` followed by `{` 0.33 s / 5.9 s, and a
+//!   brace run with one `}` behind it 0.33 s / 5.3 s, 0.33 s / 5.3 s
 //!   inline;
-//! - definition lists: lazy body lines 0.05 s / 0.65 s.
+//! - definition lists: lazy body lines 0.05 s / 0.75 s.
+//!
+//! All of them are 0.5 to 1.1 ms and 2.0 to 4.8 ms now.
 //!
 //! None of these is a crafted document. `$5 for a $10 book` is prose, a
 //! shell snippet outside a fence is full of braces, and a list of terms

@@ -3,6 +3,7 @@ use crate::ast::{List, ListItem, Node, Span};
 
 use self::item_source::ListItemSource;
 use super::Parser;
+use super::lazy_paragraph::OpenParagraph;
 use super::line_scan::{is_line_ending_byte, line_terminator_end};
 use super::list_item::ParsedListItem;
 use crate::parser::error::ParseResult;
@@ -72,7 +73,9 @@ impl<'a> Parser<'a> {
                 let item_source = item_source.text.into_bump_str();
                 let sub_parser =
                     self.sub_parser_with_source_map(item_source, lazy_lines, &source_map);
-                let sub_doc = sub_parser.parse()?;
+                let sub_doc = sub_parser
+                    .parse()
+                    .map_err(|error| error.remapped(&source_map))?;
                 // The item directly contains blank-separated blocks iff a
                 // gap between consecutive top-level children spans a line
                 // break (spans are still in item-source coordinates).
@@ -145,8 +148,11 @@ impl<'a> Parser<'a> {
         let mut gap_spread = false;
         let mut next_item = None;
         // Lazy paragraph continuation is only valid while the item's last
-        // consumed line kept a paragraph open (not right after blanks).
+        // consumed line kept a paragraph open (not right after blanks, and
+        // not after a fence, an HTML block, a heading or a table).
         let mut after_blank = false;
+        let mut open_paragraph = OpenParagraph::default();
+        open_paragraph.observe(item.content, &self.options);
 
         loop {
             if self.is_at_end() {
@@ -220,9 +226,8 @@ impl<'a> Parser<'a> {
                         }
                         let generated_start = item_source.text.len();
                         item_source.text.push('\n');
-                        item_source.source_map.push_line(
+                        item_source.source_map.push_blank_line(
                             generated_start,
-                            1,
                             blank_start,
                             blank_next.saturating_sub(blank_start),
                         );
@@ -231,6 +236,7 @@ impl<'a> Parser<'a> {
                     self.position = lookahead;
                     item_end = self.position;
                     after_blank = true;
+                    open_paragraph.observe_blank();
                     continue;
                 }
 
@@ -261,6 +267,7 @@ impl<'a> Parser<'a> {
                     continuation_line,
                     content_indent,
                 );
+                open_paragraph.observe(&item_source.text[generated_start..], &self.options);
                 item_source.text.push('\n');
                 let source_start = continuation_start + source_offset_in_line;
                 item_source.source_map.push_line_with_block_start(
@@ -298,8 +305,14 @@ impl<'a> Parser<'a> {
 
             // A block start interrupts the item; anything else lazily
             // continues the item's trailing paragraph regardless of its
-            // indentation (CommonMark laziness).
-            if item_is_empty || after_blank || self.line_starts_block() {
+            // indentation (CommonMark laziness) — and only a paragraph: a
+            // line after a closed fence, an HTML block, a heading or a
+            // table belongs to the enclosing block instead.
+            if item_is_empty
+                || after_blank
+                || !open_paragraph.paragraph_open()
+                || self.line_starts_block()
+            {
                 break;
             }
             let source = item_source
@@ -311,6 +324,7 @@ impl<'a> Parser<'a> {
             let generated_start = source.text.len();
             lazy_lines.insert(source.text.len() as u32);
             source.text.push_str(continuation_line);
+            open_paragraph.observe(continuation_line, &self.options);
             source.text.push('\n');
             source.source_map.push_line(
                 generated_start,

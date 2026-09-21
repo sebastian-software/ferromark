@@ -58,6 +58,7 @@ mod inline;
 mod inline_footnote;
 mod inline_html;
 mod inline_link;
+mod lazy_paragraph;
 mod leaf;
 mod line_comments;
 mod line_scan;
@@ -323,6 +324,13 @@ pub struct Parser<'a> {
     /// definition-list item start. See `Parser::can_start_definition_item_at`.
     definition_item_gap: std::cell::Cell<Option<(usize, usize)>>,
 
+    /// Memoized position of the last `]]` in a content slice, keyed like
+    /// `link_probe_cache`: the wiki-link scan's counterpart to `last_closer`.
+    /// A `[[` with no `]]` after it walks to the end of the content to find
+    /// that out, so a run of them cost one walk each; one search answers for
+    /// every opener in the slice.
+    wiki_closer: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
+
     /// The last `[scanned_from, blank_line)` window found while bounding a
     /// link reference definition, so a run of them costs one scan in total.
     ///
@@ -398,6 +406,7 @@ impl<'a> Parser<'a> {
             math_emphasis: std::cell::Cell::new(None),
             math_block_close: std::cell::Cell::new(None),
             definition_item_gap: std::cell::Cell::new(None),
+            wiki_closer: std::cell::RefCell::default(),
             definition_region: None,
             comment_definition_region: None,
         };
@@ -473,6 +482,7 @@ impl<'a> Parser<'a> {
             math_emphasis: std::cell::Cell::new(None),
             math_block_close: std::cell::Cell::new(None),
             definition_item_gap: std::cell::Cell::new(None),
+            wiki_closer: std::cell::RefCell::default(),
             definition_region: None,
             comment_definition_region: None,
         }

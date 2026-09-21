@@ -9,10 +9,23 @@ the files Cargo includes").
 """
 import json
 from pathlib import Path
+import re
 import tomllib
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# The regression corpora that shipped test targets embed with `include_str!`.
+# `/tests` is in the archive, so a consumer running `cargo test` on the
+# unpacked crate compiles those files; without these entries the compilation
+# fails with "couldn't read tests/../docs/...". They are the only files the
+# allow-list takes out of an otherwise unpublished directory, and they are
+# named one by one rather than by their directories.
+EMBEDDED_TEST_FIXTURES = [
+    "/docs/reports/2026-09-14-correctness-fixes/raw/cmark-oracle/results.json",
+    "/docs/reports/2026-09-14-reference-compatibility/raw/bindings-before-aligned/results.json",
+    "/benchmarks/compatibility-audit/fixtures/gfm-examples.json",
+]
 
 # Everything the crate ships, anchored to the package root. `Cargo.toml`,
 # `Cargo.lock` and the VCS info file are added by Cargo itself.
@@ -25,10 +38,18 @@ EXPECTED_INCLUDE = [
     "/LICENSE",
     "/LICENSE-MIT",
     "/UPSTREAM.md",
+    *EMBEDDED_TEST_FIXTURES,
 ]
 
-# Directories that exist beside the crate and must never enter the archive.
+# Directories that exist beside the crate and must never enter the archive as
+# directories; only the named fixtures above may come out of one.
 NEVER_PUBLISHED = ["docs", "benchmarks", "homepage", "node", "scripts", ".github"]
+
+# The archive's compiled targets. Every file they embed has to be in the
+# archive too, which is the rule the fixtures above exist for.
+SHIPPED_SOURCE_DIRECTORIES = ["src", "tests", "benches", "examples"]
+
+EMBEDS = re.compile(r'include_(?:str|bytes)!\(\s*"([^"]+)"')
 
 
 class RootPackage(unittest.TestCase):
@@ -73,10 +94,33 @@ class PublishedArchive(unittest.TestCase):
             self.assertTrue((ROOT / entry.lstrip("/")).exists(), f"{entry}: missing")
 
     def test_the_repository_around_the_crate_stays_out(self):
-        included = {entry.lstrip("/").split("/", 1)[0] for entry in self.include}
+        entries = [entry for entry in self.include if entry not in EMBEDDED_TEST_FIXTURES]
+        included = {entry.lstrip("/").split("/", 1)[0] for entry in entries}
         for directory in NEVER_PUBLISHED:
             self.assertTrue((ROOT / directory).is_dir(), f"{directory}: expected in the repository")
             self.assertNotIn(directory, included)
+
+    def test_embedded_fixtures_are_individual_files(self):
+        for fixture in EMBEDDED_TEST_FIXTURES:
+            self.assertIn(fixture, self.include, fixture)
+            self.assertTrue((ROOT / fixture.lstrip("/")).is_file(), f"{fixture}: not a file")
+
+    def test_every_file_a_shipped_target_embeds_is_in_the_archive(self):
+        # The guard the published crate needs: `cargo test` on the unpacked
+        # archive compiles `tests/`, `benches/` and `examples/`, so an
+        # `include_str!` that reaches outside the allow-list breaks it there
+        # and nowhere else.
+        included = [(ROOT / entry.lstrip("/")).resolve() for entry in self.include]
+        for directory in SHIPPED_SOURCE_DIRECTORIES:
+            for source in sorted((ROOT / directory).rglob("*.rs")):
+                for embedded in EMBEDS.findall(source.read_text()):
+                    where = f"{source.relative_to(ROOT)}: {embedded}"
+                    target = (source.parent / embedded).resolve()
+                    self.assertTrue(target.is_file(), f"{where}: missing")
+                    self.assertTrue(
+                        any(target == entry or entry in target.parents for entry in included),
+                        f"{where}: outside the published archive",
+                    )
 
     def test_upstream_attribution_ships_with_the_crate(self):
         for attribution in ("/LICENSE", "/LICENSE-MIT", "/UPSTREAM.md"):

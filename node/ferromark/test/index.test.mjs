@@ -565,6 +565,18 @@ test("linkBasePath joins Markdown links with or without a trailing slash", () =>
   }
 });
 
+test("an empty linkBasePath keeps root-absolute links root-absolute", () => {
+  for (const linkBasePath of ["", "/"]) {
+    const html = toHtml("[guide](/guide.md) [page](/page) [rel](./other.md)", {
+      linkBasePath,
+    });
+
+    assert.match(html, /<a href="\/guide\/index.html">guide<\/a>/);
+    assert.match(html, /<a href="\/page">page<\/a>/);
+    assert.match(html, /<a href="\.\.\/other\/index.html">rel<\/a>/);
+  }
+});
+
 test("highlighter receives fence meta as Shiki-style __raw", () => {
   const calls = [];
   const highlighter = {

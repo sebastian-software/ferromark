@@ -24,8 +24,8 @@
   example regresses. Regenerate with:
 
   ```sh
-  UPDATE_SPEC_BASELINE=1 cargo test -p ferromark_renderer --test spec_commonmark
-  UPDATE_SPEC_BASELINE=1 cargo test -p ferromark_renderer --test spec_gfm
+  UPDATE_SPEC_BASELINE=1 cargo test -p ferromark --test spec_commonmark
+  UPDATE_SPEC_BASELINE=1 cargo test -p ferromark --test spec_gfm
   ```
 
   The remaining `gfm <n> Autolinks` entries in the CommonMark baseline

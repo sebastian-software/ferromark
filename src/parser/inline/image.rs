@@ -40,7 +40,7 @@ impl<'a> Parser<'a> {
 
         *pos += 2;
         let alt_start = *pos;
-        *pos = Self::scan_balanced(content, *pos).0;
+        *pos = self.scan_balanced_matched(content, *pos).0;
 
         if *pos < content.len() && bytes[*pos] == b']' {
             let close = *pos;
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
                 && self.has_closer_from(content, close + 2, b']')
             {
                 let label_start = close + 2;
-                let (label_end, _) = Self::scan_balanced(content, label_start);
+                let (label_end, _) = self.scan_balanced_matched(content, label_start);
                 if label_end < content.len() && bytes[label_end] == b']' {
                     well_formed_reference = true;
                     let raw_label = &content[label_start..label_end];
