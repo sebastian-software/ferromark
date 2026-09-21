@@ -28,8 +28,13 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
 
+        let source = self.source;
         let mut attributes = self.allocator.new_vec();
-        let Some(open) = scan::scan_jsx_open(self.source, trimmed_start, 0, &mut attributes) else {
+        let Some(open) =
+            scan::scan_jsx_open(source, trimmed_start, 0, &mut attributes, &mut |at| {
+                self.matching_brace_end(source, at)
+            })
+        else {
             return Ok(None);
         };
 
@@ -80,7 +85,9 @@ impl<'a> Parser<'a> {
         }
 
         let mut attributes = self.allocator.new_vec();
-        let Some(open) = scan::scan_jsx_open(content, pos, offset, &mut attributes) else {
+        let Some(open) = scan::scan_jsx_open(content, pos, offset, &mut attributes, &mut |at| {
+            self.matching_brace_end(content, at)
+        }) else {
             return Ok(None);
         };
 

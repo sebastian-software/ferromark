@@ -81,7 +81,13 @@ fn recorded_closers_agree_with_a_walk_from_each_opener() {
                 let (read_from, until) = walk.read;
                 for at in read_from..until {
                     let mut attributes = allocator.new_vec();
-                    let Some(open) = scan_jsx_open(source, at, 0, &mut attributes) else {
+                    let Some(open) = scan_jsx_open(
+                        source,
+                        at,
+                        0,
+                        &mut attributes,
+                        &mut plain_skip(source.as_bytes()),
+                    ) else {
                         continue;
                     };
                     if open.self_closing
@@ -114,7 +120,14 @@ fn recorded_openers_are_keyed_by_the_end_of_the_opening_tag() {
     let allocator = crate::allocator::Allocator::new();
     for source in ["<A><A></A>", "<A x=\"1\"><A></A>", "<><></>"] {
         let mut attributes = allocator.new_vec();
-        let open = scan_jsx_open(source, 0, 0, &mut attributes).expect("opening tag");
+        let open = scan_jsx_open(
+            source,
+            0,
+            0,
+            &mut attributes,
+            &mut plain_skip(source.as_bytes()),
+        )
+        .expect("opening tag");
         let mut recorded = HashMap::new();
         record_matching_closes(
             source,
@@ -126,8 +139,14 @@ fn recorded_openers_are_keyed_by_the_end_of_the_opening_tag() {
             },
         );
         let mut nested_attributes = allocator.new_vec();
-        let nested =
-            scan_jsx_open(source, open.end, 0, &mut nested_attributes).expect("nested opening tag");
+        let nested = scan_jsx_open(
+            source,
+            open.end,
+            0,
+            &mut nested_attributes,
+            &mut plain_skip(source.as_bytes()),
+        )
+        .expect("nested opening tag");
         assert!(
             recorded.contains_key(&nested.end),
             "{source:?} did not record the nested opener"

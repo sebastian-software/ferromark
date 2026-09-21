@@ -10,11 +10,13 @@
 //! - MDX: `<A>` with one closer behind the run 0.72 s / 9.4 s, the same
 //!   inline 0.72 s / 11.4 s, `<A>` over a `{` run 0.41 s / 5.3 s and over
 //!   one with a `}` behind it 0.83 s / 10.7 s (0.98 s / 17.5 s when the tag
-//!   closes too), and a brace run with one `}` behind it 0.33 s / 5.4 s,
-//!   0.33 s / 5.3 s inline;
+//!   closes too), a brace run with one `}` behind it 0.33 s / 5.4 s,
+//!   0.33 s / 5.3 s inline, and an unclosed attribute expression —
+//!   `<A {>` 0.09 s / 1.29 s, `<A x={>` 0.05 s / 0.81 s, `</A {>` inside an
+//!   element 0.12 s / 2.00 s;
 //! - definition lists: lazy body lines 0.04 s / 0.82 s.
 //!
-//! All of them are 0.1 to 1.7 ms and 0.5 to 3.2 ms now.
+//! All of them are 0.1 to 1.7 ms and 0.5 to 4.0 ms now.
 //!
 //! None of these is a crafted document. `$5 for a $10 book` is prose, a
 //! shell snippet outside a fence is full of braces, and a list of terms
@@ -266,6 +268,25 @@ fn jsx_tags_over_brace_runs_cost_linear_time() {
 }
 
 #[test]
+fn tags_with_unclosed_attribute_braces_cost_linear_time() {
+    // An attribute expression that never closes is read by the opening-tag
+    // scan, which runs for every `<` the inline dispatch reaches and again
+    // for every tag a closing-tag walk steps over — before any closer walk
+    // starts. It asks the same record as the rest.
+    for (name, prefix, unit, suffix) in [
+        ("spread", "", "<A {>", ""),
+        ("spread, one closer", "", "<A {>", "}"),
+        ("spread, tag closes", "", "<A {>", "</A>"),
+        ("attribute value", "", "<A x={>", ""),
+        ("closing tag", "<A>", "</A {>", ""),
+    ] {
+        assert_linear(name, &mdx_options(), |bytes| {
+            run_to(prefix, unit, bytes, suffix)
+        });
+    }
+}
+
+#[test]
 fn brace_runs_with_one_closer_cost_linear_time() {
     // `tests/mdx_brace_scaling.rs` covers the run with nothing to close it,
     // which the last-closer guard answers. One `}` behind the run defeats
@@ -395,9 +416,34 @@ fn jsx_runs_keep_their_shape() {
             "<A>{{{}</A>",
             "<div class=\"ox-island\" data-ox-island=\"A\"><p>{{</p>\n</div>",
         ),
+        // An attribute expression that never closes leaves the tag text.
+        ("<A {>", "<p>&lt;A {&gt;</p>"),
+        ("<A {><A {>", "<p>&lt;A {&gt;&lt;A {&gt;</p>"),
+        ("<A x={>", "<A x={>"),
+        ("<A></A {>", "<p><A>&lt;/A {&gt;</p>"),
     ] {
         assert_eq!(render(source, mdx_options()), expected, "for {source:?}");
     }
+}
+
+#[test]
+fn attribute_expressions_still_parse() {
+    // The opening-tag scan takes its braces from the record now, so the
+    // attributes it builds from them have to be the same ones.
+    assert_eq!(
+        render("<A {x}>t</A>", mdx_options()),
+        "<div class=\"ox-island\" data-ox-island=\"A\" data-ox-props=\"{&quot;expressions&quot;:{},\
+         &quot;props&quot;:{},&quot;spreads&quot;:[&quot;x&quot;]}\">\
+         <script type=\"application/json\">{\"expressions\":{},\"props\":{},\"spreads\":[\"x\"]}\
+         </script><p>t</p>\n</div>"
+    );
+    assert_eq!(
+        tree("a <A x={1} {...y}/> b", mdx_options()),
+        "Document [0..21]\n  Paragraph [0..21]\n    Text \"a \" [0..2]\n    \
+         MdxJsxTextElement name=Some(\"A\") self_closing=true [2..19]\n      \
+         Attr name=\"x\" value=expression(\"1\") [5..10]\n      \
+         AttrExpr value=\"...y\" [11..17]\n    Text \" b\" [19..21]\n"
+    );
 }
 
 #[test]

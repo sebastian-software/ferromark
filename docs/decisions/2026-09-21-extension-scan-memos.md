@@ -24,6 +24,9 @@ again on this branch:
 | `<A>` over a `{` run with one `}` | 0.83 s | 10.73 s | 1.6 / 3.2 ms |
 | the same, with `</A>` behind it | 0.98 s | 17.47 s | 1.7 / 3.1 ms |
 | `{` run with one `}` behind it | 0.33 s | 5.38 s | 1.3 / 2.2 ms |
+| `<A {>`, an unclosed attribute expression | 0.09 s | 1.29 s | 0.7 / 3.0 ms |
+| `<A x={>` | 0.05 s | 0.81 s | 0.2 / 0.8 ms |
+| `</A {>` inside an element | 0.12 s | 2.00 s | 0.3 / 1.3 ms |
 | lazy definition-body lines | 0.04 s | 0.82 s | 0.1 / 0.5 ms |
 
 Every one of them now grows about x4 for every x4 of input. Ordinary
@@ -89,10 +92,15 @@ positions inside it, and a start in there is not one it may answer for.
   (`src/parser/mdx_jsx/braces.rs`). The balanced scan reports that nothing
   closed only after reading to the end of the content, and the cheap
   last-closer guard in front of it is defeated by a single `}` behind the run.
-  One walk records the match of every brace it passes. The tag walk asks the
-  same record rather than the plain scan — `find_matching_close` takes the
-  brace skip as a parameter — so a brace run inside a JSX element is read once
-  for the whole run rather than once per brace.
+  One walk records the match of every brace it passes. Every scan that steps
+  over a brace asks that record rather than the plain one: the closing-tag
+  walk, the tag skip inside it, and the opening-tag scan the flow and inline
+  dispatch run, all of which take the brace skip as a parameter. An attribute
+  expression that never closes is the case the opening-tag scan pays for —
+  it runs for every `<` the dispatch reaches, before any closer walk starts —
+  and a run of `<A {>` cost one read to the end of the slice per tag.
+  `braces::skip_braces` survives as the reference the tests hold the record
+  against, as `scan::find_matching_close` does for tags.
 
 - **The definition-list term scan records the window it walked**
   (`src/parser/definition_list.rs`). Every non-indented continuation line of a
@@ -141,21 +149,21 @@ render it as the flow element the line is. `main` is the outlier, and the fix
 restores what the parser did before the memo existed. The shape is pinned in
 `tests/extension_scaling.rs`.
 
-Four of 60,000 generated sources under seven option sets differ from `main` in
+Five of 60,000 generated sources under seven option sets differ from `main` in
 this way; nothing else does.
 
 ## Validation
 
-Output equality first, timing after. A corpus of 8,704 generated adversarial
-sources built from 64 units — each unit alone, repeated, every ordered pair,
-and every unit run with one closer of six kinds behind it — plus the 414
+Output equality first, timing after. A corpus of 10,650 generated adversarial
+sources built from 71 units — each unit alone, repeated, every ordered pair,
+and every unit run with one closer of six kinds behind it — plus the 415
 Markdown documents in the repository, and 60,000 seeded token-salad sources
 from the same units, each rendered under seven option sets (CommonMark, GFM,
 math, MDX, definition lists, every extension, and every extension at a nesting
 cap of four) is byte-identical in HTML *and* in the AST `Debug` against a build
 of the same branch with every memo here replaced by the plain scan it stands
 in for. Against `main` the generated corpus and every repository document are
-byte-identical, and the four fuzz sources above differ.
+byte-identical, and five fuzz sources differ, all of the class above.
 
 `src/parser/math/tests.rs`, `src/parser/mdx_jsx/scan/tests.rs` and
 `src/parser/mdx_jsx/braces/tests.rs` pin each memo against the plain scan from

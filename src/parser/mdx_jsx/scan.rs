@@ -9,7 +9,7 @@ use crate::ast::{
 };
 
 use super::super::line_scan::{is_line_ending_byte, line_terminator_end};
-use super::braces::{skip_backticks, skip_braces, skip_quoted};
+use super::braces::{skip_backticks, skip_quoted};
 
 /// Opening tag accepted by this slice.
 pub(super) struct JsxOpen<'a> {
@@ -58,11 +58,19 @@ pub(super) fn after_trailing_line_ws(bytes: &[u8], mut cursor: usize) -> usize {
     }
 }
 
+/// The opening tag at `start`, with its attributes.
+///
+/// `skip_brace` is the caller's memoized brace scan, as in
+/// [`record_matching_closes`]: an attribute expression that never closes is
+/// only known not to close once something has read to the end of the slice,
+/// and every opening tag in a run asks before anything else does. 128 KiB
+/// of `<A {>` took 1.3 s.
 pub(super) fn scan_jsx_open<'a>(
     source: &'a str,
     start: usize,
     offset: usize,
     attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<JsxOpen<'a>> {
     let bytes = source.as_bytes();
     if !looks_like_jsx_open(bytes, start) {
@@ -78,7 +86,7 @@ pub(super) fn scan_jsx_open<'a>(
     let name_start = start + 1;
     let name_end = scan_jsx_name(bytes, name_start)?;
     let name = &source[name_start..name_end];
-    let (self_closing, end) = scan_attributes(source, name_end, offset, attributes)?;
+    let (self_closing, end) = scan_attributes(source, name_end, offset, attributes, skip_brace)?;
     Some(JsxOpen {
         name: Some(name),
         self_closing,
@@ -196,7 +204,7 @@ fn walk_close<const RECORD: bool>(
                 }
             }
             b'<' => {
-                let Some(tag) = scan_tag_skip(source, cursor) else {
+                let Some(tag) = scan_tag_skip(source, cursor, skip_brace) else {
                     cursor += 1;
                     continue;
                 };
@@ -251,6 +259,7 @@ fn scan_attributes<'a>(
     mut cursor: usize,
     offset: usize,
     attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<(bool, usize)> {
     let bytes = source.as_bytes();
     loop {
@@ -259,10 +268,12 @@ fn scan_attributes<'a>(
             b'/' if bytes.get(cursor + 1) == Some(&b'>') => return Some((true, cursor + 2)),
             b'>' => return Some((false, cursor + 1)),
             b'{' if had_ws => {
-                cursor = push_expression_attribute(source, cursor, offset, attributes)?;
+                cursor = push_expression_attribute(source, cursor, offset, attributes, skip_brace)?;
             }
             _ if !had_ws => return None,
-            _ => cursor = push_named_attribute(source, cursor, offset, attributes)?,
+            _ => {
+                cursor = push_named_attribute(source, cursor, offset, attributes, skip_brace)?;
+            }
         }
     }
 }
@@ -272,8 +283,9 @@ fn push_expression_attribute<'a>(
     start: usize,
     offset: usize,
     attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<usize> {
-    let end = skip_braces(source.as_bytes(), start)?;
+    let end = skip_brace(start)?;
     attributes.push(MdxJsxAttributeEntry::Expression(
         MdxJsxExpressionAttribute {
             value: &source[start + 1..end - 1],
@@ -288,6 +300,7 @@ fn push_named_attribute<'a>(
     start: usize,
     offset: usize,
     attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<usize> {
     let bytes = source.as_bytes();
     let name_end = scan_attr_name(bytes, start)?;
@@ -304,7 +317,7 @@ fn push_named_attribute<'a>(
     }
     cursor += 1;
     skip_ws(bytes, &mut cursor);
-    let (value, value_end) = scan_attr_value(source, cursor, offset)?;
+    let (value, value_end) = scan_attr_value(source, cursor, offset, skip_brace)?;
     attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
         name,
         value: Some(value),
@@ -317,6 +330,7 @@ fn scan_attr_value<'a>(
     source: &'a str,
     start: usize,
     offset: usize,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<(MdxJsxAttributeValue<'a>, usize)> {
     let bytes = source.as_bytes();
     match *bytes.get(start)? {
@@ -328,7 +342,7 @@ fn scan_attr_value<'a>(
             ))
         }
         b'{' => {
-            let end = skip_braces(bytes, start)?;
+            let end = skip_brace(start)?;
             Some((
                 MdxJsxAttributeValue::Expression(MdxJsxAttributeValueExpression {
                     value: &source[start + 1..end - 1],
@@ -341,7 +355,11 @@ fn scan_attr_value<'a>(
     }
 }
 
-fn scan_tag_skip(source: &str, start: usize) -> Option<TagSkip<'_>> {
+fn scan_tag_skip<'a>(
+    source: &'a str,
+    start: usize,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+) -> Option<TagSkip<'a>> {
     let bytes = source.as_bytes();
     if bytes.get(start)? != &b'<' {
         return None;
@@ -363,7 +381,7 @@ fn scan_tag_skip(source: &str, start: usize) -> Option<TagSkip<'_>> {
     let name_end = scan_member_name(bytes, cursor)?;
     let name = &source[cursor..name_end];
     cursor = name_end;
-    let self_closing = skip_tag_rest(bytes, &mut cursor)?;
+    let self_closing = skip_tag_rest(bytes, &mut cursor, skip_brace)?;
     if closing && self_closing {
         return None;
     }
@@ -376,7 +394,11 @@ fn scan_tag_skip(source: &str, start: usize) -> Option<TagSkip<'_>> {
     })
 }
 
-fn skip_tag_rest(bytes: &[u8], cursor: &mut usize) -> Option<bool> {
+fn skip_tag_rest(
+    bytes: &[u8],
+    cursor: &mut usize,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+) -> Option<bool> {
     loop {
         skip_ws(bytes, cursor);
         match bytes.get(*cursor)? {
@@ -388,7 +410,7 @@ fn skip_tag_rest(bytes: &[u8], cursor: &mut usize) -> Option<bool> {
                 *cursor += 1;
                 return Some(false);
             }
-            b'{' => *cursor = skip_braces(bytes, *cursor)?,
+            b'{' => *cursor = skip_brace(*cursor)?,
             b'"' | b'\'' | b'`' => *cursor = skip_quoted(bytes, *cursor)?,
             byte if is_attr_name_start(*byte) => {
                 *cursor = scan_attr_name(bytes, *cursor)?;
@@ -398,7 +420,7 @@ fn skip_tag_rest(bytes: &[u8], cursor: &mut usize) -> Option<bool> {
                     skip_ws(bytes, cursor);
                     match bytes.get(*cursor)? {
                         b'"' | b'\'' => *cursor = skip_quoted(bytes, *cursor)?,
-                        b'{' => *cursor = skip_braces(bytes, *cursor)?,
+                        b'{' => *cursor = skip_brace(*cursor)?,
                         _ => skip_unquoted_value(bytes, cursor),
                     }
                 }

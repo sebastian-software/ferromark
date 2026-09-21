@@ -108,6 +108,13 @@ pub(super) fn record_brace_matches(
     }
 }
 
+/// The byte after the `}` that closes the `{` at `start`, found by a walk
+/// that keeps nothing.
+///
+/// Every scan in the parse takes that answer from
+/// [`record_brace_matches`], which keeps what it passes; this is the plain
+/// walk the tests hold that record against.
+#[cfg(test)]
 pub(super) fn skip_braces(bytes: &[u8], start: usize) -> Option<usize> {
     if bytes.get(start) != Some(&b'{') {
         return None;
