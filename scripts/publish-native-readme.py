@@ -79,6 +79,12 @@ def main():
                        lambda match: "](" + PREFIX + match[1] + ")", guide)
         figures_text = (temporary / "native-benchmarks.json").read_text()
     guide = guide.replace("| <512 B |", "| &lt;512 B |")
+    # Keep the archived comparison reproducible without carrying the removed
+    # renderer feature into the active website narrative.
+    guide = guide.replace(
+        "IDs, callouts, inline TOCs, or fence metadata cleanup.",
+        "IDs, callouts, or fence metadata cleanup.",
+    )
     block = readme_block(json.loads(figures_text))
     if args.check:
         if original != guide:

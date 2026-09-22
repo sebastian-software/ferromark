@@ -24,10 +24,11 @@ JSON parsing, or IPC is inside the timed interval.
 
 ## Workloads and comparisons
 
-- **37 feature toggles:** parser and renderer options at approximately 300 B,
+- **36 feature toggles:** parser and renderer options at approximately 300 B,
   4 KiB, and 64 KiB, each on plain prose and repeated active syntax. Actual byte
   lengths are recorded; complete syntax blocks are never truncated to hit a size.
-  Frontmatter occurs only once; the TOC probe has one marker and many headings.
+  Frontmatter occurs only once; heading probes use ordinary application-owned
+  heading data for application-owned navigation.
   These are mechanism probes, not representative frequency estimates.
 - **Malformed frontmatter:** a valid opener with no closing delimiter, at all
   three sizes. The full input remains ordinary Markdown.

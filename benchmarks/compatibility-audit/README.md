@@ -44,7 +44,7 @@ for the extended `mailto:`/`xmpp:` autolink failures.
 
 `commonmark` pairs `ParserOptions::commonmark()` with
 `HtmlRendererOptions::commonmark()`: bare-URL autolinking, link target attributes,
-heading IDs, callouts, inline TOC, and fence metadata cleanup are disabled.
+heading IDs, callouts, and fence metadata cleanup are disabled.
 `gfm` pairs `ParserOptions::gfm_spec()` with `HtmlRendererOptions::gfm()`, adding
 the formal GFM extensions and tagfilter without footnotes.
 `gfm-no-tagfilter` omits that last policy. `default` and `gfm-preset` retain

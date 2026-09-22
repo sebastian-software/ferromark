@@ -65,7 +65,6 @@ FEATURES = [
     feature('renderer.source_spans', HEADINGS + '- One\n- Two\n\n'),
     feature('renderer.heading_ids', HEADINGS),
     feature('renderer.callouts', '> [!NOTE]\n> A useful **note**.\n\n'),
-    feature('renderer.inline_toc', '[[toc]]\n\n' + HEADINGS, renderer={'heading_ids': True}),
     feature('renderer.table_colgroup', TABLE, parser={'tables': True}),
     feature('renderer.table_column_names', TABLE, parser={'tables': True}, renderer={'table_colgroup': True}),
     feature('renderer.highlight', FENCE, effect='none'),
@@ -82,7 +81,7 @@ PROFILES = {
                       {'heading_ids': True, 'semantic_footnotes': True}),
     'docs': config(GFM | {'footnotes': True, 'front_matter': True, 'line_comments': True,
                          'heading_attributes': True},
-                   {'disallow_raw_html': True, 'heading_ids': True, 'inline_toc': True,
+                   {'disallow_raw_html': True, 'heading_ids': True,
                     'callouts': True, 'code_fence_metadata': True, 'semantic_footnotes': True}),
 }
 PROFILES['mdx-docs'] = config(PROFILES['docs']['parser'] | {'mdx': True}, dict(PROFILES['docs']['renderer']))
@@ -91,7 +90,7 @@ PROFILES['kitchen-sink'] = config(
                               'line_comments front_matter strikethrough autolinks superscript subscript '
                               'math definition_lists heading_attributes wiki_links cjk_emphasis mdx').split()},
     {'disallow_raw_html': True, 'heading_ids': True, 'heading_permalinks': True,
-     'inline_toc': True, 'callouts': True, 'code_fence_metadata': True, 'code_annotations': True,
+     'callouts': True, 'code_fence_metadata': True, 'code_annotations': True,
      'semantic_footnotes': True, 'table_colgroup': True, 'table_column_names': True,
      'source_spans': True, 'autolink_urls': True})
 
@@ -126,8 +125,6 @@ def make_cases():
                 source = scaled(PROSE if workload == 'plain' else f['snippet'], size)
                 if workload == 'active' and f['feature'] == 'parser.front_matter':
                     source = f['snippet'] + scaled(PROSE, size)
-                if workload == 'active' and f['feature'] == 'renderer.inline_toc':
-                    source = '[[toc]]\n\n' + scaled(HEADINGS, size)
                 cases.append(dict(name=f"{f['feature']}-{workload}-{size}", group='feature',
                                   feature=f['feature'], workload=workload, target_bytes=size,
                                   input=source, off=f['off'], on=f['on'],
@@ -151,14 +148,11 @@ def make_cases():
     for use_case, source in [
         ('comments', scaled('Please check **this change** and [the guide](/guide).\n\n- [x] Tested\n\n', 300)),
         ('article', '---\ntitle: Article\n---\n\n' + scaled(HEADINGS + PROSE, 4096)),
-        ('docs', '---\ntitle: Docs\n---\n\n[[toc]]\n\n' + scaled(HEADINGS + TABLE + FENCE, 65536)),
+        ('docs', '---\ntitle: Docs\n---\n\n' + scaled(HEADINGS + TABLE + FENCE, 65536)),
         ('mdx-docs', '---\ntitle: Components\n---\n\n' + scaled('<Widget>\n\n**Content** and {value}.\n\n</Widget>\n\n', 4096)),
     ]:
         tailored = PROFILES[use_case]
         broad = config(PROFILES['kitchen-sink']['parser'], dict(tailored['renderer']))
-        if use_case == 'docs':
-            # Wiki-link parsing would consume [[toc]], changing required output.
-            broad['parser'] = broad['parser'] | {'wiki_links': False}
         cases.append(dict(name=f'tailored-{use_case}', group='ablation', feature=use_case,
                           workload='syntax-absent-extras', input=source, off=broad, on=tailored,
                           expected_effect='none', origin={'kind': 'synthetic-use-case', 'license': 'MIT'}))

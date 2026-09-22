@@ -13,6 +13,10 @@ complete processing are separate measurements. The
 dependencies; the [harness](../benchmarks/runtime-profiles/README.md) records the
 method and exact configurations.
 
+The measurements below are a historical v2.0 snapshot. The inline TOC option
+described in those archived results was removed from the v2.1 core; current
+runtime-profile generation no longer treats TOC injection as a renderer option.
+
 ## Measured results
 
 The tables below preserve the original `c57ef45` measurements. Definition-list
@@ -98,7 +102,7 @@ These recipes are measured configurations, not new public constructors or change
 defaults. They start from the explicit CommonMark parser and renderer profiles.
 The current `ParserOptions::gfm()` convenience preset includes footnotes;
 `gfm_spec()` excludes them. Renderer `Default` separately enables heading IDs,
-callouts, inline TOC, fence metadata, and renderer URL autolinking.
+callouts, fence metadata, and renderer URL autolinking.
 
 | Recipe | Parser additions | Renderer additions | Intended use |
 | --- | --- | --- | --- |
@@ -106,7 +110,7 @@ callouts, inline TOC, fence metadata, and renderer URL autolinking.
 | GFM spec | Tables, tasks, strikethrough, GFM autolinks | GFM tagfilter | Specification-oriented GFM serialization |
 | Comments | Same GFM syntax | Escape raw HTML and validate Markdown link/image URLs | GitHub-style application comments without document metadata or navigation |
 | Article | Footnotes, frontmatter, heading attributes | Heading IDs, semantic footnotes | Prose-led publication with metadata and citations |
-| Docs | GFM syntax, footnotes, frontmatter, line comments, heading attributes | Tagfilter, heading IDs, inline TOC, callouts, fence metadata, semantic footnotes | Documentation with navigation and code examples |
+| Docs | GFM syntax, footnotes, frontmatter, line comments, heading attributes | Tagfilter, heading IDs, callouts, fence metadata, semantic footnotes | Documentation with application-owned navigation and code examples |
 | MDX docs | Docs plus MDX | Same as Docs; MDX nodes render automatically | Authored Markdown with component/expression syntax |
 
 The article recipe deliberately assumes that tables and bare-URL recognition are
@@ -116,10 +120,9 @@ GFM features from an application promising GFM would change its behavior.
 
 Definition lists, math, superscript/subscript, wiki links, annotated code,
 permalinks, source-span attributes, and table layout classes remain explicit
-additions. Table column names require colgroups; TOCs require heading IDs;
-annotations require fence metadata and the appropriate annotation syntax.
-Enabling wiki links consumes `[[toc]]` as a link before the renderer can use it
-as a TOC marker. Profiles must resolve such syntax conflicts deliberately.
+additions. Annotations require fence metadata and the appropriate annotation
+syntax. Applications that need navigation should consume heading data through
+the outline extension rather than reserving a Markdown paragraph for it.
 
 An article configuration can be written with the existing public API:
 
@@ -165,13 +168,8 @@ changing any number recorded here — see the
 [decision record](decisions/2026-09-15-borrowed-renderer-options.md).
 
 Profiles do not remove baseline CommonMark reference discovery or source
-normalization. At the time of measurement they did not remove the renderer's
-structural AST scan either: it still ran when both heading IDs and inline TOC
-were off, which this study named as a separate implementation optimization
-opportunity. A one-shot render now runs that scan only while `heading_ids` is
-enabled, so the strict profiles measured here no longer pay it. Nesting limits
-stay enabled. HTML policy and syntax support remain product decisions, not
-settings to remove solely for a score.
+normalization. Nesting limits stay enabled. HTML policy and syntax support
+remain product decisions, not settings to remove solely for a score.
 
 At the time of measurement two inherited public renderer fields, `highlight` and
 `soft_break`, had no rendering effect; they were measured as controls rather than
@@ -182,18 +180,14 @@ See the [API surface decision](decisions/2026-09-17-api-surface.md).
 
 ## Next implementation targets
 
-The results suggest three separate follow-ups:
+The results suggest two separate follow-ups:
 
 1. Definition-list and line-comment rejection has now been optimized in the
    [feature-scan follow-up](reports/2026-09-14-feature-scan-optimization/README.md).
    Actual definition bodies and comment-bearing paragraphs still perform
    necessary parsing, text joining, and source mapping; a late definition marker
    can retain speculative term probes on earlier paragraphs.
-2. Avoid renderer preparation work when the selected output profile needs neither
-   heading IDs nor TOC discovery. This has since been implemented: a one-shot
-   render derives the scan's facts only while `heading_ids` is on, and otherwise
-   skips the walk. The tables above predate that change and were not remeasured.
-3. Once each use-case contract is settled, expose a profile that pairs parser
+2. Once each use-case contract is settled, expose a profile that pairs parser
    and renderer settings. A named profile should preserve its documented syntax
    and output policy while implementation optimizations evolve underneath it.
 

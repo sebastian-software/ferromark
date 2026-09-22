@@ -14,7 +14,8 @@ owns storage, metadata deserialization, templates, routing, CSS, and deployment.
 Front matter is raw YAML- or TOML-style text. Extract it before rendering, then
 validate it with the schema your application uses. Heading text and IDs support
 navigation; match the renderer's slug rules, explicit IDs, and duplicate suffixes.
-An inline `[[toc]]` marker can produce a rendered table of contents where enabled.
+Applications should place navigation outside the Markdown body through the
+outline extension.
 
 ## Keep presentation explicit
 

@@ -188,7 +188,7 @@ Fence meta text after the language (e.g. ` ```ts {1-3} title="…" `) reaches th
 
 ## Document metadata for docs pipelines
 
-`transform()` returns HTML together with the data documentation tooling needs — headings for a table of contents and the raw front matter block:
+`transform()` returns HTML together with the data documentation tooling needs — headings for application-owned navigation and the raw front matter block:
 
 ```js
 import { transform } from "ferromark";

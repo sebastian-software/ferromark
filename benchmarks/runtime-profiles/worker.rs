@@ -133,7 +133,6 @@ impl Engine {
                 "source_spans" => options.source_spans = value.as_bool().expect("boolean option"),
                 "heading_ids" => options.heading_ids = value.as_bool().expect("boolean option"),
                 "callouts" => options.callouts = value.as_bool().expect("boolean option"),
-                "inline_toc" => options.inline_toc = value.as_bool().expect("boolean option"),
                 "code_fence_metadata" => {
                     options.code_fence_metadata = value.as_bool().expect("boolean option")
                 }
@@ -158,10 +157,6 @@ impl Engine {
                 "code_annotation_meta_key" => {
                     options.code_annotation_meta_key =
                         value.as_str().expect("string option").to_owned().into()
-                }
-                "toc_max_depth" => {
-                    options.toc_max_depth =
-                        u8::try_from(value.as_u64().expect("depth")).expect("u8 depth")
                 }
                 "autolink_patterns" => {
                     options.autolink_patterns = value

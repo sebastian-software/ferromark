@@ -215,128 +215,15 @@ fn test_heading_permalinks_are_real_links_without_js() {
 }
 
 #[test]
-fn test_render_inline_toc_directive() {
+fn test_render_toc_marker_as_literal_without_extension() {
     let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "# Title\n\n[[toc]]\n\n## Intro\n### API")
+    let doc = Parser::new(&allocator, "# Title\n\n[[toc]]\n\n## Intro")
         .parse()
         .unwrap();
-    let mut renderer = HtmlRenderer::new();
-    let html = renderer.render(&doc);
-
-    insta::assert_snapshot!(html);
-}
-
-#[test]
-fn test_render_inline_toc_uses_unique_and_unicode_ids() {
-    let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "[[toc]]\n\n## Setup\n## Setup\n## はじめに")
-        .parse()
-        .unwrap();
-    let mut renderer = HtmlRenderer::new();
-    let html = renderer.render(&doc);
-
-    insta::assert_snapshot!(html);
-}
-
-#[test]
-fn test_render_inline_toc_uses_heading_attribute_id() {
-    let allocator = Allocator::new();
-    let doc = Parser::with_options(
-        &allocator,
-        "[[toc]]\n\n## Custom identifier {#custom-heading-id .highlight}\n",
-        ParserOptions {
-            heading_attributes: true,
-            ..ParserOptions::default()
-        },
-    )
-    .parse()
-    .unwrap();
-    let mut renderer = HtmlRenderer::new();
-    let html = renderer.render(&doc);
-
-    assert!(
-        html.contains("<a href=\"#custom-heading-id\">Custom identifier</a>"),
-        "{html}"
+    assert_eq!(
+        HtmlRenderer::new().render(&doc),
+        "<h1 id=\"title\">Title</h1>\n<p>[[toc]]</p>\n<h2 id=\"intro\">Intro</h2>\n"
     );
-    assert!(
-        html.contains("<h2 id=\"custom-heading-id\" class=\"highlight\">"),
-        "{html}"
-    );
-    assert!(!html.contains("{#custom-heading-id"), "{html}");
-}
-
-#[test]
-fn test_render_inline_toc_directive_is_case_insensitive() {
-    // The directive names itself; a page written `[[TOC]]` meant the same
-    // thing and used to ship the literal text instead of the outline.
-    for marker in ["[[toc]]", "[[Toc]]", "[[TOC]]", "[[tOc]]"] {
-        let allocator = Allocator::new();
-        let source = format!("# Title\n\n{marker}\n\n## Intro");
-        let doc = Parser::new(&allocator, &source).parse().unwrap();
-        let html = HtmlRenderer::new().render(&doc);
-
-        assert!(html.contains(r#"<nav class="ox-toc""#), "{marker}: {html}");
-        assert!(!html.contains(marker), "{marker}: {html}");
-    }
-}
-
-#[test]
-fn test_render_inline_toc_requires_standalone_text() {
-    let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "See [[toc]] here\n\n`[[toc]]`\n\n## Intro")
-        .parse()
-        .unwrap();
-    let mut renderer = HtmlRenderer::new();
-    let html = renderer.render(&doc);
-
-    insta::assert_snapshot!(html);
-}
-
-#[test]
-fn test_render_inline_toc_marker_is_suppressed_when_no_headings() {
-    // When the document contains `[[toc]]` but no headings (so
-    // `toc_entries` is empty), the marker paragraph must still be
-    // suppressed from output — otherwise the literal `[[toc]]`
-    // leaks through as `<p>[[toc]]</p>`. Regression coverage for
-    // the lazy-TOC optimization.
-    let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "[[toc]]").parse().unwrap();
-    let mut renderer = HtmlRenderer::new();
-    let html = renderer.render(&doc);
-
-    assert_eq!(html, "");
-}
-
-#[test]
-fn test_render_inline_toc_marker_is_suppressed_when_filtered_by_depth() {
-    // `toc_max_depth: 0` filters every heading out, but the marker
-    // paragraph should still be consumed so it doesn't leak.
-    let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "[[toc]]\n\n## Intro")
-        .parse()
-        .unwrap();
-    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
-        toc_max_depth: 0,
-        ..Default::default()
-    });
-    let html = renderer.render(&doc);
-
-    insta::assert_snapshot!(html);
-}
-
-#[test]
-fn test_render_inline_toc_honors_max_depth() {
-    let allocator = Allocator::new();
-    let doc = Parser::new(&allocator, "[[toc]]\n\n# Title\n## Intro\n### API")
-        .parse()
-        .unwrap();
-    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
-        toc_max_depth: 2,
-        ..Default::default()
-    });
-    let html = renderer.render(&doc);
-
-    insta::assert_snapshot!(html);
 }
 
 #[test]

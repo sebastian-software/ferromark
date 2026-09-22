@@ -65,9 +65,9 @@ Ferromark's secure product defaults. Documents mentioning MDX remain ordinary
 Markdown input; this is not an MDX feature benchmark.
 
 V2 uses `HtmlRendererOptions::commonmark()` in both lanes, disabling heading
-IDs, callouts, inline TOC substitution, and fence metadata cleanup. V1 also
+IDs, callouts, and fence metadata cleanup. V1 also
 disables its renderer extras. Original OX has no native flags to turn off those
-four behaviors; it remains unchanged. The harness neither replaces its renderer
+three behaviors; it remains unchanged. The harness neither replaces its renderer
 through hooks nor adds a slugifier to an engine that lacks one.
 The [current flag contract](../../docs/reports/2026-09-15-native-arm/FLAGS.md)
 lists each adapter's choices and executable guards. Every actual HTML output

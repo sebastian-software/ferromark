@@ -140,11 +140,11 @@ def behavior_checks(binary, directory):
             assert 'colspan' not in out['table-extras'] and '<colgroup' not in out['table-extras']
             if engine != 'ox-content':
                 assert ' id=' not in out['headings'], (engine, profile, 'heading IDs must be off')
-                assert '[[toc]]' in out['extras'], (engine, profile, 'TOC must be off')
+                assert '[[toc]]' in out['extras'], (engine, profile, 'TOC marker must remain literal')
                 assert '[!NOTE]' in out['callout'], (engine, profile, 'callouts must be off')
                 assert 'language-js{1}' in out['fence-metadata'], (engine, profile, 'fence metadata must be off')
             else:
-                # Original OX has no public switches for these four behaviors.
+                # Original OX has no public switches for these three behaviors.
                 # Verify and retain them; do not patch or normalize them away.
                 assert 'id="same"' in out['headings'] and 'id="same-1"' in out['headings']
                 assert '[[toc]]' not in out['extras']

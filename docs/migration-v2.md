@@ -122,9 +122,11 @@ HtmlRendererOptions::gfm()
 HtmlRendererOptions::gfm_spec()
 ```
 
-`HtmlRendererOptions::gfm()` now keeps heading IDs, callouts, TOC substitution,
-URL autolinking, link targets and fence metadata cleanup, and adds the GFM tag
-filter to them. Node's rendered output is unchanged: the binding moved to
+`HtmlRendererOptions::gfm()` now keeps heading IDs, callouts, URL autolinking,
+link targets and fence metadata cleanup, and adds the GFM tag filter to them.
+Inline TOC substitution is no longer part of the renderer; use the outline
+extension described in #396 when an application needs navigation data or an
+in-body TOC. Node's rendered output is unchanged: the binding moved to
 `gfm_spec()`.
 
 **Licensing.** The crate and the npm packages are MIT. `LICENSE-APACHE` is no
