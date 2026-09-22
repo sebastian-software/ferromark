@@ -1,6 +1,6 @@
 use crate::allocator::Allocator;
 use crate::parser::{Parser, ParserOptions};
-use crate::renderer::html::{HtmlRenderer, HtmlRendererOptions};
+use crate::renderer::html::{HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks};
 
 #[test]
 fn test_render_paragraph() {
@@ -116,6 +116,41 @@ fn test_render_heading_ids_are_unique_and_unicode() {
     let mut renderer = HtmlRenderer::new();
     let html = renderer.render(&doc);
     insta::assert_snapshot!(html);
+}
+
+#[test]
+fn heading_ids_skip_suffix_collisions_inside_containers_and_for_explicit_ids() {
+    let allocator = Allocator::new();
+    let doc = Parser::with_options(
+        &allocator,
+        "> # a\n>\n> # a\n>\n> # a-1 {#a-1}\n\n# b {#b}\n\n# b {#b}",
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
+    )
+    .parse()
+    .unwrap();
+    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
+        heading_permalinks: true,
+        ..Default::default()
+    });
+    let html = renderer.render(&doc);
+
+    for id in ["a", "a-1", "a-1-1", "b", "b-1"] {
+        assert!(html.contains(&format!("id=\"{id}\"")), "{id}: {html}");
+        assert!(html.contains(&format!("href=\"#{id}\"")), "{id}: {html}");
+    }
+    assert_eq!(html.matches("id=\"a-1\"").count(), 1, "{html}");
+    assert_eq!(html.matches("id=\"a-1-1\"").count(), 1, "{html}");
+    assert_eq!(html.matches("id=\"b-1\"").count(), 1, "{html}");
+
+    let mut hooked_renderer = HtmlRenderer::with_options(HtmlRendererOptions {
+        heading_permalinks: true,
+        ..Default::default()
+    });
+    let hooked = hooked_renderer.render_with_hooks(&doc, &mut NoHtmlRenderHooks);
+    assert_eq!(hooked, html);
 }
 
 fn render_html(source: &str) -> String {

@@ -19,7 +19,9 @@ mod tagfilter;
 #[cfg(test)]
 mod tests;
 
-pub use heading::{HEADING_PERMALINK_CLASS, collect_heading_text, slugify_heading};
+pub use heading::{
+    HEADING_PERMALINK_CLASS, HeadingIdPlanner, collect_heading_text, slugify_heading,
+};
 pub use options::{CodeAnnotationSyntax, HtmlRendererOptions};
 pub use renderer::{
     HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, NoHtmlRenderHooks,

@@ -652,6 +652,17 @@ test("metadata IDs agree with v2 heading output and reset between documents", ()
   assert.equal(transform("# A title!").headings[0].id, "a-title");
 });
 
+test("metadata deduplicates generated suffixes and repeated explicit IDs", () => {
+  const result = transform(
+    "# a\n\n# a\n\n# a-1 {#a-1}\n\n# a-1 {#a-1}\n\n# b {#b}\n\n# b {#b}",
+    { headingAttributes: true },
+  );
+  const ids = ["a", "a-1", "a-1-1", "a-1-2", "b", "b-1"];
+
+  assert.deepEqual(result.headings.map((heading) => heading.id), ids);
+  for (const id of ids) assert.ok(result.html.includes(`id="${id}"`));
+});
+
 test("a reusable renderer recovers after a bounded-depth parse error", () => {
   const renderer = new Renderer();
   assert.throws(() => renderer.toHtml(`${"> ".repeat(150)}deep`), /nest|depth/i);

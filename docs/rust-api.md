@@ -119,6 +119,14 @@ resetting its allocator. Use AST visitors and `HtmlRenderHooks` when a caller
 needs document structure or custom output. Reuse `HtmlRenderer` and reset the
 allocator between documents to retain their buffers explicitly.
 
+## Heading IDs
+
+The renderer assigns heading IDs in document order. It keeps the first requested
+ID and suffixes later collisions with `-1`, `-2`, and so on, skipping suffixes
+already used by another heading. Explicit `{#id}` values follow the same rule.
+`HeadingIdPlanner` exposes that assignment rule to Rust tools that produce
+heading metadata or links alongside Ferromark output.
+
 ## Incremental fragments
 
 A streaming caller renders one document in committed pieces. `HtmlRenderer`

@@ -7,7 +7,7 @@
 
 use std::fmt::Write as _;
 
-use super::{slugify_heading, slugify_heading_into};
+use super::{HeadingIdPlanner, slugify_heading, slugify_heading_into};
 use crate::renderer::html::escape::write_attribute_escaped_into;
 
 /// The `String::push`-per-character slugifier that `slugify_heading_into`
@@ -385,4 +385,17 @@ fn byte_cursor_slugify_matches_the_oracle_for_every_sampled_scalar() {
         input.push(ch);
         assert_matches_oracle(&input);
     }
+}
+
+#[test]
+fn heading_id_planner_skips_taken_suffixes_and_deduplicates_explicit_ids() {
+    let mut planner = HeadingIdPlanner::new();
+    let ids = ["a", "a", "a-1", "a-1", "b", "b"].map(|base| planner.plan(base));
+
+    assert_eq!(ids, ["a", "a-1", "a-1-1", "a-1-2", "b", "b-1"]);
+
+    planner.clear();
+    assert_eq!(planner.plan("a"), "a");
+    assert_eq!(planner.plan("日本語"), "日本語");
+    assert_eq!(planner.plan("日本語"), "日本語-1");
 }
