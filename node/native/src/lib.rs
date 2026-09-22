@@ -37,6 +37,7 @@ pub struct Options {
     pub allow_link_refs: Option<bool>,
     pub front_matter: Option<bool>,
     pub heading_ids: Option<bool>,
+    pub heading_offset: Option<f64>,
     pub heading_attributes: Option<bool>,
     pub math: Option<bool>,
     pub callouts: Option<bool>,
@@ -93,6 +94,19 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.allow_link_refs, options.allow_link_refs);
         apply!(parser.front_matter, options.front_matter);
         apply!(html.heading_ids, options.heading_ids);
+        if let Some(offset) = options.heading_offset {
+            if !offset.is_finite()
+                || offset.fract() != 0.0
+                || offset < f64::from(i32::MIN)
+                || offset > f64::from(i32::MAX)
+            {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "headingOffset must be an integer in the signed 32-bit range",
+                ));
+            }
+            html.heading_level_offset = offset as i32;
+        }
         apply!(parser.heading_attributes, options.heading_attributes);
         apply!(parser.math, options.math);
         apply!(html.callouts, options.callouts);
@@ -187,6 +201,7 @@ struct Metadata {
     headings: Vec<Heading>,
     counts: std::collections::HashMap<String, usize>,
     heading_ids: bool,
+    heading_level_offset: i32,
 }
 
 impl<'a> Visit<'a> for Metadata {
@@ -208,7 +223,10 @@ impl<'a> Visit<'a> for Metadata {
             None
         };
         self.headings.push(Heading {
-            level: u32::from(heading.depth),
+            level: u32::from(ferromark::map_heading_level(
+                heading.depth,
+                self.heading_level_offset,
+            )),
             id,
             text,
         });
@@ -263,6 +281,7 @@ fn render_document(
         headings: Vec::new(),
         counts: std::collections::HashMap::new(),
         heading_ids: options.html.heading_ids,
+        heading_level_offset: options.html.heading_level_offset,
     };
     metadata.visit_document(&document);
     let front_matter = document
