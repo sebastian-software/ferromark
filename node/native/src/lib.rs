@@ -37,6 +37,7 @@ pub struct Options {
     pub allow_link_refs: Option<bool>,
     pub front_matter: Option<bool>,
     pub heading_ids: Option<bool>,
+    pub heading_id_prefix: Option<String>,
     pub heading_attributes: Option<bool>,
     pub math: Option<bool>,
     pub callouts: Option<bool>,
@@ -52,6 +53,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     let CoreOptions {
         mut parser,
         mut html,
+        mut heading_id_prefix,
     } = addon_defaults();
     if let Some(options) = options {
         if let Some(policy) = options.render_policy {
@@ -93,6 +95,11 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.allow_link_refs, options.allow_link_refs);
         apply!(parser.front_matter, options.front_matter);
         apply!(html.heading_ids, options.heading_ids);
+        if let Some(prefix) = options.heading_id_prefix {
+            HtmlRenderer::validate_heading_id_prefix(&prefix)
+                .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+            heading_id_prefix = prefix;
+        }
         apply!(parser.heading_attributes, options.heading_attributes);
         apply!(parser.math, options.math);
         apply!(html.callouts, options.callouts);
@@ -108,7 +115,11 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             html.convert_md_links = true;
         }
     }
-    Ok(CoreOptions { parser, html })
+    Ok(CoreOptions {
+        parser,
+        html,
+        heading_id_prefix,
+    })
 }
 
 fn parse_error(error: ferromark::ParseError) -> Error {
@@ -138,10 +149,13 @@ impl Renderer {
     #[napi(constructor, catch_unwind)]
     pub fn new(options: Option<Options>) -> Result<Self> {
         let options = core_options(options)?;
+        let html = HtmlRenderer::with_options(options.html)
+            .try_with_heading_id_prefix(options.heading_id_prefix)
+            .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
         Ok(Self {
             allocator: Allocator::new(),
             parser: options.parser,
-            html: HtmlRenderer::with_options(options.html),
+            html,
         })
     }
 
@@ -187,6 +201,7 @@ struct Metadata {
     headings: Vec<Heading>,
     id_planner: HeadingIdPlanner,
     heading_ids: bool,
+    heading_id_prefix: String,
 }
 
 impl<'a> Visit<'a> for Metadata {
@@ -196,7 +211,11 @@ impl<'a> Visit<'a> for Metadata {
             let base = heading
                 .id
                 .map_or_else(|| ferromark::slugify_heading(&text), str::to_owned);
-            Some(self.id_planner.plan(&base))
+            Some(format!(
+                "{}{}",
+                self.heading_id_prefix,
+                self.id_planner.plan(&base)
+            ))
         } else {
             None
         };
@@ -256,13 +275,16 @@ fn render_document(
         headings: Vec::new(),
         id_planner: HeadingIdPlanner::new(),
         heading_ids: options.html.heading_ids,
+        heading_id_prefix: options.heading_id_prefix.clone(),
     };
     metadata.visit_document(&document);
     let front_matter = document
         .front_matter
         .as_ref()
         .map(|front| front.value.to_owned());
-    let mut renderer = HtmlRenderer::with_options(options.html);
+    let mut renderer = HtmlRenderer::with_options(options.html)
+        .try_with_heading_id_prefix(options.heading_id_prefix)
+        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
     let html = if let Some(callback) = callback {
         let mut hooks = CallbackRenderer {
             callback,

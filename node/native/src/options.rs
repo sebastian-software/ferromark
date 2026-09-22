@@ -13,6 +13,7 @@ use ferromark::{HtmlRendererOptions, ParserOptions};
 pub struct CoreOptions {
     pub parser: ParserOptions,
     pub html: HtmlRendererOptions,
+    pub heading_id_prefix: String,
 }
 
 /// The configuration the addon uses when the caller passes no options.
@@ -28,5 +29,9 @@ pub fn addon_defaults() -> CoreOptions {
     html.sanitize = true;
     html.heading_ids = true;
     html.callouts = true;
-    CoreOptions { parser, html }
+    CoreOptions {
+        parser,
+        html,
+        heading_id_prefix: String::new(),
+    }
 }

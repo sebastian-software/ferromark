@@ -20,7 +20,8 @@ mod tagfilter;
 mod tests;
 
 pub use heading::{
-    HEADING_PERMALINK_CLASS, HeadingIdPlanner, collect_heading_text, slugify_heading,
+    HEADING_PERMALINK_CLASS, HeadingIdPlanner, InvalidHeadingIdPrefix, collect_heading_text,
+    slugify_heading,
 };
 pub use options::{CodeAnnotationSyntax, HtmlRendererOptions};
 pub use renderer::{

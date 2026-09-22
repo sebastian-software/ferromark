@@ -127,6 +127,12 @@ already used by another heading. Explicit `{#id}` values follow the same rule.
 `HeadingIdPlanner` exposes that assignment rule to Rust tools that produce
 heading metadata or links alongside Ferromark output.
 
+Use `HtmlRenderer::try_with_heading_id_prefix("docs-")` to namespace emitted
+heading IDs and generated permalink fragments. Prefixes are applied after ID
+planning, so collision suffixes stay the same. Only ASCII letters, digits,
+underscores, and hyphens are accepted. This setting does not rewrite authored
+fragment links and does not change footnote IDs.
+
 ## Incremental fragments
 
 A streaming caller renders one document in committed pieces. `HtmlRenderer`

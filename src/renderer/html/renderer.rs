@@ -157,6 +157,38 @@ impl HtmlRenderer {
         Self::with_renderer_options(options.into())
     }
 
+    /// Returns this renderer configured to prefix heading IDs and their
+    /// generated permalink fragments.
+    ///
+    /// The prefix is applied after duplicate-ID planning, so numbering stays
+    /// the same with or without a prefix. It affects heading IDs only;
+    /// authored fragment links and footnote identifiers are unchanged.
+    /// Prefixes may contain ASCII letters, digits, `_`, and `-`. Use an empty
+    /// prefix to keep the default behavior.
+    pub fn try_with_heading_id_prefix(
+        mut self,
+        prefix: impl Into<String>,
+    ) -> Result<Self, super::heading::InvalidHeadingIdPrefix> {
+        let prefix = prefix.into();
+        Self::validate_heading_id_prefix(&prefix)?;
+        self.options.set_heading_id_prefix(prefix);
+        Ok(self)
+    }
+
+    /// Validates a heading ID prefix without constructing a renderer.
+    pub fn validate_heading_id_prefix(
+        prefix: &str,
+    ) -> Result<(), super::heading::InvalidHeadingIdPrefix> {
+        if prefix
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+        {
+            Ok(())
+        } else {
+            Err(super::heading::InvalidHeadingIdPrefix)
+        }
+    }
+
     fn with_renderer_options(options: RendererOptions) -> Self {
         // The index is a pure function of the options, which are immutable for
         // the life of the renderer, so it is built here rather than at every

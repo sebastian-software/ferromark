@@ -4,6 +4,7 @@
 //! owns the shared text collector and slugifier so both code paths reuse the same
 //! Unicode-aware normalization behavior.
 
+use std::fmt;
 use std::fmt::Write as _;
 
 use crate::ast::{Link, Node};
@@ -18,6 +19,20 @@ mod tests;
 /// Headings that already contain an `<a class="header-anchor">` or a `#`
 /// link to the generated id do not receive a second marker.
 pub const HEADING_PERMALINK_CLASS: &str = "header-anchor";
+
+/// Error returned when a configured heading ID prefix contains unsafe bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InvalidHeadingIdPrefix;
+
+impl fmt::Display for InvalidHeadingIdPrefix {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(
+            "heading ID prefixes may contain only ASCII letters, digits, underscores, and hyphens",
+        )
+    }
+}
+
+impl std::error::Error for InvalidHeadingIdPrefix {}
 
 /// Assigns unique heading IDs in document order.
 ///

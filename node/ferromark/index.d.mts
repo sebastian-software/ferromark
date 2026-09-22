@@ -46,6 +46,8 @@ export interface Options {
   frontMatter?: boolean;
   /** Generate v2 heading IDs. Default: on. */
   headingIds?: boolean;
+  /** Prefix heading IDs and generated permalink fragments. Safe characters: ASCII letters, digits, `_`, and `-`. */
+  headingIdPrefix?: string;
   /** Enable `$inline$` and `$$display$$` math. Default: off. */
   math?: boolean;
   /** Enable GitHub-style blockquote callouts. Default: on. */

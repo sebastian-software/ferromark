@@ -30,6 +30,7 @@ const optionKeys = new Set([
   "allowLinkRefs",
   "frontMatter",
   "headingIds",
+  "headingIdPrefix",
   "math",
   "callouts",
   "definitionLists",

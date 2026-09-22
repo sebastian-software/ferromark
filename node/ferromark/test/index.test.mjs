@@ -545,6 +545,31 @@ test("transform omits ids when headingIds is disabled", () => {
   assert.equal(result.headings[0].text, "Top");
 });
 
+test("headingIdPrefix matches rendered IDs and transform metadata", () => {
+  const source = "# A\n\n# A\n\n# a-1\n\n## Intro {#install}";
+  const options = { headingAttributes: true, headingIdPrefix: "docs-" };
+  const result = transform(source, options);
+
+  assert.deepEqual(
+    result.headings.map(({ id }) => id),
+    ["docs-a", "docs-a-1", "docs-a-1-1", "docs-install"],
+  );
+  for (const id of result.headings.map(({ id }) => id)) {
+    assert.match(result.html, new RegExp(`id=\\"${id}\\"`));
+  }
+  assert.equal(toHtml(source, options), result.html);
+
+  const reused = new Renderer(options);
+  assert.match(reused.toHtml("# Reused"), /id="docs-reused"/);
+});
+
+test("headingIdPrefix rejects values outside the safe ID alphabet", () => {
+  assert.throws(
+    () => toHtml("# Heading", { headingIdPrefix: "bad prefix" }),
+    /heading ID prefixes/i,
+  );
+});
+
 test("linkBasePath uses v2 site URL routing", () => {
   const html = toHtml("[in](/guide) [out](https://e.com/) ![img](/i.png)", {
     linkBasePath: "/docs",

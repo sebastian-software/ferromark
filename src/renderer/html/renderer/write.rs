@@ -348,6 +348,7 @@ impl HtmlRenderer {
             reserve_heading_scratch(&mut self.heading_id_scratch);
             self.heading_id_planner
                 .plan_into(id, &mut self.heading_id_scratch);
+            self.apply_heading_id_prefix();
             return;
         }
         self.heading_id_is_explicit = false;
@@ -362,6 +363,15 @@ impl HtmlRenderer {
         reserve_heading_scratch(&mut self.heading_id_scratch);
         self.heading_id_planner
             .plan_into(&self.heading_slug_scratch, &mut self.heading_id_scratch);
+        self.apply_heading_id_prefix();
+    }
+
+    fn apply_heading_id_prefix(&mut self) {
+        let prefix = self.options.heading_id_prefix();
+        if prefix.is_empty() {
+            return;
+        }
+        self.heading_id_scratch.insert_str(0, prefix);
     }
 }
 

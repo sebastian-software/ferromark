@@ -28,6 +28,6 @@ pub use convenience::{to_html, to_html_into, to_html_into_with_options, to_html_
 pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
 pub use renderer::{
     CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HeadingIdPlanner, HtmlRenderContext,
-    HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks,
-    collect_heading_text, slugify_heading,
+    HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
+    NoHtmlRenderHooks, collect_heading_text, slugify_heading,
 };
