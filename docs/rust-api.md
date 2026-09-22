@@ -99,13 +99,10 @@ heading metadata; generated IDs and fragment links remain based on the original
 heading text.
 
 ```rust
-use ferromark::{HtmlRendererOptions, map_heading_level};
+use ferromark::{HtmlRenderer, map_heading_level};
 
-let options = HtmlRendererOptions {
-    heading_level_offset: 1,
-    ..HtmlRendererOptions::default()
-};
-assert_eq!(map_heading_level(1, options.heading_level_offset), 2);
+let _renderer = HtmlRenderer::new().with_heading_level_offset(1);
+assert_eq!(map_heading_level(1, 1), 2);
 ```
 
 This behavior is recorded in the

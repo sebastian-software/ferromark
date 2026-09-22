@@ -195,14 +195,6 @@ pub struct HtmlRendererOptions {
     /// defined by the Markdown specifications.
     pub heading_ids: bool,
 
-    /// Shift rendered heading levels while keeping them within `h1`–`h6`.
-    ///
-    /// A positive offset moves headings deeper (for example, level 1 to level
-    /// 2); a negative offset moves them toward `h1`. Values beyond the
-    /// available range clamp to `h1` or `h6`. The default `0` preserves the
-    /// Markdown heading level.
-    pub heading_level_offset: i32,
-
     /// Render GitHub-style `[!NOTE]` block quotes as themed callouts.
     ///
     /// Default: `true`; strict profiles disable this product extension.
@@ -326,7 +318,7 @@ impl From<HtmlRendererOptions> for RendererOptions {
             heading_permalinks: options.heading_permalinks,
             source_spans: options.source_spans,
             heading_ids: options.heading_ids,
-            heading_level_offset: options.heading_level_offset,
+            heading_level_offset: 0,
             callouts: options.callouts,
             code_fence_metadata: options.code_fence_metadata,
             table_colgroup: options.table_colgroup,
@@ -363,7 +355,6 @@ impl HtmlRendererOptions {
             heading_permalinks: false,
             source_spans: false,
             heading_ids: true,
-            heading_level_offset: 0,
             callouts: true,
             code_fence_metadata: true,
             table_colgroup: false,

@@ -1,6 +1,4 @@
-use ferromark::{
-    Allocator, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks, Parser, map_heading_level,
-};
+use ferromark::{Allocator, HtmlRenderer, NoHtmlRenderHooks, Parser, map_heading_level};
 
 #[test]
 fn heading_level_mapping_clamps_after_applying_the_offset() {
@@ -20,23 +18,19 @@ fn heading_offset_is_shared_by_normal_hooked_and_fragment_rendering() {
     let source = "# Top\n\n## Middle\n\n###### Deep";
     let allocator = Allocator::new();
     let document = Parser::new(&allocator, source).parse().expect("parses");
-    let options = HtmlRendererOptions {
-        heading_level_offset: 1,
-        ..HtmlRendererOptions::default()
-    };
     let expected =
         "<h2 id=\"top\">Top</h2>\n<h3 id=\"middle\">Middle</h3>\n<h6 id=\"deep\">Deep</h6>\n";
 
-    let mut normal = HtmlRenderer::with_options(options.clone());
+    let mut normal = HtmlRenderer::new().with_heading_level_offset(1);
     assert_eq!(normal.render(&document), expected);
 
-    let mut hooked = HtmlRenderer::with_options(options.clone());
+    let mut hooked = HtmlRenderer::new().with_heading_level_offset(1);
     assert_eq!(
         hooked.render_with_hooks(&document, &mut NoHtmlRenderHooks),
         expected
     );
 
-    let mut incremental = HtmlRenderer::with_options(options);
+    let mut incremental = HtmlRenderer::new().with_heading_level_offset(1);
     for (source, expected_fragment) in [
         ("# First", "<h2 id=\"first\">First</h2>\n"),
         ("## Second", "<h3 id=\"second\">Second</h3>\n"),

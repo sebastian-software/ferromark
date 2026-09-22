@@ -53,6 +53,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     let CoreOptions {
         mut parser,
         mut html,
+        mut heading_level_offset,
     } = addon_defaults();
     if let Some(options) = options {
         if let Some(policy) = options.render_policy {
@@ -105,7 +106,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
                     "headingOffset must be an integer in the signed 32-bit range",
                 ));
             }
-            html.heading_level_offset = offset as i32;
+            heading_level_offset = offset as i32;
         }
         apply!(parser.heading_attributes, options.heading_attributes);
         apply!(parser.math, options.math);
@@ -122,7 +123,11 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             html.convert_md_links = true;
         }
     }
-    Ok(CoreOptions { parser, html })
+    Ok(CoreOptions {
+        parser,
+        html,
+        heading_level_offset,
+    })
 }
 
 fn parse_error(error: ferromark::ParseError) -> Error {
@@ -152,10 +157,12 @@ impl Renderer {
     #[napi(constructor, catch_unwind)]
     pub fn new(options: Option<Options>) -> Result<Self> {
         let options = core_options(options)?;
+        let html = HtmlRenderer::with_options(options.html)
+            .with_heading_level_offset(options.heading_level_offset);
         Ok(Self {
             allocator: Allocator::new(),
             parser: options.parser,
-            html: HtmlRenderer::with_options(options.html),
+            html,
         })
     }
 
@@ -281,14 +288,15 @@ fn render_document(
         headings: Vec::new(),
         counts: std::collections::HashMap::new(),
         heading_ids: options.html.heading_ids,
-        heading_level_offset: options.html.heading_level_offset,
+        heading_level_offset: options.heading_level_offset,
     };
     metadata.visit_document(&document);
     let front_matter = document
         .front_matter
         .as_ref()
         .map(|front| front.value.to_owned());
-    let mut renderer = HtmlRenderer::with_options(options.html);
+    let mut renderer = HtmlRenderer::with_options(options.html)
+        .with_heading_level_offset(options.heading_level_offset);
     let html = if let Some(callback) = callback {
         let mut hooks = CallbackRenderer {
             callback,
