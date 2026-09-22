@@ -24,18 +24,14 @@ use compact_str::CompactString;
 use rustc_hash::FxHashMap;
 
 use super::autolink::FirstByteIndex;
-use super::escape::{write_escaped_into, write_url_escaped_into};
 use super::options::{HtmlRendererOptions, RendererOptions};
-use super::toc::{
-    DocumentRenderScan, InlineTocEntry, collect_inline_toc_entries, scan_document_for_render,
-};
 
 pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRenderHooks};
 
 /// Stateful HTML renderer for Markdown AST documents.
 ///
-/// A renderer instance owns reusable buffers for heading IDs, inline table-of-contents
-/// entries, and autolink scanning. Reusing the same instance across renders avoids a
+/// A renderer instance owns reusable buffers for heading IDs and autolink scanning.
+/// Reusing the same instance across renders avoids a
 /// set of hot-path allocations while keeping the public API as simple as
 /// [`HtmlRenderer::render`].
 pub struct HtmlRenderer {
@@ -62,16 +58,6 @@ pub struct HtmlRenderer {
     /// scan of `footnote_records` per footnote, which made a document of
     /// many footnotes quadratic. Cleared per render like the heading map.
     footnote_slug_counts: FxHashMap<CompactString, usize>,
-    toc_entries: Vec<InlineTocEntry>,
-    /// Whether the document being rendered contains at least one
-    /// `[[toc]]` directive paragraph. Cached at `render()` entry so each
-    /// `visit_paragraph` can skip the marker check entirely when no
-    /// directive exists (the common case). Kept separate from
-    /// `toc_entries.is_empty()` because a document may have a marker
-    /// AND zero entries (no headings, or all filtered by `toc_max_depth`)
-    /// — in that case we still need to suppress the literal `[[toc]]`
-    /// text from the output.
-    document_has_toc_marker: bool,
     /// Reusable scratch buffer for the raw concatenated heading text in
     /// `heading_id`. A long-lived buffer avoids paying for a fresh
     /// `String` allocation per heading — `slugify_heading` previously
@@ -192,8 +178,6 @@ impl HtmlRenderer {
             footnote_index: FxHashMap::default(),
             footnote_records: Vec::new(),
             footnote_slug_counts: FxHashMap::default(),
-            toc_entries: Vec::new(),
-            document_has_toc_marker: false,
             // The heading scratch buffers start empty. Constructing them
             // pre-sized cost three allocations per renderer even for a
             // document that has no heading at all — the common shape for
@@ -242,35 +226,8 @@ impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn prepare_render(&mut self, document: &Document<'_>) {
         self.output.clear();
         self.in_mdx_island_children = false;
-        // Renderer setup is intentionally split into a cheap structural scan
-        // and the expensive optional work. TOC collection walks every heading
-        // and allocates a slug per entry, which used to fire on every render
-        // regardless of whether a `[[toc]]` directive existed. The scan below
-        // records only booleans/counts, so documents without TOC markers skip
-        // all TOC allocation while the heading count still lets us reserve the
-        // unique-id map once.
-        self.toc_entries.clear();
         self.code_block_index = 0;
-        // Both facts the scan derives are consumed only when `heading_ids` is
-        // on: the marker needs an inline TOC, and an inline TOC without
-        // heading IDs would produce dead links, so the two product
-        // conveniences stay coupled; the heading count only sizes a map that
-        // stays empty when no heading emits an ID. A profile with heading IDs
-        // off — the strict CommonMark and GFM profiles among them — therefore
-        // skips the structural walk instead of deriving facts nothing reads,
-        // and one with only the inline TOC off skips the per-paragraph marker
-        // predicate while still counting headings.
-        let document_scan = if self.options.heading_ids {
-            scan_document_for_render(document, self.options.inline_toc)
-        } else {
-            DocumentRenderScan::NONE
-        };
-        self.document_has_toc_marker = document_scan.has_toc_marker;
-        if self.document_has_toc_marker {
-            collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
-        }
         self.heading_id_counts.clear();
-        self.heading_id_counts.reserve(document_scan.heading_count);
         self.clear_footnote_state();
         // The autolink first-byte index is built once per renderer (see the
         // field) because it depends only on the immutable options.
@@ -355,27 +312,6 @@ impl HtmlRenderer {
             Node::MdxJsxTextElement(node) => self.render_mdx_jsx_text_element(node),
             Node::MdxjsEsm(_) | Node::MdxFlowExpression(_) | Node::MdxTextExpression(_) => {}
         }
-    }
-
-    pub(in crate::renderer::html::renderer) fn render_inline_toc(&mut self) {
-        use std::fmt::Write as _;
-
-        if self.toc_entries.is_empty() {
-            return;
-        }
-
-        self.write("<nav class=\"ox-toc\" aria-label=\"Table of contents\">\n<ul>\n");
-        for entry in &self.toc_entries {
-            self.output
-                .push_str("<li class=\"ox-toc__item ox-toc__item--depth-");
-            let _ = write!(self.output, "{}", entry.depth);
-            self.output.push_str("\"><a href=\"#");
-            write_url_escaped_into(&mut self.output, &entry.id);
-            self.output.push_str("\">");
-            write_escaped_into(&mut self.output, &entry.text);
-            self.output.push_str("</a></li>\n");
-        }
-        self.write("</ul>\n</nav>\n");
     }
 }
 

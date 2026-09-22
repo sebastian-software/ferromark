@@ -59,7 +59,6 @@ local core**; these are not the options enabled during timing.
 | Automatic heading IDs — link directly to a section                 |         ✓          |       ✓       |      ✓       |        —         |         —          |         ✓          |
 | Explicit heading IDs/classes — `# Title {#id .class}`              |         —          |       ✓       |      ✓       |        ✓         |         —          |         —          |
 | Alert boxes — `> [!NOTE]`, `> [!WARNING]`                          |         ✓          |       ✓       |      ✓       |        ✓         |         ✓          |         —          |
-| Table of contents from document headings                           |    Heading data    | Rendered TOC  | Rendered TOC |        —         |         —          |         —          |
 | **MDX — components and expressions mixed with Markdown**           |                    |               |              |                  |                    |                    |
 | Recognize JSX, `{expressions}`, and imports/exports                |      Limited       |    Limited    |   Limited    |        —         |         —          |         —          |
 | **Application integration**                                        |                    |               |              |                  |                    |                    |
@@ -69,8 +68,7 @@ local core**; these are not the options enabled during timing.
 Math support preserves formula notation; an application supplies mathematical
 typesetting. “Custom tag” wiki links also need application-side routing/rendering.
 Frontmatter support extracts metadata text, rather than parsing YAML/TOML values.
-“Heading data” lets an application build a TOC; “Rendered TOC” includes HTML for
-an inline `[[toc]]` marker. Trees expose nested document nodes; events/callbacks
+Trees expose nested document nodes; events/callbacks
 expose elements in sequence. The three MDX entries cover bounded syntax handling,
 not a full MDX compiler or JavaScript runtime. Single-tilde strikethrough and
 subscript compete for the same syntax; enabling subscript gives it priority.

@@ -1,8 +1,8 @@
 //! Heading text extraction and slug generation.
 //!
-//! Heading IDs and inline TOCs must agree on the same slug rules. This module owns the
-//! shared text collector and slugifier so both code paths reuse the same Unicode-aware
-//! normalization behavior.
+//! Heading IDs and heading-based tooling must agree on the same slug rules. This module
+//! owns the shared text collector and slugifier so both code paths reuse the same
+//! Unicode-aware normalization behavior.
 
 use crate::ast::{Link, Node};
 

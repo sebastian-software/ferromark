@@ -55,17 +55,10 @@ scan.
 ## Renderer options
 
 The public fields and strict profiles are defined in the [HTML renderer option
-type](../src/renderer/html/options.rs). Render setup can perform the
-renderer’s allocation-free structural AST scan for heading counts and a possible
-`[[toc]]` marker: [render setup](../src/renderer/html/renderer.rs),
-[structural scan](../src/renderer/html/toc.rs). A one-shot render runs that scan
-only while `heading_ids` is enabled, because that is the only setting whose
-output reads the derived facts; a profile with heading IDs off — the strict
-CommonMark and GFM profiles among them — skips the walk entirely. With
-`heading_ids` on and `inline_toc` off the walk still counts headings and only
-the per-paragraph marker predicate is skipped. The incremental fragment entry
-points always scan, because a provisional render has to know the exact heading
-count before it can restore committed state.
+type](../src/renderer/html/options.rs). Heading IDs are planned while each
+heading is rendered; the renderer no longer performs a document-wide TOC scan
+or injects navigation for a `[[toc]]` marker. Outline extraction belongs to the
+separate extension work tracked in [#396](https://github.com/sebastian-software/ferromark/issues/396).
 
 | Field | Scope and work | Dependencies or interactions |
 | --- | --- | --- |
@@ -81,7 +74,6 @@ count before it can restore committed state.
 | `code_annotation_meta_key` | Read only for enabled attribute-style annotations with nonempty fence metadata. | Requires `code_annotations` and a syntax including `Attribute`. |
 | `code_annotation_syntax` | Chooses attribute, VitePress, or both metadata parsers. | Most work is gated by `code_annotations`; VitePress/Both can add line splitting and directive parsing. |
 | `code_annotation_default_line_numbers` | Trigger-local default line-number state for VitePress-inclusive syntax. | Requires `code_annotations` and `code_annotation_syntax` of `VitePress` or `Both`. |
-| `toc_max_depth` | Only used during full TOC collection after a marker is found. That collection walks headings, gathers text, slugifies IDs, and builds entries. | Requires `inline_toc` and `heading_ids` plus a standalone `[[toc]]` paragraph. |
 | `autolink_urls` | Builds a small first-byte index at render setup when enabled and patterns are nonempty; text nodes then run the bare-URL gate/scanner. | Independent from parser `autolinks`; `autolink_patterns` controls recognized prefixes. |
 | `autolink_patterns` | Determines renderer autolink index construction and candidate matching. An empty list disables the path even if `autolink_urls` is true. | Custom patterns change matching work and output semantics. |
 | `autolink_target_blank` | Output-only attributes on renderer-created bare URL links. | Only matters when a bare URL match is emitted. |
@@ -89,9 +81,8 @@ count before it can restore committed state.
 | `semantic_footnotes` | Footnote-local maps and records; definitions render into temporary body HTML and a final ordered section is emitted. | Requires parser `footnotes` to produce footnote nodes; legacy footnote rendering remains the off path. |
 | `heading_permalinks` | Heading-local marker detection and permalink output. | Work is skipped unless `heading_ids` is also enabled; reuses the generated heading ID. |
 | `source_spans` | Output-only attribute writes on rendered block nodes with nonempty spans. | Does not add a renderer-wide scan. |
-| `heading_ids` | Heading-local text collection, slugification, duplicate-ID map updates, and ID output. Enabling it is also what turns on the setup structural scan. | The scan sizes the duplicate-ID map and, with `inline_toc`, finds the TOC marker. `heading_attributes` supplies explicit IDs; CSS classes are emitted independently. |
+| `heading_ids` | Heading-local text collection, slugification, duplicate-ID map updates, and ID output. | `heading_attributes` supplies explicit IDs; CSS classes are emitted independently. Outline consumers must use the same ID planning rules. |
 | `callouts` | Every block quote checks its first paragraph for a `[!KIND]` marker; matching quotes use the callout renderer. | Non-callout quotes pay only detection; callout body handling has its own inline output path. |
-| `inline_toc` | No full TOC collection unless the baseline scan finds a marker and `heading_ids` is enabled. Matching marker paragraphs are replaced by collected entries. | Requires `heading_ids`; `toc_max_depth` applies only after activation. |
 | `code_fence_metadata` | Code-block-local language normalization and metadata path selection. Disabling it selects the plain fence path; it also short-circuits annotations through the combined guard. | `code_annotations` cannot take effect while this is false. |
 | `table_colgroup` | Table-local `<colgroup>` and one `<col>` per alignment entry. | Only applies to rendered table nodes. |
 | `table_column_names` | Header-local text collection/slugification and duplicate-name tracking while writing columns. | Requires `table_colgroup`; otherwise it is a no-op branch. |
@@ -109,11 +100,10 @@ Keep syntax options and rendering policy separate when constructing a profile:
   explicit IDs, while ordinary generated IDs are renderer work.
 - Parser and renderer autolink options are independent and should be toggled
   separately in a study.
-- `inline_toc` requires both `heading_ids` and an actual marker, and code
-  annotation settings require `code_fence_metadata` to remain enabled.
+- Code annotation settings require `code_fence_metadata` to remain enabled.
 - A strict profile can disable product conveniences without removing baseline
-  reference-definition support. Turning `heading_ids` off additionally removes
-  the renderer’s structural AST scan from a one-shot render.
+  reference-definition support. Turning `heading_ids` off also removes heading
+  ID work from the render path.
 
 The [runtime-profile harness](../benchmarks/runtime-profiles/README.md) records
 these dimensions across parse, render, fresh, and reuse lifecycles. The results preserve those lifecycle distinctions; this source map is not a

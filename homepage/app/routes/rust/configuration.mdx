@@ -38,7 +38,7 @@ Custom hook output still requires your own escaping. See [rendering and trust](/
 | GFM with publishing conveniences | `ParserOptions::gfm()`        | `HtmlRendererOptions::gfm()`        |
 
 The specification renderer profiles disable automatic heading IDs, callouts,
-inline TOCs, and fence metadata cleanup. The GFM specification profile enables
+and fence metadata cleanup. The GFM specification profile enables
 the tag filter and leaves footnotes off. `ParserOptions::gfm()` also enables
 footnotes. No profile enables front matter or the extra table-layout options.
 Set `sanitize: true` independently when the source is untrusted.

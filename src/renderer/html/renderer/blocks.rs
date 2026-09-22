@@ -10,7 +10,6 @@ use crate::ast::{
 };
 
 use super::super::code_annotations::{normalize_code_block_language, plain_code_block_language};
-use super::super::toc::is_toc_marker_paragraph;
 use super::HtmlRenderer;
 
 /// The bytes a plain fence writes around its language and its body.
@@ -52,17 +51,6 @@ impl HtmlRenderer {
         &mut self,
         paragraph: &Paragraph<'_>,
     ) {
-        // Skip the `[[toc]]` byte scan entirely when the document has no
-        // marker — pure overhead in the common case. When a marker IS
-        // present we must run the check on every paragraph and suppress
-        // the matching one, even if `toc_entries` is empty (e.g. document
-        // has no headings or all are filtered by `toc_max_depth`).
-        // Otherwise the literal `[[toc]]` would leak into the output.
-        if self.document_has_toc_marker && is_toc_marker_paragraph(paragraph) {
-            self.render_inline_toc();
-            return;
-        }
-
         self.output.push_str("<p");
         self.write_source_span_attr(paragraph.span);
         self.output.push('>');

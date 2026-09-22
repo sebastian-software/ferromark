@@ -2,7 +2,6 @@ use crate::ast::{BlockQuote, Heading, List, ListItem, Node, Paragraph};
 
 use super::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks};
 use crate::renderer::html::renderer::HtmlRenderer;
-use crate::renderer::html::toc::is_toc_marker_paragraph;
 
 impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn render_paragraph_with_hooks<H: HtmlRenderHooks>(
@@ -10,11 +9,6 @@ impl HtmlRenderer {
         paragraph: &Paragraph<'_>,
         hooks: &mut H,
     ) {
-        if self.document_has_toc_marker && is_toc_marker_paragraph(paragraph) {
-            self.render_inline_toc();
-            return;
-        }
-
         self.write("<p");
         self.write_source_span_attr(paragraph.span);
         self.write(">");

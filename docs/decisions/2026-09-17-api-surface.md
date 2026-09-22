@@ -150,7 +150,7 @@ The renderer now follows the parser:
 - `HtmlRendererOptions::gfm_spec()` is today's strict behavior — `commonmark()`
   plus `disallow_raw_html`.
 - `HtmlRendererOptions::gfm()` becomes the convenience profile — `new()` plus
-  `disallow_raw_html`, so it keeps heading IDs, callouts, TOC substitution, URL
+  `disallow_raw_html`, so it keeps heading IDs, callouts, URL
   autolinking, link targets and fence metadata cleanup.
 
 Parser names do not change: they are the ones that were already right, and both

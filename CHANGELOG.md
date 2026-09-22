@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### ⚠ BREAKING CHANGES
+
+* **renderer:** remove renderer-owned `[[toc]]` substitution and the
+  `inline_toc`/`toc_max_depth` options ([#395](https://github.com/sebastian-software/ferromark/issues/395)).
+  The marker now renders as ordinary Markdown; use the AST-based outline
+  extension tracked in [#396](https://github.com/sebastian-software/ferromark/issues/396)
+  for navigation data or an application-owned TOC.
+
 ## [2.0.0](https://github.com/sebastian-software/ferromark/compare/v2.0.0-rc.2...v2.0.0) (2026-09-21)
 
 

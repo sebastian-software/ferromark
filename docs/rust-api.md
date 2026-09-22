@@ -49,7 +49,7 @@ MDX nodes without a profile of its own:
 
 Pair `ParserOptions::gfm_spec()` with `HtmlRendererOptions::gfm_spec()` for
 specification-oriented GFM output, and `gfm()` with `gfm()` for the convenience
-profile that keeps heading IDs, callouts, TOC substitution, URL autolinking,
+profile that keeps heading IDs, callouts, URL autolinking,
 link targets, and fence metadata cleanup. `commonmark()` pairs the same way.
 See [optional writing syntax](optional-writing.md) for marks and inline notes.
 

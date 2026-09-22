@@ -13,7 +13,7 @@ scanners, and platform SIMD paths remain intact.
 CommonMark, GFM, and existing optional syntax remain available: footnotes,
 definition lists, math, MDX syntax, and the other parser options. The existing
 HTML rendering behavior also remains, including headings, URL handling, escaping,
-render hooks, callouts, code annotations, TOC, and MDX island payloads. These
+render hooks, callouts, code annotations, and MDX island payloads. These
 options are potential later cuts, but removing them needs an explicit behavior
 decision. MDX island payloads still require `serde_json`; the framework code
 generators are independent and have been removed.

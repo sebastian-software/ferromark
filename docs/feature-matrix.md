@@ -89,12 +89,12 @@ rendering policies or identical edge cases across libraries.
 - **Rendering policy:** raw HTML may require explicit opt-in (notably v1's
   trusted policy). A GFM tag filter handles a fixed tag list; it is not general
   HTML sanitization. V2's CommonMark/GFM renderer profiles disable convenience
-  IDs, callouts, TOC substitution, and fence metadata cleanup.
+  IDs, callouts, and fence metadata cleanup.
 
 ## Source details
 
-For v2/OX, the option types, AST node types, inline parser, HTML renderer, and
-TOC/callout code establish the available features. Existing v2 regression tests
+For v2/OX, the option types, AST node types, inline parser, and HTML renderer
+establish the available features. Existing v2 regression tests
 cover the individual extensions and profile behavior. A renderer option is not
 evidence of a Markdown syntax: the parser must recognize that syntax before it
 can be counted, which is why the inherited no-op `highlight` renderer option was
@@ -126,7 +126,8 @@ HTML renderer's callback is limited to fenced code (`FencedCodeRenderer`).
 The optional [MDX module](https://github.com/sebastian-software/ferromark/tree/143ec2ce151d87d2a3d804a048014afc97733ae0/src/mdx)
 provides segmentation, structural checks, and semantic events. Smart punctuation,
 wiki links, explicit heading attributes, and a rendered inline TOC are absent
-from this native snapshot.
+from the Ferromark core; heading data remains available through the AST and the
+outline extension is tracked separately.
 
 OX's [parser options](https://github.com/ubugeeei-prod/ox-content/blob/a71a58939ffe7f154117cea026f6d6e71a139393/crates/ox_content_parser/src/parser/options.rs),
 [inline parser](https://github.com/ubugeeei-prod/ox-content/blob/a71a58939ffe7f154117cea026f6d6e71a139393/crates/ox_content_parser/src/parser/inline.rs),

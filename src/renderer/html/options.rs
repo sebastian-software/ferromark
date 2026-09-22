@@ -123,11 +123,6 @@ pub struct HtmlRendererOptions {
     /// Default: `false`.
     pub code_annotation_default_line_numbers: bool,
 
-    /// Maximum heading depth included in inline TOCs.
-    ///
-    /// Default: `3`.
-    pub toc_max_depth: u8,
-
     /// Auto-link bare URLs in text. When enabled, any occurrence in a text
     /// node that starts with one of [`Self::autolink_patterns`] is wrapped
     /// in an `<a>` tag. Auto-linking is suppressed inside an existing link.
@@ -205,11 +200,6 @@ pub struct HtmlRendererOptions {
     /// Default: `true`; strict profiles disable this product extension.
     pub callouts: bool,
 
-    /// Interpret standalone `[[toc]]` paragraphs as inline tables of contents.
-    ///
-    /// Default: `true`; strict profiles disable this product extension.
-    pub inline_toc: bool,
-
     /// Parse and clean VitePress-style fenced-code metadata and annotations.
     ///
     /// Default: `true`. When disabled, fenced code uses the plain fence path:
@@ -262,7 +252,6 @@ pub(super) struct RendererOptions {
     code_annotation_meta_key: Cow<'static, str>,
     pub(super) code_annotation_syntax: CodeAnnotationSyntax,
     pub(super) code_annotation_default_line_numbers: bool,
-    pub(super) toc_max_depth: u8,
     pub(super) autolink_urls: bool,
     autolink_patterns: Cow<'static, [Cow<'static, str>]>,
     pub(super) autolink_target_blank: bool,
@@ -272,7 +261,6 @@ pub(super) struct RendererOptions {
     pub(super) source_spans: bool,
     pub(super) heading_ids: bool,
     pub(super) callouts: bool,
-    pub(super) inline_toc: bool,
     pub(super) code_fence_metadata: bool,
     pub(super) table_colgroup: bool,
     pub(super) table_column_names: bool,
@@ -321,7 +309,6 @@ impl From<HtmlRendererOptions> for RendererOptions {
             code_annotation_meta_key: options.code_annotation_meta_key,
             code_annotation_syntax: options.code_annotation_syntax,
             code_annotation_default_line_numbers: options.code_annotation_default_line_numbers,
-            toc_max_depth: options.toc_max_depth,
             autolink_urls: options.autolink_urls,
             autolink_patterns: options.autolink_patterns,
             autolink_target_blank: options.autolink_target_blank,
@@ -331,7 +318,6 @@ impl From<HtmlRendererOptions> for RendererOptions {
             source_spans: options.source_spans,
             heading_ids: options.heading_ids,
             callouts: options.callouts,
-            inline_toc: options.inline_toc,
             code_fence_metadata: options.code_fence_metadata,
             table_colgroup: options.table_colgroup,
             table_column_names: options.table_column_names,
@@ -359,7 +345,6 @@ impl HtmlRendererOptions {
             code_annotation_meta_key: Cow::Borrowed(DEFAULT_CODE_ANNOTATION_META_KEY),
             code_annotation_syntax: CodeAnnotationSyntax::Attribute,
             code_annotation_default_line_numbers: false,
-            toc_max_depth: 3,
             autolink_urls: true,
             autolink_patterns: Cow::Borrowed(DEFAULT_AUTOLINK_PATTERNS),
             autolink_target_blank: true,
@@ -369,7 +354,6 @@ impl HtmlRendererOptions {
             source_spans: false,
             heading_ids: true,
             callouts: true,
-            inline_toc: true,
             code_fence_metadata: true,
             table_colgroup: false,
             table_column_names: false,
@@ -390,7 +374,6 @@ impl HtmlRendererOptions {
         options.link_target_blank = false;
         options.heading_ids = false;
         options.callouts = false;
-        options.inline_toc = false;
         options.code_fence_metadata = false;
         options
     }
@@ -398,7 +381,7 @@ impl HtmlRendererOptions {
     /// Creates the GFM convenience HTML profile.
     ///
     /// This adds GFM tag filtering to [`Self::new`], so it keeps the product
-    /// conveniences — heading IDs, callouts, TOC substitution, URL
+    /// conveniences — heading IDs, callouts, URL
     /// autolinking, link targets, and VitePress fence metadata cleanup. It
     /// pairs with [`ParserOptions::gfm`](crate::ParserOptions::gfm); use
     /// [`Self::gfm_spec`] for specification-oriented output.
