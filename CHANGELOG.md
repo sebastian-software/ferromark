@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/sebastian-software/ferromark/compare/v2.0.0...v2.0.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **renderer:** remove renderer-owned inline TOC ([#397](https://github.com/sebastian-software/ferromark/issues/397)) ([716a5c6](https://github.com/sebastian-software/ferromark/commit/716a5c6d3ecc7fcc042065350cbd4409dc1aa720))
+
 ## [2.0.0](https://github.com/sebastian-software/ferromark/compare/v2.0.0-rc.2...v2.0.0) (2026-09-21)
 
 
