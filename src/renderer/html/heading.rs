@@ -4,7 +4,11 @@
 //! owns the shared text collector and slugifier so both code paths reuse the same
 //! Unicode-aware normalization behavior.
 
+use std::fmt::Write as _;
+
 use crate::ast::{Link, Node};
+use compact_str::CompactString;
+use rustc_hash::FxHashMap;
 
 #[cfg(test)]
 mod tests;
@@ -24,6 +28,71 @@ pub const HEADING_PERMALINK_CLASS: &str = "header-anchor";
 pub fn map_heading_level(level: u8, offset: i32) -> u8 {
     let shifted = i64::from(level.clamp(1, 6)) + i64::from(offset);
     u8::try_from(shifted.clamp(1, 6)).unwrap_or(1)
+}
+
+/// Assigns unique heading IDs in document order.
+///
+/// The first request for a base ID keeps it. Later requests try `-1`, `-2`,
+/// and so on, skipping any ID already claimed by an earlier heading. Explicit
+/// heading IDs use the same rule as generated slugs.
+///
+/// The planner is shared by HTML rendering and derived heading metadata so
+/// their IDs stay in sync. Clear it before planning a new document; keep it
+/// between incremental fragments when their IDs must remain unique together.
+#[derive(Debug, Clone, Default)]
+pub struct HeadingIdPlanner {
+    next_suffix: FxHashMap<CompactString, usize>,
+}
+
+impl HeadingIdPlanner {
+    /// Creates an empty heading ID planner.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Clears IDs claimed for the previous document while retaining capacity.
+    pub fn clear(&mut self) {
+        self.next_suffix.clear();
+    }
+
+    /// Plans a unique ID based on `base`, returning it as an owned string.
+    #[must_use]
+    pub fn plan(&mut self, base: &str) -> String {
+        let mut id = String::new();
+        self.plan_into(base, &mut id);
+        id
+    }
+
+    /// Writes a unique ID based on `base` into `output`.
+    ///
+    /// The buffer is cleared before writing and can be reused across headings.
+    #[inline]
+    pub fn plan_into(&mut self, base: &str, output: &mut String) {
+        output.clear();
+        let Some(mut suffix) = self.next_suffix.get(base).copied() else {
+            output.push_str(base);
+            self.next_suffix.insert(CompactString::from(base), 1);
+            return;
+        };
+
+        loop {
+            output.clear();
+            output.push_str(base);
+            let _ = write!(output, "-{suffix}");
+            suffix = suffix.saturating_add(1);
+            if !self.next_suffix.contains_key(output.as_str()) {
+                self.next_suffix
+                    .insert(CompactString::from(output.as_str()), 1);
+                // `base` is already a key; advance it in place instead of
+                // allocating a copy of it for every duplicate heading.
+                if let Some(next) = self.next_suffix.get_mut(base) {
+                    *next = suffix;
+                }
+                return;
+            }
+        }
+    }
 }
 
 /// Collects heading text using the same rules as generated HTML IDs.

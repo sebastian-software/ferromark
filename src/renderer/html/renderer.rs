@@ -24,6 +24,7 @@ use compact_str::CompactString;
 use rustc_hash::FxHashMap;
 
 use super::autolink::FirstByteIndex;
+use super::heading::HeadingIdPlanner;
 use super::options::{HtmlRendererOptions, RendererOptions};
 
 pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRenderHooks};
@@ -37,12 +38,9 @@ pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRen
 pub struct HtmlRenderer {
     options: RendererOptions,
     output: String,
-    /// Keyed by `CompactString` rather than `String`: heading slugs are
-    /// short (median 22 bytes on the bundled corpora), so the majority sit
-    /// inside `CompactString`'s 24-byte inline capacity and cost no heap
-    /// allocation at all. This map is the renderer's single largest
-    /// allocation source — one insert per unique heading.
-    heading_id_counts: FxHashMap<CompactString, usize>,
+    /// Shared with Node metadata so generated and explicit heading IDs use the
+    /// same collision rules. It is retained across incremental fragments.
+    heading_id_planner: HeadingIdPlanner,
     /// How many times each footnote identifier has been referenced so
     /// far in this render, so repeated references can be given unique
     /// `fnref-` ids. Cleared per `render()` like the heading id map.
@@ -64,9 +62,8 @@ pub struct HtmlRenderer {
     /// allocated one `text` String per call. Empty until the first heading
     /// (see [`reserve_heading_scratch`]).
     heading_text_scratch: String,
-    /// Reusable scratch buffer for the slugified id. The final id that
-    /// ends up in `heading_id_counts` is copied out of here on vacant
-    /// inserts; the buffer itself stays around across renders.
+    /// Reusable scratch buffer for the slugified id. The final ID planner
+    /// reads it before the buffer is reused for the next heading.
     heading_slug_scratch: String,
     /// Unique heading id for the heading currently being written, including
     /// any `-N` suffix. Permalinks reuse this exact value instead of
@@ -184,7 +181,7 @@ impl HtmlRenderer {
         Self {
             options,
             output: String::new(),
-            heading_id_counts: FxHashMap::default(),
+            heading_id_planner: HeadingIdPlanner::new(),
             footnote_ref_counts: FxHashMap::default(),
             footnote_index: FxHashMap::default(),
             footnote_records: Vec::new(),
@@ -238,7 +235,7 @@ impl HtmlRenderer {
         self.output.clear();
         self.in_mdx_island_children = false;
         self.code_block_index = 0;
-        self.heading_id_counts.clear();
+        self.heading_id_planner.clear();
         self.clear_footnote_state();
         // The autolink first-byte index is built once per renderer (see the
         // field) because it depends only on the immutable options.

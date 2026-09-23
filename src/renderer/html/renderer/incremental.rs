@@ -31,18 +31,18 @@ impl HtmlRenderer {
     /// The returned HTML is meant to be replaceable by the next streaming update.
     #[must_use]
     pub fn render_provisional_fragment(&mut self, document: &Document<'_>) -> String {
-        let heading_id_counts = self
+        let heading_id_planner = self
             .options
             .heading_ids
-            .then(|| self.heading_id_counts.clone());
+            .then(|| self.heading_id_planner.clone());
         let footnote_ref_counts = self.footnote_ref_counts.clone();
         let footnote_index = self.footnote_index.clone();
         let footnote_records = self.footnote_records.clone();
         let footnote_slug_counts = self.footnote_slug_counts.clone();
         let code_block_index = self.code_block_index;
         let html = self.render_fragment(document);
-        if let Some(heading_id_counts) = heading_id_counts {
-            self.heading_id_counts = heading_id_counts;
+        if let Some(heading_id_planner) = heading_id_planner {
+            self.heading_id_planner = heading_id_planner;
         }
         self.footnote_ref_counts = footnote_ref_counts;
         self.footnote_index = footnote_index;
@@ -59,18 +59,18 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
-        let heading_id_counts = self
+        let heading_id_planner = self
             .options
             .heading_ids
-            .then(|| self.heading_id_counts.clone());
+            .then(|| self.heading_id_planner.clone());
         let footnote_ref_counts = self.footnote_ref_counts.clone();
         let footnote_index = self.footnote_index.clone();
         let footnote_records = self.footnote_records.clone();
         let footnote_slug_counts = self.footnote_slug_counts.clone();
         let code_block_index = self.code_block_index;
         let html = self.render_fragment_with_hooks(document, hooks);
-        if let Some(heading_id_counts) = heading_id_counts {
-            self.heading_id_counts = heading_id_counts;
+        if let Some(heading_id_planner) = heading_id_planner {
+            self.heading_id_planner = heading_id_planner;
         }
         self.footnote_ref_counts = footnote_ref_counts;
         self.footnote_index = footnote_index;
@@ -83,7 +83,7 @@ impl HtmlRenderer {
     /// Clears renderer state that spans incremental fragments.
     pub fn reset_incremental_state(&mut self) {
         self.output.clear();
-        self.heading_id_counts.clear();
+        self.heading_id_planner.clear();
         self.clear_footnote_state();
         self.heading_text_scratch.clear();
         self.heading_slug_scratch.clear();
@@ -114,5 +114,37 @@ impl HtmlRenderer {
         self.render_document_with_hooks(document, hooks);
         self.finish_semantic_footnotes();
         std::mem::take(&mut self.output)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::allocator::Allocator;
+    use crate::parser::Parser;
+    use crate::renderer::html::HtmlRenderer;
+
+    #[test]
+    fn heading_id_planner_continues_across_committed_fragments() {
+        let first_allocator = Allocator::new();
+        let first = Parser::new(&first_allocator, "# a\n\n# a").parse().unwrap();
+        let next_allocator = Allocator::new();
+        let next = Parser::new(&next_allocator, "# a-1").parse().unwrap();
+        let mut renderer = HtmlRenderer::new();
+
+        let first_html = renderer.render_incremental_fragment(&first);
+        assert!(first_html.contains("id=\"a\""), "{first_html}");
+        assert!(first_html.contains("id=\"a-1\""), "{first_html}");
+
+        let provisional = renderer.render_provisional_fragment(&next);
+        assert!(provisional.contains("id=\"a-1-1\""), "{provisional}");
+        let committed = renderer.render_incremental_fragment(&next);
+        assert_eq!(committed, provisional);
+
+        renderer.reset_incremental_state();
+        assert!(
+            renderer
+                .render_incremental_fragment(&next)
+                .contains("id=\"a-1\"")
+        );
     }
 }
