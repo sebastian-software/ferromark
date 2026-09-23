@@ -1,0 +1,21 @@
+[package]
+name = "fmprof"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+# Placeholder: an unpacked `git archive` of the revision to profile
+# (cb352020 before the round, 060b02d2 after it).
+ferromark = { path = "../ferromark-under-test" }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = 1
+strip = false
+panic = "abort"
+
+[workspace]

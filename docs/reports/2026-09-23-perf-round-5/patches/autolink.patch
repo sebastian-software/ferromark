@@ -1,0 +1,1640 @@
+From 50f3f182fe9a6905565ec0993a4be74afe786e13 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 10:42:17 +0200
+Subject: [PATCH] perf(parser): answer the autolink pre-flight from the inline
+ marker scan
+
+On aarch64 the block-level inline parse no longer runs a separate
+memchr2 + memmem pass over its content for the GFM autolink pre-flight.
+The NEON marker classifier stops at `@` and `:` as well (both share
+existing nibble-table bits, so it stays one shuffle pair), a `w.` pair
+test adds five vector operations per 16 bytes, and every trigger found
+is visited with the pre-flight's own per-position rule. A watermark
+records which positions have been visited: bytes a construct consumed
+without the marker scan classifying them (code spans, link text and
+destinations, raw HTML) are visited before the next scan starts, and
+whatever is left when the block finishes.
+
+The result equals `may_contain_autolink` value for value, flags
+included, so the output is identical by construction. Test builds assert
+that gate value for every block they parse, and a differential test
+compares AST Debug output and HTML under both pre-flights for the spec
+fixtures, two frozen corpora and generated token soup. Other targets
+keep the separate pass; the portable scalar tracker is tested everywhere.
+
+Experimental: performance is to be measured with the paired harness.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ docs/runtime-feature-costs.md                 |   2 +-
+ src/parser/inline.rs                          |  97 ++++-
+ src/parser/inline/gfm_autolink.rs             |  21 +-
+ .../gfm_autolink/preflight_equivalence.rs     | 330 ++++++++++++++++++
+ src/parser/inline/gfm_autolink/scan.rs        | 142 ++++++++
+ src/parser/inline/marker_scan.rs              |  42 ++-
+ src/parser/inline/scan.rs                     | 140 +++++++-
+ src/parser/inline/scan/neon.rs                | 202 ++++++++++-
+ src/parser/inline/scan/scalar.rs              |  48 ++-
+ src/parser/inline/scan/tests.rs               | 330 +++++++++++++++++-
+ src/parser/prepass.rs                         |   5 +-
+ src/parser/prepass/gzip.rs                    |   2 +-
+ 12 files changed, 1340 insertions(+), 21 deletions(-)
+ create mode 100644 src/parser/inline/gfm_autolink/preflight_equivalence.rs
+
+diff --git a/docs/runtime-feature-costs.md b/docs/runtime-feature-costs.md
+index a185f9a5..e3c56728 100644
+--- a/docs/runtime-feature-costs.md
++++ b/docs/runtime-feature-costs.md
+@@ -41,7 +41,7 @@ scan.
+ | `line_comments` | Block and paragraph dispatch reuse the first non-space/tab byte and check physical eligibility only for slash prefixes. Paragraph joining reuses the first observed comment; absent comments need no second discovery scan. Reference definitions retain a marker preflight. Actual removed comments can require joined text and a source map. | Changes block, table, definition, and nested-source handling; code and raw HTML remain opaque. See [line-comment handling](../src/parser/line_comments.rs) and the [dispatch measurement](reports/2026-09-14-line-comment-dispatch/README.md). |
+ | `front_matter` | Constructor-local leading scan for `---`/`+++`; when an opener is valid it scans to the closing delimiter and removes that range from Markdown parsing. | Root-document only; BOM and source-span normalization interact with the extracted body. See [front matter extraction](../src/parser/front_matter.rs). |
+ | `strikethrough` | Inline hot path for `~` runs; also changes flanking classification for `*`/`_` runs when enabled. | Competes with `subscript` for single tildes. |
+-| `autolinks` | Each block-level inline parse runs a cheap `may_contain_autolink` preflight. The recursive text coalescing/rewrite pass runs only when that preflight finds a possible candidate. | Does not make the renderer’s bare-URL option redundant; parser autolinks create link nodes, while renderer autolinks remaining text. See [inline block path](../src/parser/inline.rs) and [GFM rewrite](../src/parser/inline/gfm_autolink.rs). |
++| `autolinks` | Each block-level inline parse answers a cheap `may_contain_autolink` preflight: on aarch64 out of the NEON marker walk (`@` and `:` join the classifier as stops, a `w.` pair test adds five vector operations per 16 bytes, and bytes a construct consumed are visited separately), elsewhere as a separate `memchr` pass. The recursive text coalescing/rewrite pass runs only when that preflight finds a possible candidate. | Does not make the renderer’s bare-URL option redundant; parser autolinks create link nodes, while renderer autolinks remaining text. See [inline block path](../src/parser/inline.rs) and [GFM rewrite](../src/parser/inline/gfm_autolink.rs). |
+ | `superscript` | Adds `^` to the fused inline marker classifier and parses matching spans locally. | Changes the selected classifier; no separate scan is added. Full parsing occurs only for candidates. |
+ | `subscript` | Trigger-local single-tilde branch and matching scan. | Shares `~` with strikethrough; does not add a new base marker because tilde is already scanned. |
+ | `math` | Adds `$` to every inline marker scan; `$` block lines receive a block probe. Candidate inline/display math scans forward for a valid closer. | Math AST nodes are only syntax preservation; mathematical typesetting is external. |
+diff --git a/src/parser/inline.rs b/src/parser/inline.rs
+index f1622a48..f0f7f59c 100644
+--- a/src/parser/inline.rs
++++ b/src/parser/inline.rs
+@@ -70,12 +70,27 @@ impl<'a> Parser<'a> {
+         if self.phase == super::ParsePhase::Definitions {
+             return Ok(self.allocator.new_vec());
+         }
+-        let mut children = self.parse_inline(content, offset)?;
+-        let scan = self
+-            .options
+-            .autolinks
+-            .then(|| gfm_autolink::may_contain_autolink(content))
+-            .flatten();
++        if !self.options.autolinks {
++            return self.parse_inline(content, offset);
++        }
++        let (mut children, scan) = match AutolinkPreflight::current() {
++            AutolinkPreflight::Tracked => {
++                // The marker walk visits the pre-flight's trigger bytes as it
++                // classifies the text, and `finish_autolink_scan` the rest.
++                let mut markers = InlineMarkerScan::with_autolink_facts(&self.options);
++                let children = self.parse_inline_with(content, offset, &mut markers)?;
++                let scan = markers.finish_autolink_scan(content.as_bytes());
++                // Every block any unit test parses proves the claim directly:
++                // the gate value itself, not only the output, is unchanged.
++                #[cfg(test)]
++                gfm_autolink::assert_same_preflight(content, scan);
++                (children, scan)
++            }
++            AutolinkPreflight::Separate => {
++                let children = self.parse_inline(content, offset)?;
++                (children, gfm_autolink::may_contain_autolink(content))
++            }
++        };
+         if let Some(scan) = scan {
+             self.apply_gfm_autolinks(&mut children, scan);
+         }
+@@ -155,10 +170,20 @@ impl<'a> Parser<'a> {
+         &self,
+         content: &'a str,
+         offset: usize,
++    ) -> ParseResult<Vec<'a, Node<'a>>> {
++        self.parse_inline_with(content, offset, &mut InlineMarkerScan::new(&self.options))
++    }
++
++    /// [`Self::parse_inline`] with the caller's marker scan, which has to be
++    /// fresh and made for `content`.
++    fn parse_inline_with(
++        &self,
++        content: &'a str,
++        offset: usize,
++        markers: &mut InlineMarkerScan,
+     ) -> ParseResult<Vec<'a, Node<'a>>> {
+         let _depth = self.enter_inline(offset)?;
+         let bytes = content.as_bytes();
+-        let mut markers = InlineMarkerScan::new(&self.options);
+         let first_special = markers.next(bytes, 0);
+ 
+         // Plain text is both the most common inline shape and exactly one AST
+@@ -229,7 +254,7 @@ impl<'a> Parser<'a> {
+                 offset,
+                 &mut children,
+                 &mut delimiters,
+-                &mut markers,
++                markers,
+                 &mut pos,
+             )?;
+         }
+@@ -428,6 +453,62 @@ pub(super) struct InlineDepthGuard<'p> {
+     outer_nested: usize,
+ }
+ 
++/// Where a block's GFM autolink pre-flight gets its answer.
++///
++/// Both give the same answer for every content: `Tracked` visits, position
++/// by position, the bytes `gfm_autolink::may_contain_autolink` derives its
++/// facts from (see `AutolinkFacts`).
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++enum AutolinkPreflight {
++    /// A separate pass over the content after the inline parse.
++    Separate,
++    /// Out of the inline marker walk, with the bytes it skips visited
++    /// separately.
++    Tracked,
++}
++
++impl AutolinkPreflight {
++    /// The tracked pre-flight rides on the NEON marker classifier. Other
++    /// targets keep the separate `memchr` pass until their own marker scans
++    /// carry the trigger test.
++    const DEFAULT: Self = if cfg!(target_arch = "aarch64") {
++        Self::Tracked
++    } else {
++        Self::Separate
++    };
++
++    #[cfg(not(test))]
++    #[inline]
++    const fn current() -> Self {
++        Self::DEFAULT
++    }
++
++    #[cfg(test)]
++    fn current() -> Self {
++        AUTOLINK_PREFLIGHT.with(std::cell::Cell::get)
++    }
++
++    /// Runs `run` with this pre-flight on the current thread, so a test can
++    /// compare both on every target.
++    #[cfg(test)]
++    fn with<R>(self, run: impl FnOnce() -> R) -> R {
++        struct Restore(AutolinkPreflight);
++        impl Drop for Restore {
++            fn drop(&mut self) {
++                AUTOLINK_PREFLIGHT.with(|cell| cell.set(self.0));
++            }
++        }
++        let _restore = Restore(AUTOLINK_PREFLIGHT.with(|cell| cell.replace(self)));
++        run()
++    }
++}
++
++#[cfg(test)]
++thread_local! {
++    static AUTOLINK_PREFLIGHT: std::cell::Cell<AutolinkPreflight> =
++        const { std::cell::Cell::new(AutolinkPreflight::DEFAULT) };
++}
++
+ impl Drop for InlineDepthGuard<'_> {
+     fn drop(&mut self) {
+         self.depth.set(self.depth.get().saturating_sub(1));
+diff --git a/src/parser/inline/gfm_autolink.rs b/src/parser/inline/gfm_autolink.rs
+index 9a8c738c..6a88d6fc 100644
+--- a/src/parser/inline/gfm_autolink.rs
++++ b/src/parser/inline/gfm_autolink.rs
+@@ -14,10 +14,29 @@ mod candidate;
+ mod scan;
+ 
+ use self::candidate::find_candidate;
+-pub(super) use self::scan::may_contain_autolink;
++pub(super) use self::scan::{AutolinkFacts, may_contain_autolink};
+ 
+ use crate::parser::Parser;
+ 
++/// Parses and renders every input with both pre-flights and compares the
++/// results; see the module docs.
++#[cfg(test)]
++mod preflight_equivalence;
++
++/// Test builds check the tracked pre-flight against the separate pass for
++/// every block they parse.
++#[cfg(test)]
++#[track_caller]
++pub(super) fn assert_same_preflight(content: &str, tracked: Option<AutolinkScan>) {
++    let flags =
++        |scan: Option<AutolinkScan>| scan.map(|scan| (scan.may_have_www, scan.may_have_extended));
++    assert_eq!(
++        flags(tracked),
++        flags(may_contain_autolink(content)),
++        "tracked autolink pre-flight differs for {content:?}"
++    );
++}
++
+ pub(super) struct Candidate {
+     pub(super) start: usize,
+     pub(super) end: usize,
+diff --git a/src/parser/inline/gfm_autolink/preflight_equivalence.rs b/src/parser/inline/gfm_autolink/preflight_equivalence.rs
+new file mode 100644
+index 00000000..bcbfe21d
+--- /dev/null
++++ b/src/parser/inline/gfm_autolink/preflight_equivalence.rs
+@@ -0,0 +1,330 @@
++//! The tracked autolink pre-flight must produce exactly the documents the
++//! separate pre-flight produces.
++//!
++//! Every input is parsed twice — once with each pre-flight selected on this
++//! thread — and the AST `Debug` output and the rendered HTML are compared.
++//! On top of that, every block parsed with the tracked pre-flight asserts
++//! that its gate value equals the separate pass's (`assert_same_preflight`),
++//! so these inputs check the gate itself and not only its effect.
++//!
++//! The inputs are the bundled specification fixtures, two frozen
++//! measurement corpora, and generated token soup built from the shapes that
++//! decide the gate: the needles, their near misses, and every construct that
++//! consumes bytes the marker scan never classifies.
++
++#![allow(
++    clippy::disallowed_macros,
++    clippy::disallowed_methods,
++    clippy::disallowed_types,
++    clippy::print_stdout
++)]
++
++use std::path::{Path, PathBuf};
++
++use crate::allocator::Allocator;
++use crate::parser::inline::AutolinkPreflight;
++use crate::parser::prepass::gzip::gunzip;
++use crate::parser::{Parser, ParserOptions};
++use crate::renderer::{HtmlRenderer, HtmlRendererOptions};
++
++/// The AST and the HTML of one parse, or its error.
++fn output(source: &str, options: &ParserOptions, preflight: AutolinkPreflight) -> String {
++    preflight.with(|| {
++        let arena = Allocator::new();
++        match Parser::with_options(&arena, source, options.clone()).parse() {
++            Ok(document) => {
++                // `gfm_spec` renders without the renderer's own URL
++                // autolinking, which could otherwise hide a parser difference.
++                let html =
++                    HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
++                format!("{document:?}\n{html}")
++            }
++            Err(error) => format!("error: {error:?}"),
++        }
++    })
++}
++
++/// Asserts identical output and reports whether the parse made a link.
++#[track_caller]
++fn check(source: &str, options: &ParserOptions) -> bool {
++    let separate = output(source, options, AutolinkPreflight::Separate);
++    let tracked = output(source, options, AutolinkPreflight::Tracked);
++    if separate != tracked {
++        let at = separate
++            .bytes()
++            .zip(tracked.bytes())
++            .position(|(a, b)| a != b)
++            .unwrap_or_else(|| separate.len().min(tracked.len()));
++        let context = |text: &str| {
++            let start = text.floor_char_boundary(at.saturating_sub(80));
++            let end = text.ceil_char_boundary((at + 80).min(text.len()));
++            text[start..end].to_owned()
++        };
++        panic!(
++            "outputs differ at byte {at} for {source:?}\nseparate: {:?}\ntracked:  {:?}",
++            context(&separate),
++            context(&tracked)
++        );
++    }
++    separate.contains("Link(")
++}
++
++/// Every profile with autolinks on: GFM, strict GFM, and GFM with each
++/// combination of the four optional inline markers, which select the
++/// classifier tables the tracked scan runs.
++fn option_matrix() -> Vec<ParserOptions> {
++    let mut matrix = vec![ParserOptions::gfm(), ParserOptions::gfm_spec()];
++    for markers in 0..16u8 {
++        matrix.push(ParserOptions {
++            mdx: markers & 1 != 0,
++            superscript: markers & 2 != 0,
++            math: markers & 4 != 0,
++            highlight: markers & 8 != 0,
++            // A caret that cannot open a note stays in the text run.
++            inline_footnotes: markers == 0,
++            subscript: markers & 2 != 0,
++            wiki_links: markers & 4 != 0,
++            ..ParserOptions::gfm()
++        });
++    }
++    matrix
++}
++
++/// The smaller matrix for the long corpus documents.
++fn corpus_matrix() -> Vec<ParserOptions> {
++    vec![
++        ParserOptions::gfm(),
++        ParserOptions::gfm_spec(),
++        ParserOptions {
++            highlight: true,
++            inline_footnotes: true,
++            superscript: true,
++            subscript: true,
++            math: true,
++            definition_lists: true,
++            heading_attributes: true,
++            wiki_links: true,
++            ..ParserOptions::gfm()
++        },
++    ]
++}
++
++fn repository_path(relative: &str) -> PathBuf {
++    Path::new(env!("CARGO_MANIFEST_DIR")).join(relative)
++}
++
++/// Markdown inputs of every example in a CommonMark-style `spec.txt` fixture.
++fn spec_inputs(text: &str) -> Vec<String> {
++    const FENCE: &str = "````````````````````````````````";
++    let mut inputs = Vec::new();
++    let mut lines = text.lines();
++    while let Some(line) = lines.next() {
++        let is_example = line
++            .strip_prefix(FENCE)
++            .is_some_and(|rest| rest.trim().starts_with("example"));
++        if !is_example {
++            continue;
++        }
++        let mut markdown = String::new();
++        for body in lines.by_ref() {
++            if body.starts_with(FENCE) || body == "." {
++                break;
++            }
++            markdown.push_str(&body.replace('→', "\t"));
++            markdown.push('\n');
++        }
++        inputs.push(markdown);
++    }
++    inputs
++}
++
++#[test]
++fn specification_fixtures_render_the_same() {
++    let matrix = option_matrix();
++    let mut examples = 0usize;
++    let mut linked = 0usize;
++    for fixture in [
++        "tests/spec_fixtures/commonmark-0.31.2-spec.txt",
++        "tests/spec_fixtures/gfm-extensions-spec.txt",
++    ] {
++        let path = repository_path(fixture);
++        let text = std::fs::read_to_string(&path)
++            .unwrap_or_else(|error| panic!("read {}: {error}", path.display()));
++        for markdown in spec_inputs(&text) {
++            for options in &matrix {
++                examples += 1;
++                linked += usize::from(check(&markdown, options));
++            }
++        }
++    }
++    assert!(
++        examples > 10_000,
++        "expected the full spec suites, got {examples}"
++    );
++    assert!(
++        linked > 1_000,
++        "expected links in the fixtures, got {linked}"
++    );
++    println!("spec fixtures: {examples} checks, {linked} with links");
++}
++
++/// Every case of one frozen measurement corpus.
++fn check_corpus(relative: &str, expected_cases: usize) {
++    let path = repository_path(relative);
++    let Ok(raw) = std::fs::read(&path) else {
++        // Published crate archives carry `tests/` but not `docs/`.
++        println!("{relative}: not present, skipped");
++        return;
++    };
++    let json = gunzip(&raw).unwrap_or_else(|error| panic!("{relative}: {error}"));
++    let corpus: serde_json::Value =
++        serde_json::from_slice(&json).unwrap_or_else(|error| panic!("{relative}: {error}"));
++    let cases = corpus["cases"]
++        .as_array()
++        .unwrap_or_else(|| panic!("{relative}: no cases array"));
++    assert_eq!(
++        cases.len(),
++        expected_cases,
++        "{relative}: case count changed"
++    );
++    let matrix = corpus_matrix();
++    for case in cases {
++        let input = case["input"].as_str().expect("case input");
++        for options in &matrix {
++            check(input, options);
++        }
++    }
++    println!("{relative}: {} cases checked", cases.len());
++}
++
++#[test]
++fn frozen_corpora_render_the_same() {
++    // The 57 broad documents with the authored table, autolink and scanner
++    // diagnostics, and the first SIMD round's corpus.
++    check_corpus("docs/reports/2026-09-16-arm-round-3/corpus.json.gz", 207);
++    check_corpus("docs/reports/2026-09-14-simd-round/corpus.json.gz", 72);
++}
++
++#[test]
++fn generated_token_soup_renders_the_same() {
++    // The needles, their near misses, the escapes and references that
++    // decode into them, and every construct whose bytes the marker scan
++    // skips: code spans, link destinations and titles, autolinks, raw HTML,
++    // math, expressions, notes. The long filler crosses the 16- and 32-byte
++    // vector steps and the overlapping tail.
++    let tokens = [
++        "www.",
++        "WWW.",
++        "www",
++        "ww",
++        "w",
++        ".",
++        "w.",
++        "://",
++        ":",
++        "//",
++        "/",
++        "http",
++        "https",
++        "HTTP",
++        "ftp",
++        "](",
++        "](http://",
++        "](https://",
++        "](ftp://",
++        "[",
++        "]",
++        "(",
++        ")",
++        "![",
++        "[x](",
++        "[^1]",
++        "[^1]: note\n",
++        "[ref]: http://ref.example\n",
++        "mailto:",
++        "mailto",
++        "xmpp:",
++        "xmpp",
++        "@",
++        "user@example.com",
++        "a@b.c",
++        "example.com",
++        ".org/path?q=1&x=2",
++        "\\",
++        "\\.",
++        "\\:",
++        "\\@",
++        "\\/",
++        "\\w",
++        "&#58;",
++        "&#64;",
++        "&#46;",
++        "&#119;",
++        "&amp;",
++        "&",
++        "`",
++        "``",
++        "`www.x.y`",
++        "`a@b.c`",
++        "*",
++        "**",
++        "_",
++        "~",
++        "~~",
++        "<",
++        ">",
++        "<http://a.b>",
++        "<a@b.c>",
++        "<span title=\"www.x.y\">",
++        "\n",
++        "  \n",
++        "\\\n",
++        "\n\n",
++        " ",
++        "a",
++        "text ",
++        "$",
++        "$x@y.z$",
++        "^",
++        "^[",
++        "=",
++        "==",
++        "{",
++        "}",
++        "| a | b |\n|---|---|\n| ",
++        " | ",
++        "- ",
++        "> ",
++        "# ",
++        "\t",
++        "é",
++        "中",
++        "abcdefghijklmnopqrstuvwxyz0123",
++        "a long run of ordinary prose without any trigger in it ",
++    ];
++    let mut state = 0x2545_f491_4f6c_dd1du64;
++    let mut next = move || {
++        state = state
++            .wrapping_mul(6_364_136_223_846_793_005)
++            .wrapping_add(1_442_695_040_888_963_407);
++        (state >> 33) as usize
++    };
++    let matrix = option_matrix();
++    let mut checks = 0usize;
++    let mut linked = 0usize;
++    for round in 0..2_500 {
++        let len = next() % 48;
++        let mut source = String::new();
++        for _ in 0..len {
++            source.push_str(tokens[next() % tokens.len()]);
++        }
++        // Every document under GFM; a rotating slice of the matrix on top.
++        linked += usize::from(check(&source, &matrix[0]));
++        check(&source, &matrix[2 + round % (matrix.len() - 2)]);
++        check(&source, &matrix[1]);
++        checks += 3;
++    }
++    assert!(checks > 7_000, "expected a broad sweep, got {checks}");
++    assert!(linked > 500, "expected generated links, got {linked}");
++    println!("token soup: {checks} checks, {linked} with links");
++}
+diff --git a/src/parser/inline/gfm_autolink/scan.rs b/src/parser/inline/gfm_autolink/scan.rs
+index db7ad468..3b2514fc 100644
+--- a/src/parser/inline/gfm_autolink/scan.rs
++++ b/src/parser/inline/gfm_autolink/scan.rs
+@@ -53,6 +53,10 @@ pub(super) const LONGEST_SCHEME: usize = 5;
+ /// `://` inside a markdown destination (`](https://…)`) cannot become a
+ /// GFM autolink — the inline parser already turned it into a Link — so it
+ /// does not keep the pass on.
++///
++/// On aarch64 the block parse answers this out of its marker walk instead
++/// ([`AutolinkFacts`]); this separate pass remains the path of the other
++/// targets and the reference the tracked answer is tested against.
+ pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<AutolinkScan> {
+     let bytes = content.as_bytes();
+     // One pass over `@` and `:` settles the email separator, `://`,
+@@ -83,6 +87,118 @@ pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<A
+     })
+ }
+ 
++/// [`may_contain_autolink`], answered one byte position at a time while the
++/// inline marker scan walks the block, so the pre-flight needs no pass of its
++/// own over the text the marker scan already classifies.
++///
++/// Every fact the pre-flight derives belongs to one byte of the raw content,
++/// and each is a pure function of that position:
++///
++/// - an `@` sets `has_at`;
++/// - a `:` sets the bare-scheme and extended-scheme facts from the bytes
++///   around it — exactly the per-colon body of the pre-flight's loop;
++/// - a `.` preceded by `www` is where a `www.` needle ends, which is what the
++///   pre-flight's substring search finds.
++///
++/// Those are the *trigger* bytes. Nothing else can change the answer, so the
++/// answer is [`may_contain_autolink`]'s — value for value, flags included —
++/// once every trigger position of the content has been visited. Visiting one
++/// twice changes nothing: every fact only ever turns on.
++///
++/// `seen` is the watermark that makes "every position" checkable: every
++/// trigger before it has been visited. The fused marker scan visits the
++/// triggers of the text it classifies and moves the watermark behind the
++/// marker it stops at; the bytes a construct then consumes (a code span, a
++/// link destination) are visited by [`Self::fill_to`] before the next scan
++/// starts, and [`Self::finish`] visits whatever is left at the end.
++#[derive(Clone, Copy)]
++pub(in crate::parser::inline) struct AutolinkFacts {
++    seen: usize,
++    has_at: bool,
++    has_www: bool,
++    has_bare_scheme: bool,
++    has_extended_scheme: bool,
++}
++
++impl AutolinkFacts {
++    pub(in crate::parser::inline) const fn new() -> Self {
++        Self {
++            seen: 0,
++            has_at: false,
++            has_www: false,
++            has_bare_scheme: false,
++            has_extended_scheme: false,
++        }
++    }
++
++    /// Every trigger before this position has been visited.
++    #[inline]
++    pub(in crate::parser::inline) const fn seen(&self) -> usize {
++        self.seen
++    }
++
++    /// Records that every trigger before `upto` has been visited.
++    #[inline]
++    pub(in crate::parser::inline) fn advance_seen(&mut self, upto: usize) {
++        self.seen = self.seen.max(upto);
++    }
++
++    /// Visits every trigger in `seen..upto` and moves the watermark there.
++    #[inline]
++    pub(in crate::parser::inline) fn fill_to(&mut self, bytes: &[u8], upto: usize) {
++        if upto > self.seen {
++            let from = self.seen;
++            self.seen = upto;
++            crate::parser::inline::scan::visit_autolink_triggers(bytes, from, upto, self);
++        }
++    }
++
++    /// Applies the pre-flight's rule to the byte at `at`.
++    ///
++    /// Only trigger bytes set anything; the `:` arm is the per-colon body of
++    /// [`may_contain_autolink`]'s loop, and the `.` arm is its `www.` search
++    /// seen from the needle's last byte.
++    #[inline]
++    pub(in crate::parser::inline) fn visit(&mut self, bytes: &[u8], at: usize) {
++        match bytes[at] {
++            b'@' => self.has_at = true,
++            b':' => {
++                if bytes[at + 1..].starts_with(b"//") {
++                    self.has_bare_scheme |= !scheme_is_markdown_destination(bytes, at);
++                }
++                let prefix = &bytes[..at];
++                self.has_extended_scheme |=
++                    prefix.ends_with(b"mailto") || prefix.ends_with(b"xmpp");
++            }
++            b'.' => self.has_www |= at >= 3 && bytes[at - 3..at] == *b"www",
++            _ => {}
++        }
++    }
++
++    /// The four facts, for tests that compare two ways of visiting.
++    #[cfg(test)]
++    pub(in crate::parser::inline) const fn facts(&self) -> [bool; 4] {
++        [
++            self.has_at,
++            self.has_www,
++            self.has_bare_scheme,
++            self.has_extended_scheme,
++        ]
++    }
++
++    /// Visits the rest of the content and answers the pre-flight.
++    pub(in crate::parser::inline) fn finish(&mut self, bytes: &[u8]) -> Option<AutolinkScan> {
++        self.fill_to(bytes, bytes.len());
++        // The same combination as `may_contain_autolink`.
++        let may_have_www = self.has_at || self.has_www;
++        let may_have_extended = self.has_at && self.has_extended_scheme;
++        (may_have_www || may_have_extended || self.has_bare_scheme).then_some(AutolinkScan {
++            may_have_www,
++            may_have_extended,
++        })
++    }
++}
++
+ /// True when the `://` at `colon_slash_slash` completes a Markdown link
+ /// destination such as `](http://`, which the inline parser already
+ /// consumed, rather than a bare URL.
+@@ -391,6 +507,22 @@ mod tests {
+         let actual =
+             may_contain_autolink(content).map(|scan| (scan.may_have_www, scan.may_have_extended));
+         assert_eq!(actual, reference(content), "input: {content:?}");
++
++        // The position-by-position form: one bulk visit of the whole
++        // content, and the scalar rule applied at every single position.
++        let bulk = AutolinkFacts::new()
++            .finish(content.as_bytes())
++            .map(|scan| (scan.may_have_www, scan.may_have_extended));
++        assert_eq!(bulk, reference(content), "tracked, input: {content:?}");
++        let mut each = AutolinkFacts::new();
++        for at in 0..content.len() {
++            each.visit(content.as_bytes(), at);
++        }
++        each.advance_seen(content.len());
++        let each = each
++            .finish(content.as_bytes())
++            .map(|scan| (scan.may_have_www, scan.may_have_extended));
++        assert_eq!(each, reference(content), "per position, input: {content:?}");
+     }
+ 
+     #[test]
+@@ -418,6 +550,16 @@ mod tests {
+             "www.:",
+             "ends with www",
+             "ends with mailto",
++            "www\\.example.com",
++            "ww.w.",
++            "wwww.",
++            ".www.",
++            "a longer line of prose that crosses one vector: www.example.com",
++            "a longer line of prose that crosses one vector: ends with www",
++            "a longer line of prose that crosses one vector: http://x.y",
++            "a longer line of prose [text](https://example.com) and no bare one",
++            "a longer line of prose and an address user@example.com in it",
++            "a longer line of prose with mailto:user@example.com in it",
+         ] {
+             check(case);
+         }
+diff --git a/src/parser/inline/marker_scan.rs b/src/parser/inline/marker_scan.rs
+index b244ccd5..82391f85 100644
+--- a/src/parser/inline/marker_scan.rs
++++ b/src/parser/inline/marker_scan.rs
+@@ -3,9 +3,10 @@
+ //! Split out of `inline.rs` so the walk itself stays readable: this file is
+ //! one cursor and the rule for when it has to be recomputed.
+ 
++use super::gfm_autolink::{AutolinkFacts, AutolinkScan};
+ use super::scan::{
+     INLINE_MARKER_HIGHLIGHT, INLINE_MARKER_MATH, INLINE_MARKER_MDX, INLINE_MARKER_SUPERSCRIPT,
+-    next_inline_marker,
++    next_inline_marker, next_inline_marker_tracking,
+ };
+ 
+ /// A memo for one forward byte scan over a fixed slice.
+@@ -44,10 +45,23 @@ impl ForwardScan {
+ /// The core classifier and enabled extension markers are selected in one
+ /// forward lookup. Keeping one memo instead of one memo per optional marker
+ /// avoids repeated traversals when several extensions are enabled.
++///
++/// The scan of a block's own inline content can also answer the block's GFM
++/// autolink pre-flight on the way ([`Self::with_autolink_facts`]): it is the
++/// one walk that already reads the block's text.
+ pub(in crate::parser) struct InlineMarkerScan {
+     optional: u8,
+     notes_only: bool,
+     scan: ForwardScan,
++    /// The pre-flight facts, when this scan answers the autolink pre-flight.
++    ///
++    /// Only the block-level scan carries them. Like the memo, they assume
++    /// the scan is only ever asked about the one slice it was created for,
++    /// so every position it reports is a position of the block content.
++    /// Nested inline contexts (link text, image alt) get their own plain
++    /// scan; the bytes they cover are visited as part of the construct
++    /// around them.
++    autolink: Option<AutolinkFacts>,
+ }
+ 
+ impl InlineMarkerScan {
+@@ -69,15 +83,36 @@ impl InlineMarkerScan {
+             optional,
+             notes_only: options.inline_footnotes && !options.superscript,
+             scan: ForwardScan::new(),
++            autolink: None,
+         }
+     }
+ 
++    /// A scan that also answers the GFM autolink pre-flight for the block
++    /// content it walks; every call to [`Self::next`] has to pass that
++    /// content.
++    pub(in crate::parser) const fn with_autolink_facts(options: &crate::ParserOptions) -> Self {
++        let mut scan = Self::new(options);
++        scan.autolink = Some(AutolinkFacts::new());
++        scan
++    }
++
++    /// The pre-flight's answer for the block content `bytes` — exactly what
++    /// `may_contain_autolink` returns for it — or `None` for a plain scan.
++    /// The bytes behind the last scan are visited here.
++    pub(super) fn finish_autolink_scan(&mut self, bytes: &[u8]) -> Option<AutolinkScan> {
++        self.autolink.as_mut().and_then(|facts| facts.finish(bytes))
++    }
++
+     pub(in crate::parser) fn next(&mut self, bytes: &[u8], from: usize) -> usize {
+         let optional = self.optional;
+         let notes_only = self.notes_only;
++        let autolink = &mut self.autolink;
+         self.scan.hit(from, |mut at| {
+             loop {
+-                at = next_inline_marker(bytes, at, optional);
++                at = match autolink {
++                    Some(facts) => next_inline_marker_tracking(bytes, at, optional, facts),
++                    None => next_inline_marker(bytes, at, optional),
++                };
+                 if optional == 0 || at == bytes.len() {
+                     return at;
+                 }
+@@ -155,6 +190,7 @@ mod tests {
+                         optional: options,
+                         notes_only: false,
+                         scan: ForwardScan::new(),
++                        autolink: None,
+                     };
+                     assert_eq!(
+                         scan.next(bytes, from),
+@@ -178,6 +214,7 @@ mod tests {
+                             optional: options,
+                             notes_only: false,
+                             scan: ForwardScan::new(),
++                            autolink: None,
+                         };
+                         assert_eq!(scan.next(&bytes, from), oracle(&bytes, from, options));
+                     }
+@@ -195,6 +232,7 @@ mod tests {
+                 optional: options,
+                 notes_only: false,
+                 scan: ForwardScan::new(),
++                autolink: None,
+             };
+             for from in 0..=bytes.len() {
+                 assert_eq!(scan.next(bytes, from), oracle(bytes, from, options));
+diff --git a/src/parser/inline/scan.rs b/src/parser/inline/scan.rs
+index 7af60393..a8b2482a 100644
+--- a/src/parser/inline/scan.rs
++++ b/src/parser/inline/scan.rs
+@@ -19,9 +19,17 @@ mod scalar;
+ mod x86;
+ 
+ #[cfg(target_arch = "aarch64")]
+-use neon::{next_special_neon, next_special_neon_options};
++use neon::{
++    next_marker_tracking_neon, next_special_neon, next_special_neon_options,
++    visit_autolink_triggers_neon,
++};
+ #[cfg(not(target_arch = "aarch64"))]
+-use scalar::{next_inline_special_options_scalar, next_inline_special_scalar};
++use scalar::{
++    next_inline_special_options_scalar, next_inline_special_scalar, next_marker_tracking_scalar,
++    visit_autolink_triggers_scalar,
++};
++
++use super::gfm_autolink::AutolinkFacts;
+ #[cfg(target_arch = "x86_64")]
+ use x86::{
+     next_special_avx2, next_special_avx2_options, next_special_ssse3, next_special_ssse3_options,
+@@ -126,6 +134,134 @@ fn selected_marker_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16])
+     (&tables.0, &tables.1)
+ }
+ 
++/// The marker tables with the two single-byte GFM autolink triggers, `@`
++/// and `:`, admitted as stops too, for the scan that also answers the
++/// autolink pre-flight ([`next_inline_marker_tracking`]).
++///
++/// Neither needs a bit of its own, which is what keeps the classifier at
++/// one shuffle pair: `@` (high 4, low 0) joins the backtick bit 0x10, whose
++/// only low-nibble entry is 0, and `:` (high 3, low A) joins the `<` bit
++/// 0x04, whose only high-nibble entry is 3. No option set adds either bit
++/// anywhere else, so each addition admits exactly its own byte. The stop
++/// handler tells the triggers from markers by the byte itself.
++#[cfg(target_arch = "aarch64")]
++const fn tracking_marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
++    let (mut low, mut high) = marker_tables(options);
++    high[4] |= 0x10;
++    low[10] |= 0x04;
++    (low, high)
++}
++
++#[cfg(target_arch = "aarch64")]
++const TRACKING_TABLES: [([u8; 16], [u8; 16]); 16] = [
++    tracking_marker_tables(0),
++    tracking_marker_tables(1),
++    tracking_marker_tables(2),
++    tracking_marker_tables(3),
++    tracking_marker_tables(4),
++    tracking_marker_tables(5),
++    tracking_marker_tables(6),
++    tracking_marker_tables(7),
++    tracking_marker_tables(8),
++    tracking_marker_tables(9),
++    tracking_marker_tables(10),
++    tracking_marker_tables(11),
++    tracking_marker_tables(12),
++    tracking_marker_tables(13),
++    tracking_marker_tables(14),
++    tracking_marker_tables(15),
++];
++
++#[cfg(target_arch = "aarch64")]
++#[inline]
++fn selected_tracking_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
++    let tables = &TRACKING_TABLES[(options & 15) as usize];
++    (&tables.0, &tables.1)
++}
++
++/// Byte classes for the scalar tracking scans: bit 0 marks the core markers
++/// of [`INLINE_SPECIAL`], bits 1–4 the optional markers in `INLINE_MARKER_*`
++/// order (so `options << 1` selects them), and [`AUTOLINK_TRIGGER`] the bytes
++/// the autolink pre-flight derives its facts from.
++///
++/// No marker is a trigger, which is what lets a scan move the pre-flight
++/// watermark past the marker it stops at without visiting it.
++static TRACKED_CLASS: [u8; 256] = {
++    let mut t = [0u8; 256];
++    let mut byte = 0;
++    while byte < 256 {
++        t[byte] = INLINE_SPECIAL[byte];
++        byte += 1;
++    }
++    t[b'{' as usize] |= INLINE_MARKER_MDX << 1;
++    t[b'^' as usize] |= INLINE_MARKER_SUPERSCRIPT << 1;
++    t[b'$' as usize] |= INLINE_MARKER_MATH << 1;
++    t[b'=' as usize] |= INLINE_MARKER_HIGHLIGHT << 1;
++    t[b'@' as usize] |= AUTOLINK_TRIGGER;
++    t[b':' as usize] |= AUTOLINK_TRIGGER;
++    t[b'.' as usize] |= AUTOLINK_TRIGGER;
++    t
++};
++
++/// [`TRACKED_CLASS`] bit of the bytes `AutolinkFacts::visit` acts on.
++const AUTOLINK_TRIGGER: u8 = 0x80;
++
++/// The [`TRACKED_CLASS`] bits that stop a scan with these optional markers.
++#[inline]
++const fn tracked_marker_bits(options: u8) -> u8 {
++    1 | ((options & 15) << 1)
++}
++
++/// True for the bytes `AutolinkFacts::visit` acts on.
++#[inline]
++fn is_autolink_trigger(byte: u8) -> bool {
++    TRACKED_CLASS[byte as usize] & AUTOLINK_TRIGGER != 0
++}
++
++/// [`next_inline_marker`] for a scan that also answers the block's GFM
++/// autolink pre-flight: returns the same position, and on the way visits
++/// every autolink trigger before it that `facts` has not seen yet.
++///
++/// Bytes between the watermark and `from` were consumed by a construct the
++/// marker scan never classified, so they are visited first. Afterwards the
++/// watermark stands behind the returned marker: every trigger before it has
++/// been visited, and the marker byte itself is never one.
++#[inline]
++pub(super) fn next_inline_marker_tracking(
++    bytes: &[u8],
++    from: usize,
++    options: u8,
++    facts: &mut AutolinkFacts,
++) -> usize {
++    facts.fill_to(bytes, from.min(bytes.len()));
++    if from >= bytes.len() {
++        return from;
++    }
++    #[cfg(target_arch = "aarch64")]
++    {
++        next_marker_tracking_neon(bytes, from, options, facts)
++    }
++    #[cfg(not(target_arch = "aarch64"))]
++    {
++        next_marker_tracking_scalar(bytes, from, options, facts)
++    }
++}
++
++/// Visits every autolink trigger in `from..to`; the bytes around the range
++/// still count as context. The caller owns the watermark.
++#[inline]
++pub(super) fn visit_autolink_triggers(
++    bytes: &[u8],
++    from: usize,
++    to: usize,
++    facts: &mut AutolinkFacts,
++) {
++    #[cfg(target_arch = "aarch64")]
++    visit_autolink_triggers_neon(bytes, from, to, facts);
++    #[cfg(not(target_arch = "aarch64"))]
++    visit_autolink_triggers_scalar(bytes, from, to, facts);
++}
++
+ #[cfg(target_arch = "aarch64")]
+ #[inline]
+ pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
+diff --git a/src/parser/inline/scan/neon.rs b/src/parser/inline/scan/neon.rs
+index 994689f9..d28e5740 100644
+--- a/src/parser/inline/scan/neon.rs
++++ b/src/parser/inline/scan/neon.rs
+@@ -1,7 +1,13 @@
+ //! AArch64 NEON backend for the shared nibble classifier.
+ 
+-use super::scalar::next_inline_special_options_scalar;
+-use super::{HIGH_NIBBLE, INLINE_SPECIAL, LOW_NIBBLE, selected_marker_tables};
++use super::super::gfm_autolink::AutolinkFacts;
++use super::scalar::{
++    next_inline_special_options_scalar, next_marker_tracking_scalar, visit_autolink_triggers_scalar,
++};
++use super::{
++    HIGH_NIBBLE, INLINE_SPECIAL, LOW_NIBBLE, is_autolink_trigger, selected_marker_tables,
++    selected_tracking_tables,
++};
+ 
+ #[allow(unsafe_code)]
+ #[inline]
+@@ -78,3 +84,195 @@ pub(super) fn next_special_neon_options(bytes: &[u8], from: usize, options: u8)
+     let (low, high) = selected_marker_tables(options);
+     next_special_neon_with_tables(bytes, from, low, high)
+ }
++
++/// One bit per lane of a nibble-narrowed mask, so `bits & (bits - 1)`
++/// clears exactly one lane.
++const LANE_BITS: u64 = 0x8888_8888_8888_8888;
++
++/// Walks the stop lanes of one vector at `base` in order: autolink triggers
++/// the watermark has not passed are visited, and the first marker is
++/// returned with the watermark moved behind it.
++///
++/// A stop lane is a marker exactly when its byte is not a trigger — the
++/// tracking tables add only `@` and `:` to the marker set, the pair test only
++/// `.`, and no marker is any of the three.
++#[inline]
++fn resolve_stops(bytes: &[u8], base: usize, mask: u64, facts: &mut AutolinkFacts) -> Option<usize> {
++    let mut lanes = mask & LANE_BITS;
++    while lanes != 0 {
++        let at = base + (lanes.trailing_zeros() / 4) as usize;
++        if !is_autolink_trigger(bytes[at]) {
++            facts.advance_seen(at + 1);
++            return Some(at);
++        }
++        if at >= facts.seen() {
++            facts.visit(bytes, at);
++        }
++        lanes &= lanes - 1;
++    }
++    None
++}
++
++/// The tracking form of [`next_special_neon_with_tables`]: the same marker
++/// position, found by the same nibble classifier, while every autolink
++/// trigger before it is visited on the way.
++///
++/// `@` and `:` ride in the classifier tables as extra stops, so they cost
++/// nothing until one occurs. The `w.` pair needs the byte in front of every
++/// lane, which `vextq_u8` takes from the previous vector (`carry`, whose last
++/// lane is primed with the byte before the scan start). Those five vector
++/// operations are the price the marker loop pays for making the pre-flight's
++/// own pass over this text unnecessary.
++///
++/// The caller has visited every trigger before `from` (`from <= seen`).
++#[allow(unsafe_code)]
++#[inline]
++pub(super) fn next_marker_tracking_neon(
++    bytes: &[u8],
++    from: usize,
++    options: u8,
++    facts: &mut AutolinkFacts,
++) -> usize {
++    use std::arch::aarch64::*;
++    let end = bytes.len();
++    if end < 16 {
++        return next_marker_tracking_scalar(bytes, from, options, facts);
++    }
++    let (low_table, high_table) = selected_tracking_tables(options);
++    let mut i = from;
++    // SAFETY: NEON is part of the aarch64 baseline, and every load below
++    // reads 16 bytes at an offset the surrounding bounds keep within
++    // `bytes`: `i + 16 <= end` in the loops, `end - 16` in the tail.
++    unsafe {
++        let low = vld1q_u8(low_table.as_ptr());
++        let high = vld1q_u8(high_table.as_ptr());
++        let nibble = vdupq_n_u8(0x0F);
++        let dot = vdupq_n_u8(b'.');
++        let w = vdupq_n_u8(b'w');
++        let classify = |v: uint8x16_t, prev: uint8x16_t| {
++            let lo = vqtbl1q_u8(low, vandq_u8(v, nibble));
++            let hi = vqtbl1q_u8(high, vshrq_n_u8(v, 4));
++            let stops = vorrq_u8(
++                vtstq_u8(lo, hi),
++                vandq_u8(vceqq_u8(v, dot), vceqq_u8(prev, w)),
++            );
++            let narrow = vshrn_n_u16(vreinterpretq_u16_u8(stops), 4);
++            vget_lane_u64(vreinterpret_u64_u8(narrow), 0)
++        };
++        // A vector whose last lane is the byte in front of `at`, so that
++        // `vextq_u8(carry, v, 15)` lines every lane up with its predecessor.
++        // Nothing precedes the content; a `.` at 0 cannot end `www.`.
++        let before = |at: usize| vdupq_n_u8(if at > 0 { bytes[at - 1] } else { 0 });
++        let mut carry = before(i);
++        while i + 32 <= end {
++            let v0 = vld1q_u8(bytes.as_ptr().add(i));
++            let v1 = vld1q_u8(bytes.as_ptr().add(i + 16));
++            let m0 = classify(v0, vextq_u8(carry, v0, 15));
++            if m0 != 0
++                && let Some(stop) = resolve_stops(bytes, i, m0, facts)
++            {
++                return stop;
++            }
++            let m1 = classify(v1, vextq_u8(v0, v1, 15));
++            if m1 != 0
++                && let Some(stop) = resolve_stops(bytes, i + 16, m1, facts)
++            {
++                return stop;
++            }
++            carry = v1;
++            i += 32;
++        }
++        while i + 16 <= end {
++            let v = vld1q_u8(bytes.as_ptr().add(i));
++            let mask = classify(v, vextq_u8(carry, v, 15));
++            if mask != 0
++                && let Some(stop) = resolve_stops(bytes, i, mask, facts)
++            {
++                return stop;
++            }
++            carry = v;
++            i += 16;
++        }
++        if i < end {
++            // Overlapping tail, as in the plain scan: the lanes before `i`
++            // were classified by the loops above or lie before `from`, and
++            // their triggers were visited either way.
++            let base = end - 16;
++            let v = vld1q_u8(bytes.as_ptr().add(base));
++            let mask = classify(v, vextq_u8(before(base), v, 15)) & (u64::MAX << ((i - base) * 4));
++            if mask != 0
++                && let Some(stop) = resolve_stops(bytes, base, mask, facts)
++            {
++                return stop;
++            }
++        }
++    }
++    facts.advance_seen(end);
++    end
++}
++
++/// Visits every autolink trigger in `from..to` with the trigger test alone,
++/// for the bytes a construct consumed without the marker scan classifying
++/// them. The bytes around the range are read as context only.
++///
++/// `.` is too common to visit on its own, so the `www.` needle is caught by
++/// its last two bytes, as in the marker scan; `AutolinkFacts::visit` checks
++/// the rest. The pair test drops only `.` lanes not preceded by `w`, and
++/// such a `.` cannot end a `www.`.
++#[allow(unsafe_code)]
++pub(super) fn visit_autolink_triggers_neon(
++    bytes: &[u8],
++    from: usize,
++    to: usize,
++    facts: &mut AutolinkFacts,
++) {
++    use std::arch::aarch64::*;
++    if to - from < 16 {
++        visit_autolink_triggers_scalar(bytes, from, to, facts);
++        return;
++    }
++    // SAFETY: NEON is part of the aarch64 baseline; `to <= bytes.len()` and
++    // every load reads 16 bytes at `i` with `i + 16 <= to`, or at `to - 16`,
++    // which is at least `from` here.
++    unsafe {
++        let at_sign = vdupq_n_u8(b'@');
++        let colon = vdupq_n_u8(b':');
++        let dot = vdupq_n_u8(b'.');
++        let w = vdupq_n_u8(b'w');
++        let triggers = |v: uint8x16_t, prev: uint8x16_t| {
++            let lanes = vorrq_u8(
++                vorrq_u8(vceqq_u8(v, at_sign), vceqq_u8(v, colon)),
++                vandq_u8(vceqq_u8(v, dot), vceqq_u8(prev, w)),
++            );
++            let narrow = vshrn_n_u16(vreinterpretq_u16_u8(lanes), 4);
++            vget_lane_u64(vreinterpret_u64_u8(narrow), 0)
++        };
++        let before = |at: usize| vdupq_n_u8(if at > 0 { bytes[at - 1] } else { 0 });
++        let visit_lanes = |facts: &mut AutolinkFacts, base: usize, mask: u64| {
++            let mut lanes = mask & LANE_BITS;
++            while lanes != 0 {
++                facts.visit(bytes, base + (lanes.trailing_zeros() / 4) as usize);
++                lanes &= lanes - 1;
++            }
++        };
++        let mut i = from;
++        let mut carry = before(i);
++        while i + 16 <= to {
++            let v = vld1q_u8(bytes.as_ptr().add(i));
++            let mask = triggers(v, vextq_u8(carry, v, 15));
++            if mask != 0 {
++                visit_lanes(facts, i, mask);
++            }
++            carry = v;
++            i += 16;
++        }
++        if i < to {
++            let base = to - 16;
++            let v = vld1q_u8(bytes.as_ptr().add(base));
++            let mask = triggers(v, vextq_u8(before(base), v, 15)) & (u64::MAX << ((i - base) * 4));
++            if mask != 0 {
++                visit_lanes(facts, base, mask);
++            }
++        }
++    }
++}
+diff --git a/src/parser/inline/scan/scalar.rs b/src/parser/inline/scan/scalar.rs
+index b170fa66..88db265b 100644
+--- a/src/parser/inline/scan/scalar.rs
++++ b/src/parser/inline/scan/scalar.rs
+@@ -1,6 +1,52 @@
+ //! Portable marker scanning and short-vector tails.
+ 
+-use super::INLINE_SPECIAL;
++use super::super::gfm_autolink::AutolinkFacts;
++use super::{
++    AUTOLINK_TRIGGER, INLINE_SPECIAL, TRACKED_CLASS, is_autolink_trigger, tracked_marker_bits,
++};
++
++/// The portable tracking scan: the next marker at or after `from`, as
++/// `next_inline_marker` finds it, visiting the unseen autolink triggers
++/// before it.
++///
++/// Used whole on targets without a NEON path, and by the NEON scan for
++/// content shorter than one vector.
++pub(super) fn next_marker_tracking_scalar(
++    bytes: &[u8],
++    from: usize,
++    options: u8,
++    facts: &mut AutolinkFacts,
++) -> usize {
++    let markers = tracked_marker_bits(options);
++    let mut i = from;
++    while i < bytes.len() {
++        let class = TRACKED_CLASS[bytes[i] as usize];
++        if class & markers != 0 {
++            facts.advance_seen(i + 1);
++            return i;
++        }
++        if class & AUTOLINK_TRIGGER != 0 && i >= facts.seen() {
++            facts.visit(bytes, i);
++        }
++        i += 1;
++    }
++    facts.advance_seen(bytes.len());
++    i
++}
++
++/// Visits every autolink trigger in `from..to`, one byte at a time.
++pub(super) fn visit_autolink_triggers_scalar(
++    bytes: &[u8],
++    from: usize,
++    to: usize,
++    facts: &mut AutolinkFacts,
++) {
++    for at in from..to {
++        if is_autolink_trigger(bytes[at]) {
++            facts.visit(bytes, at);
++        }
++    }
++}
+ 
+ /// How far `next_inline_special` walks byte-at-a-time before switching to the
+ /// chunked scan. Eight is the only length measured that never regressed:
+diff --git a/src/parser/inline/scan/tests.rs b/src/parser/inline/scan/tests.rs
+index 96ca2813..07a37f0c 100644
+--- a/src/parser/inline/scan/tests.rs
++++ b/src/parser/inline/scan/tests.rs
+@@ -1,6 +1,334 @@
+-use super::scalar::next_inline_special_scalar;
++// Owned strings keep the generated inputs independent of production arena
++// storage.
++#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
++
++use super::super::gfm_autolink::{AutolinkScan, may_contain_autolink};
++use super::scalar::{
++    next_inline_special_scalar, next_marker_tracking_scalar, visit_autolink_triggers_scalar,
++};
+ use super::*;
+ 
++/// The facts the scalar rule derives from every position before `upto`:
++/// the definition the vector visits have to agree with.
++fn facts_before(bytes: &[u8], upto: usize) -> [bool; 4] {
++    let mut facts = AutolinkFacts::new();
++    for at in 0..upto {
++        facts.visit(bytes, at);
++    }
++    facts.facts()
++}
++
++/// The marker set of `next_inline_marker`, spelled out.
++fn is_marker(byte: u8, options: u8) -> bool {
++    matches!(
++        byte,
++        b'*' | b'_' | b'`' | b'[' | b'!' | b'~' | b'\\' | b'<' | b'&' | b'\n' | b'\r'
++    ) || (options & INLINE_MARKER_MDX != 0 && byte == b'{')
++        || (options & INLINE_MARKER_SUPERSCRIPT != 0 && byte == b'^')
++        || (options & INLINE_MARKER_MATH != 0 && byte == b'$')
++        || (options & INLINE_MARKER_HIGHLIGHT != 0 && byte == b'=')
++}
++
++/// One tracking scan from a fresh watermark: it must stop where the plain
++/// scan stops, leave the watermark behind the stop, and have visited
++/// exactly the triggers in front of the watermark.
++#[track_caller]
++fn check_tracking(bytes: &[u8], from: usize, options: u8) {
++    let mut facts = AutolinkFacts::new();
++    let hit = next_inline_marker_tracking(bytes, from, options, &mut facts);
++    assert_eq!(
++        hit,
++        next_inline_marker(bytes, from, options),
++        "stop: options {options}, from {from}, bytes {bytes:?}"
++    );
++    let covered = if hit < bytes.len() {
++        hit + 1
++    } else {
++        bytes.len()
++    };
++    assert!(
++        facts.seen() >= covered.max(from.min(bytes.len())),
++        "watermark {} behind {covered}: options {options}, from {from}, bytes {bytes:?}",
++        facts.seen()
++    );
++    assert_eq!(
++        facts.facts(),
++        facts_before(bytes, facts.seen()),
++        "facts: options {options}, from {from}, bytes {bytes:?}"
++    );
++
++    // The portable scan, which vector targets only reach for short content,
++    // on the same input and from the same watermark.
++    let mut portable = AutolinkFacts::new();
++    portable.fill_to(bytes, from.min(bytes.len()));
++    if from < bytes.len() {
++        let stop = next_marker_tracking_scalar(bytes, from, options, &mut portable);
++        assert_eq!(stop, hit, "portable stop: options {options}, from {from}");
++        assert!(portable.seen() >= covered);
++        assert_eq!(
++            portable.facts(),
++            facts_before(bytes, portable.seen()),
++            "portable facts: options {options}, from {from}, bytes {bytes:?}"
++        );
++    }
++}
++
++#[test]
++fn tracked_classes_are_the_markers_and_the_triggers() {
++    for options in 0..=15u8 {
++        for byte in 0..=255u8 {
++            let class = TRACKED_CLASS[byte as usize];
++            assert_eq!(
++                class & tracked_marker_bits(options) != 0,
++                is_marker(byte, options),
++                "marker class of {byte:#04x}, options {options}"
++            );
++            assert_eq!(
++                class & AUTOLINK_TRIGGER != 0,
++                matches!(byte, b'@' | b':' | b'.'),
++                "trigger class of {byte:#04x}"
++            );
++            assert_eq!(is_autolink_trigger(byte), class & AUTOLINK_TRIGGER != 0);
++            // The watermark moves past a marker without visiting it.
++            assert!(!(is_marker(byte, options) && is_autolink_trigger(byte)));
++        }
++    }
++}
++
++#[cfg(target_arch = "aarch64")]
++#[test]
++fn tracking_tables_admit_exactly_the_markers_and_two_triggers() {
++    for options in 0..=15u8 {
++        let (low, high) = selected_tracking_tables(options);
++        for byte in 0..=255u8 {
++            let stops = low[(byte & 0x0F) as usize] & high[(byte >> 4) as usize] != 0;
++            assert_eq!(
++                stops,
++                is_marker(byte, options) || byte == b'@' || byte == b':',
++                "byte {byte:#04x}, options {options}"
++            );
++        }
++    }
++}
++
++#[test]
++fn tracking_scan_agrees_for_every_byte_value_at_every_offset() {
++    // A trigger-free background, then one with a trigger of every kind, so
++    // the byte under test is sometimes the only fact and sometimes one of
++    // many. Neither background holds a marker.
++    let backgrounds: [&[u8]; 2] = [
++        &[b'x'; 72],
++        b"mailto:a@b.cwww.x://y.zw.xmpp:q//w.wwww.:@xhttps://www.x.y@z.w.ww.x",
++    ];
++    for background in backgrounds {
++        for len in [12usize, 40, 72] {
++            let len = len.min(background.len());
++            for options in [0u8, 6, 15] {
++                for value in 0..=255u8 {
++                    for at in 0..len {
++                        let mut buffer = [0u8; 72];
++                        buffer[..len].copy_from_slice(&background[..len]);
++                        buffer[at] = value;
++                        let bytes = &buffer[..len];
++                        for from in [
++                            0,
++                            1,
++                            15,
++                            16,
++                            17,
++                            31,
++                            32,
++                            33,
++                            at.saturating_sub(1),
++                            at,
++                            at + 1,
++                        ] {
++                            if from <= len {
++                                check_tracking(bytes, from, options);
++                            }
++                        }
++                    }
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn tracking_scan_sees_every_needle_across_vector_edges() {
++    // Each needle at every offset of an otherwise plain line, with a marker
++    // before it, after it, or nowhere, scanned from every offset — so the
++    // `w.` pair straddles vector and tail edges and the watermark start.
++    for needle in [
++        &b"www."[..],
++        b"http://",
++        b"](http://",
++        b"](HTTPS://",
++        b"mailto:",
++        b"xmpp:",
++        b"@",
++        b"w.",
++        b"ww.",
++    ] {
++        for len in [9usize, 15, 16, 17, 31, 32, 33, 48, 70] {
++            for at in 0..=len.saturating_sub(needle.len()) {
++                for marker in [None, Some(0), Some(at.saturating_sub(1)), Some(len - 1)] {
++                    let mut buffer = [b'x'; 72];
++                    buffer[at..at + needle.len()].copy_from_slice(needle);
++                    if let Some(marker) = marker
++                        && !(at..at + needle.len()).contains(&marker)
++                    {
++                        buffer[marker] = b'*';
++                    }
++                    let bytes = &buffer[..len];
++                    for from in 0..=len {
++                        for options in [0u8, 15] {
++                            check_tracking(bytes, from, options);
++                        }
++                    }
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn tracking_walks_answer_the_preflight() {
++    // A walk the way the inline parser drives the scan: forward past a
++    // one-byte marker, over a construct the scan never classified, and
++    // back to re-scan text it already passed. Whatever the path, finishing
++    // must give the separate pre-flight's answer.
++    let tokens = [
++        "www.",
++        "ww",
++        "w.",
++        ".",
++        "w",
++        "://",
++        ":",
++        "](http://",
++        "](ftp://",
++        "http",
++        "mailto:",
++        "xmpp:",
++        "@",
++        "a@b.c",
++        "*",
++        "`",
++        "[",
++        "]",
++        "(",
++        ")",
++        "\\",
++        "&",
++        "<",
++        "\n",
++        "$",
++        "^",
++        "=",
++        "{",
++        " ",
++        "x",
++        "abcdefghijklmnop",
++        "é",
++        "中",
++    ];
++    let mut state = 0x853c_49e6_748f_ea9bu64;
++    let mut next = move || {
++        state = state
++            .wrapping_mul(6_364_136_223_846_793_005)
++            .wrapping_add(1_442_695_040_888_963_407);
++        (state >> 33) as usize
++    };
++    for _ in 0..3_000 {
++        let mut source = std::string::String::new();
++        for _ in 0..next() % 40 {
++            source.push_str(tokens[next() % tokens.len()]);
++        }
++        let bytes = source.as_bytes();
++        let options = (next() % 16) as u8;
++        let mut facts = AutolinkFacts::new();
++        let mut pos = 0;
++        let mut rewinds = 0;
++        loop {
++            let hit = next_inline_marker_tracking(bytes, pos, options, &mut facts);
++            assert_eq!(hit, next_inline_marker(bytes, pos, options), "{source:?}");
++            assert_eq!(
++                facts.facts(),
++                facts_before(bytes, facts.seen()),
++                "{source:?} at {pos}"
++            );
++            if hit >= bytes.len() {
++                break;
++            }
++            pos = match next() % 8 {
++                0 if rewinds < 3 => {
++                    rewinds += 1;
++                    next() % (hit + 1)
++                }
++                1 | 2 => (hit + 1 + next() % 24).min(bytes.len()),
++                _ => hit + 1,
++            };
++        }
++        let answer = |scan: Option<AutolinkScan>| {
++            scan.map(|scan| (scan.may_have_www, scan.may_have_extended))
++        };
++        assert_eq!(
++            answer(facts.finish(bytes)),
++            answer(may_contain_autolink(&source)),
++            "{source:?}"
++        );
++    }
++}
++
++#[test]
++fn bulk_trigger_visits_match_the_scalar_rule() {
++    let tokens = [
++        "www.",
++        "w.",
++        ".",
++        "w",
++        "://",
++        ":",
++        "](http://",
++        "mailto:",
++        "xmpp:",
++        "@",
++        "x",
++        " ",
++        "abcdefghijklmnop",
++        "é",
++    ];
++    let mut state = 0xda3e_39cb_94b9_5bdbu64;
++    let mut next = move || {
++        state = state
++            .wrapping_mul(6_364_136_223_846_793_005)
++            .wrapping_add(1_442_695_040_888_963_407);
++        (state >> 33) as usize
++    };
++    for _ in 0..150 {
++        let mut source = std::string::String::new();
++        for _ in 0..next() % 16 {
++            source.push_str(tokens[next() % tokens.len()]);
++        }
++        let bytes = source.as_bytes();
++        for from in 0..=bytes.len() {
++            for to in from..=bytes.len() {
++                let mut bulk = AutolinkFacts::new();
++                visit_autolink_triggers(bytes, from, to, &mut bulk);
++                let mut scalar = AutolinkFacts::new();
++                visit_autolink_triggers_scalar(bytes, from, to, &mut scalar);
++                let mut each = AutolinkFacts::new();
++                for at in from..to {
++                    each.visit(bytes, at);
++                }
++                assert_eq!(bulk.facts(), each.facts(), "{source:?} {from}..{to}");
++                assert_eq!(scalar.facts(), each.facts(), "{source:?} {from}..{to}");
++            }
++        }
++    }
++}
++
+ /// The definition the chunked scan has to agree with.
+ fn reference(bytes: &[u8], from: usize) -> usize {
+     let mut i = from;
+diff --git a/src/parser/prepass.rs b/src/parser/prepass.rs
+index b94e0583..6106bb3d 100644
+--- a/src/parser/prepass.rs
++++ b/src/parser/prepass.rs
+@@ -28,11 +28,12 @@ mod segments;
+ /// The segmented pass is proven against the unsegmented one, over the bundled
+ /// specification fixtures, the frozen measurement corpora and generated token
+ /// soup. `gzip` only exists so the corpora can be read without a compression
+-/// dependency; both modules are test-only.
++/// dependency; both modules are test-only. The inline autolink pre-flight's
++/// differential test reads the same corpora.
+ #[cfg(test)]
+ mod equivalence;
+ #[cfg(test)]
+-mod gzip;
++pub(super) mod gzip;
+ 
+ pub(super) use segments::{
+     CandidateOpeners, DENSITY_SAMPLE, DefinitionPlan, MIN_PLANNED_BYTES, SEGMENT_COST_BYTES,
+diff --git a/src/parser/prepass/gzip.rs b/src/parser/prepass/gzip.rs
+index 59eaf520..b8ee3265 100644
+--- a/src/parser/prepass/gzip.rs
++++ b/src/parser/prepass/gzip.rs
+@@ -17,7 +17,7 @@
+ type Result<T> = std::result::Result<T, &'static str>;
+ 
+ /// Decompresses a gzip member and checks the trailer's uncompressed size.
+-pub(super) fn gunzip(data: &[u8]) -> Result<Vec<u8>> {
++pub(in crate::parser) fn gunzip(data: &[u8]) -> Result<Vec<u8>> {
+     if data.len() < 18 || data[0] != 0x1f || data[1] != 0x8b {
+         return Err("not a gzip stream");
+     }
