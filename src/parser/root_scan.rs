@@ -18,9 +18,11 @@
 //! it stays behind this scan and runs only then.
 //!
 //! aarch64 runs the loop with NEON. x86-64 runs the same loop with SSE2,
-//! which is part of the x86-64 baseline, or with 32-byte AVX2 blocks where the
-//! CPU reports AVX2 at run time: published builds target the baseline, and
-//! `is_x86_feature_detected!` caches its answer. Other targets do not run this
+//! which is part of the x86-64 baseline. A body of 512 bytes or more runs it
+//! with 32-byte AVX2 blocks where the CPU reports AVX2 at run time: published
+//! builds target the baseline, and `is_x86_feature_detected!` caches its
+//! answer. A shorter body stays on SSE2 without that check: the wider loop
+//! has little to save there against its fixed costs. Other targets do not run this
 //! scan at all: the root parse keeps its plain NUL `memchr`, and the pre-pass
 //! keeps its `[` probe in front of the `]:` search, so a body without `[` is
 //! never searched for `]:`. `memchr`'s own vector paths are what a portable
@@ -199,13 +201,30 @@ fn first_nul_or_closer(bytes: &[u8]) -> Option<usize> {
     }
 }
 
+/// Shortest body the AVX2 loop runs on: four of its 128-byte groups.
+///
+/// The AVX2 loop costs something the SSE2 one does not: the feature check, a
+/// call that cannot be inlined across its `target_feature` boundary, clearing
+/// the upper register halves on return, and a tail vector twice as wide. What
+/// it saves is one group iteration per 128 bytes, since each of its groups
+/// covers two SSE2 groups. A body under four of its groups saves at most
+/// three iterations, which the fixed cost can outweigh. With AVX2 from 32
+/// bytes on, the x86-64 paired harness put comments of 37 to 298 bytes below
+/// parity in fresh and reuse parsing. Below this length the dispatch takes the
+/// SSE2 loop without running the feature check. The tests cross the threshold
+/// on every target.
+#[cfg(any(test, target_arch = "x86_64"))]
+const AVX2_MIN_LEN: usize = 4 * 128;
+
 /// Offset of the first byte of `bytes` that is a NUL or starts a `]:`: the
-/// NEON loop's answer, in 32-byte AVX2 blocks where the CPU has AVX2 and in
-/// 16-byte SSE2 blocks otherwise.
+/// NEON loop's answer, in 32-byte AVX2 blocks for a body of at least
+/// [`AVX2_MIN_LEN`] bytes where the CPU has AVX2, and in 16-byte SSE2 blocks
+/// otherwise.
 #[cfg(target_arch = "x86_64")]
 #[inline]
 fn first_nul_or_closer(bytes: &[u8]) -> Option<usize> {
-    if std::arch::is_x86_feature_detected!("avx2") {
+    // The length test comes first, so a shorter body never runs the check.
+    if bytes.len() >= AVX2_MIN_LEN && std::arch::is_x86_feature_detected!("avx2") {
         // SAFETY: guarded by the detection above.
         #[allow(unsafe_code)]
         unsafe {
@@ -288,8 +307,9 @@ fn first_nul_or_closer_sse2(bytes: &[u8]) -> Option<usize> {
 }
 
 /// [`first_nul_or_closer`] in 32-byte AVX2 blocks: the SSE2 loop at twice the
-/// width, again four blocks to a group. A body shorter than one such vector
-/// takes the SSE2 loop.
+/// width, again four blocks to a group. The dispatch only calls it from
+/// [`AVX2_MIN_LEN`] bytes on, but it answers for any body: one shorter than
+/// its own vector takes the SSE2 loop.
 ///
 /// # Safety
 ///
@@ -614,6 +634,30 @@ mod tests {
                 }
                 check(&body);
             }
+        }
+    }
+
+    #[test]
+    fn every_offset_on_both_sides_of_the_avx2_threshold() {
+        // On x86-64 the dispatch switches from the SSE2 loop to the AVX2 one
+        // at `AVX2_MIN_LEN` bytes. Around it, from one AVX2 vector below to
+        // one above, put each needle at every offset: the lengths just past it
+        // end on every AVX2 tail length after four groups, and those just
+        // below it on the SSE2 loop's.
+        let threshold = super::AVX2_MIN_LEN;
+        for len in threshold - 33..=threshold + 33 {
+            for needle in [&b"\0"[..], b"]:"] {
+                for at in 0..=len - needle.len() {
+                    let mut body = vec![b'x'; len];
+                    body[at..at + needle.len()].copy_from_slice(needle);
+                    check(&body);
+                }
+            }
+            // No needle, and a `]` in the final byte.
+            let mut body = vec![b'x'; len];
+            check(&body);
+            body[len - 1] = b']';
+            check(&body);
         }
     }
 
