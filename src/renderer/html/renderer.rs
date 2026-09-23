@@ -160,6 +160,17 @@ impl HtmlRenderer {
         Self::with_renderer_options(options.into())
     }
 
+    /// Returns this renderer with a fixed heading level offset.
+    ///
+    /// Positive values move headings toward `h6`; negative values move them
+    /// toward `h1`. The rendered level clamps to the valid `h1`–`h6` range.
+    /// The parsed AST and heading IDs are unchanged.
+    #[must_use]
+    pub fn with_heading_level_offset(mut self, offset: i32) -> Self {
+        self.options.heading_level_offset = offset;
+        self
+    }
+
     fn with_renderer_options(options: RendererOptions) -> Self {
         // The index is a pure function of the options, which are immutable for
         // the life of the renderer, so it is built here rather than at every

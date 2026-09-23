@@ -70,6 +70,7 @@ fn every_extension() -> CoreOptions {
     let CoreOptions {
         mut parser,
         mut html,
+        heading_level_offset,
     } = addon_defaults();
     parser.tables = true;
     parser.merged_table_cells = true;
@@ -93,7 +94,11 @@ fn every_extension() -> CoreOptions {
     html.table_colgroup = true;
     html.table_column_names = true;
     html.disallow_raw_html = true;
-    CoreOptions { parser, html }
+    CoreOptions {
+        parser,
+        html,
+        heading_level_offset,
+    }
 }
 
 /// The addon default with `mdx` on.

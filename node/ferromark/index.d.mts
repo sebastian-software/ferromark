@@ -46,6 +46,8 @@ export interface Options {
   frontMatter?: boolean;
   /** Generate v2 heading IDs. Default: on. */
   headingIds?: boolean;
+  /** Signed 32-bit integer heading shift; positive values move toward h6, clamped to h1–h6. Default: 0. */
+  headingOffset?: number;
   /** Enable `$inline$` and `$$display$$` math. Default: off. */
   math?: boolean;
   /** Enable GitHub-style blockquote callouts. Default: on. */

@@ -15,6 +15,17 @@ mod tests;
 /// link to the generated id do not receive a second marker.
 pub const HEADING_PERMALINK_CLASS: &str = "header-anchor";
 
+/// Maps a Markdown heading level to its rendered level after applying `offset`.
+///
+/// Levels are clamped to HTML's `h1` through `h6` range after the offset is
+/// applied. Offsets outside that range therefore produce `h1` or `h6` rather
+/// than an invalid heading element.
+#[must_use]
+pub fn map_heading_level(level: u8, offset: i32) -> u8 {
+    let shifted = i64::from(level.clamp(1, 6)) + i64::from(offset);
+    u8::try_from(shifted.clamp(1, 6)).unwrap_or(1)
+}
+
 /// Collects heading text using the same rules as generated HTML IDs.
 #[must_use]
 pub fn collect_heading_text(nodes: &[Node<'_>]) -> String {

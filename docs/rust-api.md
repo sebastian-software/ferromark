@@ -89,6 +89,25 @@ defaults. See the
 A root-absolute link stays root-absolute under an empty base, as recorded in the
 [renderer review fixes](decisions/2026-09-21-renderer-fixes.md).
 
+### Heading levels
+
+`heading_level_offset` shifts the HTML heading level without changing the
+Markdown AST. Positive values move toward `h6`, negative values move toward
+`h1`, and results clamp to the valid `h1`–`h6` range. The default is `0`.
+`map_heading_level` exposes this same mapping for consumers that produce
+heading metadata; generated IDs and fragment links remain based on the original
+heading text.
+
+```rust
+use ferromark::{HtmlRenderer, map_heading_level};
+
+let _renderer = HtmlRenderer::new().with_heading_level_offset(1);
+assert_eq!(map_heading_level(1, 1), 2);
+```
+
+This behavior is recorded in the
+[heading offset decision](decisions/2026-09-23-heading-level-offset.md).
+
 ## Append to an existing string
 
 ```rust
@@ -154,6 +173,10 @@ renderer.reset_incremental_state();
 - `reset_incremental_state` clears the carried state so the next document starts
   from a clean renderer. Caches derived from the immutable options, such as the
   autolink index, are kept.
+
+Renderer options apply to each fragment as well. In particular,
+`heading_level_offset` stays in effect across committed, provisional, hooked,
+and post-reset fragment renders.
 
 These entry points are deliberately separate from `render`, which resets that
 state for every document and keeps its exact one-shot setup cost. Each fragment
