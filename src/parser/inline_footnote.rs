@@ -8,6 +8,7 @@ use crate::ast::Visit;
 use rustc_hash::FxHashSet;
 
 use super::Parser;
+use super::whitespace;
 
 #[derive(Default)]
 struct ExplicitLabels<'a>(FxHashSet<&'a str>);
@@ -39,7 +40,7 @@ impl<'a> Parser<'a> {
                 let body = &content[body_start..close];
                 // An inline note cannot cross a paragraph boundary. Block parsing
                 // usually enforces this already; this also covers inline callers.
-                if !body.lines().any(|line| line.trim().is_empty()) {
+                if !body.lines().any(whitespace::is_blank) {
                     let mut parser = self.inline_note_sub_parser(body);
                     parser.options.inline_footnotes = false;
                     let parsed = parser.parse_inline_block(body, offset + body_start);

@@ -19,6 +19,7 @@ use rustc_hash::FxHashSet;
 use super::Parser;
 use super::line_scan::{line_end, line_terminator_end, next_line_start};
 use super::spans::SourceMap;
+use super::whitespace;
 use crate::parser::error::ParseResult;
 
 pub(super) type FootnoteLabels = FxHashSet<CompactString>;
@@ -82,7 +83,7 @@ fn definition_body_len(parser: &Parser<'_>, content_start: usize) -> usize {
             continue;
         }
 
-        if trimmed.trim_end().is_empty() {
+        if whitespace::is_blank(trimmed) {
             cursor = next_line;
             continue;
         }

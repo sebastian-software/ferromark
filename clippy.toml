@@ -8,6 +8,9 @@ disallowed-methods = [
   { path = "alloc::string::ToString::to_string", reason = "prefer borrowed strings, CompactString, or allocator-owned strings instead of creating std::String temporaries" },
   { path = "std::string::String::new", reason = "avoid std::String for small rule state; use CompactString, or keep std::String only for explicit output buffers and ABI boundaries" },
   { path = "std::string::ToString::to_string", reason = "prefer borrowed strings, CompactString, or allocator-owned strings instead of creating std::String temporaries" },
+  { path = "str::trim", reason = "strips Unicode whitespace, which CommonMark block structure treats as content; use crate::parser::whitespace::trim" },
+  { path = "str::trim_start", reason = "strips Unicode whitespace, which CommonMark block structure treats as content; use crate::parser::whitespace::trim_start" },
+  { path = "str::trim_end", reason = "strips Unicode whitespace, which CommonMark block structure treats as content; use crate::parser::whitespace::trim_end" },
 ]
 
 disallowed-types = [

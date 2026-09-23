@@ -6,6 +6,7 @@ use super::Parser;
 use super::lazy_paragraph::OpenParagraph;
 use super::line_scan::{is_line_ending_byte, line_terminator_end};
 use super::list_item::ParsedListItem;
+use super::whitespace;
 use crate::parser::error::ParseResult;
 
 mod item_source;
@@ -142,7 +143,7 @@ impl<'a> Parser<'a> {
         Option<ParsedListItem<'a>>,
     ) {
         let content_indent = item.content_indent;
-        let item_is_empty = item.content.trim().is_empty();
+        let item_is_empty = whitespace::is_blank(item.content);
         let mut item_source = None;
         let mut item_end = self.position;
         let mut gap_spread = false;
@@ -190,7 +191,7 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
-            if continuation_line.trim().is_empty() {
+            if whitespace::is_blank(continuation_line) {
                 let mut lookahead = continuation_next;
                 // The line that stops the walk is the one a sibling marker
                 // would be read from, so carry it out instead of scanning it
@@ -198,7 +199,7 @@ impl<'a> Parser<'a> {
                 let mut lookahead_line = "";
                 while lookahead < self.source.len() {
                     let (line, next) = self.line_and_next(lookahead);
-                    if !line.trim().is_empty() && !self.is_line_comment_at(lookahead) {
+                    if !whitespace::is_blank(line) && !self.is_line_comment_at(lookahead) {
                         lookahead_line = line;
                         break;
                     }

@@ -3,6 +3,7 @@ use crate::ast::{Node, Paragraph, Span};
 
 use super::super::Parser;
 use super::super::spans::SourceMap;
+use super::super::whitespace;
 use crate::parser::error::ParseResult;
 
 pub(super) struct ListItemSource<'a> {
@@ -73,7 +74,7 @@ impl<'a> Parser<'a> {
         if columns >= 4 {
             return false;
         }
-        let Some(&first) = content.trim_start().as_bytes().first() else {
+        let Some(&first) = whitespace::trim_start(content).as_bytes().first() else {
             return true;
         };
 
@@ -107,12 +108,12 @@ impl<'a> Parser<'a> {
         item_end: usize,
     ) -> ParseResult<Vec<'a, Node<'a>>> {
         let mut children = self.allocator.new_vec();
-        let inline = content.trim();
+        let (inline, leading) = whitespace::trim_with_leading(content);
         if inline.is_empty() {
             return Ok(children);
         }
 
-        let paragraph_children = self.parse_inline_block(inline, content_offset)?;
+        let paragraph_children = self.parse_inline_block(inline, content_offset + leading)?;
         children.push(Node::Paragraph(self.allocator.boxed(Paragraph {
             children: paragraph_children,
             span: Span::new(content_offset as u32, item_end as u32),

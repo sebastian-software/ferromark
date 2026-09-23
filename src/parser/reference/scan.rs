@@ -5,6 +5,7 @@
 //! used by block-quote parsing and footnote-label discovery.
 
 use super::super::line_scan::{is_line_ending_byte, line_end, line_terminator_end};
+use super::super::whitespace;
 
 pub(super) fn skip_ws_one_newline(bytes: &[u8], mut i: usize) -> Option<usize> {
     let mut newlines = 0;
@@ -71,5 +72,5 @@ pub(in crate::parser) fn fence_open(trimmed: &str) -> Option<(u8, usize)> {
 pub(in crate::parser) fn is_fence_close(trimmed: &str, fence_byte: u8, fence_len: usize) -> bool {
     let bytes = trimmed.as_bytes();
     let len = bytes.iter().take_while(|&&byte| byte == fence_byte).count();
-    len >= fence_len && trimmed[len..].trim().is_empty()
+    len >= fence_len && whitespace::is_blank(&trimmed[len..])
 }

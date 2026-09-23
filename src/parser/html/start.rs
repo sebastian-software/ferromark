@@ -1,4 +1,5 @@
 use super::super::Parser;
+use super::super::whitespace;
 
 /// Classification of an HTML block opener on the current line.
 ///
@@ -67,7 +68,7 @@ impl<'a> Parser<'a> {
         let Some((_, end)) = Self::parse_inline_html(trimmed, 0, 0) else {
             return false;
         };
-        trimmed[end..].trim().is_empty()
+        whitespace::is_blank(&trimmed[end..])
     }
 
     /// Returns the raw tag name from a line already known to begin with `<`.
