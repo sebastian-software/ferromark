@@ -10,6 +10,10 @@ use super::whitespace;
 use crate::parser::error::ParseResult;
 
 mod item_source;
+/// The item walk as it read each line before the line facts, kept for the
+/// container equivalence tests.
+#[cfg(test)]
+mod per_line;
 
 impl<'a> Parser<'a> {
     pub(super) fn parse_list(
@@ -141,6 +145,16 @@ impl<'a> Parser<'a> {
         Option<ListItemSource<'a>>,
         Option<ParsedListItem<'a>>,
     ) {
+        #[cfg(test)]
+        if super::container_equivalence::per_line_walk() {
+            return self.consume_item_continuation_per_line(
+                item,
+                baseline_indent,
+                consumed_newline,
+                lazy_lines,
+            );
+        }
+
         let content_indent = item.content_indent;
         let item_is_empty = whitespace::is_blank(item.content);
         let mut item_source = None;
@@ -160,7 +174,12 @@ impl<'a> Parser<'a> {
             }
 
             let continuation_start = self.position;
-            let (continuation_line, continuation_next) = self.line_and_next(continuation_start);
+            // One pass over the line answers every question below: where it
+            // ends, where the next one starts, how far it is indented, what
+            // follows that indentation, and whether anything does.
+            let facts = self.line_facts(continuation_start);
+            let continuation_line = facts.line;
+            let continuation_next = facts.next;
 
             if self.is_line_comment_at(continuation_start) {
                 let source = item_source
@@ -171,9 +190,10 @@ impl<'a> Parser<'a> {
                 open_paragraph.catch_up(&source.text, &self.options);
                 // Preserve normal list dedenting even when a nested code or
                 // HTML parser will keep this eligible line as literal content.
-                let stripped = Self::push_line_without_indent(
+                let stripped = Self::push_measured_line_without_indent(
                     &mut source.text,
                     continuation_line,
+                    &facts.indent,
                     content_indent,
                 );
                 source.text.push('\n');
@@ -190,26 +210,28 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
-            if whitespace::is_blank(continuation_line) {
+            if facts.is_blank() {
                 let mut lookahead = continuation_next;
-                // The line that stops the walk is the one a sibling marker
-                // would be read from, so carry it out instead of scanning it
-                // again below.
-                let mut lookahead_line = "";
+                // The line that stops the walk is the one the indentation
+                // test and a sibling marker are read from, so carry its
+                // facts out instead of measuring it again below.
+                let mut lookahead_facts = None;
                 while lookahead < self.source.len() {
-                    let (line, next) = self.line_and_next(lookahead);
-                    if !whitespace::is_blank(line) && !self.is_line_comment_at(lookahead) {
-                        lookahead_line = line;
+                    let line = self.line_facts(lookahead);
+                    if !line.is_blank() && !self.is_line_comment_at(lookahead) {
+                        lookahead_facts = Some(line);
                         break;
                     }
-                    lookahead = next;
+                    lookahead = line.next;
                 }
 
-                if lookahead >= self.source.len() {
+                // The walk only stops early on a line it kept, so an empty
+                // result means it ran out of source.
+                let Some(lookahead_facts) = lookahead_facts else {
                     break;
-                }
+                };
 
-                let next_indent = self.calc_indentation(lookahead);
+                let next_indent = lookahead_facts.indent.flat_columns;
                 // An item with no content yet cannot continue past a
                 // blank line, but its list may (`* a\n*\n\n* c`).
                 if next_indent >= content_indent && !(item_is_empty && item_source.is_none()) {
@@ -246,7 +268,11 @@ impl<'a> Parser<'a> {
                 if next_indent >= baseline_indent
                     && next_indent <= baseline_indent + 3
                     && let Some(sibling) = self
-                        .parse_list_item_line_from_line(lookahead, lookahead_line)
+                        .parse_list_item_line_from_trimmed(
+                            lookahead,
+                            lookahead_facts.line,
+                            lookahead_facts.trimmed(),
+                        )
                         .filter(|next| next.ordered == item.ordered && next.marker == item.marker)
                 {
                     // Blank line between siblings: the list is loose.
@@ -259,15 +285,16 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            let current_indent = self.calc_indentation(continuation_start);
+            let current_indent = facts.indent.flat_columns;
             if current_indent >= content_indent {
                 // Indented continuation content.
                 let item_source = item_source
                     .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
                 let generated_start = item_source.text.len();
-                let source_offset_in_line = Self::push_line_without_indent(
+                let source_offset_in_line = Self::push_measured_line_without_indent(
                     &mut item_source.text,
                     continuation_line,
+                    &facts.indent,
                     content_indent,
                 );
                 item_source.text.push('\n');
@@ -289,8 +316,11 @@ impl<'a> Parser<'a> {
             // baseline — deeper "markers" are just text) ends this item.
             if current_indent >= baseline_indent
                 && current_indent <= baseline_indent + 3
-                && let Some(sibling) =
-                    self.parse_list_item_line_from_line(continuation_start, continuation_line)
+                && let Some(sibling) = self.parse_list_item_line_from_trimmed(
+                    continuation_start,
+                    continuation_line,
+                    facts.trimmed(),
+                )
             {
                 // A thematic break can overlap list syntax only when an
                 // unordered item's content starts with the same `-` or
@@ -309,8 +339,14 @@ impl<'a> Parser<'a> {
             // continues the item's trailing paragraph regardless of its
             // indentation (CommonMark laziness) — and only a paragraph: a
             // line after a closed fence, an HTML block, a heading or a
-            // table belongs to the enclosing block instead.
-            if item_is_empty || after_blank || self.line_starts_block() {
+            // table belongs to the enclosing block instead. The line is not
+            // blank, so its first non-space, non-tab byte is exactly where
+            // its space/tab run ended.
+            if item_is_empty
+                || after_blank
+                || self
+                    .line_starts_block(continuation_start, continuation_start + facts.indent.bytes)
+            {
                 break;
             }
             let paragraph_open = match &item_source {

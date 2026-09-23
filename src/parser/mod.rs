@@ -46,6 +46,10 @@ use crate::ast::{Document, Span};
 mod block;
 mod block_quote;
 mod byte_class;
+/// The list and block quote walks, measured per line through the line
+/// facts, are proven against the per-line walks they replaced.
+#[cfg(test)]
+mod container_equivalence;
 mod cursor;
 mod definition_list;
 mod delimiters;

@@ -1,13 +1,17 @@
 use crate::ast::{BlockQuote, Node, Span};
 
 use super::Parser;
+use super::cursor::LineIndent;
 use super::lazy_paragraph::OpenParagraph;
-use super::line_scan::{
-    line_end as scan_line_end, line_terminator_end, next_line_start as scan_next_line_start,
-};
+use super::line_scan::{is_line_ending_byte, next_line_start as scan_next_line_start};
 use super::spans::SourceMap;
 use super::whitespace;
 use crate::parser::error::ParseResult;
+
+/// The walk as it read each line before the line facts, kept for the
+/// container equivalence tests.
+#[cfg(test)]
+mod per_line;
 
 impl<'a> Parser<'a> {
     /// Parses a block quote by stripping quote markers into arena storage.
@@ -17,6 +21,11 @@ impl<'a> Parser<'a> {
     /// old two-step path of filling a system `String` and then copying it into
     /// arena storage before recursive parsing.
     pub(super) fn parse_block_quote(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
+        #[cfg(test)]
+        if super::container_equivalence::per_line_walk() {
+            return self.parse_block_quote_per_line(start);
+        }
+
         // Collect lines belonging to this block quote and strip the `>` prefix.
         // Write straight into a bump-allocated `String` so we don't pay for
         // `String::new` (system allocator) followed by `alloc_str` (copy to
@@ -56,20 +65,24 @@ impl<'a> Parser<'a> {
                 self.position = next;
                 continue;
             }
-            let mut ws_cursor = line_start;
-            while ws_cursor < bytes.len() && matches!(bytes[ws_cursor], b' ' | b'\t') {
-                ws_cursor += 1;
-            }
-
-            // Blank line ends the block quote
-            if ws_cursor >= bytes.len() || matches!(bytes[ws_cursor], b'\n' | b'\r') {
+            // The space/tab run stops at the line's terminator by itself, so
+            // the byte after it tells a blank line apart. Testing that first
+            // lets a blank line, which is what usually closes a quote, end
+            // the walk before it pays for a terminator search.
+            let indent = LineIndent::at(bytes, line_start);
+            let run_end = line_start + indent.bytes;
+            if run_end >= bytes.len() || is_line_ending_byte(bytes[run_end]) {
                 break;
             }
 
-            let line_end = scan_line_end(bytes, line_start);
-            let line = &self.source[line_start..line_end];
-            let trimmed_offset = ws_cursor - line_start;
-            let trimmed = &line[trimmed_offset..];
+            // Every other line needs its end. The search starts past the
+            // measured run, and the run's columns are the ones the marker's
+            // own arithmetic continues from.
+            let facts = self.line_facts_with_indent(line_start, indent);
+            let line = facts.line;
+            let line_next = facts.next;
+            let line_end = line_start + line.len();
+            let trimmed = facts.after_indent();
 
             if let Some(after_gt) = trimmed.strip_prefix('>') {
                 // The marker consumes `>` plus one column of following
@@ -77,15 +90,7 @@ impl<'a> Parser<'a> {
                 // spaces (with original column arithmetic) keeps tab stops
                 // aligned through the re-parse: `>\t\tfoo` becomes six
                 // spaces + foo, i.e. indented code with two extra columns.
-                let mut column = 0usize;
-                for &byte in &line.as_bytes()[..trimmed_offset] {
-                    column = if byte == b'\t' {
-                        (column / 4 + 1) * 4
-                    } else {
-                        column + 1
-                    };
-                }
-                let after_marker_column = column + 1;
+                let after_marker_column = indent.columns + 1;
                 let ws_bytes = after_gt.as_bytes();
                 let mut ws_len = 0usize;
                 let mut ws_end_column = after_marker_column;
@@ -109,11 +114,7 @@ impl<'a> Parser<'a> {
                 let stripped_trimmed = &after_gt[ws_len..];
                 inner.push_str(stripped_trimmed);
                 inner.push('\n');
-                let content_start =
-                    line_start + trimmed_offset + 1 + Self::quote_marker_space_bytes(after_gt);
-                // The line's terminator is already located, so stepping
-                // over it is a two-byte test rather than a second search.
-                let line_next = line_terminator_end(bytes, line_end);
+                let content_start = run_end + 1 + Self::quote_marker_space_bytes(after_gt);
                 let source_len =
                     line_end.saturating_sub(content_start) + line_next.saturating_sub(line_end);
                 source_map.push_line(
@@ -126,7 +127,9 @@ impl<'a> Parser<'a> {
                 // Advance past this line (and the trailing newline if any).
                 self.position = line_next;
             } else if !Self::quote_lazy_blocked(trimmed)
-                && !self.line_starts_block()
+                // The line is not blank, so its first non-space, non-tab
+                // byte is exactly where its space/tab run ended.
+                && !self.line_starts_block(line_start, run_end)
                 && open_paragraph.catch_up(&inner, &self.options)
             {
                 // Lazy continuation: the line joins the quote's open
@@ -138,7 +141,6 @@ impl<'a> Parser<'a> {
                 lazy_lines.insert(inner.len() as u32);
                 inner.push_str(line);
                 inner.push('\n');
-                let line_next = line_terminator_end(bytes, line_end);
                 source_map.push_line(
                     generated_start,
                     line.len() + 1,

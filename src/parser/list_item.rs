@@ -1,4 +1,5 @@
 use super::Parser;
+use super::cursor::LineIndent;
 use super::whitespace;
 
 pub(super) struct ParsedListItem<'a> {
@@ -68,6 +69,10 @@ impl<'a> Parser<'a> {
     }
 
     /// Calculates the indentation level (number of spaces) of the current line.
+    ///
+    /// A tab counts as a flat four columns here, wherever it sits — see
+    /// [`LineIndent::flat_columns`](super::cursor::LineIndent), which
+    /// produces the same count for callers that walk the line anyway.
     pub(super) fn calc_indentation(&self, start: usize) -> usize {
         let mut indent = 0;
         let bytes = self.source.as_bytes();
@@ -99,10 +104,11 @@ impl<'a> Parser<'a> {
         None
     }
 
-    /// `line` must come from the parser's own line scanner: `str::lines()`
-    /// recognizes LF and CRLF but not a lone CR, so a sibling after a CR
-    /// blank line has to stay limited to its own source line rather than
-    /// swallowing the rest of the list.
+    /// The list item a whole `line` opens, trimmed the way the list walk
+    /// used to trim it before its line facts carried the trimmed slice.
+    /// Only the per-line reference walk the tests compare against still
+    /// calls it.
+    #[cfg(test)]
     pub(super) fn parse_list_item_line_from_line(
         &self,
         line_start: usize,
@@ -112,6 +118,11 @@ impl<'a> Parser<'a> {
         self.parse_list_item_line_from_trimmed(line_start, line, trimmed)
     }
 
+    /// `line` must come from the parser's own line scanner: `str::lines()`
+    /// recognizes LF and CRLF but not a lone CR, so a sibling after a CR
+    /// blank line has to stay limited to its own source line rather than
+    /// swallowing the rest of the list. `trimmed` is the line's tail from
+    /// its first content byte, which each caller has already located.
     pub(super) fn parse_list_item_line_from_trimmed(
         &self,
         line_start: usize,
@@ -268,6 +279,28 @@ impl<'a> Parser<'a> {
             content_indent,
             checked,
         })
+    }
+
+    /// [`Self::push_line_without_indent`] for a line whose leading run the
+    /// caller's line walk has already measured as `indent`.
+    ///
+    /// A run without tabs needs no second walk: its columns are its bytes,
+    /// so the dedent is a slice and the padding a count. A run with a tab
+    /// takes the column walk.
+    pub(super) fn push_measured_line_without_indent(
+        out: &mut crate::allocator::String<'a>,
+        line: &str,
+        indent: &LineIndent,
+        columns: usize,
+    ) -> usize {
+        if indent.has_tab {
+            return Self::push_line_without_indent(out, line, columns);
+        }
+        for _ in columns..indent.bytes {
+            out.push(' ');
+        }
+        out.push_str(&line[indent.bytes..]);
+        indent.bytes.min(columns)
     }
 
     /// Pushes `line` minus its first `columns` columns onto `out`,
