@@ -15,9 +15,11 @@
 //! NUL or starts a `]:`; only a body that holds a `]:` then searches its rest
 //! for NUL, with `memchr`. The pre-pass's third probe, for any `[`, only
 //! matters once a `]:` is known, so it stays behind this scan and runs only
-//! then. Other targets keep the two separate searches: `memchr`'s own vector
-//! paths are what a portable word scan would have to beat, and no speedup is
-//! established there.
+//! then. Other targets do not run this scan at all: the root parse keeps its
+//! plain NUL `memchr`, and the pre-pass keeps its `[` probe in front of the
+//! `]:` search, so a body without `[` is never searched for `]:`. `memchr`'s
+//! own vector paths are what a portable word scan would have to beat, and no
+//! speedup is established there.
 //!
 //! The 1 to 16 bytes the loops leave are answered by one vector over the last
 //! 16 bytes of the body, as `memchr` finishes its own searches, rather than
@@ -75,8 +77,9 @@ pub(super) fn scan(body: &[u8]) -> RootScan {
     }
 }
 
-/// The two searches the fused scan replaces, one after the other: the path on
-/// targets without the vector loop, and the tests' reference for it.
+/// The two searches the fused scan replaces, one after the other: the tests'
+/// reference for it, and the answer on targets without the vector loop, where
+/// only the tests ask.
 #[cfg(any(test, not(target_arch = "aarch64")))]
 fn scan_separately(body: &[u8]) -> RootScan {
     match memchr::memchr(0, body) {
