@@ -214,3 +214,136 @@ fn short_run_copy_keeps_multibyte_sequences_intact() {
         }
     }
 }
+
+/// Whether this target scans inputs of 16 bytes or more with a vector
+/// classifier (NEON or SSE2) rather than the word scan alone.
+const VECTOR_SCAN: bool = cfg!(any(
+    target_arch = "aarch64",
+    all(target_arch = "x86_64", target_feature = "sse2")
+));
+
+/// Checks one escaper's scanner against its flag table, which is the
+/// definition of its needle set.
+///
+/// `first_flagged` must report the first flagged byte at or after `from`
+/// (or the length), and the vector path on its own must answer the same for
+/// every input of at least 16 bytes and step aside below that. Every length
+/// up to 200 is scanned clean from every start, then with one of `members`
+/// at each 16-byte step edge and anywhere in the final 17 bytes, where the
+/// overlapping tail re-reads what the loop cleared — starting before, at
+/// and just after the member, so a member before `from` must be ignored —
+/// and finally made of nothing but one member.
+pub(super) fn assert_scan_matches_flags(
+    mask_of: impl Fn(u64) -> u64 + Copy,
+    flags: &[u8; 256],
+    needles: impl NeedleSet,
+    members: &[u8],
+) {
+    const FILLER: u8 = b'x';
+    assert_eq!(flags[usize::from(FILLER)], 0);
+    let check = |bytes: &[u8], from: usize| {
+        let len = bytes.len();
+        let expected = (from..len)
+            .find(|&at| flags[usize::from(bytes[at])] != 0)
+            .unwrap_or(len);
+        assert_eq!(
+            first_flagged(bytes, from, mask_of, flags, needles),
+            expected,
+            "scan from {from} of {bytes:?}"
+        );
+        assert_eq!(
+            first_flagged_simd(bytes, from, needles),
+            (VECTOR_SCAN && len >= 16).then_some(expected),
+            "vector scan from {from} of {bytes:?}"
+        );
+    };
+    for len in 0..=200usize {
+        let mut buffer = vec![FILLER; len];
+        for from in 0..=len {
+            check(&buffer, from);
+        }
+        for at in (0..len).filter(|&at| at % 16 == 0 || at % 16 == 15 || at + 17 >= len) {
+            for &member in members {
+                assert_ne!(flags[usize::from(member)], 0, "{member:#04x}");
+                buffer[at] = member;
+                for from in [0, at.saturating_sub(1), at, at + 1] {
+                    check(&buffer, from);
+                }
+            }
+            buffer[at] = FILLER;
+        }
+        for &member in members {
+            let dense = vec![member; len];
+            for from in 0..=len {
+                check(&dense, from);
+            }
+        }
+    }
+}
+
+/// Checks a needle set's SSE2 classifier against its flag table: every
+/// byte value in every lane, once among non-members and once among members,
+/// and every run of sixteen consecutive values, so each value also meets
+/// every lane between its neighbours.
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[allow(unsafe_code)]
+pub(super) fn assert_lanes_match_flags(needles: impl NeedleSet, flags: &[u8; 256]) {
+    let check = |bytes: [u8; 16]| {
+        // SAFETY: an unaligned load of exactly the sixteen bytes of `bytes`.
+        let vector = unsafe { std::arch::x86_64::_mm_loadu_si128(bytes.as_ptr().cast()) };
+        let expected = (0..16)
+            .filter(|&lane| flags[usize::from(bytes[lane])] != 0)
+            .fold(0u32, |mask, lane| mask | 1 << lane);
+        assert_eq!(needles.lanes(vector), expected, "lanes of {bytes:02x?}");
+    };
+    let member = (0..=255u8).find(|&b| flags[usize::from(b)] != 0).unwrap();
+    let non_member = (0..=255u8).find(|&b| flags[usize::from(b)] == 0).unwrap();
+    for background in [non_member, member] {
+        for value in 0..=255u8 {
+            for lane in 0..16 {
+                let mut bytes = [background; 16];
+                bytes[lane] = value;
+                check(bytes);
+            }
+        }
+    }
+    for start in 0..=255u8 {
+        check(std::array::from_fn(|lane| {
+            start.wrapping_add(u8::try_from(lane).unwrap())
+        }));
+    }
+}
+
+#[test]
+fn text_scan_matches_flag_table_across_vector_steps_and_tails() {
+    assert_scan_matches_flags(escape_mask, &ESCAPE_FLAG, EscapeNeedles, b"&<>\"'");
+}
+
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[test]
+fn text_sse2_classifier_matches_flag_table_in_every_lane() {
+    assert_lanes_match_flags(EscapeNeedles, &ESCAPE_FLAG);
+}
+
+#[test]
+fn every_needle_matches_reference_across_vector_steps_and_tails() {
+    // Each byte either escaper replaces, and UTF-8 sequences of two, three
+    // and four bytes, which URL escaping percent encodes, placed at the
+    // 16-byte step edges and anywhere in the final vector of every length
+    // up to 200: the vector loop, its overlapping tail and the word scan
+    // below 16 bytes each meet every needle, both when a scan starts at
+    // the beginning and when it resumes after a replacement.
+    for needle in [
+        "&", "<", ">", "\"", "'", " ", "[", "\\", "]", "`", "é", "中", "🙂",
+    ] {
+        for len in needle.len()..=200 {
+            let room = len - needle.len();
+            for at in (0..=room).filter(|&at| at % 16 == 0 || at % 16 == 15 || at + 17 >= len) {
+                let mut source = "x".repeat(at);
+                source.push_str(needle);
+                source.push_str(&"y".repeat(room - at));
+                check(&source);
+            }
+        }
+    }
+}

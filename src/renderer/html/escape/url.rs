@@ -3,7 +3,7 @@
 //! Use the shared scan/copy primitives without mixing URL policy into HTML text
 //! escaping. Existing percent escapes and reserved URL delimiters stay intact.
 
-use super::nibble::URL_ESCAPE_NIBBLES;
+use super::nibble::UrlEscapeNeedles;
 use super::{HIGH, first_flagged, has_zero, push_run, splat};
 
 static URL_ESCAPE_TABLE: [&str; 256] = {
@@ -125,7 +125,7 @@ fn next_url_flagged(bytes: &[u8], from: usize) -> usize {
         i,
         url_escape_mask,
         &URL_ESCAPE_FLAG,
-        &URL_ESCAPE_NIBBLES,
+        UrlEscapeNeedles,
     )
 }
 

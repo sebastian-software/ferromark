@@ -1,5 +1,8 @@
 //! URL-specific regression cases and the existing scalar reference.
 
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+use super::super::tests::assert_lanes_match_flags;
+use super::super::tests::assert_scan_matches_flags;
 use super::super::write_url_escaped_into;
 use super::*;
 
@@ -59,6 +62,24 @@ fn url_escape_handles_escape_heavy_ascii_before_unicode_linearly() {
     let mut actual = String::new();
     write_url_escaped_into(&mut actual, &source);
     assert_eq!(actual, reference_url(&source));
+}
+
+#[test]
+fn url_scan_matches_flag_table_across_vector_steps_and_tails() {
+    // The URL-specific members, then non-ASCII bytes from both ends of the
+    // high half and a few leading bytes, which the scan meets inside UTF-8.
+    assert_scan_matches_flags(
+        url_escape_mask,
+        &URL_ESCAPE_FLAG,
+        UrlEscapeNeedles,
+        b" \"&<>[\\]`\x80\xBF\xC3\xE4\xF0\xFF",
+    );
+}
+
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[test]
+fn url_sse2_classifier_matches_flag_table_in_every_lane() {
+    assert_lanes_match_flags(UrlEscapeNeedles, &URL_ESCAPE_FLAG);
 }
 
 #[test]
