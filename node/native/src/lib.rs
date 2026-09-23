@@ -117,7 +117,13 @@ fn parse_error(error: ferromark::ParseError) -> Error {
 
 #[napi(catch_unwind)]
 pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
-    Renderer::new(options)?.to_html(markdown)
+    // A one-shot renderer is dropped with this call, so its output buffer is
+    // handed over whole rather than copied out of a borrow.
+    let mut renderer = Renderer::new(options)?;
+    let document = Parser::with_options(&renderer.allocator, &markdown, renderer.parser.clone())
+        .parse()
+        .map_err(parse_error)?;
+    Ok(renderer.html.render(&document))
 }
 
 #[napi(catch_unwind)]
@@ -145,13 +151,19 @@ impl Renderer {
         })
     }
 
+    // Returns a borrow of the renderer's own output buffer. N-API copies it
+    // into a JavaScript string before anything else can touch the renderer,
+    // and keeping the buffer, instead of handing it away with
+    // `HtmlRenderer::render`, spares every later call a fresh allocation and
+    // its regrowth. (A plain comment: doc comments become the published
+    // TypeScript declarations.)
     #[napi(catch_unwind, js_name = "toHtml")]
-    pub fn to_html(&mut self, markdown: String) -> Result<String> {
+    pub fn to_html(&mut self, markdown: String) -> Result<&str> {
         self.allocator.reset();
         let document = Parser::with_options(&self.allocator, &markdown, self.parser.clone())
             .parse()
             .map_err(parse_error)?;
-        Ok(self.html.render(&document))
+        Ok(self.html.render_borrowed(&document))
     }
 
     #[napi(catch_unwind, js_name = "toHtmlBuffer")]
