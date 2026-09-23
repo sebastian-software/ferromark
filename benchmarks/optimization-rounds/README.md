@@ -103,3 +103,27 @@ from the same day, and treat effects inside the A/A spread as ties. Local
 Apple Silicon numbers stay the reference for small effects. The workflow suits
 changes whose expected effect clearly exceeds that spread, such as new x86
 SIMD paths.
+
+## Profiling
+
+`profile/` is a standalone driver crate (not a workspace member) that loops one
+stage over a corpus suite for a fixed time, so a sampling profiler can attribute
+where it goes. Each document contributes about the same byte volume per sweep.
+It builds with fat LTO, one codegen unit and line tables:
+
+```sh
+cargo build --release --manifest-path benchmarks/optimization-rounds/profile/Cargo.toml
+benchmarks/optimization-rounds/profile/target/release/ferromark-profile corpus.json parse 20
+```
+
+The stages are `parse`, `render` (documents parsed once up front) and `reuse`;
+an optional fourth argument picks the corpus suite (default `broad`). On macOS,
+`sample <pid> 10` gives a call tree; on Linux use `perf record -g`.
+
+The `x86-64 profile` workflow (`.github/workflows/profile-x86.yml`) samples the
+driver with perf on two GitHub-hosted runners for any revision. Its RUSTFLAGS
+are `-C target-cpu=generic -C force-frame-pointers=yes`, so the build matches
+the published addons, which pick SSSE3/AVX2 paths at run time, and perf gets
+frame-pointer call chains. It keeps self-time, inclusive and caller reports as
+artifacts. A pull request that changes the driver or the workflow profiles its
+own head.

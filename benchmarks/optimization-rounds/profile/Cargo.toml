@@ -1,0 +1,23 @@
+[package]
+name = "ferromark-profile"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "Loops one pipeline stage over a benchmark corpus for sampling profilers"
+
+[dependencies]
+ferromark = { path = "../../.." }
+serde_json = "1.0"
+
+# The production release profile (fat LTO, one codegen unit) with the symbols
+# and line tables a profiler needs to attribute samples.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = 1
+strip = false
+panic = "abort"
+
+# Standalone: not a member of the repository workspace.
+[workspace]

@@ -1,0 +1,129 @@
+name: x86-64 profile
+
+# Where parsing and rendering spend their time on x86-64. The optimization
+# rounds profiled on Apple Silicon, where most scanners have a NEON path; on
+# x86-64 several of them run scalar code, so the ranking can differ. This
+# samples the profiling driver (benchmarks/optimization-rounds/profile) with
+# perf on GitHub-hosted runners and keeps the text reports. Runners differ in
+# CPU (Intel with AVX-512, AMD with AVX2), so two hosts are sampled.
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/profile-x86.yml"
+      - "benchmarks/optimization-rounds/profile/**"
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Revision to profile (branch, tag or commit)
+        required: true
+        default: main
+      seconds:
+        description: Seconds of sampling per stage
+        required: true
+        default: "20"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: profile-x86-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: never
+
+jobs:
+  profile:
+    name: profile (host ${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [1, 2]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      REVISION: ${{ inputs.revision || github.event.pull_request.head.sha }}
+      STAGE_SECONDS: ${{ inputs.seconds || '20' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+      - name: Install perf
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q linux-tools-common "linux-tools-$(uname -r)" \
+            || sudo apt-get install -y -q linux-tools-common linux-tools-azure
+          sudo sysctl -w kernel.perf_event_paranoid=-1 kernel.kptr_restrict=0
+          perf --version
+      - name: Describe the host
+        run: |
+          {
+            uname -srm
+            echo "cpus: $(nproc)"
+            lscpu | grep -E '^(Model name|Thread|Core|Socket|L2|L3)' || true
+            echo "simd: $(grep -o -w -E 'sse4_2|avx2|avx512f|avx512bw' /proc/cpuinfo | sort -u | tr '\n' ' ')"
+            rustc +1.95 -V
+          } | tee "$RUNNER_TEMP/host.txt"
+      - name: Export the revision with this driver
+        run: |
+          set -euo pipefail
+          rev="$(git rev-parse --verify --quiet "origin/$REVISION^{commit}" || git rev-parse --verify "$REVISION^{commit}")"
+          echo "REV_SHA=$rev" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/src"
+          git archive "$rev" | tar -x -C "$RUNNER_TEMP/src"
+          # The driver of this workflow's checkout profiles any revision that
+          # has the same public API.
+          rm -rf "$RUNNER_TEMP/src/benchmarks/optimization-rounds/profile"
+          cp -R benchmarks/optimization-rounds/profile "$RUNNER_TEMP/src/benchmarks/optimization-rounds/profile"
+      - name: Build the driver
+        env:
+          # The published addons build for the generic x86-64 baseline and
+          # pick SSSE3/AVX2 paths at run time; frame pointers give perf call
+          # chains without DWARF unwinding.
+          RUSTFLAGS: -C target-cpu=generic -C force-frame-pointers=yes
+        run: cargo +1.95 build --release --manifest-path "$RUNNER_TEMP/src/benchmarks/optimization-rounds/profile/Cargo.toml"
+      - name: Generate the corpus
+        run: >-
+          python3 benchmarks/optimization-rounds/make_corpus.py
+          "$RUNNER_TEMP/corpus.json" --include-scanner-diagnostics
+      - name: Sample parse and render
+        run: |
+          set -euo pipefail
+          driver="$RUNNER_TEMP/src/benchmarks/optimization-rounds/profile/target/release/ferromark-profile"
+          mkdir -p "$RUNNER_TEMP/profile"
+          for stage in parse render; do
+            data="$RUNNER_TEMP/profile/perf-$stage.data"
+            perf record -F 999 -g -o "$data" -- "$driver" "$RUNNER_TEMP/corpus.json" "$stage" "$STAGE_SECONDS"
+            perf report -i "$data" --no-children --sort symbol --stdio -g none --percent-limit 0.3 \
+              > "$RUNNER_TEMP/profile/self-$stage.txt"
+            perf report -i "$data" --children --sort symbol --stdio -g none --percent-limit 1 \
+              > "$RUNNER_TEMP/profile/inclusive-$stage.txt"
+            perf report -i "$data" --no-children --sort symbol --stdio -g graph,0.5,callee,function,percent \
+              --percent-limit 2 > "$RUNNER_TEMP/profile/callers-$stage.txt"
+          done
+      - name: Summarize
+        run: |
+          {
+            echo "### Host ${{ matrix.host }}: ${REV_SHA::10}"
+            echo '```text'
+            cat "$RUNNER_TEMP/host.txt"
+            echo '```'
+            for stage in parse render; do
+              echo "#### $stage, self time"
+              echo '```text'
+              grep -v '^#' "$RUNNER_TEMP/profile/self-$stage.txt" | grep -v '^$' | head -40
+              echo '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the reports
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: profile-x86-host-${{ matrix.host }}
+          path: |
+            ${{ runner.temp }}/host.txt
+            ${{ runner.temp }}/profile/*.txt
+          retention-days: 30
