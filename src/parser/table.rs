@@ -5,15 +5,16 @@ use memchr::memchr;
 use super::Parser;
 use super::line_scan::{line_end, line_terminator_end};
 use super::table_cell_source::{remap_table_cell_inline_spans, unescape_table_pipes};
-use super::table_pipes::{EscapedPipes, PipeCursor, is_escaped_table_pipe};
+use super::table_pipes::{EscapedPipes, Pipe, PipeCursor, is_escaped_table_pipe};
 use super::whitespace;
 use crate::parser::error::ParseResult;
 
 /// One cell of a table row, as the row splitter found it.
 ///
-/// `escapes` records the `\|` occurrences the splitter passed over on its
+/// `escapes` bounds the `\|` occurrences the splitter passed over on its
 /// way to this cell's terminator, in the coordinates of `content`, so the
-/// cell decoder does not have to look for them a second time.
+/// cell decoder never looks for them outside that stretch, and not at all
+/// when there is none.
 struct RowCell<'a> {
     content: &'a str,
     start: usize,
@@ -349,14 +350,19 @@ impl<'a> Parser<'a> {
                 let raw = &content[cell_start..pipe.offset];
                 let (cell, start, end) = trim_cell(raw, content_start + cell_start);
                 let mut pipe_count = 1;
-                // Adjacent unescaped pipes widen the cell. Peeking leaves
-                // the pipe that ends the run, escaped or not, for the cell
-                // that follows it.
-                while let Some(next) = pipes.peek_pipe() {
-                    if next.escaped || next.offset != pipe.offset + pipe_count {
-                        break;
-                    }
-                    pipes.take_peeked();
+                // Adjacent pipes widen the cell. A `|` right after a pipe
+                // has no backslash in front of it, so it is never escaped,
+                // and it is the next pipe the cursor reports: taking it
+                // from the cursor keeps the walk in step with the run.
+                while bytes.get(pipe.offset + pipe_count) == Some(&b'|') {
+                    let adjacent = pipes.next_pipe();
+                    debug_assert_eq!(
+                        adjacent,
+                        Some(Pipe {
+                            offset: pipe.offset + pipe_count,
+                            escaped: false,
+                        })
+                    );
                     pipe_count += 1;
                 }
                 // A preserved terminal run is the complete remainder of
@@ -414,3 +420,8 @@ fn delimiter_alignment(cell: &str) -> Option<AlignKind> {
         (false, false) => AlignKind::None,
     })
 }
+
+#[cfg(test)]
+mod reference;
+#[cfg(test)]
+mod tests;

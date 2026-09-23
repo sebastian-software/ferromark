@@ -2,20 +2,27 @@
 //!
 //! Splitting a row into cells and decoding `\|` inside a cell ask the same
 //! two questions of the same bytes: where the `|` bytes are, and whether an
-//! odd run of backslashes sits in front of each one. The row splitter used
-//! to answer them with one `memchr` call per cell plus a backwards walk per
-//! pipe, and the cell decoder then asked them again over every byte of every
-//! cell it was handed. [`PipeCursor`] answers both once while walking a row
-//! forward, and [`EscapedPipes`] carries what the splitter already saw into
-//! the decoder.
+//! odd run of backslashes sits in front of each one. [`PipeCursor`] answers
+//! both while walking a row forward, and [`EscapedPipes`] carries the escapes
+//! the splitter passed over into the decoder, so a cell without one is never
+//! scanned again and a cell with some is scanned only between its first and
+//! its last.
 //!
-//! On aarch64 one block of sixteen bytes is classified by two `vceqq_u8`
-//! compares and the nibble-narrowing movemask emulation the crate's other
-//! vector scanners use, which leaves one nibble per byte in a `u64`. The
-//! escape state of every pipe in the block then follows from the backslash
-//! mask by bit arithmetic instead of a byte walk. Everywhere else the cursor
-//! keeps the original `memchr` plus [`is_escaped_table_pipe`] scan, which is
-//! also the reference the vector path is differentially tested against.
+//! On aarch64 the cursor reads the row a sixteen-byte window at a time. Two
+//! `vceqq_u8` compares and the nibble-narrowing movemask emulation the
+//! crate's other vector scanners use give one mask bit per `|` and per `\`,
+//! so every pipe of a window is found without a call and its escape state
+//! follows from the backslash bits in front of it. A window without a pipe
+//! hands the rest of the gap to `memchr`, and the next window starts on the
+//! pipe it finds: pipes closer than a window apart cost no call at all, and
+//! sparser ones at most the one `memchr` call per pipe the scalar scan made.
+//! Nothing is read before the first pipe is asked for, and a row shorter
+//! than a window is classified by a plain byte loop instead of a padded
+//! copy.
+//!
+//! Everywhere else the cursor keeps the `memchr` probe and backwards walk
+//! ([`is_escaped_table_pipe`]) the table parser always used, which is also
+//! the reference the vector path is tested against.
 
 use memchr::memchr;
 
@@ -45,44 +52,54 @@ pub(super) fn is_escaped_table_pipe(bytes: &[u8], index: usize) -> bool {
 
 /// Where a cell's escaped pipes sit, as the row splitter passed over them.
 ///
-/// The splitter walks every pipe of a cell on its way to the cell's
-/// terminator, so the decoder never has to look for them from scratch. Only
-/// the first and the last offset are kept, which fits in a register pair: an
-/// empty record decodes the cell to its borrowed slice without any scan at
-/// all, and a filled one bounds the decoder's walk to the stretch that
-/// actually holds escapes.
-#[derive(Clone, Copy, Default)]
+/// Only the first and the last offset are kept, which fits in a register
+/// pair: an empty record decodes the cell to its borrowed slice without any
+/// scan, and a filled one bounds the decoder's walk to the stretch that holds
+/// escapes. Empty is `first > last`.
+#[derive(Clone, Copy)]
 pub(super) struct EscapedPipes {
-    bounds: Option<(u32, u32)>,
+    first: u32,
+    last: u32,
+}
+
+impl Default for EscapedPipes {
+    fn default() -> Self {
+        Self {
+            first: u32::MAX,
+            last: 0,
+        }
+    }
 }
 
 impl EscapedPipes {
     /// Notes an escaped pipe. Offsets must arrive in ascending order, which
     /// is how a forward row scan produces them.
+    #[inline]
     pub(super) fn record(&mut self, offset: usize) {
         let offset = offset as u32;
-        self.bounds = Some(match self.bounds {
-            Some((first, _)) => (first, offset),
-            None => (offset, offset),
-        });
+        self.first = self.first.min(offset);
+        self.last = offset;
     }
 
     /// The same record in the coordinates of a slice starting `by` bytes
     /// later. A `|` is never part of the whitespace a cell is trimmed of, so
     /// every recorded offset still lies inside the trimmed cell.
+    #[inline]
     pub(super) fn shifted(self, by: usize) -> Self {
+        if self.first > self.last {
+            return self;
+        }
         let by = by as u32;
         Self {
-            bounds: self
-                .bounds
-                .map(|(first, last)| (first.saturating_sub(by), last.saturating_sub(by))),
+            first: self.first - by,
+            last: self.last - by,
         }
     }
 
     /// The first and last escaped pipe, or `None` when the cell holds none.
+    #[inline]
     pub(super) fn bounds(self) -> Option<(usize, usize)> {
-        self.bounds
-            .map(|(first, last)| (first as usize, last as usize))
+        (self.first <= self.last).then_some((self.first as usize, self.last as usize))
     }
 
     /// Records every escaped pipe of a standalone slice, for callers that
@@ -100,46 +117,32 @@ impl EscapedPipes {
     }
 }
 
-/// A forward walk over the pipes of one table row.
+/// A forward walk over the pipes of `bytes`, starting at a given offset.
 ///
 /// Every pipe is reported once, in order, with its escape state already
-/// decided. One pipe of pushback covers the merged-cell run scan, which has
-/// to look at the pipe after a run before it can tell the run is over.
+/// decided from the whole slice before it. Cutting the slice after a pipe
+/// therefore changes nothing about the pipes before the cut, which is how
+/// the cell decoder stops at its last escape.
 pub(super) struct PipeCursor<'a> {
     bytes: &'a [u8],
-    pending: Option<Pipe>,
     scan: Scan,
 }
 
 impl<'a> PipeCursor<'a> {
+    /// A cursor that reports the pipes at or after `from`. Nothing is read
+    /// until the first pipe is asked for.
+    #[inline]
     pub(super) fn new(bytes: &'a [u8], from: usize) -> Self {
         Self {
             bytes,
-            pending: None,
-            scan: Scan::new(bytes, from.min(bytes.len())),
+            scan: Scan::new(from.min(bytes.len())),
         }
     }
 
     /// The next pipe at or after the cursor.
+    #[inline]
     pub(super) fn next_pipe(&mut self) -> Option<Pipe> {
-        match self.pending.take() {
-            Some(pipe) => Some(pipe),
-            None => self.scan.next_pipe(self.bytes),
-        }
-    }
-
-    /// The next pipe without consuming it.
-    pub(super) fn peek_pipe(&mut self) -> Option<Pipe> {
-        if self.pending.is_none() {
-            self.pending = self.scan.next_pipe(self.bytes);
-        }
-        self.pending
-    }
-
-    /// Drops the peeked pipe. Called only right after [`Self::peek_pipe`]
-    /// returned one that the caller decided to take.
-    pub(super) fn take_peeked(&mut self) {
-        self.pending = None;
+        self.scan.next_pipe(self.bytes)
     }
 }
 
@@ -147,112 +150,137 @@ impl<'a> PipeCursor<'a> {
 #[cfg(target_arch = "aarch64")]
 const LANES: usize = 16;
 
-/// The mask bits one byte lane occupies in a narrowed compare result.
+/// One bit per lane of a narrowed compare result: bit `4 * lane`.
 #[cfg(target_arch = "aarch64")]
-const LANE: u64 = 0xF;
+const LANE_BITS: u64 = 0x1111_1111_1111_1111;
 
-/// Vector engine: the lane masks of one cached block, plus the backslash
-/// parity that reaches that block from the bytes before it.
+/// Vector engine: the lane masks of the current window.
 ///
-/// Pipes are usually spread over a row rather than packed into it, so the
-/// scan does not classify every block on the way. `memchr` skips each
-/// pipe-free stretch in one step and the scan re-seats on the block that
-/// holds the next pipe; classifying that block then settles every pipe in
-/// it, however many there are, without a backwards walk per pipe.
+/// A window is the sixteen bytes from `base` (fewer at the row's end). Its
+/// masks keep one bit per lane, bit `4 * lane`, so the lowest pipe is one
+/// `trailing_zeros` away and the backslashes in front of it one
+/// `leading_zeros`.
 #[cfg(target_arch = "aarch64")]
 struct Scan {
-    /// Offset of the cached block.
-    block: usize,
-    /// Pipe lanes of the cached block that have not been yielded yet.
+    /// Where the next window starts once this one is spent.
+    next: usize,
+    /// Offset of the window's lane 0.
+    base: usize,
+    /// Pipe lanes of the window that have not been reported yet.
     pipes: u64,
-    /// Backslash lanes of the cached block.
+    /// Backslash lanes of the window.
     backslashes: u64,
-    /// Whether an odd run of backslashes ends immediately before `block`.
-    carry_odd: bool,
 }
 
 #[cfg(target_arch = "aarch64")]
 impl Scan {
-    fn new(bytes: &[u8], from: usize) -> Self {
-        let mut scan = Self {
-            block: 0,
+    #[inline]
+    fn new(from: usize) -> Self {
+        Self {
+            next: from,
+            base: from,
             pipes: 0,
             backslashes: 0,
-            carry_odd: false,
-        };
-        scan.seek(bytes, from);
-        scan
-    }
-
-    /// Caches the block holding `from` and drops the lanes before it.
-    fn seek(&mut self, bytes: &[u8], from: usize) {
-        self.block = from - from % LANES;
-        // A seek can land inside a block, so the backslash run that reaches
-        // the block start is walked once here, bounded by the run's own
-        // length, instead of being carried block by block.
-        self.carry_odd = is_escaped_table_pipe(bytes, self.block);
-        let rest = &bytes[self.block..];
-        let (pipes, backslashes) = if let Some(block) = rest.first_chunk::<LANES>() {
-            classify_block(block)
-        } else {
-            // The row's last bytes, zero padded. Neither `|` nor `\` is
-            // zero, so the padding adds no lane to either mask and the
-            // masks stay exact without a separate tail mask.
-            let mut tail = [0u8; LANES];
-            tail[..rest.len()].copy_from_slice(rest);
-            classify_block(&tail)
-        };
-        // Four mask bits per byte, so this drops the lanes before `from`.
-        self.pipes = pipes & (u64::MAX << ((from - self.block) * 4));
-        self.backslashes = backslashes;
-    }
-
-    fn next_pipe(&mut self, bytes: &[u8]) -> Option<Pipe> {
-        if self.pipes == 0 {
-            // The cached block is spent, and it held no pipe past the point
-            // the scan reached, so the search resumes at the next block.
-            let from = self.block + LANES;
-            if from >= bytes.len() {
-                return None;
-            }
-            let pipe = from + memchr(b'|', &bytes[from..])?;
-            self.seek(bytes, pipe);
         }
-        let lane = self.pipes.trailing_zeros() as usize / 4;
-        self.pipes &= !(LANE << (lane * 4));
+    }
+
+    #[inline]
+    fn next_pipe(&mut self, bytes: &[u8]) -> Option<Pipe> {
+        if self.pipes == 0 && !self.refill(bytes) {
+            return None;
+        }
+        let bit = self.pipes.trailing_zeros();
+        self.pipes &= self.pipes - 1;
+        let offset = self.base + bit as usize / 4;
         Some(Pipe {
-            offset: self.block + lane,
-            escaped: self.lane_is_escaped(lane),
+            offset,
+            escaped: self.escaped(bytes, bit, offset),
         })
     }
 
-    /// Whether the pipe in `lane` carries a table-level escape, decided from
-    /// the backslash mask alone.
-    fn lane_is_escaped(&self, lane: usize) -> bool {
-        let below = (1u64 << (lane * 4)) - 1;
-        let gaps = !self.backslashes & below;
-        if gaps == 0 {
-            // Every byte before the pipe in this block is a backslash, so
-            // the run continues into the bytes before the block.
-            (lane % 2 == 1) != self.carry_odd
-        } else {
-            // Otherwise the run starts after the last non-backslash lane.
-            (lane - 1 - last_lane(gaps)) % 2 == 1
+    /// Whether the pipe at mask bit `bit` (at `offset`) carries a
+    /// table-level escape.
+    #[inline]
+    fn escaped(&self, bytes: &[u8], bit: u32, offset: usize) -> bool {
+        // The window's bytes before the pipe that are not backslashes.
+        let stops = !self.backslashes & LANE_BITS & ((1u64 << bit) - 1);
+        if stops == 0 {
+            // The pipe opens the window, or only backslashes precede it
+            // there: the run may reach into the bytes before the window, so
+            // walk it. The walk is bounded by the run, and it happens at
+            // most once per window.
+            return is_escaped_table_pipe(bytes, offset);
+        }
+        // The run starts right after the last non-backslash lane, so its
+        // length is the lane distance to that stop, minus one.
+        let last_stop = u64::BITS - 1 - stops.leading_zeros();
+        let run = (bit - last_stop) / 4 - 1;
+        run % 2 == 1
+    }
+
+    /// Makes the next window that holds a pipe current, or reports that no
+    /// pipe is left.
+    fn refill(&mut self, bytes: &[u8]) -> bool {
+        let mut at = self.next;
+        loop {
+            let rest = bytes.len() - at;
+            if rest == 0 {
+                self.next = at;
+                return false;
+            }
+            let (pipes, backslashes) = window(bytes, at);
+            let spent = at + rest.min(LANES);
+            if pipes != 0 {
+                self.base = at;
+                self.pipes = pipes;
+                self.backslashes = backslashes;
+                self.next = spent;
+                return true;
+            }
+            // A window without a pipe: `memchr` skips the rest of the gap in
+            // one call, and the next window starts on the pipe it finds.
+            let Some(relative) = memchr(b'|', &bytes[spent..]) else {
+                self.next = bytes.len();
+                return false;
+            };
+            at = spent + relative;
         }
     }
 }
 
-/// The highest lane set in a narrowed compare result. `mask` must not be 0.
+/// Pipe and backslash lanes of the up to sixteen bytes from `at`, lane 0
+/// being `at`. `at` must be inside `bytes`.
 #[cfg(target_arch = "aarch64")]
-fn last_lane(mask: u64) -> usize {
-    (u64::BITS as usize - 1 - mask.leading_zeros() as usize) / 4
+#[inline]
+fn window(bytes: &[u8], at: usize) -> (u64, u64) {
+    let rest = &bytes[at..];
+    if let Some(block) = rest.first_chunk::<LANES>() {
+        classify(block)
+    } else if let Some(block) = bytes.last_chunk::<LANES>() {
+        // Fewer than sixteen bytes remain, but the row is longer than a
+        // window: classify its last sixteen bytes and shift out the lanes
+        // before `at`. The shift fills with zeros, so no lane past the end
+        // is ever set.
+        let (pipes, backslashes) = classify(block);
+        let skipped = (LANES - rest.len()) * 4;
+        (pipes >> skipped, backslashes >> skipped)
+    } else {
+        // The whole row is shorter than one window.
+        let mut pipes = 0;
+        let mut backslashes = 0;
+        for (lane, &byte) in rest.iter().enumerate() {
+            pipes |= u64::from(byte == b'|') << (lane * 4);
+            backslashes |= u64::from(byte == b'\\') << (lane * 4);
+        }
+        (pipes, backslashes)
+    }
 }
 
-/// Pipe and backslash lane masks for one sixteen-byte block.
+/// Pipe and backslash lanes for one sixteen-byte block.
 #[cfg(target_arch = "aarch64")]
 #[allow(unsafe_code)]
 #[inline]
-fn classify_block(block: &[u8; LANES]) -> (u64, u64) {
+fn classify(block: &[u8; LANES]) -> (u64, u64) {
     use std::arch::aarch64::*;
     // SAFETY: `block` is exactly one vector wide, so the load is in bounds.
     unsafe {
@@ -263,7 +291,7 @@ fn classify_block(block: &[u8; LANES]) -> (u64, u64) {
             vget_lane_u64(
                 vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(mask), 4)),
                 0,
-            )
+            ) & LANE_BITS
         };
         let bytes = vld1q_u8(block.as_ptr());
         (
@@ -283,10 +311,12 @@ struct Scan {
 
 #[cfg(not(target_arch = "aarch64"))]
 impl Scan {
-    fn new(_bytes: &[u8], from: usize) -> Self {
+    #[inline]
+    fn new(from: usize) -> Self {
         Self { next: from }
     }
 
+    #[inline]
     fn next_pipe(&mut self, bytes: &[u8]) -> Option<Pipe> {
         let relative = memchr(b'|', &bytes[self.next..])?;
         let offset = self.next + relative;

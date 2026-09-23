@@ -50,7 +50,7 @@ impl<'a> TableCellSourceMap<'a> {
         self.generated_len = generated_len as u32;
     }
 
-    fn boundary_offset(&self, index: usize) -> u32 {
+    pub(super) fn boundary_offset(&self, index: usize) -> u32 {
         // The dense map historically clamped spans beyond the generated
         // source to its final source boundary. Preserve that behavior before
         // looking up the rank bitset.
@@ -77,8 +77,10 @@ impl<'a> TableCellSourceMap<'a> {
 ///
 /// `escapes` is what the row splitter already saw inside this cell. An empty
 /// record means the cell holds no `\|` and is returned borrowed without any
-/// scan; otherwise only the stretch between the first and the last recorded
-/// escape is walked, instead of the whole cell twice.
+/// scan; otherwise only the bytes from the first to the last recorded escape
+/// are walked. The walk runs on the cell cut right after the last escape: a
+/// pipe's escape state depends only on the bytes before it, so the cut
+/// changes nothing up to there, and nothing past it is read.
 pub(super) fn unescape_table_pipes<'a>(
     allocator: &'a Allocator,
     content: &'a str,
@@ -94,11 +96,8 @@ pub(super) fn unescape_table_pipes<'a>(
     let mut unescaped = crate::allocator::String::with_capacity_in(content.len(), allocator.bump());
     let mut source_map = TableCellSourceMap::new(allocator);
     let mut copied_through = 0;
-    let mut cursor = PipeCursor::new(content.as_bytes(), first);
+    let mut cursor = PipeCursor::new(&content.as_bytes()[..=last], first);
     while let Some(pipe) = cursor.next_pipe() {
-        if pipe.offset > last {
-            break;
-        }
         if pipe.escaped {
             push_unescaped_table_cell_slice(
                 content,
@@ -264,5 +263,7 @@ fn remap_table_cell_span(span: &mut Span, source_offset: u32, source_map: &Table
     span.end = source_offset + source_map.boundary_offset(span.end as usize);
 }
 
+#[cfg(test)]
+pub(super) mod reference;
 #[cfg(test)]
 mod tests;

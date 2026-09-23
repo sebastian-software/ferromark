@@ -1,5 +1,9 @@
 // Test fixtures deliberately use owned formatting outside parser hot paths.
-#![allow(clippy::disallowed_macros)]
+#![allow(
+    clippy::disallowed_macros,
+    clippy::disallowed_methods,
+    clippy::disallowed_types
+)]
 
 use super::unescape_table_pipes;
 use crate::allocator::Allocator;
@@ -27,6 +31,11 @@ fn pipe_candidates_match_scalar_scan_across_length_and_escape_boundaries() {
                 });
                 let scan_start = EscapedPipes::scan(bytes).bounds().map(|(first, _)| first);
                 assert_eq!(scan_start, expected, "{source:?}");
+                assert_eq!(
+                    super::reference::escaped_pipe_scan_start(bytes).is_some(),
+                    expected.is_some(),
+                    "{source:?}"
+                );
             }
         }
         assert_eq!(
@@ -125,6 +134,68 @@ fn sparse_map_matches_dense_scalar_oracle() {
                 map.boundary_offset(result.content.len() + 100),
                 source.len() as u32
             );
+        }
+    }
+}
+
+#[test]
+fn decoding_with_the_splitter_record_matches_the_standalone_decoder() {
+    // Cells as the previous decoder saw them on its own, including stray
+    // unescaped pipes the splitter never leaves inside a cell.
+    let fragments = [
+        "x",
+        " ",
+        "|",
+        r"\|",
+        r"\\|",
+        r"\\\|",
+        "\\",
+        "`",
+        "`a|b`",
+        "日本語",
+        "🙂",
+    ];
+    let allocator = Allocator::new();
+    let mut state = 0x9E37_79B9_7F4A_7C15_u64;
+    let mut next = move |bound: usize| {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        (state % bound as u64) as usize
+    };
+    let mut cells = std::vec::Vec::new();
+    for _ in 0..4_000 {
+        let mut cell = std::string::String::new();
+        for _ in 0..next(48) {
+            cell.push_str(fragments[next(fragments.len())]);
+        }
+        cells.push(cell);
+    }
+    for prefix_len in [0, 1, 15, 16, 17, 63, 64, 65] {
+        for suffix in [r"\|", r"a\|b", r"\\\|\|", r"\\\\\\\\\\\\\\\\\|"] {
+            cells.push(format!(
+                "{}{suffix}{}",
+                "x".repeat(prefix_len),
+                "y".repeat(prefix_len)
+            ));
+        }
+    }
+    for cell in &cells {
+        let decoded = decode(&allocator, cell);
+        let expected = super::reference::unescape_table_pipes(&allocator, cell);
+        assert_eq!(decoded.content, expected.content, "{cell:?}");
+        match (&decoded.source_map, &expected.source_map) {
+            (None, None) => assert!(std::ptr::eq(decoded.content, cell.as_str()), "{cell:?}"),
+            (Some(map), Some(expected_map)) => {
+                for boundary in 0..=decoded.content.len() + 2 {
+                    assert_eq!(
+                        map.boundary_offset(boundary),
+                        expected_map.boundary_offset(boundary),
+                        "{cell:?} boundary {boundary}"
+                    );
+                }
+            }
+            _ => panic!("source maps differ in presence: {cell:?}"),
         }
     }
 }

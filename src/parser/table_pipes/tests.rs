@@ -26,10 +26,12 @@ fn cursor_pipes(bytes: &[u8], from: usize) -> Vec<Pipe> {
     while let Some(pipe) = cursor.next_pipe() {
         pipes.push(pipe);
     }
+    // A spent cursor stays spent.
+    assert_eq!(cursor.next_pipe(), None);
     pipes
 }
 
-/// Row shapes that exercise block boundaries, backslash runs that straddle
+/// Row shapes that exercise window boundaries, backslash runs that straddle
 /// them, adjacent pipes, leading and trailing pipes, and multibyte cells.
 fn row_shapes() -> Vec<String> {
     let mut rows = vec![
@@ -45,13 +47,14 @@ fn row_shapes() -> Vec<String> {
         String::from(r"| 日本語 \| 🙂 | ok |"),
         String::from(r"|||| trailing run ||||"),
         String::from(r"\\\\\\\\\\\\\\\\|"),
+        String::from("row ending in a backslash \\"),
     ];
-    // A pipe placed at every offset around and across the block boundary,
-    // behind backslash runs of every parity, with and without a run that
-    // reaches back into the block before it.
-    for prefix in 0..40_usize {
+    // A pipe placed at every offset around and across the window and
+    // 64-byte boundaries, behind backslash runs of every parity, with and
+    // without a run that reaches back into the window before it.
+    for prefix in 0..70_usize {
         for backslashes in 0..=6_usize {
-            for suffix in ["", "|", r" \| tail", r" \\| tail", " 日本語"] {
+            for suffix in ["", "|", r" \| tail", r" \\| tail", " 日本語", "\\"] {
                 let mut row = "x".repeat(prefix);
                 row.push_str(&"\\".repeat(backslashes));
                 row.push('|');
@@ -60,12 +63,20 @@ fn row_shapes() -> Vec<String> {
             }
         }
     }
-    // Long backslash runs that fill and overrun a whole block.
+    // Long backslash runs that fill and overrun a whole window.
     for backslashes in 12..=36_usize {
         let mut row = String::from("cell ");
         row.push_str(&"\\".repeat(backslashes));
         row.push_str("|rest");
         rows.push(row);
+    }
+    // Pipes packed into consecutive windows, escaped and not, so the
+    // cursor moves from window to window without `memchr` in between.
+    for token in [r"\|", "|", r"\\|", r"a\|", "`|`", r"**b\|p** "] {
+        for repeats in [1, 7, 8, 9, 15, 16, 17, 31, 33, 64, 65] {
+            rows.push(token.repeat(repeats));
+            rows.push(format!(" {} | end ", token.repeat(repeats)));
+        }
     }
     rows
 }
@@ -85,27 +96,20 @@ fn cursor_reports_the_same_pipes_and_escapes_as_the_scalar_scan() {
 }
 
 #[test]
-fn peeking_does_not_consume_or_reorder_pipes() {
+fn cutting_the_slice_after_a_pipe_changes_nothing_before_the_cut() {
+    // The cell decoder walks its cell cut right after the last escape.
     for row in row_shapes() {
         let bytes = row.as_bytes();
-        let expected = scalar_pipes(bytes, 0);
-        let mut cursor = PipeCursor::new(bytes, 0);
-        let mut seen = Vec::new();
-        loop {
-            let peeked = cursor.peek_pipe();
-            assert_eq!(peeked, cursor.peek_pipe(), "{row:?}");
-            let Some(pipe) = peeked else { break };
-            // Alternate between the two ways of taking a peeked pipe so both
-            // leave the cursor on the same following pipe.
-            if seen.len() % 2 == 0 {
-                cursor.take_peeked();
-                seen.push(pipe);
-            } else {
-                seen.push(cursor.next_pipe().expect("peek promised a pipe"));
+        for end in 0..=bytes.len() {
+            let cut = &bytes[..end];
+            for from in [0, end / 3, end / 2, end.saturating_sub(1), end] {
+                assert_eq!(
+                    cursor_pipes(cut, from),
+                    scalar_pipes(cut, from),
+                    "row {row:?} cut at {end} from {from}"
+                );
             }
         }
-        assert_eq!(seen, expected, "{row:?}");
-        assert_eq!(cursor.next_pipe(), None, "{row:?}");
     }
 }
 
@@ -139,5 +143,11 @@ fn shifting_a_record_moves_it_into_trimmed_cell_coordinates() {
     escapes.record(21);
     assert_eq!(escapes.bounds(), Some((9, 21)));
     assert_eq!(escapes.shifted(4).bounds(), Some((5, 17)));
+    assert_eq!(escapes.shifted(9).bounds(), Some((0, 12)));
     assert_eq!(escapes.shifted(0).bounds(), Some((9, 21)));
+
+    let mut at_zero = EscapedPipes::default();
+    at_zero.record(0);
+    assert_eq!(at_zero.bounds(), Some((0, 0)));
+    assert_eq!(at_zero.shifted(0).bounds(), Some((0, 0)));
 }
