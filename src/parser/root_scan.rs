@@ -7,25 +7,31 @@
 //! needs before it looks for a single opener (see [`prepass`](super::prepass)).
 //! Each search used to walk to the end of such a document on its own.
 //!
-//! On aarch64 one NEON loop answers both. Every 16-byte block is compared for
-//! NUL and for `]`, and a second load one byte further on compares the byte
-//! after each lane for `:`, so a `]:` split across two blocks belongs to the
-//! block that holds its `]`. Four blocks share one branch, and their NUL test
-//! folds into a lane-wise minimum. The loop stops at the first byte that is a
-//! NUL or starts a `]:`; only a body that holds a `]:` then searches its rest
-//! for NUL, with `memchr`. The pre-pass's third probe, for any `[`, only
-//! matters once a `]:` is known, so it stays behind this scan and runs only
-//! then. Other targets do not run this scan at all: the root parse keeps its
-//! plain NUL `memchr`, and the pre-pass keeps its `[` probe in front of the
-//! `]:` search, so a body without `[` is never searched for `]:`. `memchr`'s
-//! own vector paths are what a portable word scan would have to beat, and no
-//! speedup is established there.
+//! On aarch64 and x86-64 one vector loop answers both. Every 16-byte block is
+//! compared for NUL and for `]`, and a second load one byte further on
+//! compares the byte after each lane for `:`, so a `]:` split across two
+//! blocks belongs to the block that holds its `]`. Four blocks share one
+//! branch, and their NUL test folds into a lane-wise unsigned minimum. The
+//! loop stops at the first byte that is a NUL or starts a `]:`; only a body
+//! that holds a `]:` then searches its rest for NUL, with `memchr`. The
+//! pre-pass's third probe, for any `[`, only matters once a `]:` is known, so
+//! it stays behind this scan and runs only then.
 //!
-//! The 1 to 16 bytes the loops leave are answered by one vector over the last
-//! 16 bytes of the body, as `memchr` finishes its own searches, rather than
-//! byte by byte: on a comment-sized body those few trailing bytes are a large
-//! share of the whole scan. Only a body shorter than one vector is walked one
-//! byte at a time.
+//! aarch64 runs the loop with NEON. x86-64 runs the same loop with SSE2,
+//! which is part of the x86-64 baseline, or with 32-byte AVX2 blocks where the
+//! CPU reports AVX2 at run time: published builds target the baseline, and
+//! `is_x86_feature_detected!` caches its answer. Other targets do not run this
+//! scan at all: the root parse keeps its plain NUL `memchr`, and the pre-pass
+//! keeps its `[` probe in front of the `]:` search, so a body without `[` is
+//! never searched for `]:`. `memchr`'s own vector paths are what a portable
+//! word scan would have to beat, and no speedup is established there.
+//!
+//! The 1 to 16 bytes the loops leave (1 to 32 with AVX2) are answered by one
+//! vector over the last 16 (32) bytes of the body, as `memchr` finishes its
+//! own searches, rather than byte by byte: on a comment-sized body those few
+//! trailing bytes are a large share of the whole scan. Only a body shorter
+//! than one 16-byte vector is walked one byte at a time; the AVX2 loop hands a
+//! body shorter than its own vector to the SSE2 one.
 //!
 //! The answer describes the unmodified body. A body that holds a NUL is
 //! rewritten by normalization, which moves every later offset, so the caller
@@ -34,11 +40,16 @@
 //! definition pass, and documents with neither link references nor footnotes
 //! enabled — do not run this scan; normalization keeps its plain `memchr`.
 
-#[cfg(target_arch = "aarch64")]
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 use memchr::memchr;
 
-#[cfg(any(test, not(target_arch = "aarch64")))]
+#[cfg(any(test, not(any(target_arch = "aarch64", target_arch = "x86_64"))))]
 use super::prepass::DEFINITION_CLOSER;
+
+/// Whether this target runs the fused scan. Where it does not, the root parse
+/// keeps its plain NUL search, and the pre-pass its own `[` probe in front of
+/// its `]:` search.
+pub(super) const FUSED: bool = cfg!(any(target_arch = "aarch64", target_arch = "x86_64"));
 
 /// What one pass over the root body found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -67,11 +78,11 @@ pub(super) enum DefinitionCloser {
 /// has one.
 #[inline]
 pub(super) fn scan(body: &[u8]) -> RootScan {
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
     {
         scan_fused(body)
     }
-    #[cfg(not(target_arch = "aarch64"))]
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     {
         scan_separately(body)
     }
@@ -80,7 +91,7 @@ pub(super) fn scan(body: &[u8]) -> RootScan {
 /// The two searches the fused scan replaces, one after the other: the tests'
 /// reference for it, and the answer on targets without the vector loop, where
 /// only the tests ask.
-#[cfg(any(test, not(target_arch = "aarch64")))]
+#[cfg(any(test, not(any(target_arch = "aarch64", target_arch = "x86_64"))))]
 fn scan_separately(body: &[u8]) -> RootScan {
     match memchr::memchr(0, body) {
         Some(nul) => RootScan::Nul(nul),
@@ -90,7 +101,7 @@ fn scan_separately(body: &[u8]) -> RootScan {
     }
 }
 
-#[cfg(target_arch = "aarch64")]
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 #[inline]
 fn scan_fused(body: &[u8]) -> RootScan {
     let Some(at) = first_nul_or_closer(body) else {
@@ -188,9 +199,193 @@ fn first_nul_or_closer(bytes: &[u8]) -> Option<usize> {
     }
 }
 
+/// Offset of the first byte of `bytes` that is a NUL or starts a `]:`: the
+/// NEON loop's answer, in 32-byte AVX2 blocks where the CPU has AVX2 and in
+/// 16-byte SSE2 blocks otherwise.
+#[cfg(target_arch = "x86_64")]
+#[inline]
+fn first_nul_or_closer(bytes: &[u8]) -> Option<usize> {
+    if std::arch::is_x86_feature_detected!("avx2") {
+        // SAFETY: guarded by the detection above.
+        #[allow(unsafe_code)]
+        unsafe {
+            first_nul_or_closer_avx2(bytes)
+        }
+    } else {
+        first_nul_or_closer_sse2(bytes)
+    }
+}
+
+/// [`first_nul_or_closer`] in 16-byte SSE2 blocks, the NEON loop lane for
+/// lane. SSE2 is part of the x86-64 baseline, so it needs no detection.
+#[cfg(target_arch = "x86_64")]
+#[allow(unsafe_code)]
+fn first_nul_or_closer_sse2(bytes: &[u8]) -> Option<usize> {
+    use std::arch::x86_64::*;
+    let len = bytes.len();
+    if len < 16 {
+        return first_nul_or_closer_short(bytes);
+    }
+    let ptr = bytes.as_ptr();
+    let mut at = 0;
+    // SAFETY: a block at `from` loads `from..from + 16`, and its lookahead
+    // loads `from + 1..from + 17`. The grouped loop runs only while the
+    // lookahead of its fourth block ends in bounds (`at + 65 <= len`), and the
+    // block loop only while its own does (`at + 17 <= len`). The last vector
+    // loads `len - 16..len`, and `len >= 16` was checked above.
+    unsafe {
+        let zero = _mm_setzero_si128();
+        let close = _mm_set1_epi8(b']'.cast_signed());
+        let colon = _mm_set1_epi8(b':'.cast_signed());
+        let load = |from: usize| _mm_loadu_si128(ptr.add(from).cast());
+        // 0xFF in lane `j` when `here[j]` is `]` and the byte after it is `:`.
+        let closers = |here: __m128i, from: usize| {
+            _mm_and_si128(
+                _mm_cmpeq_epi8(here, close),
+                _mm_cmpeq_epi8(load(from + 1), colon),
+            )
+        };
+        // One bit per lane, so the lowest set bit names the first lane.
+        let lanes = |mask: __m128i| _mm_movemask_epi8(mask).cast_unsigned();
+        while at + 65 <= len {
+            let a = load(at);
+            let b = load(at + 16);
+            let c = load(at + 32);
+            let d = load(at + 48);
+            let closer = _mm_or_si128(
+                _mm_or_si128(closers(a, at), closers(b, at + 16)),
+                _mm_or_si128(closers(c, at + 32), closers(d, at + 48)),
+            );
+            // A NUL anywhere in the group is the minimum of its lane. The
+            // minimum is unsigned: a signed one would let a byte from 0x80 up
+            // hide a NUL in the same lane of another block.
+            let nul = _mm_cmpeq_epi8(_mm_min_epu8(_mm_min_epu8(a, b), _mm_min_epu8(c, d)), zero);
+            if lanes(_mm_or_si128(closer, nul)) != 0 {
+                // The block loop below names the byte within these four.
+                break;
+            }
+            at += 64;
+        }
+        while at + 17 <= len {
+            let here = load(at);
+            let mask = lanes(_mm_or_si128(_mm_cmpeq_epi8(here, zero), closers(here, at)));
+            if mask != 0 {
+                return Some(at + mask.trailing_zeros() as usize);
+            }
+            at += 16;
+        }
+        // One vector over the last 16 bytes answers for the 1 to 16 bytes the
+        // loops left, as on aarch64.
+        let base = len - 16;
+        let here = load(base);
+        last_vector(
+            base,
+            lanes(_mm_cmpeq_epi8(here, zero)),
+            lanes(_mm_cmpeq_epi8(here, close)),
+            lanes(_mm_cmpeq_epi8(here, colon)),
+        )
+    }
+}
+
+/// [`first_nul_or_closer`] in 32-byte AVX2 blocks: the SSE2 loop at twice the
+/// width, again four blocks to a group. A body shorter than one such vector
+/// takes the SSE2 loop.
+///
+/// # Safety
+///
+/// The caller must have verified AVX2 support.
+#[cfg(target_arch = "x86_64")]
+#[allow(unsafe_code)]
+#[target_feature(enable = "avx2")]
+unsafe fn first_nul_or_closer_avx2(bytes: &[u8]) -> Option<usize> {
+    use std::arch::x86_64::*;
+    let len = bytes.len();
+    if len < 32 {
+        return first_nul_or_closer_sse2(bytes);
+    }
+    let ptr = bytes.as_ptr();
+    let mut at = 0;
+    // SAFETY: a block at `from` loads `from..from + 32`, and its lookahead
+    // loads `from + 1..from + 33`. The grouped loop runs only while the
+    // lookahead of its fourth block ends in bounds (`at + 129 <= len`), and
+    // the block loop only while its own does (`at + 33 <= len`). The last
+    // vector loads `len - 32..len`, and `len >= 32` was checked above.
+    unsafe {
+        let zero = _mm256_setzero_si256();
+        let close = _mm256_set1_epi8(b']'.cast_signed());
+        let colon = _mm256_set1_epi8(b':'.cast_signed());
+        let load = |from: usize| _mm256_loadu_si256(ptr.add(from).cast());
+        let closers = |here: __m256i, from: usize| {
+            _mm256_and_si256(
+                _mm256_cmpeq_epi8(here, close),
+                _mm256_cmpeq_epi8(load(from + 1), colon),
+            )
+        };
+        let lanes = |mask: __m256i| _mm256_movemask_epi8(mask).cast_unsigned();
+        while at + 129 <= len {
+            let a = load(at);
+            let b = load(at + 32);
+            let c = load(at + 64);
+            let d = load(at + 96);
+            let closer = _mm256_or_si256(
+                _mm256_or_si256(closers(a, at), closers(b, at + 32)),
+                _mm256_or_si256(closers(c, at + 64), closers(d, at + 96)),
+            );
+            let nul = _mm256_cmpeq_epi8(
+                _mm256_min_epu8(_mm256_min_epu8(a, b), _mm256_min_epu8(c, d)),
+                zero,
+            );
+            if lanes(_mm256_or_si256(closer, nul)) != 0 {
+                break;
+            }
+            at += 128;
+        }
+        while at + 33 <= len {
+            let here = load(at);
+            let mask = lanes(_mm256_or_si256(
+                _mm256_cmpeq_epi8(here, zero),
+                closers(here, at),
+            ));
+            if mask != 0 {
+                return Some(at + mask.trailing_zeros() as usize);
+            }
+            at += 32;
+        }
+        let base = len - 32;
+        let here = load(base);
+        last_vector(
+            base,
+            lanes(_mm256_cmpeq_epi8(here, zero)),
+            lanes(_mm256_cmpeq_epi8(here, close)),
+            lanes(_mm256_cmpeq_epi8(here, colon)),
+        )
+    }
+}
+
+/// The answer of the x86 loops' last vector, which starts at `base` and ends
+/// the body, from its lane bits for NUL, `]` and `:`.
+///
+/// Like the NEON one, it re-reads bytes the loops already cleared, which hold
+/// no NUL and start no `]:`, so its first set lane is at or past where they
+/// stopped without a mask. AVX2 has no byte shift across its two halves, so
+/// the lookahead is taken from the bits instead: shifting the `:` bits down by
+/// one lines each lane up with the byte after it. The bit shifted in above
+/// the last lane is zero and stands in for the byte that does not follow the
+/// body, so a `]` in the final byte starts no `]:`.
+#[cfg(target_arch = "x86_64")]
+#[inline]
+fn last_vector(base: usize, nul: u32, close: u32, colon: u32) -> Option<usize> {
+    let mask = nul | (close & (colon >> 1));
+    if mask == 0 {
+        None
+    } else {
+        Some(base + mask.trailing_zeros() as usize)
+    }
+}
+
 /// [`first_nul_or_closer`] for a body shorter than one vector, one byte at a
 /// time.
-#[cfg(target_arch = "aarch64")]
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 fn first_nul_or_closer_short(bytes: &[u8]) -> Option<usize> {
     let mut at = 0;
     while at < bytes.len() {
@@ -234,7 +429,7 @@ mod tests {
             expected,
             "separate searches of {shown:?}"
         );
-        #[cfg(target_arch = "aarch64")]
+        #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
         {
             let first_event =
                 (0..body.len()).find(|&at| body[at] == 0 || body[at..].starts_with(b"]:"));
@@ -243,13 +438,29 @@ mod tests {
                 first_event,
                 "vector loop on {shown:?}"
             );
+            // Both x86 widths, whichever one the dispatch above picked.
+            #[cfg(target_arch = "x86_64")]
+            {
+                assert_eq!(
+                    super::first_nul_or_closer_sse2(body),
+                    first_event,
+                    "SSE2 loop on {shown:?}"
+                );
+                if std::arch::is_x86_feature_detected!("avx2") {
+                    // SAFETY: guarded by the detection above.
+                    #[allow(unsafe_code)]
+                    let avx2 = unsafe { super::first_nul_or_closer_avx2(body) };
+                    assert_eq!(avx2, first_event, "AVX2 loop on {shown:?}");
+                }
+            }
         }
     }
 
     /// Lengths that cover bodies shorter than one vector, one block with and
-    /// without its lookahead byte, several four-block groups, and the last
-    /// vector after every number of bytes the loops leave.
-    const LENGTHS: std::ops::RangeInclusive<usize> = 0..=160;
+    /// without its lookahead byte, several four-block groups of 16 bytes and
+    /// one of 32, and the last vector after every number of bytes the loops of
+    /// either width leave.
+    const LENGTHS: std::ops::RangeInclusive<usize> = 0..=200;
 
     #[test]
     fn tiny_bodies() {
@@ -312,13 +523,15 @@ mod tests {
 
     #[test]
     fn the_last_vector_answers_for_every_tail_length() {
-        // From 16 bytes on, a body ends on one vector over its last 16 bytes,
-        // however many of them the loops before it already cleared. Put each
-        // needle in each of the last 17 positions, behind every filler, up to
-        // the final byte, which has no lookahead byte after it.
-        for len in 16..=200usize {
+        // From 16 bytes on, a body ends on one vector over its last 16 bytes
+        // (32 with AVX2, from 32 bytes on), however many of them the loops
+        // before it already cleared. Put each needle in each of the last 33
+        // positions, behind every filler, up to the final byte, which has no
+        // lookahead byte after it. The lengths reach past two 128-byte AVX2
+        // groups.
+        for len in 16..=300usize {
             for filler in [b'x', b']', b':'] {
-                for at in len.saturating_sub(17)..len {
+                for at in len.saturating_sub(33)..len {
                     for needle in [&b"\0"[..], b"]:", b"]", b":"] {
                         if at + needle.len() > len {
                             continue;
@@ -400,6 +613,22 @@ mod tests {
                     body[nul + 1] = b':';
                 }
                 check(&body);
+            }
+        }
+    }
+
+    #[test]
+    fn a_nul_at_every_offset_among_high_bytes() {
+        // Four blocks fold their NUL test into one lane-wise minimum, which
+        // has to be unsigned: bytes from 0x80 up in the other blocks' lanes
+        // must not hide the NUL.
+        for len in LENGTHS {
+            for filler in [0x80, 0xBF, 0xFF] {
+                for nul in 0..len {
+                    let mut body = vec![filler; len];
+                    body[nul] = 0;
+                    check(&body);
+                }
             }
         }
     }

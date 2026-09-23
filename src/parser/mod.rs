@@ -436,9 +436,10 @@ impl<'a> Parser<'a> {
         // Only the document parse runs the definition pre-pass, and only with
         // link references or footnotes enabled; for it, the NUL search also
         // finds the pre-pass's first `]:` (see `root_scan.rs`). That takes the
-        // fused aarch64 loop: elsewhere the pre-pass keeps its `[` probe in
-        // front of the `]:` search, so a body without `[` skips that search.
-        let find_closer = cfg!(target_arch = "aarch64")
+        // fused vector loop of aarch64 and x86-64: elsewhere the pre-pass keeps
+        // its `[` probe in front of the `]:` search, so a body without `[`
+        // skips that search.
+        let find_closer = root_scan::FUSED
             && phase == ParsePhase::Document
             && (options.allow_link_refs || options.footnotes);
         let (source, source_map, definition_closer) =
