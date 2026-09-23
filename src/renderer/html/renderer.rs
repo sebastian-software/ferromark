@@ -24,7 +24,7 @@ use compact_str::CompactString;
 use rustc_hash::FxHashMap;
 
 use super::autolink::FirstByteIndex;
-use super::heading::HeadingIdPlanner;
+use super::heading::{HeadingIdPlanner, PlannedId};
 use super::options::{HtmlRendererOptions, RendererOptions};
 
 pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRenderHooks};
@@ -57,20 +57,21 @@ pub struct HtmlRenderer {
     /// many footnotes quadratic. Cleared per render like the heading map.
     footnote_slug_counts: FxHashMap<CompactString, usize>,
     /// Reusable scratch buffer for the raw concatenated heading text in
-    /// `heading_id`. A long-lived buffer avoids paying for a fresh
+    /// `prepare_heading_id`. A long-lived buffer avoids paying for a fresh
     /// `String` allocation per heading — `slugify_heading` previously
     /// allocated one `text` String per call. Empty until the first heading
     /// (see [`reserve_heading_scratch`]).
     heading_text_scratch: String,
-    /// Reusable scratch buffer for the slugified id. The final ID planner
-    /// reads it before the buffer is reused for the next heading.
+    /// Reusable scratch buffer for semantic footnote slugs. Heading slugs are
+    /// written straight into the heading ID planner instead.
     heading_slug_scratch: String,
     /// Unique heading id for the heading currently being written, including
-    /// any `-N` suffix. Permalinks reuse this exact value instead of
+    /// any `-N` suffix but not the configured prefix, as held by
+    /// `heading_id_planner`. Permalinks reuse this exact value instead of
     /// slugifying again.
-    heading_id_scratch: String,
-    /// Whether the id in `heading_id_scratch` came from an explicit `{#id}`
-    /// heading attribute rather than from the slugifier.
+    heading_id: PlannedId,
+    /// Whether `heading_id` came from an explicit `{#id}` heading attribute
+    /// rather than from the slugifier.
     ///
     /// A generated slug is built only from lowercase alphanumerics, `-`
     /// separators, the `section` fallback, and an optional `-N` suffix (see
@@ -218,15 +219,15 @@ impl HtmlRenderer {
             footnote_index: FxHashMap::default(),
             footnote_records: Vec::new(),
             footnote_slug_counts: FxHashMap::default(),
-            // The heading scratch buffers start empty. Constructing them
-            // pre-sized cost three allocations per renderer even for a
-            // document that has no heading at all — the common shape for
-            // short inputs and for pipelines that build one renderer per
-            // document. The first heading (or footnote slug) reserves the
-            // same working capacity instead, and reuse keeps it warm.
+            // The heading scratch buffers and the planner's ID storage start
+            // empty. Constructing them pre-sized cost allocations per renderer
+            // even for a document that has no heading at all — the common
+            // shape for short inputs and for pipelines that build one renderer
+            // per document. The first heading (or footnote slug) reserves the
+            // working capacity instead, and reuse keeps it warm.
             heading_text_scratch: String::new(),
             heading_slug_scratch: String::new(),
-            heading_id_scratch: String::new(),
+            heading_id: PlannedId::default(),
             heading_id_is_explicit: false,
             code_block_index: 0,
             in_link: false,

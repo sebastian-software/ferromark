@@ -4,13 +4,16 @@
 //! owns the shared text collector and slugifier so both code paths reuse the same
 //! Unicode-aware normalization behavior.
 
+use std::collections::hash_map::Entry;
 use std::fmt;
 use std::fmt::Write as _;
+use std::hash::Hasher as _;
 
 use crate::ast::{Link, Node};
-use compact_str::CompactString;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHasher};
 
+#[cfg(test)]
+pub(super) mod planner_tests;
 #[cfg(test)]
 mod tests;
 
@@ -56,7 +59,53 @@ impl std::error::Error for InvalidHeadingIdPrefix {}
 /// between incremental fragments when their IDs must remain unique together.
 #[derive(Debug, Clone, Default)]
 pub struct HeadingIdPlanner {
-    next_suffix: FxHashMap<CompactString, usize>,
+    /// Every claimed ID, back to back in claim order.
+    ///
+    /// The candidate for the next claim is written at the end of this buffer
+    /// and stays there once claimed, so a claimed ID costs no allocation of
+    /// its own, and `clear` keeps the capacity for the next document instead
+    /// of freeing one key per heading. A claimed range is never moved or
+    /// rewritten before `clear`.
+    ids: String,
+    /// One record per claimed ID, in claim order.
+    claims: Vec<Claim>,
+    /// Hash of a claimed ID to the newest claim with that hash.
+    ///
+    /// The ID bytes are hashed once per candidate, and the `u64` key needs no
+    /// allocation. Claims whose IDs share a full 64-bit hash chain through
+    /// `Claim::previous_with_hash`, so equality is always decided on the
+    /// bytes.
+    by_hash: FxHashMap<u64, usize>,
+}
+
+/// One claimed heading ID.
+#[derive(Debug, Clone, Copy)]
+struct Claim {
+    /// Range of the ID in `HeadingIdPlanner::ids`.
+    start: usize,
+    end: usize,
+    /// The next `-N` suffix to try when this ID is requested again as a base.
+    next_suffix: usize,
+    /// An older claim with the same hash, or `NO_CLAIM`.
+    previous_with_hash: usize,
+}
+
+const NO_CLAIM: usize = usize::MAX;
+
+/// Initial capacity of the planner's ID storage.
+///
+/// Replaces the two 64-byte scratch buffers the renderer used to reserve for
+/// the slug and the unique ID, and covers the IDs of a typical document
+/// without growing.
+const ID_STORAGE_CAPACITY: usize = 256;
+
+/// A claimed heading ID, valid until the planner is cleared.
+///
+/// Read it back with `HeadingIdPlanner::id`.
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct PlannedId {
+    start: usize,
+    end: usize,
 }
 
 impl HeadingIdPlanner {
@@ -68,15 +117,16 @@ impl HeadingIdPlanner {
 
     /// Clears IDs claimed for the previous document while retaining capacity.
     pub fn clear(&mut self) {
-        self.next_suffix.clear();
+        self.ids.clear();
+        self.claims.clear();
+        self.by_hash.clear();
     }
 
     /// Plans a unique ID based on `base`, returning it as an owned string.
     #[must_use]
     pub fn plan(&mut self, base: &str) -> String {
-        let mut id = String::new();
-        self.plan_into(base, &mut id);
-        id
+        let id = self.claim(base);
+        self.id(id).to_owned()
     }
 
     /// Writes a unique ID based on `base` into `output`.
@@ -84,30 +134,128 @@ impl HeadingIdPlanner {
     /// The buffer is cleared before writing and can be reused across headings.
     #[inline]
     pub fn plan_into(&mut self, base: &str, output: &mut String) {
+        let id = self.claim(base);
         output.clear();
-        let Some(mut suffix) = self.next_suffix.get(base).copied() else {
-            output.push_str(base);
-            self.next_suffix.insert(CompactString::from(base), 1);
-            return;
+        output.push_str(self.id(id));
+    }
+
+    /// Plans a unique ID based on `base` and keeps it in the planner.
+    pub(super) fn claim(&mut self, base: &str) -> PlannedId {
+        let start = self.begin_candidate();
+        self.ids.push_str(base);
+        self.claim_candidate(start)
+    }
+
+    /// Plans a unique ID based on the slug of `text`.
+    ///
+    /// Equivalent to `claim(&slugify_heading(text))`, but the slug is written
+    /// straight into the planner's ID storage: a heading whose slug is not
+    /// taken yet is claimed where it was written, without a copy.
+    pub(super) fn claim_slug(&mut self, text: &str) -> PlannedId {
+        let start = self.begin_candidate();
+        slugify_heading_into(text, &mut self.ids);
+        self.claim_candidate(start)
+    }
+
+    /// Returns a claimed ID.
+    #[inline]
+    pub(super) fn id(&self, id: PlannedId) -> &str {
+        &self.ids[id.start..id.end]
+    }
+
+    fn begin_candidate(&mut self) -> usize {
+        if self.ids.capacity() == 0 {
+            self.ids.reserve(ID_STORAGE_CAPACITY);
+        }
+        self.ids.len()
+    }
+
+    /// Claims the base written at `ids[start..]`, or the first free `-N`
+    /// variant of it.
+    fn claim_candidate(&mut self, start: usize) -> PlannedId {
+        let taken = match self.claim_if_free(start) {
+            Ok(id) => return id,
+            Err(taken) => taken,
         };
 
+        // `ids[start..base_end]` is a copy of the taken base. Each try
+        // replaces the previous suffix after it, so the claimed variant ends
+        // up where the base was written.
+        let base_end = self.ids.len();
+        let mut suffix = self.claims[taken].next_suffix;
         loop {
-            output.clear();
-            output.push_str(base);
-            let _ = write!(output, "-{suffix}");
+            self.ids.truncate(base_end);
+            let _ = write!(self.ids, "-{suffix}");
             suffix = suffix.saturating_add(1);
-            if !self.next_suffix.contains_key(output.as_str()) {
-                self.next_suffix
-                    .insert(CompactString::from(output.as_str()), 1);
-                // `base` is already a key; advance it in place instead of
-                // allocating a copy of it for every duplicate heading.
-                if let Some(next) = self.next_suffix.get_mut(base) {
-                    *next = suffix;
-                }
-                return;
+            if let Ok(id) = self.claim_if_free(start) {
+                // The base's own record says where the next duplicate starts
+                // looking, exactly like the first duplicate did.
+                self.claims[taken].next_suffix = suffix;
+                return id;
             }
         }
     }
+
+    /// Claims `ids[start..]` when no earlier claim holds the same ID.
+    ///
+    /// Returns the new claim, or the index of the claim that already holds
+    /// the candidate. One hash and one table probe answer both "is it taken?"
+    /// and "claim it" for a free candidate.
+    fn claim_if_free(&mut self, start: usize) -> Result<PlannedId, usize> {
+        let Self {
+            ids,
+            claims,
+            by_hash,
+        } = self;
+        let candidate = &ids[start..];
+        let hash = hash_id(candidate);
+        let index = claims.len();
+        let previous_with_hash = match by_hash.entry(hash) {
+            Entry::Vacant(slot) => {
+                slot.insert(index);
+                NO_CLAIM
+            }
+            Entry::Occupied(mut slot) => {
+                let newest = *slot.get();
+                let mut cursor = newest;
+                while cursor != NO_CLAIM {
+                    let claim = &claims[cursor];
+                    if &ids[claim.start..claim.end] == candidate {
+                        return Err(cursor);
+                    }
+                    cursor = claim.previous_with_hash;
+                }
+                slot.insert(index);
+                newest
+            }
+        };
+        let end = ids.len();
+        claims.push(Claim {
+            start,
+            end,
+            next_suffix: 1,
+            previous_with_hash,
+        });
+        Ok(PlannedId { start, end })
+    }
+}
+
+fn hash_id(id: &str) -> u64 {
+    let mut hasher = FxHasher::default();
+    hasher.write(id.as_bytes());
+    hasher.finish() & hash_mask()
+}
+
+/// Keeps every hash bit. Distinct IDs practically never share a 64-bit hash,
+/// so tests narrow the mask to drive the collision chain on purpose.
+#[cfg(not(test))]
+const fn hash_mask() -> u64 {
+    u64::MAX
+}
+
+#[cfg(test)]
+fn hash_mask() -> u64 {
+    planner_tests::HASH_MASK.with(std::cell::Cell::get)
 }
 
 /// Collects heading text using the same rules as generated HTML IDs.
@@ -191,11 +339,11 @@ pub fn slugify_heading(text: &str) -> String {
 
 /// Slugify `text` into `out`.
 ///
-/// `out` is **not** cleared by this function. Renderers keep a long-lived
-/// scratch buffer for heading IDs, clear it at the call site, and pass it back
-/// here on every heading. That avoids allocating one temporary slug string per
-/// heading while still leaving ownership decisions, such as cloning the final
-/// unique id into a hash map, with the caller.
+/// `out` is **not** cleared by this function; the slug is appended, and the
+/// trailing trim and the `section` fallback only look at the appended part.
+/// `HeadingIdPlanner::claim_slug` relies on this to write each slug straight
+/// after the IDs it has already claimed, and footnotes slugify into a reused
+/// scratch buffer, so neither allocates a temporary slug string per call.
 ///
 /// # Slug alphabet
 ///
@@ -330,32 +478,41 @@ fn push_unicode_run(run: &str, out: &mut String, last_was_separator: &mut bool) 
     }
 }
 
-pub(super) fn heading_has_permalink_marker(nodes: &[Node<'_>], id: &str) -> bool {
-    nodes.iter().any(|node| node_has_permalink_marker(node, id))
+/// Whether the heading already links to the emitted ID `prefix` + `id`.
+///
+/// The emitted ID is passed in two parts so the renderer can check it without
+/// concatenating the configured prefix and the planned ID.
+pub(super) fn heading_has_permalink_marker(nodes: &[Node<'_>], prefix: &str, id: &str) -> bool {
+    nodes
+        .iter()
+        .any(|node| node_has_permalink_marker(node, prefix, id))
 }
 
-fn node_has_permalink_marker(node: &Node<'_>, id: &str) -> bool {
+fn node_has_permalink_marker(node: &Node<'_>, prefix: &str, id: &str) -> bool {
     match node {
         Node::Link(link) => {
-            is_hash_permalink_link(link, id) || heading_has_permalink_marker(&link.children, id)
+            is_hash_permalink_link(link, prefix, id)
+                || heading_has_permalink_marker(&link.children, prefix, id)
         }
         Node::Html(html) => html_has_header_anchor(html.value),
-        Node::Emphasis(value) => heading_has_permalink_marker(&value.children, id),
-        Node::Strong(value) => heading_has_permalink_marker(&value.children, id),
-        Node::Highlight(value) => heading_has_permalink_marker(&value.children, id),
-        Node::Delete(value) => heading_has_permalink_marker(&value.children, id),
-        Node::Superscript(value) => heading_has_permalink_marker(&value.children, id),
-        Node::Subscript(value) => heading_has_permalink_marker(&value.children, id),
+        Node::Emphasis(value) => heading_has_permalink_marker(&value.children, prefix, id),
+        Node::Strong(value) => heading_has_permalink_marker(&value.children, prefix, id),
+        Node::Highlight(value) => heading_has_permalink_marker(&value.children, prefix, id),
+        Node::Delete(value) => heading_has_permalink_marker(&value.children, prefix, id),
+        Node::Superscript(value) => heading_has_permalink_marker(&value.children, prefix, id),
+        Node::Subscript(value) => heading_has_permalink_marker(&value.children, prefix, id),
         _ => false,
     }
 }
 
-fn is_hash_permalink_link(link: &Link<'_>, id: &str) -> bool {
-    let url = link.url;
-    if url.len() != id.len() + 1 || !url.starts_with('#') || &url[1..] != id {
-        return false;
-    }
-    collect_heading_text(&link.children) == "#"
+fn is_hash_permalink_link(link: &Link<'_>, prefix: &str, id: &str) -> bool {
+    // The URL is exactly `#` + prefix + id.
+    let links_to_id = link
+        .url
+        .strip_prefix('#')
+        .and_then(|fragment| fragment.strip_prefix(prefix))
+        == Some(id);
+    links_to_id && collect_heading_text(&link.children) == "#"
 }
 
 fn html_has_header_anchor(value: &str) -> bool {
