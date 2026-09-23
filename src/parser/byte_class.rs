@@ -17,10 +17,11 @@
 //! above `0x80` are never members: their rows map to zero.
 //!
 //! The vector scans run that lookup sixteen lanes at a time: `vqtbl1q_u8` on
-//! aarch64, and `pshufb` on x86-64, where AVX2 broadcasts the tables into
-//! both 128-bit lanes to classify 32 bytes per shuffle pair. SSSE3 and AVX2
-//! are not in the x86-64 baseline, so they are detected at run time, and a
-//! machine without either keeps the table walk.
+//! aarch64, and `pshufb` on x86-64, where AVX2 takes a first 16-byte step
+//! and then broadcasts the tables into both 128-bit lanes to classify 32
+//! bytes per shuffle pair. SSSE3 and AVX2 are not in the x86-64 baseline, so
+//! they are detected at run time, and a machine without either keeps the
+//! table walk.
 
 /// An ASCII byte set with a scalar flag table and vector nibble tables.
 pub(in crate::parser) struct ByteClass {
@@ -156,27 +157,50 @@ impl ByteClass {
         end
     }
 
-    /// Picks the widest x86-64 vector scan this machine supports. The
+    /// Scans with the widest x86-64 vector path this machine supports. The
     /// caller guarantees `bytes.len() - from >= 16`.
     ///
-    /// The published addons target the x86-64 baseline, which has neither
-    /// SSSE3 nor AVX2, so both are detected rather than assumed;
-    /// `is_x86_feature_detected!` caches its answer after the first call.
+    /// Kept out of line: the level check, the calls, and the no-SSSE3
+    /// fallback exist once here, so each caller carries only the length
+    /// check and one call, and its own code stays as compact as the plain
+    /// table walk left it. Every call below is in tail position, so this
+    /// compiles to one load and a jump, with no register spills.
     #[cfg(target_arch = "x86_64")]
     #[allow(unsafe_code)]
-    #[inline]
+    #[inline(never)]
     fn first_in_x86(&self, bytes: &[u8], from: usize) -> usize {
-        if std::arch::is_x86_feature_detected!("avx2") {
-            // SAFETY: AVX2 was detected above, and the caller guaranteed
-            // `bytes.len() - from >= 16`.
-            unsafe { self.first_in_avx2(bytes, from) }
-        } else if std::arch::is_x86_feature_detected!("ssse3") {
-            // SAFETY: SSSE3 was detected above, and the caller guaranteed
-            // `bytes.len() - from >= 16`.
-            unsafe { self.first_in_ssse3(bytes, from) }
-        } else {
-            self.first_in_scalar(bytes, from)
+        match X86_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
+            // SAFETY: level 3 is stored only after AVX2 was detected, and the
+            // caller guaranteed `bytes.len() - from >= 16`.
+            X86_AVX2 => unsafe { self.first_in_avx2(bytes, from) },
+            // SAFETY: level 2 is stored only after SSSE3 was detected, and the
+            // caller guaranteed `bytes.len() - from >= 16`.
+            X86_SSSE3 => unsafe { self.first_in_ssse3(bytes, from) },
+            X86_SCALAR => self.first_in_scalar(bytes, from),
+            _ => self.first_in_x86_detect(bytes, from),
         }
+    }
+
+    /// Detects the vector level once, records it, and scans.
+    ///
+    /// The published addons target the x86-64 baseline, which has neither
+    /// SSSE3 nor AVX2, so both are detected rather than assumed. Detection
+    /// lives here, out of the dispatcher, because the call into the standard
+    /// library's detector would otherwise make the dispatcher save its
+    /// arguments on every call. Racing first calls store the same level.
+    #[cfg(target_arch = "x86_64")]
+    #[cold]
+    #[inline(never)]
+    fn first_in_x86_detect(&self, bytes: &[u8], from: usize) -> usize {
+        let level = if std::arch::is_x86_feature_detected!("avx2") {
+            X86_AVX2
+        } else if std::arch::is_x86_feature_detected!("ssse3") {
+            X86_SSSE3
+        } else {
+            X86_SCALAR
+        };
+        X86_LEVEL.store(level, std::sync::atomic::Ordering::Relaxed);
+        self.first_in_x86(bytes, from)
     }
 
     /// SSSE3 counterpart of the NEON scan: `pshufb` is the same 16-entry
@@ -200,24 +224,9 @@ impl ByteClass {
         unsafe {
             let low = _mm_loadu_si128(self.low.as_ptr().cast());
             let high = _mm_loadu_si128(self.high.as_ptr().cast());
-            let nibble = _mm_set1_epi8(0x0F);
-            let classify = |v: __m128i| {
-                // Both shuffle indices are masked to 0..=15, so `pshufb`
-                // never takes its zeroing branch (index bit 7 set) and each
-                // lookup is the plain table read the scalar identity makes.
-                // `_mm_srli_epi16` shifts 16-bit lanes; the mask drops the
-                // neighbouring byte's bits that ride along.
-                let lo = _mm_shuffle_epi8(low, _mm_and_si128(v, nibble));
-                let hi = _mm_shuffle_epi8(high, _mm_and_si128(_mm_srli_epi16(v, 4), nibble));
-                // `movemask` of "lane is zero" sets one of the low 16 bits
-                // per non-member; the complement, kept inside those bits,
-                // has one bit per member.
-                let clean =
-                    _mm_movemask_epi8(_mm_cmpeq_epi8(_mm_and_si128(lo, hi), _mm_setzero_si128()));
-                u32::from_ne_bytes((!clean & 0xFFFF).to_ne_bytes())
-            };
             while i + 16 <= end {
-                let mask = classify(_mm_loadu_si128(bytes.as_ptr().add(i).cast()));
+                let mask =
+                    member_lanes_128(low, high, _mm_loadu_si128(bytes.as_ptr().add(i).cast()));
                 if mask != 0 {
                     return i + mask.trailing_zeros() as usize;
                 }
@@ -228,8 +237,9 @@ impl ByteClass {
                 // the loop already cleared. Each lane's answer is exact, so
                 // nothing leaks across the mask.
                 let base = end - 16;
-                let mask = classify(_mm_loadu_si128(bytes.as_ptr().add(base).cast()))
-                    & (u32::MAX << (i - base));
+                let mask =
+                    member_lanes_128(low, high, _mm_loadu_si128(bytes.as_ptr().add(base).cast()))
+                        & (u32::MAX << (i - base));
                 if mask != 0 {
                     return base + mask.trailing_zeros() as usize;
                 }
@@ -238,11 +248,15 @@ impl ByteClass {
         end
     }
 
-    /// AVX2 sibling of [`Self::first_in_ssse3`], 32 bytes per step.
+    /// AVX2 sibling of [`Self::first_in_ssse3`]: one 16-byte step, then 32
+    /// bytes per step.
     ///
-    /// `vpshufb` looks up within each 128-bit lane, so the 16-entry tables
-    /// are broadcast into both. A remainder of 16 to 31 bytes takes one
-    /// overlapping 32-byte load when the slice is long enough; only a slice
+    /// Most bracket bodies end within 16 bytes of the scan start, so the
+    /// first step is a single 128-bit classify, and a scan that ends there
+    /// never sets up the 256-bit tables or touches an upper register half.
+    /// Past it, `vpshufb` looks up within each 128-bit lane, so the 16-entry
+    /// tables are broadcast into both, and whatever remains takes 32-byte
+    /// steps and one overlapping 32-byte load at the end. Only a slice
     /// shorter than 32 bytes hands over to the SSSE3 scan.
     ///
     /// # Safety
@@ -260,13 +274,21 @@ impl ByteClass {
             // is the one the SSSE3 scan needs.
             return unsafe { self.first_in_ssse3(bytes, from) };
         }
-        let mut i = from;
-        // SAFETY: every 32-byte load is bounded by an explicit `i + 32 <= end`
-        // check or reads the final full vector at `end - 32`, which exists
-        // because `end >= 32`.
+        // SAFETY: the first 16-byte load is in bounds because the caller
+        // guaranteed `end - from >= 16`. Every 32-byte load is bounded by an
+        // explicit `i + 32 <= end` check or reads the final full vector at
+        // `end - 32`, which exists because `end >= 32`.
         unsafe {
-            let low = _mm256_broadcastsi128_si256(_mm_loadu_si128(self.low.as_ptr().cast()));
-            let high = _mm256_broadcastsi128_si256(_mm_loadu_si128(self.high.as_ptr().cast()));
+            let low = _mm_loadu_si128(self.low.as_ptr().cast());
+            let high = _mm_loadu_si128(self.high.as_ptr().cast());
+            let mask =
+                member_lanes_128(low, high, _mm_loadu_si128(bytes.as_ptr().add(from).cast()));
+            if mask != 0 {
+                return from + mask.trailing_zeros() as usize;
+            }
+            let mut i = from + 16;
+            let low = _mm256_broadcastsi128_si256(low);
+            let high = _mm256_broadcastsi128_si256(high);
             let nibble = _mm256_set1_epi8(0x0F);
             let classify = |v: __m256i| {
                 let lo = _mm256_shuffle_epi8(low, _mm256_and_si256(v, nibble));
@@ -286,9 +308,10 @@ impl ByteClass {
                 i += 32;
             }
             if i < end {
-                // Overlapping tail, as in the SSSE3 scan. When fewer than 32
-                // bytes remained from the start, the masked lanes also cover
-                // the bytes before `from`.
+                // Overlapping tail, as in the SSSE3 scan: `i > end - 32` here
+                // whether or not the loop ran, so the mask drops the lanes
+                // before `i`, which the steps above already cleared or which
+                // lie before `from`.
                 let base = end - 32;
                 let mask = classify(_mm256_loadu_si256(bytes.as_ptr().add(base).cast()))
                     & (u32::MAX << (i - base));
@@ -299,6 +322,47 @@ impl ByteClass {
         }
         end
     }
+}
+
+/// The x86-64 scan [`ByteClass::first_in_x86`] dispatches to: zero until the
+/// first vector-length scan detects it, then one of the levels below.
+#[cfg(target_arch = "x86_64")]
+static X86_LEVEL: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+/// Neither SSSE3 nor AVX2: the table walk.
+#[cfg(target_arch = "x86_64")]
+const X86_SCALAR: u8 = 1;
+/// SSSE3 without AVX2: [`ByteClass::first_in_ssse3`].
+#[cfg(target_arch = "x86_64")]
+const X86_SSSE3: u8 = 2;
+/// AVX2: [`ByteClass::first_in_avx2`].
+#[cfg(target_arch = "x86_64")]
+const X86_AVX2: u8 = 3;
+
+/// Member lanes of one 16-byte vector: bit `k` of the result is set iff
+/// byte `k` of `v` is a member of the class whose nibble tables are
+/// `low` and `high`.
+///
+/// Both shuffle indices are masked to 0..=15, so `pshufb` never takes its
+/// zeroing branch (index bit 7 set) and each lookup is the plain table read
+/// the scalar identity makes. `_mm_srli_epi16` shifts 16-bit lanes; the mask
+/// drops the neighbouring byte's bits that ride along.
+#[cfg(target_arch = "x86_64")]
+#[inline]
+#[target_feature(enable = "ssse3")]
+fn member_lanes_128(
+    low: std::arch::x86_64::__m128i,
+    high: std::arch::x86_64::__m128i,
+    v: std::arch::x86_64::__m128i,
+) -> u32 {
+    use std::arch::x86_64::*;
+    let nibble = _mm_set1_epi8(0x0F);
+    let lo = _mm_shuffle_epi8(low, _mm_and_si128(v, nibble));
+    let hi = _mm_shuffle_epi8(high, _mm_and_si128(_mm_srli_epi16(v, 4), nibble));
+    // `movemask` of "lane is zero" sets one of the low 16 bits per
+    // non-member; the complement, kept inside those bits, has one bit per
+    // member.
+    let clean = _mm_movemask_epi8(_mm_cmpeq_epi8(_mm_and_si128(lo, hi), _mm_setzero_si128()));
+    u32::from_ne_bytes((!clean & 0xFFFF).to_ne_bytes())
 }
 
 /// The differential checks are shared: each module that owns a production
@@ -346,11 +410,26 @@ pub(in crate::parser) mod tests {
             .map_or(bytes.len(), |o| from + o)
     }
 
-    /// Starting offsets for the remainder sweep: both sides of the 16- and
-    /// 32-byte steps, so the vector tails see every overlap with the start.
+    /// Input lengths for the byte-value sweep: short inputs for the table
+    /// walk, then both sides of every step edge up to 112 bytes (multiples
+    /// of 16 for the 16-byte scans, and 16 plus multiples of 32 for AVX2's
+    /// first step and its 32-byte steps), so each value lands in every lane
+    /// of every step and of the overlapping tails.
+    const LANE_LENGTHS: [usize; 19] = [
+        0, 1, 15, 16, 17, 31, 32, 33, 47, 48, 49, 63, 64, 65, 79, 80, 81, 111, 112,
+    ];
+    /// Starting offsets for the full remainder sweep: both sides of the 16-
+    /// and 32-byte steps, so the vector tails see every overlap with the
+    /// start.
     const STARTS: [usize; 12] = [0, 1, 2, 3, 8, 15, 16, 17, 24, 31, 32, 33];
-    /// Longest remainder the sweep checks after each start.
+    /// Longest remainder the full sweep checks after each start.
     const MAX_REMAINDER: usize = 200;
+    /// Remainders on both sides of each threshold: the 16-byte dispatch
+    /// threshold, which is also where AVX2's first step ends; 32 bytes; and
+    /// 48, where AVX2's first 32-byte step ends. They run from every start
+    /// from 0 to 33, so the slice length crosses 32, below which AVX2 hands
+    /// over to SSSE3, at every remainder.
+    const THRESHOLD_REMAINDERS: [usize; 9] = [15, 16, 17, 31, 32, 33, 47, 48, 49];
 
     /// One way to run the scan, and the shortest remainder it accepts.
     struct Backend {
@@ -440,18 +519,19 @@ pub(in crate::parser) mod tests {
 
     /// Checks every scan backend on this machine against the flag table.
     ///
-    /// Three sweeps: all 256 byte values in every lane position of inputs up
-    /// to three AVX2 vectors long; every remainder from 0 to 200 bytes with
-    /// the first member at every position, from several starting offsets,
-    /// over noise that cycles through every non-member (non-ASCII included)
-    /// and with members filling everything before the start, so a vector
-    /// tail that let an earlier lane through would report it; and seeded
+    /// Four sweeps: all 256 byte values at every offset of inputs on both
+    /// sides of each step edge up to 112 bytes; every remainder from 0 to 200
+    /// bytes from twelve starting offsets, and the remainders around each
+    /// threshold from every start from 0 to 33, both with the first member
+    /// at every position (see [`assert_every_first_member`]); and seeded
     /// inputs of mixed density, which put several members in one vector.
     pub(in crate::parser) fn assert_backends_match_flags(class: &ByteClass) {
         let backends = backends();
-        let members: Vec<u8> = (0..=255u8).filter(|&b| class.contains(b)).collect();
         let others: Vec<u8> = (0..=255u8).filter(|&b| !class.contains(b)).collect();
-        assert!(!members.is_empty(), "production classes have members");
+        assert!(
+            (0..=255u8).any(|b| class.contains(b)),
+            "production classes have members"
+        );
         for byte in 0..=255u8 {
             let lo = class.low[usize::from(byte & 0x0F)];
             let hi = class.high[usize::from(byte >> 4)];
@@ -467,10 +547,10 @@ pub(in crate::parser) mod tests {
             .copied()
             .find(u8::is_ascii_alphanumeric)
             .unwrap_or(others[0]);
-        let mut buffer = [filler; 96];
+        let mut buffer = [filler; 112];
         for value in 0..=255u8 {
             let member = class.contains(value);
-            for len in 0..=buffer.len() {
+            for len in LANE_LENGTHS {
                 for at in 0..len {
                     buffer[at] = value;
                     let expected = if member { at } else { len };
@@ -487,34 +567,58 @@ pub(in crate::parser) mod tests {
             }
         }
 
-        let mut buffer = [0u8; 33 + MAX_REMAINDER];
         for from in STARTS {
-            for remaining in 0..=MAX_REMAINDER {
-                let len = from + remaining;
-                for hit in 0..=remaining {
-                    for (k, byte) in buffer[..len].iter_mut().enumerate() {
-                        *byte = if k < from {
-                            members[k % members.len()]
-                        } else {
-                            others[(k * 7 + hit) % others.len()]
-                        };
-                    }
-                    if hit < remaining {
-                        buffer[from + hit] = members[(from + hit) % members.len()];
-                    }
-                    assert_all(
-                        &backends,
-                        class,
-                        &buffer[..len],
-                        from,
-                        from + hit,
-                        format_args!("first member {hit} past the start"),
-                    );
-                }
-            }
+            assert_every_first_member(&backends, class, from, 0..=MAX_REMAINDER);
+        }
+        for from in 0..=33 {
+            assert_every_first_member(&backends, class, from, THRESHOLD_REMAINDERS);
         }
 
         assert_seeded_inputs(&backends, class, 20_000);
+    }
+
+    /// For each remainder, puts the first member at every position after
+    /// `from`, and at none, and checks every backend. The bytes after `from`
+    /// are noise that cycles through every non-member, non-ASCII included;
+    /// members fill everything before `from`, so a vector tail that let an
+    /// earlier lane through would report it.
+    fn assert_every_first_member(
+        backends: &[Backend],
+        class: &ByteClass,
+        from: usize,
+        remainders: impl IntoIterator<Item = usize>,
+    ) {
+        let members: Vec<u8> = (0..=255u8).filter(|&b| class.contains(b)).collect();
+        let others: Vec<u8> = (0..=255u8).filter(|&b| !class.contains(b)).collect();
+        let noise = |k: usize| others[(k * 7 + from) % others.len()];
+        let mut buffer = [0u8; 256];
+        for (k, byte) in buffer.iter_mut().enumerate() {
+            *byte = if k < from {
+                members[k % members.len()]
+            } else {
+                noise(k)
+            };
+        }
+        for remaining in remainders {
+            let len = from + remaining;
+            for hit in 0..=remaining {
+                let at = from + hit;
+                if hit < remaining {
+                    buffer[at] = members[at % members.len()];
+                }
+                assert_all(
+                    backends,
+                    class,
+                    &buffer[..len],
+                    from,
+                    at,
+                    format_args!("first member {hit} past the start"),
+                );
+                if hit < remaining {
+                    buffer[at] = noise(at);
+                }
+            }
+        }
     }
 
     /// Compares every backend with the independent oracle on seeded inputs
