@@ -261,6 +261,7 @@ pub(super) struct RendererOptions {
     pub(super) source_spans: bool,
     pub(super) heading_ids: bool,
     pub(super) heading_level_offset: i32,
+    heading_id_prefix: Cow<'static, str>,
     pub(super) callouts: bool,
     pub(super) code_fence_metadata: bool,
     pub(super) table_colgroup: bool,
@@ -282,6 +283,14 @@ impl RendererOptions {
 
     pub(super) fn source_path(&self) -> &str {
         &self.source_path
+    }
+
+    pub(super) fn heading_id_prefix(&self) -> &str {
+        &self.heading_id_prefix
+    }
+
+    pub(super) fn set_heading_id_prefix(&mut self, prefix: String) {
+        self.heading_id_prefix = Cow::Owned(prefix);
     }
 
     pub(super) fn code_annotation_meta_key(&self) -> &str {
@@ -319,6 +328,7 @@ impl From<HtmlRendererOptions> for RendererOptions {
             source_spans: options.source_spans,
             heading_ids: options.heading_ids,
             heading_level_offset: 0,
+            heading_id_prefix: Cow::Borrowed(""),
             callouts: options.callouts,
             code_fence_metadata: options.code_fence_metadata,
             table_colgroup: options.table_colgroup,

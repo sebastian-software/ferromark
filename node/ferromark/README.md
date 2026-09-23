@@ -147,10 +147,16 @@ the highlighter helpers below accept trusted highlighter HTML.
 
 ## Options reference
 
-Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `linkBasePath` is unset.
+Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `headingIdPrefix` and `linkBasePath` are unset.
 
 Unknown option names throw a `TypeError` that identifies the rejected key, so
 misspellings such as `taskList` cannot silently change rendered output.
+
+Set `headingIdPrefix` to namespace generated and explicit heading IDs, their
+permalinks, and `transform()` heading metadata. For example,
+`toHtml("# Intro", { headingIdPrefix: "docs-" })` emits `id="docs-intro"`.
+Prefixes accept ASCII letters, digits, underscores, and hyphens. Authored
+fragment links and footnote IDs are unchanged.
 
 `mergedTableCells`, `tableColgroup`, and `tableColumnNames` require `tables`. `disallowedRawHtml` only filters a narrow GFM tag list in trusted mode and is not a sanitizer. `renderPolicy: 'trusted'` permits raw HTML and unrestricted URL schemes, so use it only for trusted Markdown. See [`Options`](./index.d.mts) for each field's semantics and examples above for `frontMatter` and `linkBasePath`.
 

@@ -153,6 +153,47 @@ fn heading_ids_skip_suffix_collisions_inside_containers_and_for_explicit_ids() {
     assert_eq!(hooked, html);
 }
 
+#[test]
+fn heading_id_prefixes_generated_and_explicit_ids_after_deduplication() {
+    let allocator = Allocator::new();
+    let doc = Parser::with_options(
+        &allocator,
+        "# A\n\n# A\n\n# a-1\n\n## Intro {#install}\n\n## はじめに",
+        ParserOptions {
+            heading_attributes: true,
+            ..ParserOptions::default()
+        },
+    )
+    .parse()
+    .unwrap();
+    let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
+        heading_permalinks: true,
+        ..Default::default()
+    })
+    .try_with_heading_id_prefix("docs-")
+    .unwrap();
+    let html = renderer.render(&doc);
+
+    for id in [
+        "docs-a",
+        "docs-a-1",
+        "docs-a-1-1",
+        "docs-install",
+        "docs-はじめに",
+    ] {
+        assert!(html.contains(&format!("id=\"{id}\"")), "{id}: {html}");
+        assert!(html.contains(&format!("href=\"#{id}\"")), "{id}: {html}");
+    }
+    assert_eq!(html.matches("id=\"docs-a-1\"").count(), 1, "{html}");
+}
+
+#[test]
+fn heading_id_prefix_rejects_unsafe_characters() {
+    let error = HtmlRenderer::validate_heading_id_prefix("bad prefix").unwrap_err();
+    assert!(error.to_string().contains("ASCII letters"));
+    assert!(HtmlRenderer::validate_heading_id_prefix("docs-").is_ok());
+}
+
 fn render_html(source: &str) -> String {
     let allocator = Allocator::new();
     let doc = Parser::new(&allocator, source).parse().unwrap();

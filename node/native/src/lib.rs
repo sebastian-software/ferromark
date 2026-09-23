@@ -38,6 +38,7 @@ pub struct Options {
     pub front_matter: Option<bool>,
     pub heading_ids: Option<bool>,
     pub heading_offset: Option<f64>,
+    pub heading_id_prefix: Option<String>,
     pub heading_attributes: Option<bool>,
     pub math: Option<bool>,
     pub callouts: Option<bool>,
@@ -54,6 +55,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         mut parser,
         mut html,
         mut heading_level_offset,
+        mut heading_id_prefix,
     } = addon_defaults();
     if let Some(options) = options {
         if let Some(policy) = options.render_policy {
@@ -108,6 +110,11 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             }
             heading_level_offset = offset as i32;
         }
+        if let Some(prefix) = options.heading_id_prefix {
+            HtmlRenderer::validate_heading_id_prefix(&prefix)
+                .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+            heading_id_prefix = prefix;
+        }
         apply!(parser.heading_attributes, options.heading_attributes);
         apply!(parser.math, options.math);
         apply!(html.callouts, options.callouts);
@@ -127,6 +134,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         parser,
         html,
         heading_level_offset,
+        heading_id_prefix,
     })
 }
 
@@ -164,7 +172,9 @@ impl Renderer {
     pub fn new(options: Option<Options>) -> Result<Self> {
         let options = core_options(options)?;
         let html = HtmlRenderer::with_options(options.html)
-            .with_heading_level_offset(options.heading_level_offset);
+            .with_heading_level_offset(options.heading_level_offset)
+            .try_with_heading_id_prefix(options.heading_id_prefix)
+            .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
         Ok(Self {
             allocator: Allocator::new(),
             parser: options.parser,
@@ -221,6 +231,7 @@ struct Metadata {
     id_planner: HeadingIdPlanner,
     heading_ids: bool,
     heading_level_offset: i32,
+    heading_id_prefix: String,
 }
 
 impl<'a> Visit<'a> for Metadata {
@@ -230,7 +241,11 @@ impl<'a> Visit<'a> for Metadata {
             let base = heading
                 .id
                 .map_or_else(|| ferromark::slugify_heading(&text), str::to_owned);
-            Some(self.id_planner.plan(&base))
+            Some(format!(
+                "{}{}",
+                self.heading_id_prefix,
+                self.id_planner.plan(&base)
+            ))
         } else {
             None
         };
@@ -294,6 +309,7 @@ fn render_document(
         id_planner: HeadingIdPlanner::new(),
         heading_ids: options.html.heading_ids,
         heading_level_offset: options.heading_level_offset,
+        heading_id_prefix: options.heading_id_prefix.clone(),
     };
     metadata.visit_document(&document);
     let front_matter = document
@@ -301,7 +317,9 @@ fn render_document(
         .as_ref()
         .map(|front| front.value.to_owned());
     let mut renderer = HtmlRenderer::with_options(options.html)
-        .with_heading_level_offset(options.heading_level_offset);
+        .with_heading_level_offset(options.heading_level_offset)
+        .try_with_heading_id_prefix(options.heading_id_prefix)
+        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
     let html = if let Some(callback) = callback {
         let mut hooks = CallbackRenderer {
             callback,

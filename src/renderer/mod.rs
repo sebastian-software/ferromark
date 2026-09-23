@@ -35,6 +35,6 @@ mod html;
 
 pub use html::{
     CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HeadingIdPlanner, HtmlRenderContext,
-    HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks,
-    collect_heading_text, map_heading_level, slugify_heading,
+    HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
+    NoHtmlRenderHooks, collect_heading_text, map_heading_level, slugify_heading,
 };

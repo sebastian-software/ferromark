@@ -34,6 +34,7 @@ export interface Options {
   frontMatter?: boolean
   headingIds?: boolean
   headingOffset?: number
+  headingIdPrefix?: string
   headingAttributes?: boolean
   math?: boolean
   callouts?: boolean

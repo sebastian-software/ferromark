@@ -14,6 +14,7 @@ pub struct CoreOptions {
     pub parser: ParserOptions,
     pub html: HtmlRendererOptions,
     pub heading_level_offset: i32,
+    pub heading_id_prefix: String,
 }
 
 /// The configuration the addon uses when the caller passes no options.
@@ -33,5 +34,6 @@ pub fn addon_defaults() -> CoreOptions {
         parser,
         html,
         heading_level_offset: 0,
+        heading_id_prefix: String::new(),
     }
 }

@@ -4,6 +4,7 @@
 //! owns the shared text collector and slugifier so both code paths reuse the same
 //! Unicode-aware normalization behavior.
 
+use std::fmt;
 use std::fmt::Write as _;
 
 use crate::ast::{Link, Node};
@@ -29,6 +30,20 @@ pub fn map_heading_level(level: u8, offset: i32) -> u8 {
     let shifted = i64::from(level.clamp(1, 6)) + i64::from(offset);
     u8::try_from(shifted.clamp(1, 6)).unwrap_or(1)
 }
+
+/// Error returned when a configured heading ID prefix contains unsafe bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InvalidHeadingIdPrefix;
+
+impl fmt::Display for InvalidHeadingIdPrefix {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(
+            "heading ID prefixes may contain only ASCII letters, digits, underscores, and hyphens",
+        )
+    }
+}
+
+impl std::error::Error for InvalidHeadingIdPrefix {}
 
 /// Assigns unique heading IDs in document order.
 ///

@@ -31,6 +31,7 @@ const optionKeys = new Set([
   "frontMatter",
   "headingIds",
   "headingOffset",
+  "headingIdPrefix",
   "math",
   "callouts",
   "definitionLists",

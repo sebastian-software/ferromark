@@ -71,6 +71,7 @@ fn every_extension() -> CoreOptions {
         mut parser,
         mut html,
         heading_level_offset,
+        heading_id_prefix,
     } = addon_defaults();
     parser.tables = true;
     parser.merged_table_cells = true;
@@ -98,6 +99,7 @@ fn every_extension() -> CoreOptions {
         parser,
         html,
         heading_level_offset,
+        heading_id_prefix,
     }
 }
 

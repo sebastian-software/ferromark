@@ -147,4 +147,32 @@ mod tests {
                 .contains("id=\"a-1\"")
         );
     }
+
+    #[test]
+    fn heading_id_prefix_is_kept_across_committed_and_provisional_fragments() {
+        let first_allocator = Allocator::new();
+        let first = Parser::new(&first_allocator, "# a").parse().unwrap();
+        let next_allocator = Allocator::new();
+        let next = Parser::new(&next_allocator, "# a").parse().unwrap();
+        let mut renderer = HtmlRenderer::new()
+            .try_with_heading_id_prefix("docs-")
+            .unwrap();
+
+        assert!(
+            renderer
+                .render_incremental_fragment(&first)
+                .contains("id=\"docs-a\"")
+        );
+        let provisional = renderer.render_provisional_fragment(&next);
+        assert!(provisional.contains("id=\"docs-a-1\""), "{provisional}");
+        let committed = renderer.render_incremental_fragment(&next);
+        assert_eq!(committed, provisional);
+
+        renderer.reset_incremental_state();
+        assert!(
+            renderer
+                .render_incremental_fragment(&next)
+                .contains("id=\"docs-a\"")
+        );
+    }
 }
