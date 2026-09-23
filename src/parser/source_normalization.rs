@@ -2,9 +2,8 @@
 //!
 //! Finding NUL is a pass over the whole body. For the root document that runs
 //! the definition pre-pass, the same pass also finds the pre-pass's first
-//! `]:` (see [`root_scan`](super::root_scan)), and with GFM autolinks records
-//! where the autolink pre-flight's trigger bytes are; every other parser keeps
-//! the plain `memchr`.
+//! `]:` (see [`root_scan`](super::root_scan)); every other parser keeps the
+//! plain `memchr`.
 use crate::allocator::{Allocator, Vec};
 use crate::ast::Span;
 
@@ -28,23 +27,15 @@ pub(super) struct NormalizedSourceMap<'a> {
 /// body without NUL: replacing one moves every later offset, so a body that
 /// holds one reports [`DefinitionCloser::Unscanned`], as does every call
 /// without `find_closer`.
-///
-/// With `collect_triggers`, the pass also records the offsets of the GFM
-/// autolink pre-flight's trigger bytes (see
-/// [`scan_collecting_triggers`](root_scan::scan_collecting_triggers)) and
-/// answers the `]:` question too. They are returned only for a body without
-/// NUL, whose normalized source is the body itself, borrowed.
 pub(super) fn normalize<'a>(
     allocator: &'a Allocator,
     source: &'a str,
     body_start: usize,
     find_closer: bool,
-    collect_triggers: bool,
 ) -> (
     &'a str,
     Option<&'a NormalizedSourceMap<'a>>,
     DefinitionCloser,
-    Option<&'a [u32]>,
 ) {
     let bytes = source.as_bytes();
     // Only a BOM at the original document start is an encoding marker.
@@ -55,28 +46,16 @@ pub(super) fn normalize<'a>(
         usize::from(bytes.starts_with(b"\xEF\xBB\xBF")) * 3
     };
     let body = &bytes[source_start..];
-    let (first_nul, closer, triggers) = if collect_triggers && u32::try_from(body.len()).is_ok() {
-        let mut offsets = allocator.new_vec();
-        match root_scan::scan_collecting_triggers(body, &mut offsets) {
-            // A NUL rewrites the body, which moves the offsets recorded.
-            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned, None),
-            RootScan::Clean { first_closer } => (
-                None,
-                first_closer.map_or(DefinitionCloser::Absent, DefinitionCloser::At),
-                Some(offsets.into_bump_slice()),
-            ),
-        }
-    } else if find_closer {
+    let (first_nul, closer) = if find_closer {
         match root_scan::scan(body) {
-            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned, None),
+            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned),
             RootScan::Clean { first_closer } => (
                 None,
                 first_closer.map_or(DefinitionCloser::Absent, DefinitionCloser::At),
-                None,
             ),
         }
     } else {
-        (memchr::memchr(0, body), DefinitionCloser::Unscanned, None)
+        (memchr::memchr(0, body), DefinitionCloser::Unscanned)
     };
     let (normalized, map) = replace_nul(
         allocator,
@@ -84,8 +63,7 @@ pub(super) fn normalize<'a>(
         source_start,
         first_nul.map(|offset| source_start + offset),
     );
-    debug_assert!(triggers.is_none() || std::ptr::eq(normalized.as_bytes(), body));
-    (normalized, map, closer, triggers)
+    (normalized, map, closer)
 }
 
 /// The normalized source and its map, given where the body starts and where
@@ -196,38 +174,11 @@ mod tests {
     #[track_caller]
     fn check(source: &str, body_start: usize, label: &str) {
         let allocator = Allocator::new();
-        let (plain, plain_map, unscanned, none) =
-            normalize(&allocator, source, body_start, false, false);
+        let (plain, plain_map, unscanned) = normalize(&allocator, source, body_start, false);
         assert_eq!(unscanned, DefinitionCloser::Unscanned, "{label}");
-        assert_eq!(none, None, "{label}");
-        let (root, root_map, closer, none) = normalize(&allocator, source, body_start, true, false);
+        let (root, root_map, closer) = normalize(&allocator, source, body_start, true);
         assert_eq!(root, plain, "{label}");
         assert_eq!(map_fields(root_map), map_fields(plain_map), "{label}");
-        assert_eq!(none, None, "{label}");
-        // Collecting the autolink triggers answers the same question with the
-        // same pass, whether or not the closer was asked for.
-        for find_closer in [false, true] {
-            let (collected, collected_map, collected_closer, triggers) =
-                normalize(&allocator, source, body_start, find_closer, true);
-            assert_eq!(collected, plain, "{label}");
-            assert_eq!(map_fields(collected_map), map_fields(plain_map), "{label}");
-            assert_eq!(collected_closer, closer, "{label}");
-            if plain_map.is_some_and(|map| !map.replacements.is_empty()) {
-                assert_eq!(triggers, None, "{label}");
-            } else {
-                let bytes = plain.as_bytes();
-                let expected: Vec<u32> = (0..bytes.len())
-                    .filter(|&at| {
-                        crate::parser::root_scan::is_autolink_trigger(
-                            bytes[at],
-                            bytes.get(at + 1).copied().unwrap_or(0),
-                        )
-                    })
-                    .map(|at| at as u32)
-                    .collect();
-                assert_eq!(triggers, Some(expected.as_slice()), "{label}");
-            }
-        }
         if plain_map.is_some_and(|map| !map.replacements.is_empty()) {
             // A NUL was replaced, so the pre-pass searches the rewritten body.
             assert_eq!(closer, DefinitionCloser::Unscanned, "{label}");

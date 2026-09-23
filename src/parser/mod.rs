@@ -227,10 +227,10 @@ pub struct Parser<'a> {
     /// Parser options.
     options: ParserOptions,
 
-    /// Where the root body's GFM autolink trigger bytes are, collected by the
-    /// root scan (see `root_scan.rs`) so the block-level pre-flight need not
-    /// walk content that is a slice of that body again. Sub-parsers share it:
-    /// the pre-flight checks by address whether content lies in the body.
+    /// Where the root source's GFM autolink trigger bytes are, recorded chunk
+    /// by chunk as blocks ask for them, so the block-level pre-flight need not
+    /// walk every block's content again. Sub-parsers share it: the pre-flight
+    /// checks by address whether content lies in the root source.
     autolink_triggers: Option<&'a inline::AutolinkTriggers<'a>>,
 
     /// Current position in the source.
@@ -443,25 +443,19 @@ impl<'a> Parser<'a> {
         let find_closer = cfg!(target_arch = "aarch64")
             && phase == ParsePhase::Document
             && (options.allow_link_refs || options.footnotes);
-        // With GFM autolinks, the same loop also records the autolink
-        // pre-flight's trigger bytes (see `root_scan/triggers.rs`).
-        let collect_triggers = options.autolinks
-            && phase == ParsePhase::Document
-            && (options.allow_link_refs || options.footnotes)
-            && inline::collects_triggers();
-        let (source, source_map, definition_closer, triggers) = source_normalization::normalize(
-            allocator,
-            source,
-            body_start,
-            find_closer,
-            collect_triggers,
-        );
+        let (source, source_map, definition_closer) =
+            source_normalization::normalize(allocator, source, body_start, find_closer);
         let mut parser = Self {
             allocator,
             source,
             source_map,
-            autolink_triggers: triggers.map(|offsets| {
-                &*allocator.alloc(inline::AutolinkTriggers::new(source.as_bytes(), offsets))
+            // Filled lazily by the autolink pre-flight, over the chunks of the
+            // source its blocks lie in (see `gfm_autolink/triggers.rs`).
+            autolink_triggers: (options.autolinks
+                && phase == ParsePhase::Document
+                && inline::collects_triggers())
+            .then(|| {
+                &*allocator.alloc(inline::AutolinkTriggers::new(allocator, source.as_bytes()))
             }),
             front_matter: front_matter.map(|metadata| allocator.boxed(metadata)),
             inline_note_seen: (phase == ParsePhase::Document
@@ -553,8 +547,8 @@ impl<'a> Parser<'a> {
             allocator: self.allocator,
             source,
             source_map: None,
-            // Offsets into the root body stay valid for every sub-source: the
-            // pre-flight only uses them for content that lies in that body.
+            // Offsets into the root source stay valid for every sub-source: the
+            // pre-flight only uses them for content that lies in that source.
             autolink_triggers: self.autolink_triggers,
             front_matter: None,
             // Line comments are recognized on physical source lines, before

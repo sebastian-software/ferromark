@@ -33,19 +33,9 @@
 //! source itself. Parsers that never run the pre-pass — sub-parsers, the
 //! definition pass, and documents with neither link references nor footnotes
 //! enabled — do not run this scan; normalization keeps its plain `memchr`.
-//!
-//! With GFM autolinks enabled, the root parse runs the variant in
-//! [`triggers`] instead, which also records where the autolink pre-flight's
-//! trigger bytes are, so the pre-flight does not walk every block again.
 
 #[cfg(target_arch = "aarch64")]
 use memchr::memchr;
-
-mod triggers;
-
-#[cfg(test)]
-pub(super) use self::triggers::is_autolink_trigger;
-pub(super) use self::triggers::scan_collecting_triggers;
 
 #[cfg(any(test, not(target_arch = "aarch64")))]
 use super::prepass::DEFINITION_CLOSER;

@@ -1,7 +1,7 @@
 //! The indexed autolink pre-flight must produce exactly the documents the
 //! full pass produces.
 //!
-//! Every input is parsed twice — once with the root scan collecting trigger
+//! Every input is parsed twice — once with the root parser recording trigger
 //! offsets and once without — and the AST `Debug` output and the rendered HTML
 //! are compared. On top of that, every block the indexed parse answers from
 //! the offsets asserts that its gate value equals the full pass's
@@ -29,7 +29,7 @@ use crate::parser::prepass::gzip::gunzip;
 use crate::parser::{Parser, ParserOptions};
 use crate::renderer::{HtmlRenderer, HtmlRendererOptions};
 
-use super::triggers::with_triggers;
+use super::triggers::{BYTES_PER_OFFSET, CHUNK, OFFSET_ALLOWANCE, with_triggers};
 
 thread_local! {
     /// Blocks the offsets answered on this thread, so a test can show that
@@ -88,9 +88,9 @@ fn check(source: &str, options: &ParserOptions) -> bool {
     full.contains("Link(")
 }
 
-/// Profiles with autolinks on. The offsets are collected when link
-/// references or footnotes are on as well; the last profile has neither and
-/// checks that the full pass still answers there.
+/// Profiles with autolinks on: with and without link references and
+/// footnotes, with front matter and line comments, with every optional
+/// inline construct, and MDX.
 fn option_matrix() -> Vec<ParserOptions> {
     vec![
         ParserOptions::gfm(),
@@ -311,13 +311,96 @@ fn needles_at_block_boundaries_render_the_same() {
     );
 }
 
+/// Blocks the offsets answered while parsing `source` with the record on.
+fn indexed_blocks(source: &str, options: &ParserOptions) -> usize {
+    let before = indexed_so_far();
+    output(source, options, true);
+    indexed_so_far() - before
+}
+
+#[test]
+fn the_density_bound_renders_the_same_around_it() {
+    // A first paragraph whose chunk holds exactly as many triggers as the
+    // record allows for one chunk, or one more, then filler to the end of
+    // that chunk and sparse paragraphs with a URL each. The first block
+    // records the first chunk, so the record stops right there or never.
+    let bound = OFFSET_ALLOWANCE + CHUNK / BYTES_PER_OFFSET;
+    let options = ParserOptions {
+        footnotes: false,
+        ..ParserOptions::gfm()
+    };
+    for (count, trigger) in ["w. ", "a@b ", "x:/ "]
+        .into_iter()
+        .flat_map(|piece| [(bound, piece), (bound + 1, piece)])
+    {
+        let mut source = trigger.repeat(count);
+        source.push_str("\n\n");
+        while source.len() < CHUNK + 40 {
+            source.push_str("plain filler prose.\n\n");
+        }
+        let sparse = 12;
+        for _ in 0..sparse {
+            source.push_str(
+                "Longer prose that mentions http://example.com once, and then keeps \
+                 going for a while without any other needle in it.\n\n",
+            );
+        }
+        check(&source, &options);
+        let indexed = indexed_blocks(&source, &options);
+        if count > bound {
+            assert_eq!(indexed, 0, "{count} × {trigger:?}: the record must stop");
+        } else {
+            // Every paragraph: the dense one, the filler and the sparse ones.
+            assert!(indexed > sparse, "{count} × {trigger:?}: {indexed} indexed");
+        }
+    }
+}
+
+#[test]
+fn dense_prefixes_render_the_same() {
+    // Dense stretches of every trigger kind in front of sparse prose, in
+    // lists, quotes, tables and code as well as paragraphs, at lengths
+    // around the bound, so the record stops at every kind of block.
+    let bound = OFFSET_ALLOWANCE + CHUNK / BYTES_PER_OFFSET;
+    let dense = [
+        "w. ",
+        "www.a ",
+        "a@b.c ",
+        "http://x ",
+        "[l](https://x) ",
+        ":/ ",
+    ];
+    let wrappers = [
+        ("", "\n\n"),
+        ("- ", "\n"),
+        ("> ", "\n"),
+        ("| a |\n|---|\n| ", " |\n"),
+        ("```\n", "\n```\n"),
+    ];
+    let tail = "Sparse prose with www.example.org, http://example.com and \
+                user@example.com, then a [link](https://example.net).\n\n"
+        .repeat(10);
+    let matrix = option_matrix();
+    for piece in dense {
+        for count in [bound - 1, bound, bound + 1, 2 * bound, 6 * bound] {
+            for (open, close) in wrappers {
+                let source = format!("{open}{}{close}\n{tail}", piece.repeat(count));
+                for options in &matrix[..3] {
+                    check(&source, options);
+                }
+            }
+        }
+    }
+}
+
 #[test]
 fn generated_documents_render_the_same() {
     // The needles, their near misses, the escapes and references that decode
     // into them, and every construct around them: code spans and blocks, link
     // destinations and titles, autolinks, raw HTML, containers that copy
     // their content, line comments, NUL bytes, front matter. The long filler
-    // crosses the root scan's 16- and 64-byte steps and its last vector.
+    // crosses the recorder's 16- and 64-byte steps, its last vector and the
+    // 512-byte chunks.
     let tokens = [
         "www.",
         "WWW.",

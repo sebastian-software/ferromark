@@ -26,8 +26,8 @@ use crate::parser::Parser;
 mod preflight_equivalence;
 
 impl Parser<'_> {
-    /// The block-level pre-flight for `content`: from the root scan's trigger
-    /// offsets when `content` is a slice of the root body, otherwise from a
+    /// The block-level pre-flight for `content`: from recorded trigger
+    /// offsets when `content` is a slice of the root source, otherwise from a
     /// pass over `content` (see [`AutolinkTriggers`]).
     #[inline]
     pub(in crate::parser::inline) fn autolink_preflight(
@@ -35,7 +35,7 @@ impl Parser<'_> {
         content: &str,
     ) -> Option<AutolinkScan> {
         if let Some(triggers) = self.autolink_triggers
-            && let Some(start) = triggers.locate(content)
+            && let Some(start) = triggers.cover(content)
         {
             let scan = triggers.preflight(content, start);
             // Every block a unit test parses checks the gate value itself,
