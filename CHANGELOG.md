@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1](https://github.com/sebastian-software/ferromark/compare/v2.1.0...v2.1.1) (2026-09-23)
+
+
+### Performance Improvements
+
+* **renderer:** compare a raw HTML tag only with the filtered names sharing its initial ([#418](https://github.com/sebastian-software/ferromark/issues/418)) ([4b7b259](https://github.com/sebastian-software/ferromark/commit/4b7b25913ae0b82cf07ce056497460eb0391f503))
+* **renderer:** plan heading ids in reusable claim storage ([#422](https://github.com/sebastian-software/ferromark/issues/422)) ([77b2fcd](https://github.com/sebastian-software/ferromark/commit/77b2fcd19fc7b649dfda3fe01825dcde113d131c))
+
 ## [2.1.0](https://github.com/sebastian-software/ferromark/compare/v2.0.1...v2.1.0) (2026-09-23)
 
 
