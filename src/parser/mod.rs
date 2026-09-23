@@ -70,6 +70,7 @@ mod mdx_jsx;
 mod options;
 mod prepass;
 mod reference;
+mod root_scan;
 mod short_scan;
 mod source_normalization;
 mod spans;
@@ -428,7 +429,16 @@ impl<'a> Parser<'a> {
         let body_start = front_matter
             .as_ref()
             .map_or(0, |metadata| metadata.span.end as usize);
-        let (source, source_map) = source_normalization::normalize(allocator, source, body_start);
+        // Only the document parse runs the definition pre-pass, and only with
+        // link references or footnotes enabled; for it, the NUL search also
+        // finds the pre-pass's first `]:` (see `root_scan.rs`). That takes the
+        // fused aarch64 loop: elsewhere the pre-pass keeps its `[` probe in
+        // front of the `]:` search, so a body without `[` skips that search.
+        let find_closer = cfg!(target_arch = "aarch64")
+            && phase == ParsePhase::Document
+            && (options.allow_link_refs || options.footnotes);
+        let (source, source_map, definition_closer) =
+            source_normalization::normalize(allocator, source, body_start, find_closer);
         let mut parser = Self {
             allocator,
             source,
@@ -461,7 +471,7 @@ impl<'a> Parser<'a> {
         // Discover document-wide definitions once, before inline resolution
         // (see `prepass.rs`). Collection itself must not recurse.
         if phase == ParsePhase::Document {
-            let (definitions, footnote_labels) = parser.build_prepass();
+            let (definitions, footnote_labels) = parser.build_prepass(definition_closer);
             parser.definitions = definitions;
             parser.footnote_labels = footnote_labels;
         }
