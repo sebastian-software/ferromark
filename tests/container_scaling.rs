@@ -13,7 +13,8 @@
 //! Heap use is measured through a counting allocator, so the memory guard
 //! holds on every platform; time is compared between two sizes of the same
 //! shape, best of three, so a slow runner cannot fail it and a quadratic
-//! regression cannot pass it.
+//! regression cannot pass it. The two sizes are timed in alternation, one
+//! measurement at a time (see `support/timing.rs`).
 
 // The counting allocator is the one `unsafe` item in the test suite: it
 // forwards every call to the system allocator unchanged and only keeps two
@@ -30,6 +31,9 @@ use std::time::{Duration, Instant};
 use ferromark::allocator::Allocator;
 use ferromark::parser::{Parser, ParserOptions};
 use ferromark::renderer::HtmlRenderer;
+
+#[path = "support/timing.rs"]
+mod timing;
 
 struct CountingAllocator;
 
@@ -61,28 +65,29 @@ static GLOBAL: CountingAllocator = CountingAllocator;
 const BUDGET: Duration = Duration::from_secs(20);
 
 /// Parses and renders on a worker thread so a regression fails the suite in
-/// bounded time instead of hanging it. Returns the best of three runs.
-fn best_of_three(source: &str, options: &ParserOptions) -> Duration {
-    let mut best = BUDGET;
-    for _ in 0..3 {
-        let owned = source.to_owned();
-        let options = options.clone();
-        let (sender, receiver) = mpsc::channel();
-        thread::spawn(move || {
+/// bounded time instead of hanging it. The worker frees the document before
+/// it reports, so nothing it allocated outlives the measurement.
+fn time_once(source: &str, options: &ParserOptions) -> Duration {
+    let owned = source.to_owned();
+    let options = options.clone();
+    let (sender, receiver) = mpsc::channel();
+    thread::spawn(move || {
+        let timed = {
             let started = Instant::now();
             let allocator = Allocator::for_source_len(owned.len());
             let document = Parser::with_options(&allocator, &owned, options)
                 .parse()
                 .expect("the shape should parse");
             let html = HtmlRenderer::new().render(&document);
-            let _ = sender.send((html.len(), started.elapsed()));
-        });
-        let (_, elapsed) = receiver
-            .recv_timeout(BUDGET)
-            .expect("the shape should parse in bounded time, not quadratic time");
-        best = best.min(elapsed);
-    }
-    best
+            (html.len(), started.elapsed())
+        };
+        drop(owned);
+        let _ = sender.send(timed);
+    });
+    let (_, elapsed) = receiver
+        .recv_timeout(BUDGET)
+        .expect("the shape should parse in bounded time, not quadratic time");
+    elapsed
 }
 
 /// Asserts that four times the input costs well under sixteen times the
@@ -93,8 +98,12 @@ fn assert_linear(label: &str, small: &str, large: &str, options: &ParserOptions)
         (3.9..=4.1).contains(&size_ratio),
         "{label}: the large input should be 4x, got x{size_ratio:.2}"
     );
-    let small_time = best_of_three(small, options).max(Duration::from_millis(1));
-    let large_time = best_of_three(large, options);
+    let (small_time, large_time) = timing::best_of_pairs(
+        3,
+        || time_once(small, options),
+        || time_once(large, options),
+    );
+    let small_time = small_time.max(Duration::from_millis(1));
     let ratio = large_time.as_secs_f64() / small_time.as_secs_f64();
     assert!(
         ratio < 8.0,
@@ -119,6 +128,8 @@ fn blank_lines_under_nested_containers_cost_their_own_size() {
     assert!(source.len() > 100_000);
     let options = ParserOptions::commonmark();
 
+    // A heap peak that counts another test's arena measures the neighbor.
+    let _measuring = timing::measuring();
     HEAP_PEAK.store(HEAP_IN_USE.load(Ordering::Relaxed), Ordering::Relaxed);
     let before = HEAP_PEAK.load(Ordering::Relaxed);
     let started = Instant::now();
