@@ -35,7 +35,7 @@ mod url;
 
 use url::{ipv6_authority_brackets, write_url_segment};
 
-use nibble::{ESCAPE_NIBBLES, NibbleTables, first_flagged_simd};
+use nibble::{EscapeNeedles, NeedleSet, first_flagged_simd};
 
 const ONES: u64 = 0x0101_0101_0101_0101;
 const HIGH: u64 = 0x8080_8080_8080_8080;
@@ -79,6 +79,10 @@ const fn first_flagged_lane(mask: u64) -> usize {
 /// Offset of the first byte at or after `from` that needs replacing, or
 /// `bytes.len()` when the rest is clean.
 ///
+/// Inputs of 16 bytes or more are answered by the vector scan of `needles`
+/// on aarch64 (NEON) and x86-64 (SSE2); the word scan below serves shorter
+/// inputs and every other target.
+///
 /// Whole words are cleared by `mask_of`. What is left over when the length
 /// is not a multiple of eight used to be walked a byte at a time, and that
 /// walk is most of the work: the strings reaching these escapers have a
@@ -99,9 +103,9 @@ fn first_flagged(
     from: usize,
     mask_of: impl Fn(u64) -> u64,
     flags: &[u8; 256],
-    tables: &NibbleTables,
+    needles: impl NeedleSet,
 ) -> usize {
-    if let Some(found) = first_flagged_simd(bytes, from, tables) {
+    if let Some(found) = first_flagged_simd(bytes, from, needles) {
         return found;
     }
     let len = bytes.len();
@@ -241,7 +245,7 @@ fn escape_into(
     mask_of: impl Fn(u64) -> u64,
     flags: &[u8; 256],
     table: &[&'static str; 256],
-    tables: &NibbleTables,
+    needles: impl NeedleSet,
 ) {
     // The invariant: bytes in `s[start..i]` have not been copied yet, and
     // everything before `start` has already been emitted in escaped form.
@@ -249,7 +253,7 @@ fn escape_into(
     let mut start = 0usize;
 
     loop {
-        let i = first_flagged(bytes, start, &mask_of, flags, tables);
+        let i = first_flagged(bytes, start, &mask_of, flags, needles);
         if i >= bytes.len() {
             break;
         }
@@ -276,7 +280,7 @@ pub(super) fn write_escaped_into(out: &mut String, s: &str) {
         escape_mask,
         &ESCAPE_FLAG,
         &ESCAPE_TABLE,
-        &ESCAPE_NIBBLES,
+        EscapeNeedles,
     );
 }
 
