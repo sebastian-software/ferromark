@@ -70,6 +70,10 @@ impl<'a> Parser<'a> {
                 if label_end < content.len() && bytes[label_end] == b']' {
                     well_formed_reference = true;
                     let raw_label = &content[label_start..label_end];
+                    #[allow(
+                        clippy::disallowed_methods,
+                        reason = "blank-label checks must agree with `normalize_reference_label`"
+                    )]
                     let key = if raw_label.trim().is_empty() {
                         raw_alt
                     } else {

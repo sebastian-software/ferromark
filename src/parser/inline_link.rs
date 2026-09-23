@@ -171,6 +171,10 @@ impl<'a> Parser<'a> {
             if label_end < content.len() && bytes[label_end] == b']' {
                 well_formed_reference = true;
                 let raw_label = &content[label_start..label_end];
+                #[allow(
+                    clippy::disallowed_methods,
+                    reason = "blank-label checks must agree with `normalize_reference_label`"
+                )]
                 let key = if raw_label.trim().is_empty() {
                     link_text
                 } else {
@@ -495,6 +499,10 @@ fn split_wiki_link_inner(inner: &str, offset: usize) -> (&str, Option<&str>, usi
     }
 }
 
+#[allow(
+    clippy::disallowed_methods,
+    reason = "wiki-link trimming is extension syntax, not a block boundary"
+)]
 fn trim_with_offset(value: &str, offset: usize) -> (&str, usize) {
     let trimmed_start = value.trim_start();
     let leading = value.len() - trimmed_start.len();

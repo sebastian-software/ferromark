@@ -106,7 +106,12 @@ impl<'a> Parser<'a> {
             }
         }
         let label = &text[label_start..j];
-        if label.trim().is_empty() {
+        #[allow(
+            clippy::disallowed_methods,
+            reason = "blank-label checks must agree with `normalize_reference_label`"
+        )]
+        let blank_label = label.trim().is_empty();
+        if blank_label {
             return None;
         }
         // With footnotes enabled, `[^label]:` belongs to the footnote

@@ -33,6 +33,7 @@ export interface Options {
   allowLinkRefs?: boolean
   frontMatter?: boolean
   headingIds?: boolean
+  headingOffset?: number
   headingIdPrefix?: string
   headingAttributes?: boolean
   math?: boolean

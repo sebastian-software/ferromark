@@ -70,6 +70,7 @@ fn every_extension() -> CoreOptions {
     let CoreOptions {
         mut parser,
         mut html,
+        heading_level_offset,
         heading_id_prefix,
     } = addon_defaults();
     parser.tables = true;
@@ -97,6 +98,7 @@ fn every_extension() -> CoreOptions {
     CoreOptions {
         parser,
         html,
+        heading_level_offset,
         heading_id_prefix,
     }
 }

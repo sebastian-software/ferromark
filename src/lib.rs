@@ -29,5 +29,5 @@ pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions,
 pub use renderer::{
     CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HeadingIdPlanner, HtmlRenderContext,
     HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
-    NoHtmlRenderHooks, collect_heading_text, slugify_heading,
+    NoHtmlRenderHooks, collect_heading_text, map_heading_level, slugify_heading,
 };

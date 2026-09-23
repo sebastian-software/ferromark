@@ -1,4 +1,5 @@
 use super::Parser;
+use super::whitespace;
 
 pub(super) struct ParsedListItem<'a> {
     pub(super) ordered: bool,
@@ -8,7 +9,12 @@ pub(super) struct ParsedListItem<'a> {
     pub(super) marker: u8,
     pub(super) start: Option<u32>,
     pub(super) content: &'a str,
+    /// Source offset of `content[synthetic_indent..]`.
     pub(super) content_offset: usize,
+    /// Leading spaces of `content` that stand for tab columns and have no
+    /// source bytes of their own; zero unless a tab after the marker was
+    /// expanded into spaces.
+    pub(super) synthetic_indent: usize,
     pub(super) content_source_end: usize,
     /// Column (relative to the marker line's start) where continuation
     /// lines must be indented to belong to this item: marker indent +
@@ -47,7 +53,8 @@ impl<'a> Parser<'a> {
     pub(super) fn try_parse_list_interrupt(trimmed: &str) -> bool {
         let bytes = trimmed.as_bytes();
         if matches!(bytes.first(), Some(b'-' | b'*' | b'+')) {
-            return matches!(bytes.get(1), Some(b' ' | b'\t')) && !trimmed[1..].trim().is_empty();
+            return matches!(bytes.get(1), Some(b' ' | b'\t'))
+                && !whitespace::is_blank(&trimmed[1..]);
         }
         let mut i = 0;
         while i < bytes.len() && bytes[i].is_ascii_digit() {
@@ -57,7 +64,7 @@ impl<'a> Parser<'a> {
             && trimmed[..i] == *"1"
             && matches!(bytes.get(i), Some(b'.' | b')'))
             && matches!(bytes.get(i + 1), Some(b' ' | b'\t'))
-            && !trimmed[i + 1..].trim().is_empty()
+            && !whitespace::is_blank(&trimmed[i + 1..])
     }
 
     /// Calculates the indentation level (number of spaces) of the current line.
@@ -101,7 +108,7 @@ impl<'a> Parser<'a> {
         line_start: usize,
         line: &'a str,
     ) -> Option<ParsedListItem<'a>> {
-        let trimmed = line.trim_start();
+        let trimmed = whitespace::trim_start(line);
         self.parse_list_item_line_from_trimmed(line_start, line, trimmed)
     }
 
@@ -186,13 +193,17 @@ impl<'a> Parser<'a> {
             // indented code does not depend on the starting column — one tab
             // always lands one to four columns on, two always five or more —
             // so the branch below is the same either way.
-            if self.nesting_depth == 0 && end_col - marker_end_col <= 4 && !rest.trim().is_empty() {
+            if self.nesting_depth == 0
+                && end_col - marker_end_col <= 4
+                && !whitespace::is_blank(rest)
+            {
                 return Some(ParsedListItem {
                     ordered,
                     marker,
                     start,
                     content: rest,
                     content_offset: trimmed_offset + marker_width + ws_run,
+                    synthetic_indent: 0,
                     content_source_end: line_start + line.len(),
                     content_indent: end_col,
                     checked: None,
@@ -216,6 +227,11 @@ impl<'a> Parser<'a> {
                 start,
                 content,
                 content_offset: trimmed_offset + marker_width + 1,
+                // The whitespace after the first separating byte stands for
+                // `extra_columns` spaces. Each of its `ws_run - 1` bytes is
+                // at least one column wide, so the rest of the spaces are
+                // made up.
+                synthetic_indent: extra_columns.saturating_sub(ws_run - 1),
                 content_source_end: line_start + line.len(),
                 content_indent: marker_end_col + 1,
                 checked: None,
@@ -228,7 +244,7 @@ impl<'a> Parser<'a> {
         // marker and its separating spaces; empty items count one column.
         let content_indent = marker_indent
             + marker_width
-            + if content.trim().is_empty() {
+            + if whitespace::is_blank(content) {
                 1
             } else {
                 content_skip.max(1)
@@ -247,6 +263,7 @@ impl<'a> Parser<'a> {
             start,
             content,
             content_offset,
+            synthetic_indent: 0,
             content_source_end: line_start + line.len(),
             content_indent,
             checked,

@@ -7,6 +7,7 @@ use super::line_scan::{line_end, line_terminator_end};
 use super::table_cell_source::{
     is_escaped_table_pipe, remap_table_cell_inline_spans, unescape_table_pipes,
 };
+use super::whitespace;
 use crate::parser::error::ParseResult;
 
 impl<'a> Parser<'a> {
@@ -31,13 +32,13 @@ impl<'a> Parser<'a> {
         }
         let nl1 = line_end(bytes, p1);
 
-        let first_line = self.source[p0..nl0].trim();
+        let first_line = whitespace::trim(&self.source[p0..nl0]);
         if memchr(b'|', first_line.as_bytes()).is_none() {
             return false;
         }
 
         // Second line must be the delimiter row (contains | and -)
-        let second_line = self.source[p1..nl1].trim();
+        let second_line = whitespace::trim(&self.source[p1..nl1]);
         if memchr(b'|', second_line.as_bytes()).is_none()
             || memchr(b'-', second_line.as_bytes()).is_none()
         {
@@ -248,8 +249,7 @@ impl<'a> Parser<'a> {
     fn table_row_cells_with_offsets(
         line: &'a str,
     ) -> impl Iterator<Item = (&'a str, usize, usize)> {
-        let trimmed = line.trim();
-        let trimmed_start = line.len() - line.trim_start().len();
+        let (trimmed, trimmed_start) = whitespace::trim_with_leading(line);
         let mut content_start = trimmed_start;
         let mut content_end = trimmed_start + trimmed.len();
         if line[content_start..content_end].starts_with('|') {
@@ -299,8 +299,7 @@ impl<'a> Parser<'a> {
     fn table_row_cells_with_spans(
         line: &'a str,
     ) -> impl Iterator<Item = (&'a str, usize, usize, usize)> {
-        let trimmed = line.trim();
-        let trimmed_start = line.len() - line.trim_start().len();
+        let (trimmed, trimmed_start) = whitespace::trim_with_leading(line);
         let mut content_start = trimmed_start;
         let mut content_end = trimmed_start + trimmed.len();
         if line[content_start..content_end].starts_with('|') {
@@ -369,14 +368,13 @@ impl<'a> Parser<'a> {
 }
 
 fn trim_cell(cell: &str, offset: usize) -> (&str, usize, usize) {
-    let trimmed = cell.trim();
-    let start = offset + cell.len() - cell.trim_start().len();
-    let end = start + trimmed.len();
-    (trimmed, start, end)
+    let (trimmed, leading) = whitespace::trim_with_leading(cell);
+    let start = offset + leading;
+    (trimmed, start, start + trimmed.len())
 }
 
 fn delimiter_alignment(cell: &str) -> Option<AlignKind> {
-    let trimmed = cell.trim();
+    let trimmed = whitespace::trim(cell);
     let left = trimmed.starts_with(':');
     let right = trimmed.ends_with(':');
     let hyphens = trimmed.strip_prefix(':').unwrap_or(trimmed);

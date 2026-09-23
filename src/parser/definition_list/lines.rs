@@ -1,4 +1,5 @@
 use super::super::line_scan::line_end;
+use super::super::whitespace;
 use super::Parser;
 
 pub(super) struct DefinitionBodyLine {
@@ -12,7 +13,7 @@ impl Parser<'_> {
     }
 
     pub(super) fn is_blank_line_at(&self, line_start: usize) -> bool {
-        self.line_at(line_start).trim().is_empty()
+        whitespace::is_blank(self.line_at(line_start))
     }
 
     pub(super) fn skip_blank_lines_from(&self, mut cursor: usize) -> usize {
@@ -20,7 +21,7 @@ impl Parser<'_> {
             // One scan answers "is this line blank" and "where does the next
             // one start", instead of the line being searched twice per step.
             let (line, next) = self.line_and_next(cursor);
-            if !line.trim().is_empty() && !self.is_line_comment_at(cursor) {
+            if !whitespace::is_blank(line) && !self.is_line_comment_at(cursor) {
                 break;
             }
             cursor = next;

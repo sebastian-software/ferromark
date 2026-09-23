@@ -37,6 +37,7 @@ pub struct Options {
     pub allow_link_refs: Option<bool>,
     pub front_matter: Option<bool>,
     pub heading_ids: Option<bool>,
+    pub heading_offset: Option<f64>,
     pub heading_id_prefix: Option<String>,
     pub heading_attributes: Option<bool>,
     pub math: Option<bool>,
@@ -53,6 +54,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     let CoreOptions {
         mut parser,
         mut html,
+        mut heading_level_offset,
         mut heading_id_prefix,
     } = addon_defaults();
     if let Some(options) = options {
@@ -95,6 +97,19 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.allow_link_refs, options.allow_link_refs);
         apply!(parser.front_matter, options.front_matter);
         apply!(html.heading_ids, options.heading_ids);
+        if let Some(offset) = options.heading_offset {
+            if !offset.is_finite()
+                || offset.fract() != 0.0
+                || offset < f64::from(i32::MIN)
+                || offset > f64::from(i32::MAX)
+            {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "headingOffset must be an integer in the signed 32-bit range",
+                ));
+            }
+            heading_level_offset = offset as i32;
+        }
         if let Some(prefix) = options.heading_id_prefix {
             HtmlRenderer::validate_heading_id_prefix(&prefix)
                 .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
@@ -118,6 +133,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     Ok(CoreOptions {
         parser,
         html,
+        heading_level_offset,
         heading_id_prefix,
     })
 }
@@ -128,7 +144,13 @@ fn parse_error(error: ferromark::ParseError) -> Error {
 
 #[napi(catch_unwind)]
 pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
-    Renderer::new(options)?.to_html(markdown)
+    // A one-shot renderer is dropped with this call, so its output buffer is
+    // handed over whole rather than copied out of a borrow.
+    let mut renderer = Renderer::new(options)?;
+    let document = Parser::with_options(&renderer.allocator, &markdown, renderer.parser.clone())
+        .parse()
+        .map_err(parse_error)?;
+    Ok(renderer.html.render(&document))
 }
 
 #[napi(catch_unwind)]
@@ -150,6 +172,7 @@ impl Renderer {
     pub fn new(options: Option<Options>) -> Result<Self> {
         let options = core_options(options)?;
         let html = HtmlRenderer::with_options(options.html)
+            .with_heading_level_offset(options.heading_level_offset)
             .try_with_heading_id_prefix(options.heading_id_prefix)
             .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
         Ok(Self {
@@ -159,13 +182,19 @@ impl Renderer {
         })
     }
 
+    // Returns a borrow of the renderer's own output buffer. N-API copies it
+    // into a JavaScript string before anything else can touch the renderer,
+    // and keeping the buffer, instead of handing it away with
+    // `HtmlRenderer::render`, spares every later call a fresh allocation and
+    // its regrowth. (A plain comment: doc comments become the published
+    // TypeScript declarations.)
     #[napi(catch_unwind, js_name = "toHtml")]
-    pub fn to_html(&mut self, markdown: String) -> Result<String> {
+    pub fn to_html(&mut self, markdown: String) -> Result<&str> {
         self.allocator.reset();
         let document = Parser::with_options(&self.allocator, &markdown, self.parser.clone())
             .parse()
             .map_err(parse_error)?;
-        Ok(self.html.render(&document))
+        Ok(self.html.render_borrowed(&document))
     }
 
     #[napi(catch_unwind, js_name = "toHtmlBuffer")]
@@ -201,6 +230,7 @@ struct Metadata {
     headings: Vec<Heading>,
     id_planner: HeadingIdPlanner,
     heading_ids: bool,
+    heading_level_offset: i32,
     heading_id_prefix: String,
 }
 
@@ -220,7 +250,10 @@ impl<'a> Visit<'a> for Metadata {
             None
         };
         self.headings.push(Heading {
-            level: u32::from(heading.depth),
+            level: u32::from(ferromark::map_heading_level(
+                heading.depth,
+                self.heading_level_offset,
+            )),
             id,
             text,
         });
@@ -275,6 +308,7 @@ fn render_document(
         headings: Vec::new(),
         id_planner: HeadingIdPlanner::new(),
         heading_ids: options.html.heading_ids,
+        heading_level_offset: options.heading_level_offset,
         heading_id_prefix: options.heading_id_prefix.clone(),
     };
     metadata.visit_document(&document);
@@ -283,6 +317,7 @@ fn render_document(
         .as_ref()
         .map(|front| front.value.to_owned());
     let mut renderer = HtmlRenderer::with_options(options.html)
+        .with_heading_level_offset(options.heading_level_offset)
         .try_with_heading_id_prefix(options.heading_id_prefix)
         .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
     let html = if let Some(callback) = callback {

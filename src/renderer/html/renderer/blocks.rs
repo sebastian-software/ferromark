@@ -64,7 +64,10 @@ impl HtmlRenderer {
         // Avoid the heading.depth -> &str match per call: heading depth is
         // 1..=6 by construction, and "h%d" is a fixed shape we can splat
         // directly. Saves a branch and a `write` call.
-        let depth = heading.depth.clamp(1, 6);
+        let depth = super::super::super::map_heading_level(
+            heading.depth,
+            self.options.heading_level_offset,
+        );
         self.output.push_str("<h");
         self.output.push((b'0' + depth) as char);
         if self.options.heading_ids {

@@ -20,6 +20,17 @@ mod tests;
 /// link to the generated id do not receive a second marker.
 pub const HEADING_PERMALINK_CLASS: &str = "header-anchor";
 
+/// Maps a Markdown heading level to its rendered level after applying `offset`.
+///
+/// Levels are clamped to HTML's `h1` through `h6` range after the offset is
+/// applied. Offsets outside that range therefore produce `h1` or `h6` rather
+/// than an invalid heading element.
+#[must_use]
+pub fn map_heading_level(level: u8, offset: i32) -> u8 {
+    let shifted = i64::from(level.clamp(1, 6)) + i64::from(offset);
+    u8::try_from(shifted.clamp(1, 6)).unwrap_or(1)
+}
+
 /// Error returned when a configured heading ID prefix contains unsafe bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidHeadingIdPrefix;
@@ -88,7 +99,11 @@ impl HeadingIdPlanner {
             if !self.next_suffix.contains_key(output.as_str()) {
                 self.next_suffix
                     .insert(CompactString::from(output.as_str()), 1);
-                self.next_suffix.insert(CompactString::from(base), suffix);
+                // `base` is already a key; advance it in place instead of
+                // allocating a copy of it for every duplicate heading.
+                if let Some(next) = self.next_suffix.get_mut(base) {
+                    *next = suffix;
+                }
                 return;
             }
         }

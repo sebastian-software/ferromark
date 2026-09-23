@@ -21,7 +21,7 @@ mod tests;
 
 pub use heading::{
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, InvalidHeadingIdPrefix, collect_heading_text,
-    slugify_heading,
+    map_heading_level, slugify_heading,
 };
 pub use options::{CodeAnnotationSyntax, HtmlRendererOptions};
 pub use renderer::{

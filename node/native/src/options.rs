@@ -13,6 +13,7 @@ use ferromark::{HtmlRendererOptions, ParserOptions};
 pub struct CoreOptions {
     pub parser: ParserOptions,
     pub html: HtmlRendererOptions,
+    pub heading_level_offset: i32,
     pub heading_id_prefix: String,
 }
 
@@ -32,6 +33,7 @@ pub fn addon_defaults() -> CoreOptions {
     CoreOptions {
         parser,
         html,
+        heading_level_offset: 0,
         heading_id_prefix: String::new(),
     }
 }

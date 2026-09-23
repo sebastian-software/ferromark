@@ -7,6 +7,7 @@ use rustc_hash::FxHashSet;
 use super::Parser;
 use super::line_scan::line_terminator_end;
 use super::spans::SourceMap;
+use super::whitespace;
 use crate::parser::error::ParseResult;
 
 mod lines;
@@ -124,7 +125,7 @@ impl<'a> Parser<'a> {
                 break;
             }
             let (line, next) = self.line_and_next(cursor);
-            if line.trim().is_empty() || self.definition_body_at(cursor).is_some() {
+            if whitespace::is_blank(line) || self.definition_body_at(cursor).is_some() {
                 break;
             }
             if !self.is_definition_term_line(cursor, line) {
@@ -233,7 +234,7 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
-            if line.trim().is_empty() {
+            if whitespace::is_blank(line) {
                 let lookahead = self.skip_blank_lines_from(cursor);
                 if lookahead >= self.source.len()
                     || self.starts_definition_body_at(lookahead)

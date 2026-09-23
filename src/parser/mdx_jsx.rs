@@ -2,6 +2,7 @@
 
 use crate::ast::{MdxJsxFlowElement, MdxJsxTextElement, Node, Span};
 
+use super::whitespace;
 use super::{JsxCloserGap, Parser};
 use crate::parser::error::ParseResult;
 
@@ -232,7 +233,7 @@ impl<'a> Parser<'a> {
         inner_start: usize,
         inner_end: usize,
     ) -> ParseResult<crate::allocator::Vec<'a, Node<'a>>> {
-        if inner_start >= inner_end || self.source[inner_start..inner_end].trim().is_empty() {
+        if inner_start >= inner_end || whitespace::is_blank(&self.source[inner_start..inner_end]) {
             return Ok(self.allocator.new_vec());
         }
         let inner = &self.source[inner_start..inner_end];

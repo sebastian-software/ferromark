@@ -33,6 +33,7 @@ use super::Parser;
 use super::ParserOptions;
 use super::html::HtmlBlockStart;
 use super::reference::{fence_open, is_fence_close};
+use super::whitespace;
 
 /// How an open HTML block ends (CommonMark 4.6).
 #[derive(Clone, Copy)]
@@ -124,7 +125,7 @@ impl OpenParagraph {
 
     /// Records one line of the container's stripped content.
     fn observe(&mut self, line: &str, options: &ParserOptions) {
-        if line.trim().is_empty() {
+        if whitespace::is_blank(line) {
             self.observe_blank();
             return;
         }
@@ -356,7 +357,7 @@ fn is_atx_heading(trimmed: &str) -> bool {
 /// A setext underline of `=` (the `-` form is a thematic break as well and
 /// is recognized as one before this runs).
 fn is_setext_underline(trimmed: &str) -> bool {
-    let bytes = trimmed.trim_end().as_bytes();
+    let bytes = whitespace::trim_end(trimmed).as_bytes();
     !bytes.is_empty() && bytes.iter().all(|&byte| byte == b'=')
 }
 

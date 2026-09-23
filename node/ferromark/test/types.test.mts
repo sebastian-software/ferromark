@@ -11,6 +11,7 @@ const options: Options = {
   definitionLists: true,
   lineComments: true,
   headingAttributes: true,
+  headingOffset: 1,
   headingIdPrefix: "docs-",
   wikiLinks: true,
   cjkEmphasis: true,
