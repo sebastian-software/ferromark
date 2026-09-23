@@ -84,6 +84,22 @@ from one cell. The [comparison at the fixed revision](reports/2026-09-21-native-
 extrapolation from optimization speedups; the older reports retain their
 frozen evidence.
 
+[Optimization round 5](reports/2026-09-23-perf-round-5/README.md) started
+from a sample profile of release 2.0.1 (`cb352020`) over the 57 broad
+documents and merged four changes: block-boundary trimming over ASCII
+whitespace only (#414, a CommonMark conformance and span fix with its own
+[decision](decisions/2026-09-23-commonmark-whitespace-trim.md), which removed
+the 6% of parse time spent in Unicode `str::trim`), one NEON root scan for the
+first NUL and the first `]:` (#413, revised once to end on an overlapping
+vector after it lost on sub-kilobyte comments), a first-byte gate for the GFM
+tag filter (#411, render 1.02–1.18 on documents with raw HTML), and a warm
+output buffer for the reusable Node renderer (#412, 1.027 at the Node level).
+Re-screened one on top of the other and measured together against
+`cb352020`, the three Rust changes give 1.049× fresh, 1.055× with reuse,
+1.080× in parsing (every one of the 57 documents faster) and 1.005× in
+rendering. Moving the GFM autolink pre-flight into the inline marker scan
+(#415) measured 0.968× in parsing and was closed.
+
 ## Next questions
 
 The [iteration-round report](reports/2026-09-15-arm-iterations/README.md) ranked
@@ -118,16 +134,42 @@ content resolved afterwards remains the larger, unattempted variant.
    without LTO and change with the expanded worker. A precise instruction/cache
    or memory-placement mechanism remains unproven. The large `render_node`
    function is a useful next profiling target; retain stage controls.
-2. **Tiny-input fresh allocation.** The source-size heuristic reserves at least
-   16 KB even for a 37-byte comment. The retained-arena and fresh-arena cases
-   should remain separate when considering a different reservation strategy.
-3. **Fuse table pipe discovery and unescaping.** The row splitter and cell
-   decoder still inspect pipe/escape locations independently. Carrying exact
-   positions may remove work, but must preserve trimming, code-span semantics,
-   malformed rows, and source mappings.
-4. **Other architectures.** Run differential tests and real/diagnostic suites on
+2. **Tiny-input fresh allocation.** Round 4 lowered the reservation floor from
+   16 KB to 2 KB, which gave comment-sized documents 2.2% fresh. The
+   retained-arena and fresh-arena cases should remain separate when
+   considering a different reservation strategy.
+3. **Tables and container lines, the two revisions round 4 left open.** Tables
+   hold 10% and lists 12% of parse time after round 5. The NEON pipe cursor
+   ([`tables.patch`](reports/2026-09-21-perf-round-4/patches/tables.patch))
+   parses dense and plain rows 1.03–1.43× faster, but the escaped-pipe path
+   loses 7–10%, so the cell decoder's record handling needs a second
+   iteration; it must preserve trimming, code-span semantics, malformed rows,
+   and source mappings. The container line facts
+   ([`lines.patch`](reports/2026-09-21-perf-round-4/patches/lines.patch))
+   gain 5–8% on list-heavy pages but cost a block quote's terminating blank
+   line an extra terminator scan (`comment-quote` 0.95). Both patches predate
+   round 5's trimming change, which touches the same table and list files, and
+   need rebasing onto it before they are measured again.
+4. **The GFM autolink pre-flight.** About 10% of parse time after round 5: a
+   second `memchr2` + `memmem` pass over each block's content. Both attempts
+   to avoid the pass lost — round 3's document-level gate and round 5's
+   fusion into the inline marker scan (#415, parse 0.968×; see its
+   [record](reports/2026-09-23-perf-round-5/REJECTED.md)) — and a standalone
+   single-pass NEON pre-flight measured only about 1% in a prototype. A
+   cheaper separate pass is the remaining route; its expected value is small.
+5. **Render: heading ids and the tag filter.** After round 5 heading ids take
+   11.5% of render (`slugify_heading_into` 5.7%, the new id planner 4.4%),
+   and the tag filter still 4.3%: the first-byte gate settles tags such as
+   `<div`, `<a` and `<br`, but common ones such as `<td`, `<span` and `<p`
+   share a first letter with a disallowed name and walk all nine names.
+6. **Other architectures.** Run differential tests and real/diagnostic suites on
    x86-64 SSSE3/AVX2 and scalar targets. The current evidence is Apple M1 Pro NEON;
-   cross-target speedups are not established.
+   cross-target speedups are not established. Several paths are NEON-only and
+   have no x86-64 vector code of their own: the link-destination and
+   bracket-body classifiers (`byte_class`), the pre-pass line scan
+   (`line_scan`, SWAR elsewhere), round 5's fused root scan (`root_scan`,
+   separate `memchr`/`memmem` elsewhere), and the renderer's ASCII URL-span
+   scan for autolinks; none of these fallbacks has been timed on x86-64.
 
 Ferroni's candidate scanner (`src/regset.rs`) and Ferrocat's structural scans
 (`crates/ferrocat-po/src/scan.rs`) remain useful references in those repositories.
