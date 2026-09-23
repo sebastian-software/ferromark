@@ -53,6 +53,10 @@ pub(super) const LONGEST_SCHEME: usize = 5;
 /// `://` inside a markdown destination (`](https://…)`) cannot become a
 /// GFM autolink — the inline parser already turned it into a Link — so it
 /// does not keep the pass on.
+///
+/// On aarch64 the block parse answers this out of its marker walk instead
+/// ([`AutolinkFacts`]); this separate pass remains the path of the other
+/// targets and the reference the tracked answer is tested against.
 pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<AutolinkScan> {
     let bytes = content.as_bytes();
     // One pass over `@` and `:` settles the email separator, `://`,
@@ -81,6 +85,118 @@ pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<A
         may_have_www,
         may_have_extended,
     })
+}
+
+/// [`may_contain_autolink`], answered one byte position at a time while the
+/// inline marker scan walks the block, so the pre-flight needs no pass of its
+/// own over the text the marker scan already classifies.
+///
+/// Every fact the pre-flight derives belongs to one byte of the raw content,
+/// and each is a pure function of that position:
+///
+/// - an `@` sets `has_at`;
+/// - a `:` sets the bare-scheme and extended-scheme facts from the bytes
+///   around it — exactly the per-colon body of the pre-flight's loop;
+/// - a `.` preceded by `www` is where a `www.` needle ends, which is what the
+///   pre-flight's substring search finds.
+///
+/// Those are the *trigger* bytes. Nothing else can change the answer, so the
+/// answer is [`may_contain_autolink`]'s — value for value, flags included —
+/// once every trigger position of the content has been visited. Visiting one
+/// twice changes nothing: every fact only ever turns on.
+///
+/// `seen` is the watermark that makes "every position" checkable: every
+/// trigger before it has been visited. The fused marker scan visits the
+/// triggers of the text it classifies and moves the watermark behind the
+/// marker it stops at; the bytes a construct then consumes (a code span, a
+/// link destination) are visited by [`Self::fill_to`] before the next scan
+/// starts, and [`Self::finish`] visits whatever is left at the end.
+#[derive(Clone, Copy)]
+pub(in crate::parser::inline) struct AutolinkFacts {
+    seen: usize,
+    has_at: bool,
+    has_www: bool,
+    has_bare_scheme: bool,
+    has_extended_scheme: bool,
+}
+
+impl AutolinkFacts {
+    pub(in crate::parser::inline) const fn new() -> Self {
+        Self {
+            seen: 0,
+            has_at: false,
+            has_www: false,
+            has_bare_scheme: false,
+            has_extended_scheme: false,
+        }
+    }
+
+    /// Every trigger before this position has been visited.
+    #[inline]
+    pub(in crate::parser::inline) const fn seen(&self) -> usize {
+        self.seen
+    }
+
+    /// Records that every trigger before `upto` has been visited.
+    #[inline]
+    pub(in crate::parser::inline) fn advance_seen(&mut self, upto: usize) {
+        self.seen = self.seen.max(upto);
+    }
+
+    /// Visits every trigger in `seen..upto` and moves the watermark there.
+    #[inline]
+    pub(in crate::parser::inline) fn fill_to(&mut self, bytes: &[u8], upto: usize) {
+        if upto > self.seen {
+            let from = self.seen;
+            self.seen = upto;
+            crate::parser::inline::scan::visit_autolink_triggers(bytes, from, upto, self);
+        }
+    }
+
+    /// Applies the pre-flight's rule to the byte at `at`.
+    ///
+    /// Only trigger bytes set anything; the `:` arm is the per-colon body of
+    /// [`may_contain_autolink`]'s loop, and the `.` arm is its `www.` search
+    /// seen from the needle's last byte.
+    #[inline]
+    pub(in crate::parser::inline) fn visit(&mut self, bytes: &[u8], at: usize) {
+        match bytes[at] {
+            b'@' => self.has_at = true,
+            b':' => {
+                if bytes[at + 1..].starts_with(b"//") {
+                    self.has_bare_scheme |= !scheme_is_markdown_destination(bytes, at);
+                }
+                let prefix = &bytes[..at];
+                self.has_extended_scheme |=
+                    prefix.ends_with(b"mailto") || prefix.ends_with(b"xmpp");
+            }
+            b'.' => self.has_www |= at >= 3 && bytes[at - 3..at] == *b"www",
+            _ => {}
+        }
+    }
+
+    /// The four facts, for tests that compare two ways of visiting.
+    #[cfg(test)]
+    pub(in crate::parser::inline) const fn facts(&self) -> [bool; 4] {
+        [
+            self.has_at,
+            self.has_www,
+            self.has_bare_scheme,
+            self.has_extended_scheme,
+        ]
+    }
+
+    /// Visits the rest of the content and answers the pre-flight.
+    pub(in crate::parser::inline) fn finish(&mut self, bytes: &[u8]) -> Option<AutolinkScan> {
+        self.fill_to(bytes, bytes.len());
+        // The same combination as `may_contain_autolink`.
+        let may_have_www = self.has_at || self.has_www;
+        let may_have_extended = self.has_at && self.has_extended_scheme;
+        (may_have_www || may_have_extended || self.has_bare_scheme).then_some(AutolinkScan {
+            may_have_www,
+            may_have_extended,
+        })
+    }
 }
 
 /// True when the `://` at `colon_slash_slash` completes a Markdown link
@@ -391,6 +507,22 @@ mod tests {
         let actual =
             may_contain_autolink(content).map(|scan| (scan.may_have_www, scan.may_have_extended));
         assert_eq!(actual, reference(content), "input: {content:?}");
+
+        // The position-by-position form: one bulk visit of the whole
+        // content, and the scalar rule applied at every single position.
+        let bulk = AutolinkFacts::new()
+            .finish(content.as_bytes())
+            .map(|scan| (scan.may_have_www, scan.may_have_extended));
+        assert_eq!(bulk, reference(content), "tracked, input: {content:?}");
+        let mut each = AutolinkFacts::new();
+        for at in 0..content.len() {
+            each.visit(content.as_bytes(), at);
+        }
+        each.advance_seen(content.len());
+        let each = each
+            .finish(content.as_bytes())
+            .map(|scan| (scan.may_have_www, scan.may_have_extended));
+        assert_eq!(each, reference(content), "per position, input: {content:?}");
     }
 
     #[test]
@@ -418,6 +550,16 @@ mod tests {
             "www.:",
             "ends with www",
             "ends with mailto",
+            "www\\.example.com",
+            "ww.w.",
+            "wwww.",
+            ".www.",
+            "a longer line of prose that crosses one vector: www.example.com",
+            "a longer line of prose that crosses one vector: ends with www",
+            "a longer line of prose that crosses one vector: http://x.y",
+            "a longer line of prose [text](https://example.com) and no bare one",
+            "a longer line of prose and an address user@example.com in it",
+            "a longer line of prose with mailto:user@example.com in it",
         ] {
             check(case);
         }

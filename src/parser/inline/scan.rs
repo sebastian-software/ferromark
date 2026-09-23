@@ -19,9 +19,17 @@ mod scalar;
 mod x86;
 
 #[cfg(target_arch = "aarch64")]
-use neon::{next_special_neon, next_special_neon_options};
+use neon::{
+    next_marker_tracking_neon, next_special_neon, next_special_neon_options,
+    visit_autolink_triggers_neon,
+};
 #[cfg(not(target_arch = "aarch64"))]
-use scalar::{next_inline_special_options_scalar, next_inline_special_scalar};
+use scalar::{
+    next_inline_special_options_scalar, next_inline_special_scalar, next_marker_tracking_scalar,
+    visit_autolink_triggers_scalar,
+};
+
+use super::gfm_autolink::AutolinkFacts;
 #[cfg(target_arch = "x86_64")]
 use x86::{
     next_special_avx2, next_special_avx2_options, next_special_ssse3, next_special_ssse3_options,
@@ -124,6 +132,134 @@ const OPTION_TABLES: [([u8; 16], [u8; 16]); 16] = [
 fn selected_marker_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
     let tables = &OPTION_TABLES[(options & 15) as usize];
     (&tables.0, &tables.1)
+}
+
+/// The marker tables with the two single-byte GFM autolink triggers, `@`
+/// and `:`, admitted as stops too, for the scan that also answers the
+/// autolink pre-flight ([`next_inline_marker_tracking`]).
+///
+/// Neither needs a bit of its own, which is what keeps the classifier at
+/// one shuffle pair: `@` (high 4, low 0) joins the backtick bit 0x10, whose
+/// only low-nibble entry is 0, and `:` (high 3, low A) joins the `<` bit
+/// 0x04, whose only high-nibble entry is 3. No option set adds either bit
+/// anywhere else, so each addition admits exactly its own byte. The stop
+/// handler tells the triggers from markers by the byte itself.
+#[cfg(target_arch = "aarch64")]
+const fn tracking_marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
+    let (mut low, mut high) = marker_tables(options);
+    high[4] |= 0x10;
+    low[10] |= 0x04;
+    (low, high)
+}
+
+#[cfg(target_arch = "aarch64")]
+const TRACKING_TABLES: [([u8; 16], [u8; 16]); 16] = [
+    tracking_marker_tables(0),
+    tracking_marker_tables(1),
+    tracking_marker_tables(2),
+    tracking_marker_tables(3),
+    tracking_marker_tables(4),
+    tracking_marker_tables(5),
+    tracking_marker_tables(6),
+    tracking_marker_tables(7),
+    tracking_marker_tables(8),
+    tracking_marker_tables(9),
+    tracking_marker_tables(10),
+    tracking_marker_tables(11),
+    tracking_marker_tables(12),
+    tracking_marker_tables(13),
+    tracking_marker_tables(14),
+    tracking_marker_tables(15),
+];
+
+#[cfg(target_arch = "aarch64")]
+#[inline]
+fn selected_tracking_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
+    let tables = &TRACKING_TABLES[(options & 15) as usize];
+    (&tables.0, &tables.1)
+}
+
+/// Byte classes for the scalar tracking scans: bit 0 marks the core markers
+/// of [`INLINE_SPECIAL`], bits 1–4 the optional markers in `INLINE_MARKER_*`
+/// order (so `options << 1` selects them), and [`AUTOLINK_TRIGGER`] the bytes
+/// the autolink pre-flight derives its facts from.
+///
+/// No marker is a trigger, which is what lets a scan move the pre-flight
+/// watermark past the marker it stops at without visiting it.
+static TRACKED_CLASS: [u8; 256] = {
+    let mut t = [0u8; 256];
+    let mut byte = 0;
+    while byte < 256 {
+        t[byte] = INLINE_SPECIAL[byte];
+        byte += 1;
+    }
+    t[b'{' as usize] |= INLINE_MARKER_MDX << 1;
+    t[b'^' as usize] |= INLINE_MARKER_SUPERSCRIPT << 1;
+    t[b'$' as usize] |= INLINE_MARKER_MATH << 1;
+    t[b'=' as usize] |= INLINE_MARKER_HIGHLIGHT << 1;
+    t[b'@' as usize] |= AUTOLINK_TRIGGER;
+    t[b':' as usize] |= AUTOLINK_TRIGGER;
+    t[b'.' as usize] |= AUTOLINK_TRIGGER;
+    t
+};
+
+/// [`TRACKED_CLASS`] bit of the bytes `AutolinkFacts::visit` acts on.
+const AUTOLINK_TRIGGER: u8 = 0x80;
+
+/// The [`TRACKED_CLASS`] bits that stop a scan with these optional markers.
+#[inline]
+const fn tracked_marker_bits(options: u8) -> u8 {
+    1 | ((options & 15) << 1)
+}
+
+/// True for the bytes `AutolinkFacts::visit` acts on.
+#[inline]
+fn is_autolink_trigger(byte: u8) -> bool {
+    TRACKED_CLASS[byte as usize] & AUTOLINK_TRIGGER != 0
+}
+
+/// [`next_inline_marker`] for a scan that also answers the block's GFM
+/// autolink pre-flight: returns the same position, and on the way visits
+/// every autolink trigger before it that `facts` has not seen yet.
+///
+/// Bytes between the watermark and `from` were consumed by a construct the
+/// marker scan never classified, so they are visited first. Afterwards the
+/// watermark stands behind the returned marker: every trigger before it has
+/// been visited, and the marker byte itself is never one.
+#[inline]
+pub(super) fn next_inline_marker_tracking(
+    bytes: &[u8],
+    from: usize,
+    options: u8,
+    facts: &mut AutolinkFacts,
+) -> usize {
+    facts.fill_to(bytes, from.min(bytes.len()));
+    if from >= bytes.len() {
+        return from;
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        next_marker_tracking_neon(bytes, from, options, facts)
+    }
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        next_marker_tracking_scalar(bytes, from, options, facts)
+    }
+}
+
+/// Visits every autolink trigger in `from..to`; the bytes around the range
+/// still count as context. The caller owns the watermark.
+#[inline]
+pub(super) fn visit_autolink_triggers(
+    bytes: &[u8],
+    from: usize,
+    to: usize,
+    facts: &mut AutolinkFacts,
+) {
+    #[cfg(target_arch = "aarch64")]
+    visit_autolink_triggers_neon(bytes, from, to, facts);
+    #[cfg(not(target_arch = "aarch64"))]
+    visit_autolink_triggers_scalar(bytes, from, to, facts);
 }
 
 #[cfg(target_arch = "aarch64")]

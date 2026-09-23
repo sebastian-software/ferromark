@@ -17,7 +17,7 @@
 type Result<T> = std::result::Result<T, &'static str>;
 
 /// Decompresses a gzip member and checks the trailer's uncompressed size.
-pub(super) fn gunzip(data: &[u8]) -> Result<Vec<u8>> {
+pub(in crate::parser) fn gunzip(data: &[u8]) -> Result<Vec<u8>> {
     if data.len() < 18 || data[0] != 0x1f || data[1] != 0x8b {
         return Err("not a gzip stream");
     }

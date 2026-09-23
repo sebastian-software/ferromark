@@ -14,9 +14,28 @@ mod candidate;
 mod scan;
 
 use self::candidate::find_candidate;
-pub(super) use self::scan::may_contain_autolink;
+pub(super) use self::scan::{AutolinkFacts, may_contain_autolink};
 
 use crate::parser::Parser;
+
+/// Parses and renders every input with both pre-flights and compares the
+/// results; see the module docs.
+#[cfg(test)]
+mod preflight_equivalence;
+
+/// Test builds check the tracked pre-flight against the separate pass for
+/// every block they parse.
+#[cfg(test)]
+#[track_caller]
+pub(super) fn assert_same_preflight(content: &str, tracked: Option<AutolinkScan>) {
+    let flags =
+        |scan: Option<AutolinkScan>| scan.map(|scan| (scan.may_have_www, scan.may_have_extended));
+    assert_eq!(
+        flags(tracked),
+        flags(may_contain_autolink(content)),
+        "tracked autolink pre-flight differs for {content:?}"
+    );
+}
 
 pub(super) struct Candidate {
     pub(super) start: usize,

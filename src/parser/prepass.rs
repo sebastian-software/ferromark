@@ -28,11 +28,12 @@ mod segments;
 /// The segmented pass is proven against the unsegmented one, over the bundled
 /// specification fixtures, the frozen measurement corpora and generated token
 /// soup. `gzip` only exists so the corpora can be read without a compression
-/// dependency; both modules are test-only.
+/// dependency; both modules are test-only. The inline autolink pre-flight's
+/// differential test reads the same corpora.
 #[cfg(test)]
 mod equivalence;
 #[cfg(test)]
-mod gzip;
+pub(super) mod gzip;
 
 pub(super) use segments::{
     CandidateOpeners, DENSITY_SAMPLE, DefinitionPlan, MIN_PLANNED_BYTES, SEGMENT_COST_BYTES,

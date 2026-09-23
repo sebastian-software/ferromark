@@ -70,12 +70,27 @@ impl<'a> Parser<'a> {
         if self.phase == super::ParsePhase::Definitions {
             return Ok(self.allocator.new_vec());
         }
-        let mut children = self.parse_inline(content, offset)?;
-        let scan = self
-            .options
-            .autolinks
-            .then(|| gfm_autolink::may_contain_autolink(content))
-            .flatten();
+        if !self.options.autolinks {
+            return self.parse_inline(content, offset);
+        }
+        let (mut children, scan) = match AutolinkPreflight::current() {
+            AutolinkPreflight::Tracked => {
+                // The marker walk visits the pre-flight's trigger bytes as it
+                // classifies the text, and `finish_autolink_scan` the rest.
+                let mut markers = InlineMarkerScan::with_autolink_facts(&self.options);
+                let children = self.parse_inline_with(content, offset, &mut markers)?;
+                let scan = markers.finish_autolink_scan(content.as_bytes());
+                // Every block any unit test parses proves the claim directly:
+                // the gate value itself, not only the output, is unchanged.
+                #[cfg(test)]
+                gfm_autolink::assert_same_preflight(content, scan);
+                (children, scan)
+            }
+            AutolinkPreflight::Separate => {
+                let children = self.parse_inline(content, offset)?;
+                (children, gfm_autolink::may_contain_autolink(content))
+            }
+        };
         if let Some(scan) = scan {
             self.apply_gfm_autolinks(&mut children, scan);
         }
@@ -156,9 +171,19 @@ impl<'a> Parser<'a> {
         content: &'a str,
         offset: usize,
     ) -> ParseResult<Vec<'a, Node<'a>>> {
+        self.parse_inline_with(content, offset, &mut InlineMarkerScan::new(&self.options))
+    }
+
+    /// [`Self::parse_inline`] with the caller's marker scan, which has to be
+    /// fresh and made for `content`.
+    fn parse_inline_with(
+        &self,
+        content: &'a str,
+        offset: usize,
+        markers: &mut InlineMarkerScan,
+    ) -> ParseResult<Vec<'a, Node<'a>>> {
         let _depth = self.enter_inline(offset)?;
         let bytes = content.as_bytes();
-        let mut markers = InlineMarkerScan::new(&self.options);
         let first_special = markers.next(bytes, 0);
 
         // Plain text is both the most common inline shape and exactly one AST
@@ -229,7 +254,7 @@ impl<'a> Parser<'a> {
                 offset,
                 &mut children,
                 &mut delimiters,
-                &mut markers,
+                markers,
                 &mut pos,
             )?;
         }
@@ -426,6 +451,62 @@ pub(super) struct InlineDepthGuard<'p> {
     nested: &'p std::cell::Cell<usize>,
     /// What the enclosing level had accumulated before this one started.
     outer_nested: usize,
+}
+
+/// Where a block's GFM autolink pre-flight gets its answer.
+///
+/// Both give the same answer for every content: `Tracked` visits, position
+/// by position, the bytes `gfm_autolink::may_contain_autolink` derives its
+/// facts from (see `AutolinkFacts`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AutolinkPreflight {
+    /// A separate pass over the content after the inline parse.
+    Separate,
+    /// Out of the inline marker walk, with the bytes it skips visited
+    /// separately.
+    Tracked,
+}
+
+impl AutolinkPreflight {
+    /// The tracked pre-flight rides on the NEON marker classifier. Other
+    /// targets keep the separate `memchr` pass until their own marker scans
+    /// carry the trigger test.
+    const DEFAULT: Self = if cfg!(target_arch = "aarch64") {
+        Self::Tracked
+    } else {
+        Self::Separate
+    };
+
+    #[cfg(not(test))]
+    #[inline]
+    const fn current() -> Self {
+        Self::DEFAULT
+    }
+
+    #[cfg(test)]
+    fn current() -> Self {
+        AUTOLINK_PREFLIGHT.with(std::cell::Cell::get)
+    }
+
+    /// Runs `run` with this pre-flight on the current thread, so a test can
+    /// compare both on every target.
+    #[cfg(test)]
+    fn with<R>(self, run: impl FnOnce() -> R) -> R {
+        struct Restore(AutolinkPreflight);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                AUTOLINK_PREFLIGHT.with(|cell| cell.set(self.0));
+            }
+        }
+        let _restore = Restore(AUTOLINK_PREFLIGHT.with(|cell| cell.replace(self)));
+        run()
+    }
+}
+
+#[cfg(test)]
+thread_local! {
+    static AUTOLINK_PREFLIGHT: std::cell::Cell<AutolinkPreflight> =
+        const { std::cell::Cell::new(AutolinkPreflight::DEFAULT) };
 }
 
 impl Drop for InlineDepthGuard<'_> {

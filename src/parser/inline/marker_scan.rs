@@ -3,9 +3,10 @@
 //! Split out of `inline.rs` so the walk itself stays readable: this file is
 //! one cursor and the rule for when it has to be recomputed.
 
+use super::gfm_autolink::{AutolinkFacts, AutolinkScan};
 use super::scan::{
     INLINE_MARKER_HIGHLIGHT, INLINE_MARKER_MATH, INLINE_MARKER_MDX, INLINE_MARKER_SUPERSCRIPT,
-    next_inline_marker,
+    next_inline_marker, next_inline_marker_tracking,
 };
 
 /// A memo for one forward byte scan over a fixed slice.
@@ -44,10 +45,23 @@ impl ForwardScan {
 /// The core classifier and enabled extension markers are selected in one
 /// forward lookup. Keeping one memo instead of one memo per optional marker
 /// avoids repeated traversals when several extensions are enabled.
+///
+/// The scan of a block's own inline content can also answer the block's GFM
+/// autolink pre-flight on the way ([`Self::with_autolink_facts`]): it is the
+/// one walk that already reads the block's text.
 pub(in crate::parser) struct InlineMarkerScan {
     optional: u8,
     notes_only: bool,
     scan: ForwardScan,
+    /// The pre-flight facts, when this scan answers the autolink pre-flight.
+    ///
+    /// Only the block-level scan carries them. Like the memo, they assume
+    /// the scan is only ever asked about the one slice it was created for,
+    /// so every position it reports is a position of the block content.
+    /// Nested inline contexts (link text, image alt) get their own plain
+    /// scan; the bytes they cover are visited as part of the construct
+    /// around them.
+    autolink: Option<AutolinkFacts>,
 }
 
 impl InlineMarkerScan {
@@ -69,15 +83,36 @@ impl InlineMarkerScan {
             optional,
             notes_only: options.inline_footnotes && !options.superscript,
             scan: ForwardScan::new(),
+            autolink: None,
         }
+    }
+
+    /// A scan that also answers the GFM autolink pre-flight for the block
+    /// content it walks; every call to [`Self::next`] has to pass that
+    /// content.
+    pub(in crate::parser) const fn with_autolink_facts(options: &crate::ParserOptions) -> Self {
+        let mut scan = Self::new(options);
+        scan.autolink = Some(AutolinkFacts::new());
+        scan
+    }
+
+    /// The pre-flight's answer for the block content `bytes` — exactly what
+    /// `may_contain_autolink` returns for it — or `None` for a plain scan.
+    /// The bytes behind the last scan are visited here.
+    pub(super) fn finish_autolink_scan(&mut self, bytes: &[u8]) -> Option<AutolinkScan> {
+        self.autolink.as_mut().and_then(|facts| facts.finish(bytes))
     }
 
     pub(in crate::parser) fn next(&mut self, bytes: &[u8], from: usize) -> usize {
         let optional = self.optional;
         let notes_only = self.notes_only;
+        let autolink = &mut self.autolink;
         self.scan.hit(from, |mut at| {
             loop {
-                at = next_inline_marker(bytes, at, optional);
+                at = match autolink {
+                    Some(facts) => next_inline_marker_tracking(bytes, at, optional, facts),
+                    None => next_inline_marker(bytes, at, optional),
+                };
                 if optional == 0 || at == bytes.len() {
                     return at;
                 }
@@ -155,6 +190,7 @@ mod tests {
                         optional: options,
                         notes_only: false,
                         scan: ForwardScan::new(),
+                        autolink: None,
                     };
                     assert_eq!(
                         scan.next(bytes, from),
@@ -178,6 +214,7 @@ mod tests {
                             optional: options,
                             notes_only: false,
                             scan: ForwardScan::new(),
+                            autolink: None,
                         };
                         assert_eq!(scan.next(&bytes, from), oracle(&bytes, from, options));
                     }
@@ -195,6 +232,7 @@ mod tests {
                 optional: options,
                 notes_only: false,
                 scan: ForwardScan::new(),
+                autolink: None,
             };
             for from in 0..=bytes.len() {
                 assert_eq!(scan.next(bytes, from), oracle(bytes, from, options));

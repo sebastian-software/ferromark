@@ -1,6 +1,52 @@
 //! Portable marker scanning and short-vector tails.
 
-use super::INLINE_SPECIAL;
+use super::super::gfm_autolink::AutolinkFacts;
+use super::{
+    AUTOLINK_TRIGGER, INLINE_SPECIAL, TRACKED_CLASS, is_autolink_trigger, tracked_marker_bits,
+};
+
+/// The portable tracking scan: the next marker at or after `from`, as
+/// `next_inline_marker` finds it, visiting the unseen autolink triggers
+/// before it.
+///
+/// Used whole on targets without a NEON path, and by the NEON scan for
+/// content shorter than one vector.
+pub(super) fn next_marker_tracking_scalar(
+    bytes: &[u8],
+    from: usize,
+    options: u8,
+    facts: &mut AutolinkFacts,
+) -> usize {
+    let markers = tracked_marker_bits(options);
+    let mut i = from;
+    while i < bytes.len() {
+        let class = TRACKED_CLASS[bytes[i] as usize];
+        if class & markers != 0 {
+            facts.advance_seen(i + 1);
+            return i;
+        }
+        if class & AUTOLINK_TRIGGER != 0 && i >= facts.seen() {
+            facts.visit(bytes, i);
+        }
+        i += 1;
+    }
+    facts.advance_seen(bytes.len());
+    i
+}
+
+/// Visits every autolink trigger in `from..to`, one byte at a time.
+pub(super) fn visit_autolink_triggers_scalar(
+    bytes: &[u8],
+    from: usize,
+    to: usize,
+    facts: &mut AutolinkFacts,
+) {
+    for at in from..to {
+        if is_autolink_trigger(bytes[at]) {
+            facts.visit(bytes, at);
+        }
+    }
+}
 
 /// How far `next_inline_special` walks byte-at-a-time before switching to the
 /// chunked scan. Eight is the only length measured that never regressed:
