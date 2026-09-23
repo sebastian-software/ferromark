@@ -7,6 +7,7 @@
 
 use super::Parser;
 use crate::allocator::Allocator;
+use crate::parser::byte_class::tests::assert_backends_match_flags;
 
 /// The original byte-at-a-time walk, kept as the oracle. The nested flag
 /// is derived from the same walk: it is set when an unescaped `[` is seen.
@@ -83,6 +84,16 @@ fn bracket_stop_matches_definition() {
             "byte {byte:#x}"
         );
     }
+}
+
+#[test]
+fn bracket_stop_vector_scans_match_flags() {
+    assert_backends_match_flags(&super::BRACKET_STOP);
+}
+
+#[test]
+fn bracket_text_stop_vector_scans_match_flags() {
+    assert_backends_match_flags(&super::BRACKET_TEXT_STOP);
 }
 
 #[test]
