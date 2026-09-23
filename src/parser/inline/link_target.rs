@@ -335,6 +335,11 @@ mod tests {
     }
 
     #[test]
+    fn destination_stop_vector_scans_match_flags() {
+        crate::parser::byte_class::tests::assert_backends_match_flags(&super::DESTINATION_STOP);
+    }
+
+    #[test]
     fn destination_scan_matches_scalar_at_byte_boundaries_and_tails() {
         let mut needles: Vec<String> = (0..=0x7Fu8).map(|b| char::from(b).to_string()).collect();
         needles.extend(
