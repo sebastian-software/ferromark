@@ -73,7 +73,11 @@ impl HeadingIdPlanner {
             if !self.next_suffix.contains_key(output.as_str()) {
                 self.next_suffix
                     .insert(CompactString::from(output.as_str()), 1);
-                self.next_suffix.insert(CompactString::from(base), suffix);
+                // `base` is already a key; advance it in place instead of
+                // allocating a copy of it for every duplicate heading.
+                if let Some(next) = self.next_suffix.get_mut(base) {
+                    *next = suffix;
+                }
                 return;
             }
         }
