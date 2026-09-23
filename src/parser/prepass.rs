@@ -22,17 +22,19 @@ use super::Parser;
 use super::footnote::FootnoteLabels;
 use super::line_scan::is_line_ending_byte;
 use super::reference::ReferenceMap;
+use super::root_scan::DefinitionCloser;
 
 mod segments;
 
 /// The segmented pass is proven against the unsegmented one, over the bundled
 /// specification fixtures, the frozen measurement corpora and generated token
 /// soup. `gzip` only exists so the corpora can be read without a compression
-/// dependency; both modules are test-only.
+/// dependency; both modules are test-only, and the root scan's tests read the
+/// same corpora.
 #[cfg(test)]
 mod equivalence;
 #[cfg(test)]
-mod gzip;
+pub(super) mod gzip;
 
 pub(super) use segments::{
     CandidateOpeners, DENSITY_SAMPLE, DefinitionPlan, MIN_PLANNED_BYTES, SEGMENT_COST_BYTES,
@@ -53,7 +55,7 @@ static TILDE_RUN: LazyLock<memmem::Finder<'static>> = LazyLock::new(|| memmem::F
 /// Definition-closer searcher, built once for the process, for the same
 /// reason: a short document spends more time building a one-shot finder's
 /// prefilter than searching with it.
-static DEFINITION_CLOSER: LazyLock<memmem::Finder<'static>> =
+pub(super) static DEFINITION_CLOSER: LazyLock<memmem::Finder<'static>> =
     LazyLock::new(|| memmem::Finder::new("]:"));
 
 /// Start of the first line at or after `from` holding a run of three
@@ -310,17 +312,28 @@ impl<'a> Parser<'a> {
     /// they stay on this frame, and everything that needs the opener buffer
     /// lives behind a call that is never inlined — otherwise an ordinary parse
     /// pays for a buffer it never fills.
+    ///
+    /// The root parse usually hands in the `]:` answer as `closer`: its NUL
+    /// search already walked the body for it (see `root_scan.rs`). A source
+    /// without a `]:` then needs no search here at all, and one with a `]:`
+    /// only the `[` probe. [`DefinitionCloser::Unscanned`] runs both searches.
     pub(super) fn build_prepass(
         &self,
+        closer: DefinitionCloser,
     ) -> (Option<Rc<ReferenceMap<'a>>>, Option<Rc<FootnoteLabels>>) {
         if !self.options.allow_link_refs && !self.options.footnotes {
             return (None, None);
         }
+        let first_closer = match closer {
+            DefinitionCloser::Absent => return (None, None),
+            DefinitionCloser::At(offset) => Some(offset),
+            DefinitionCloser::Unscanned => None,
+        };
         let bytes = self.source.as_bytes();
         if memchr(b'[', bytes).is_none() {
             return (None, None);
         }
-        let Some(first_closer) = DEFINITION_CLOSER.find(bytes) else {
+        let Some(first_closer) = first_closer.or_else(|| DEFINITION_CLOSER.find(bytes)) else {
             return (None, None);
         };
         self.discover_definitions(first_closer)
@@ -692,5 +705,102 @@ mod tests {
         for source in &sources {
             check_against_oracle(source);
         }
+    }
+
+    /// Definitions and footnote labels in a comparable, ordered form.
+    type Collected = (Vec<(String, String, Option<String>)>, Vec<String>);
+
+    fn collected(
+        definitions: Option<&super::ReferenceMap<'_>>,
+        labels: Option<&super::FootnoteLabels>,
+    ) -> Collected {
+        let mut references: Vec<_> = definitions
+            .into_iter()
+            .flatten()
+            .map(|(identifier, definition)| {
+                (
+                    identifier.to_string(),
+                    definition.url.to_string(),
+                    definition.title.map(str::to_string),
+                )
+            })
+            .collect();
+        references.sort();
+        let mut labels: Vec<_> = labels
+            .into_iter()
+            .flatten()
+            .map(ToString::to_string)
+            .collect();
+        labels.sort();
+        (references, labels)
+    }
+
+    #[test]
+    fn a_handed_in_closer_collects_what_the_own_searches_collect() {
+        use crate::allocator::Allocator;
+        use crate::parser::{Parser, ParserOptions};
+
+        // The root parse hands the pre-pass the `]:` its NUL scan found. The
+        // pre-pass's own two searches must lead to the same collection, with
+        // a BOM or front matter before the body, and with a NUL that forces
+        // them to run.
+        let options = [
+            ParserOptions::default(),
+            ParserOptions::gfm(),
+            ParserOptions::mdx(),
+            ParserOptions {
+                allow_link_refs: false,
+                footnotes: true,
+                ..ParserOptions::default()
+            },
+            ParserOptions {
+                front_matter: true,
+                ..ParserOptions::gfm()
+            },
+        ];
+        let check = |source: &str| {
+            for body in [
+                source.to_owned(),
+                format!("\u{feff}{source}"),
+                format!("---\ntitle: \"[a]: /x\"\n---\n{source}"),
+                format!("{source}\0"),
+            ] {
+                for options in &options {
+                    let allocator = Allocator::new();
+                    let parser = Parser::with_options(&allocator, &body, options.clone());
+                    let (definitions, labels) =
+                        parser.build_prepass(super::DefinitionCloser::Unscanned);
+                    assert_eq!(
+                        collected(
+                            parser.definitions.as_deref(),
+                            parser.footnote_labels.as_deref()
+                        ),
+                        collected(definitions.as_deref(), labels.as_deref()),
+                        "{options:?}, {body:?}"
+                    );
+                }
+            }
+        };
+        // `]:` without any `[`, `[` only after the first `]:`, and a first
+        // `]:` that is not the one closing a definition.
+        for source in [
+            "",
+            "]: no opener",
+            "]:[",
+            "]: x\n\n[a]: /url\n\n[a]",
+            "text ]: text\n[^n]: note\n\n[^n] [a]\n\n[a]: /url",
+            "[a]\n\n[a]: /url",
+        ] {
+            check(source);
+        }
+        for_each_generated_mix(check);
+        // Agreement alone would also hold if both sides found nothing.
+        let allocator = Allocator::new();
+        let parser = Parser::with_options(
+            &allocator,
+            "]: x\n\n[a]: /url\n\n[a]",
+            ParserOptions::default(),
+        );
+        assert!(parser.definitions.is_some_and(|map| map.contains_key("a")));
     }
 }
