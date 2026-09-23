@@ -183,5 +183,29 @@ class RunnerGuards(unittest.TestCase):
                     RUN.main()
 
 
+class StepSummary(unittest.TestCase):
+    def test_summary_lists_geomeans_rounds_and_cases_below_the_floor(self):
+        summary = load("step_summary")
+        rows = [
+            {"case": "slow", "mode": "parse", "baseline_over_candidate_median": 0.95,
+             "round_medians": [0.94, 0.95, 0.96]},
+            {"case": "fast", "mode": "parse", "baseline_over_candidate_median": 1.10,
+             "round_medians": [1.09, 1.10, 1.11]},
+        ]
+        grouped = {"all": {"parse": {
+            "cases": 2, "geometric_mean": 1.0223, "round_geometric_means": [1.01, 1.02, 1.03],
+            "measured_above_1": 1,
+        }}}
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            (run / "summary.json").write_text(json.dumps(rows))
+            (run / "grouped.json").write_text(json.dumps(grouped))
+            text = summary.render(run, "A/A", host="x86_64 host")
+        self.assertIn("### A/A", text)
+        self.assertIn("x86_64 host", text)
+        self.assertIn("| parse | 2 | 1.0223 | 1.010 / 1.020 / 1.030 | 1 | `slow` 0.950 |", text)
+        self.assertNotIn("`fast`", text)
+
+
 if __name__ == "__main__":
     unittest.main()

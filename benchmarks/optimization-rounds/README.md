@@ -78,3 +78,28 @@ bytes as lower system allocation requests when the reserved capacity is equal.
 The generator reads the repository's frozen corpora without network access.
 Original document attribution remains in the broad comparison and first SIMD
 reports. New authored diagnostic inputs are MIT licensed with this repository.
+
+`filters/screen.txt` (20 documents and 16 table and scan diagnostics) and
+`filters/broad.txt` (the 57 broad documents) are the case sets the recent
+rounds screened and confirmed with; pass one with
+`--filter "$(cat benchmarks/optimization-rounds/filters/broad.txt)"`.
+`step_summary.py <results>` renders a run as a Markdown table: stage geomeans,
+per-round geomeans, how many cases improved, and every case below 0.970.
+
+## x86-64 on CI
+
+The rounds so far measured on Apple Silicon only. The `x86-64 paired
+benchmark` workflow (`.github/workflows/bench-x86.yml`) runs this harness
+unchanged on three GitHub-hosted `ubuntu-latest` runners in parallel. Start it
+from the Actions tab with a baseline and a candidate revision; using the same
+revision for both gives an A/A control. A pull request that changes the
+harness or the workflow runs that A/A control on its own head.
+
+Baseline and candidate alternate on the same VM, so differences between
+runner hosts largely cancel out. What remains is the noise of a shared VM,
+which varies from host to host. Each host is an independent measurement of
+the same pair. Read the three together, compare them with an A/A control
+from the same day, and treat effects inside the A/A spread as ties. Local
+Apple Silicon numbers stay the reference for small effects. The workflow suits
+changes whose expected effect clearly exceeds that spread, such as new x86
+SIMD paths.
