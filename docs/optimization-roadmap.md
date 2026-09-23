@@ -170,6 +170,17 @@ content resolved afterwards remains the larger, unattempted variant.
    (`line_scan`, SWAR elsewhere), round 5's fused root scan (`root_scan`,
    separate `memchr`/`memmem` elsewhere), and the renderer's ASCII URL-span
    scan for autolinks; none of these fallbacks has been timed on x86-64.
+   The way to measure them is the x86-64 CI workflow proposed in #419, which
+   runs the paired harness on GitHub-hosted runners. Its A/A control (57
+   broad documents, 3 rounds × 5 pairs) on three hosts stayed within 0.5% in
+   every stage: fresh 1.0019, reuse 1.0005, parse 1.0015 and render 1.0025
+   on an Intel Xeon 8370C (AVX-512); fresh 0.9992 / 0.9973, reuse
+   0.9985 / 0.9953, parse 0.9988 / 0.9982 and render 1.0022 / 0.9996 on two
+   AMD EPYC 7763 (AVX2). The 5th–95th percentile of per-case ratios spans
+   about 0.975–1.025, and at most 2 of 57 cases fall outside ±3%. Once #419
+   merges, a stage effect of about 1% that shows on all three hosts is
+   resolvable on x86-64; the first candidates are these fallbacks and #413's
+   non-aarch64 follow-up `0610f606`.
 
 Ferroni's candidate scanner (`src/regset.rs`) and Ferrocat's structural scans
 (`crates/ferrocat-po/src/scan.rs`) remain useful references in those repositories.

@@ -28,6 +28,7 @@ RUNS = [
     ("stack1-screen", "`stack1`: #413 on `cb352020` + #414, screen"),
     ("stack2-screen", "`stack2`: #411 on `cb352020` + #414 + #413, screen"),
     ("total-broad", "`total`: #414 + #413 + #411 together on `cb352020`, broad"),
+    ("fix414-screen", "`fix414`: #414's follow-up `20c8ebdf` on its measured commit `85c0031e`, screen"),
 ]
 cases = json.loads((REPORT / "results" / "cases.json").read_text())["cases"]
 lines = ["# Per-case tables", "",

@@ -255,13 +255,28 @@ documents with raw HTML (`typescript-handbook-compiler-options` 1.176,
 
 This measures the round's three Rust changes, not release 2.1.0: `060b02d2`
 also holds the heading-id features #408–#410, which were not part of the
-round and were not measured with the paired harness. Two follow-up commits
-landed on the round's pull requests after their measurements and were not
-re-measured either: #414's `20c8ebdf` keeps tab columns that a list marker
-expands inside a container out of inline span offsets (list items with a tab
-after the marker; HTML unaffected), and #413's `0610f606` restores the
-previous pre-pass search order on targets without the fused scan (not
-aarch64).
+round and were not measured with the paired harness.
+
+## Follow-up commits
+
+Two commits landed on the round's pull requests after their measurements.
+
+- **#414's `20c8ebdf`** keeps tab columns that a list marker expands inside a
+  container out of inline span offsets (list items with a tab after the
+  marker; HTML unaffected). It touches list parsing, so it was measured
+  afterwards on its own: #414's measured commit `85c0031e` against
+  `20c8ebdf`, 36 screen cases, 3 rounds × 3 pairs, built like the stacked
+  states. **A tie**: fresh 0.998, reuse 0.999, parse 0.998, render 0.999, no
+  case below 0.970 (lowest `wiki-tea-article-body` parse 0.972), the
+  list-heavy `comment-checklist` and `vite-docs-api-plugin` at parse 0.989
+  and 0.987. The run took place later in the day under a much higher load
+  (one-minute load 32.8 at its start, 10.5 at its end), so its per-case
+  spread is wider than the round's A/A control; the geomeans stay within
+  0.3% of 1.000. `results/fix414-screen`, [NUMBERS.md](NUMBERS.md#follow-up-re-measurement-36-cases-3-rounds--3-pairs-414s-measured-commit-85c0031e-against-its-follow-up-20c8ebdf).
+- **#413's `0610f606`** restores the previous pre-pass search order on
+  targets without the fused scan. It changes nothing on aarch64, so the Apple
+  Silicon harness cannot see it; it can be measured with the x86-64 CI
+  workflow proposed in #419.
 
 ## After the round: remaining hot spots
 
@@ -300,10 +315,13 @@ fell from 5.1% to 3.0%. What is left at the top ([PROFILES.md](PROFILES.md#after
   measured commit (parent `cb352020`), `170dd4f2` a local merge of it with
   #413's `c6e83512`, and the `stack2` candidate adds #411's `d2a8b189` the
   same way; `harness/build-stack.sh` builds a candidate against such a state.
-- The runs took place between 08:02 and 09:38 UTC. The one-minute load
-  average ranged from 2.1 to 9.5 (round 4: up to 5.7) and was highest around
-  the `tagfilter` broad run and during the stacked runs;
-  [measure-log.txt](measure-log.txt) records it before and after every run.
+- The round's runs took place between 08:02 and 09:38 UTC. The one-minute
+  load average ranged from 2.1 to 9.5 (round 4: up to 5.7) and was highest
+  around the `tagfilter` broad run and during the stacked runs. The
+  follow-up re-measurement of `20c8ebdf` ran at 16:08 UTC under a load of
+  32.8 to 10.5. [measure-log.txt](measure-log.txt) records the load before
+  and after every run of this report; runs of later work that shared the log
+  are left out.
 
 ## Reproduction
 
