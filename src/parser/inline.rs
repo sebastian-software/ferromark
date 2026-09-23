@@ -16,6 +16,7 @@ mod marker_scan;
 mod scan;
 mod script_span;
 
+pub(in crate::parser) use self::gfm_autolink::{AutolinkTriggers, collects_triggers};
 pub(in crate::parser) use self::marker_scan::InlineMarkerScan;
 use self::script_span::same_marker_neighbor;
 use super::line_scan::{is_line_ending_byte, line_terminator_end};
@@ -71,12 +72,9 @@ impl<'a> Parser<'a> {
             return Ok(self.allocator.new_vec());
         }
         let mut children = self.parse_inline(content, offset)?;
-        let scan = self
-            .options
-            .autolinks
-            .then(|| gfm_autolink::may_contain_autolink(content))
-            .flatten();
-        if let Some(scan) = scan {
+        if self.options.autolinks
+            && let Some(scan) = self.autolink_preflight(content)
+        {
             self.apply_gfm_autolinks(&mut children, scan);
         }
         Ok(children)

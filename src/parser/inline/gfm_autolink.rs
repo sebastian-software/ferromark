@@ -12,11 +12,58 @@ use crate::ast::{Link, Node, Span, Text};
 
 mod candidate;
 mod scan;
+mod triggers;
 
 use self::candidate::find_candidate;
-pub(super) use self::scan::may_contain_autolink;
+use self::scan::may_contain_autolink;
+pub(in crate::parser) use self::triggers::{AutolinkTriggers, collects_triggers};
 
 use crate::parser::Parser;
+
+/// Parses and renders inputs with and without the trigger index and compares
+/// the results.
+#[cfg(test)]
+mod preflight_equivalence;
+
+impl Parser<'_> {
+    /// The block-level pre-flight for `content`: from the root scan's trigger
+    /// offsets when `content` is a slice of the root body, otherwise from a
+    /// pass over `content` (see [`AutolinkTriggers`]).
+    #[inline]
+    pub(in crate::parser::inline) fn autolink_preflight(
+        &self,
+        content: &str,
+    ) -> Option<AutolinkScan> {
+        if let Some(triggers) = self.autolink_triggers
+            && let Some(start) = triggers.locate(content)
+        {
+            let scan = triggers.preflight(content, start);
+            // Every block a unit test parses checks the gate value itself,
+            // not only its effect on the output.
+            #[cfg(test)]
+            {
+                assert_same_preflight(content, scan);
+                preflight_equivalence::count_indexed();
+            }
+            return scan;
+        }
+        may_contain_autolink(content)
+    }
+}
+
+/// Test builds check the indexed pre-flight against the full pass for every
+/// block they parse.
+#[cfg(test)]
+#[track_caller]
+fn assert_same_preflight(content: &str, indexed: Option<AutolinkScan>) {
+    let flags =
+        |scan: Option<AutolinkScan>| scan.map(|scan| (scan.may_have_www, scan.may_have_extended));
+    assert_eq!(
+        flags(indexed),
+        flags(may_contain_autolink(content)),
+        "indexed autolink pre-flight differs for {content:?}"
+    );
+}
 
 pub(super) struct Candidate {
     pub(super) start: usize,

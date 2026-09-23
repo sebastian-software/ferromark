@@ -86,7 +86,7 @@ pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<A
 /// True when the `://` at `colon_slash_slash` completes a Markdown link
 /// destination such as `](http://`, which the inline parser already
 /// consumed, rather than a bare URL.
-fn scheme_is_markdown_destination(bytes: &[u8], colon_slash_slash: usize) -> bool {
+pub(super) fn scheme_is_markdown_destination(bytes: &[u8], colon_slash_slash: usize) -> bool {
     for name in SCHEMES {
         let Some(start) = colon_slash_slash.checked_sub(name.len()) else {
             continue;
