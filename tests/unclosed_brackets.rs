@@ -20,6 +20,8 @@ use ferromark::renderer::HtmlRenderer;
 
 #[path = "support/pretty.rs"]
 mod pretty;
+#[path = "support/timing.rs"]
+mod timing;
 
 /// Generous enough that a slow shared runner never trips it, and far below
 /// what the quadratic path needed for these sizes.
@@ -52,36 +54,40 @@ fn repeat_to(unit: &str, bytes: usize) -> String {
 }
 
 /// Parses on a worker thread so a regression fails the suite in bounded
-/// time instead of hanging it. Best of four, so a scheduling stall on a busy
-/// runner has to hit every repetition to fail the build.
-fn parse_within_budget(source: &str) -> Duration {
-    parse_within_budget_with_options(source, ParserOptions::gfm())
+/// time instead of hanging it.
+fn parse_within_budget(source: &str, options: &ParserOptions) -> Duration {
+    let owned = source.to_string();
+    let options = options.clone();
+    let (sender, receiver) = mpsc::channel();
+    thread::spawn(move || {
+        let started = Instant::now();
+        let allocator = Allocator::new();
+        let parsed = Parser::with_options(&allocator, &owned, options)
+            .parse()
+            .is_ok();
+        let _ = sender.send((parsed, started.elapsed()));
+    });
+    let (parsed, elapsed) = receiver
+        .recv_timeout(BUDGET)
+        .expect("a run of unclosed brackets should parse in bounded time");
+    assert!(
+        parsed,
+        "a run of unclosed brackets should parse to a document"
+    );
+    elapsed
 }
 
-fn parse_within_budget_with_options(source: &str, options: ParserOptions) -> Duration {
-    let mut best = BUDGET;
-    for _ in 0..4 {
-        let owned = source.to_string();
-        let options = options.clone();
-        let (sender, receiver) = mpsc::channel();
-        thread::spawn(move || {
-            let started = Instant::now();
-            let allocator = Allocator::new();
-            let parsed = Parser::with_options(&allocator, &owned, options)
-                .parse()
-                .is_ok();
-            let _ = sender.send((parsed, started.elapsed()));
-        });
-        let (parsed, elapsed) = receiver
-            .recv_timeout(BUDGET)
-            .expect("a run of unclosed brackets should parse in bounded time");
-        assert!(
-            parsed,
-            "a run of unclosed brackets should parse to a document"
-        );
-        best = best.min(elapsed);
-    }
-    best
+/// The 32 KiB and 128 KiB runs of `unit`, best of four each, so a
+/// scheduling stall on a busy runner has to hit every repetition to fail
+/// the build.
+fn small_and_large(unit: &str, options: &ParserOptions) -> (Duration, Duration) {
+    let (small, large) = (repeat_to(unit, 32 * 1024), repeat_to(unit, 128 * 1024));
+    timing::best_of_pairs(
+        4,
+        8.0,
+        || parse_within_budget(&small, options),
+        || parse_within_budget(&large, options),
+    )
 }
 
 #[test]
@@ -92,8 +98,7 @@ fn wiki_links_do_not_scan_unclosed_double_brackets_quadratically() {
     };
 
     for unit in ["[[", "[[ ", "[[Page|Label "] {
-        let small = parse_within_budget_with_options(&repeat_to(unit, 32 * 1024), options.clone());
-        let large = parse_within_budget_with_options(&repeat_to(unit, 128 * 1024), options.clone());
+        let (small, large) = small_and_large(unit, &options);
 
         let ratio = large.as_secs_f64() / small.as_secs_f64().max(1e-9);
         assert!(
@@ -110,8 +115,7 @@ fn a_run_of_unclosed_brackets_costs_linear_time() {
     // opener, an image opener, a nested opener, a footnote-looking opener,
     // and an opener with text after it.
     for unit in ["[ ", "[", "![ ", "[[ ", "[^ ", "[a "] {
-        let small = parse_within_budget(&repeat_to(unit, 32 * 1024));
-        let large = parse_within_budget(&repeat_to(unit, 128 * 1024));
+        let (small, large) = small_and_large(unit, &ParserOptions::gfm());
 
         let ratio = large.as_secs_f64() / small.as_secs_f64().max(1e-9);
         // 4x the input. Linear costs about 4x the time; quadratic costs

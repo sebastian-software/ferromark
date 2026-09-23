@@ -22,6 +22,8 @@ use ferromark::parser::{Parser, ParserOptions};
 
 #[path = "support/pretty.rs"]
 mod pretty;
+#[path = "support/timing.rs"]
+mod timing;
 
 const BUDGET: Duration = Duration::from_secs(30);
 
@@ -50,33 +52,35 @@ fn tree(source: &str) -> String {
 }
 
 /// Parses on a worker thread so a regression fails the suite in bounded
-/// time instead of hanging it. Best of four, so a scheduling stall on a busy
-/// runner has to hit every repetition to fail the build.
+/// time instead of hanging it.
 fn parse_within_budget(source: &str) -> Duration {
-    let mut best = BUDGET;
-    for _ in 0..4 {
-        let owned = source.to_string();
-        let (sender, receiver) = mpsc::channel();
-        thread::spawn(move || {
-            let started = Instant::now();
-            let allocator = Allocator::new();
-            let parsed = Parser::with_options(&allocator, &owned, mdx_options())
-                .parse()
-                .is_ok();
-            let _ = sender.send((parsed, started.elapsed()));
-        });
-        let (parsed, elapsed) = receiver
-            .recv_timeout(BUDGET)
-            .expect("MDX braces should parse in bounded time");
-        assert!(parsed, "MDX braces should parse to a document");
-        best = best.min(elapsed);
-    }
-    best
+    let owned = source.to_string();
+    let (sender, receiver) = mpsc::channel();
+    thread::spawn(move || {
+        let started = Instant::now();
+        let allocator = Allocator::new();
+        let parsed = Parser::with_options(&allocator, &owned, mdx_options())
+            .parse()
+            .is_ok();
+        let _ = sender.send((parsed, started.elapsed()));
+    });
+    let (parsed, elapsed) = receiver
+        .recv_timeout(BUDGET)
+        .expect("MDX braces should parse in bounded time");
+    assert!(parsed, "MDX braces should parse to a document");
+    elapsed
 }
 
 fn assert_linear(name: &str, unit: &str) {
-    let small = parse_within_budget(&repeat_to(unit, 32 * 1024));
-    let large = parse_within_budget(&repeat_to(unit, 128 * 1024));
+    // Best of four, so a scheduling stall on a busy runner has to hit every
+    // repetition to fail the build.
+    let (small_source, large_source) = (repeat_to(unit, 32 * 1024), repeat_to(unit, 128 * 1024));
+    let (small, large) = timing::best_of_pairs(
+        4,
+        8.0,
+        || parse_within_budget(&small_source),
+        || parse_within_budget(&large_source),
+    );
 
     let ratio = large.as_secs_f64() / small.as_secs_f64().max(1e-9);
     // 4x the input. Linear costs about 4x the time; quadratic costs 16x,

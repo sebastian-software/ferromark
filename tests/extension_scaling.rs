@@ -26,7 +26,7 @@
 //! short-circuits: the shape an extension specifies has to survive the
 //! early answer, and the literal fallbacks have to stay literal.
 
-use std::sync::{Mutex, mpsc};
+use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -36,6 +36,8 @@ use ferromark::renderer::HtmlRenderer;
 
 #[path = "support/pretty.rs"]
 mod pretty;
+#[path = "support/timing.rs"]
+mod timing;
 
 /// Generous enough that a slow shared runner never trips it, and far below
 /// what the quadratic paths needed at these sizes.
@@ -48,12 +50,6 @@ const SANITY: Duration = Duration::from_secs(5);
 
 const SMALL: usize = 32 * 1024;
 const LARGE: usize = 128 * 1024;
-
-/// The test harness runs these functions in parallel, and a measurement
-/// that shares four cores with another one measures the scheduler. One
-/// shape is timed at a time; the parses that only check output are too
-/// short to disturb them.
-static MEASURING: Mutex<()> = Mutex::new(());
 
 fn math_options() -> ParserOptions {
     ParserOptions {
@@ -123,40 +119,38 @@ fn definition_run(bytes: usize) -> String {
 }
 
 /// Parses on a worker thread so a regression fails the suite in bounded
-/// time instead of hanging it. Best of three, so a scheduling stall on a
-/// busy runner has to hit every repetition to fail the build.
+/// time instead of hanging it.
 fn parse_within_budget(source: &str, options: &ParserOptions) -> Duration {
-    let mut best = BUDGET;
-    for _ in 0..3 {
-        let owned = source.to_string();
-        let options = options.clone();
-        let (sender, receiver) = mpsc::channel();
-        thread::spawn(move || {
-            let started = Instant::now();
-            let allocator = Allocator::new();
-            let parsed = Parser::with_options(&allocator, &owned, options)
-                .parse()
-                .is_ok();
-            let _ = sender.send((parsed, started.elapsed()));
-        });
-        let (parsed, elapsed) = receiver
-            .recv_timeout(BUDGET)
-            .expect("an extension run should parse in bounded time");
-        assert!(parsed, "an extension run should parse to a document");
-        best = best.min(elapsed);
-    }
-    best
+    let owned = source.to_string();
+    let options = options.clone();
+    let (sender, receiver) = mpsc::channel();
+    thread::spawn(move || {
+        let started = Instant::now();
+        let allocator = Allocator::new();
+        let parsed = Parser::with_options(&allocator, &owned, options)
+            .parse()
+            .is_ok();
+        let _ = sender.send((parsed, started.elapsed()));
+    });
+    let (parsed, elapsed) = receiver
+        .recv_timeout(BUDGET)
+        .expect("an extension run should parse in bounded time");
+    assert!(parsed, "an extension run should parse to a document");
+    elapsed
 }
 
 /// 4x the input. Linear costs about 4x the time; quadratic costs 16x, which
 /// is what every shape here measured before the fix.
 fn assert_linear(name: &str, options: &ParserOptions, shape: impl Fn(usize) -> String) {
-    let measuring = MEASURING
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let small = parse_within_budget(&shape(SMALL), options);
-    let large = parse_within_budget(&shape(LARGE), options);
-    drop(measuring);
+    // One shape is timed at a time; the parses that only check output are
+    // too short to disturb them.
+    let (small_source, large_source) = (shape(SMALL), shape(LARGE));
+    let (small, large) = timing::best_of_pairs(
+        3,
+        8.0,
+        || parse_within_budget(&small_source, options),
+        || parse_within_budget(&large_source, options),
+    );
 
     assert!(
         large < SANITY,

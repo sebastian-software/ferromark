@@ -27,6 +27,8 @@ use ferromark::renderer::HtmlRenderer;
 
 #[path = "support/pretty.rs"]
 mod pretty;
+#[path = "support/timing.rs"]
+mod timing;
 
 /// Generous enough that a slow shared runner never trips it, and far below
 /// what the old exponential path needed: at depth 64 that path was 2^44
@@ -62,24 +64,43 @@ fn outcome_within_budget_with(source: String, options: ParserOptions) -> (Durati
     let mut best = BUDGET;
     let mut parsed_all = true;
     for _ in 0..3 {
-        let owned = source.clone();
-        let options = options.clone();
-        let (sender, receiver) = mpsc::channel();
-        thread::spawn(move || {
-            let started = Instant::now();
-            let allocator = Allocator::new();
-            let parsed = Parser::with_options(&allocator, &owned, options)
-                .parse()
-                .is_ok();
-            let _ = sender.send((parsed, started.elapsed()));
-        });
-        let (parsed, elapsed) = receiver
-            .recv_timeout(BUDGET)
-            .expect("nested brackets should parse in bounded time, not exponential time");
+        let (elapsed, parsed) = outcome_once(&source, &options);
         parsed_all &= parsed;
         best = best.min(elapsed);
     }
     (best, parsed_all)
+}
+
+/// One bounded parse on a worker thread.
+fn outcome_once(source: &str, options: &ParserOptions) -> (Duration, bool) {
+    let owned = source.to_owned();
+    let options = options.clone();
+    let (sender, receiver) = mpsc::channel();
+    thread::spawn(move || {
+        let started = Instant::now();
+        let allocator = Allocator::new();
+        let parsed = Parser::with_options(&allocator, &owned, options)
+            .parse()
+            .is_ok();
+        let _ = sender.send((parsed, started.elapsed()));
+    });
+    let (parsed, elapsed) = receiver
+        .recv_timeout(BUDGET)
+        .expect("nested brackets should parse in bounded time, not exponential time");
+    (elapsed, parsed)
+}
+
+/// The best of three bounded parses of each document, timed in alternation
+/// (see `support/timing.rs`) so a burst of load cannot favor one of them,
+/// and timed longer while `second / first` has not come under `bound`.
+fn paired_within_budget(first: &str, second: &str, bound: f64) -> (Duration, Duration) {
+    let options = ParserOptions::gfm();
+    let parse = |source: &str| {
+        let (elapsed, parsed) = outcome_once(source, &options);
+        assert!(parsed, "nested brackets should parse to a document");
+        elapsed
+    };
+    timing::best_of_pairs(3, bound, || parse(first), || parse(second))
 }
 
 fn nested_inline_links(depth: usize) -> String {
@@ -171,8 +192,9 @@ fn nested_bracket_cost_grows_far_slower_than_it_doubles() {
     // Each added level used to double the work. Sixteen more levels would
     // therefore cost 65536x; anything under 100x proves the doubling is
     // gone without pinning an absolute time on a shared runner.
-    let shallow = parse_within_budget(nested_inline_links(32)).max(Duration::from_micros(1));
-    let deep = parse_within_budget(nested_inline_links(48));
+    let (shallow, deep) =
+        paired_within_budget(&nested_inline_links(32), &nested_inline_links(48), 100.0);
+    let shallow = shallow.max(Duration::from_micros(1));
     assert!(
         deep < shallow * 100,
         "depth 48 took {deep:?} against {shallow:?} at depth 32; the doubling is back"
@@ -276,8 +298,11 @@ fn nested_link_groups_cost_the_same_per_byte_at_any_depth() {
     // per-level probe made the cost per byte grow with the depth, so the
     // deep one measured 53 ms against 9 ms for the shallow one at 32 KiB;
     // parsing each level once makes them cost the same per byte.
-    let shallow = parse_within_budget(nested_link_groups(25, 32 * 1024));
-    let deep = parse_within_budget(nested_link_groups(100, 32 * 1024));
+    let (shallow, deep) = paired_within_budget(
+        &nested_link_groups(25, 32 * 1024),
+        &nested_link_groups(100, 32 * 1024),
+        3.0,
+    );
 
     let ratio = ratio(deep, shallow);
     assert!(
@@ -304,8 +329,11 @@ fn a_run_of_openers_with_one_closer_costs_linear_time() {
     // `[`xN `a](u)`: one bracket closes, so every opener before it walked to
     // the end of the content looking for its own `]`. 100 KB took 2.0 s and
     // grew x4 for every x2 of input.
-    let small = parse_within_budget("[".repeat(32 * 1024) + "a](u)");
-    let large = parse_within_budget("[".repeat(128 * 1024) + "a](u)");
+    let (small, large) = paired_within_budget(
+        &("[".repeat(32 * 1024) + "a](u)"),
+        &("[".repeat(128 * 1024) + "a](u)"),
+        8.0,
+    );
 
     let ratio = ratio(large, small);
     assert!(
