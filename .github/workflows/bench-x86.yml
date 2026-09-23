@@ -1,0 +1,127 @@
+name: x86-64 paired benchmark
+
+# The optimization rounds measure on Apple Silicon, where most scanners have a
+# NEON path. This runs the same paired harness (benchmarks/optimization-rounds)
+# on GitHub's x86-64 runners. Baseline and candidate workers alternate on the
+# same host, so differences between runner hosts cancel out; what remains is
+# the noise of a shared VM, which the A/A control of this workflow's own pull
+# request measures. Each host is an independent measurement of the same pair.
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/bench-x86.yml"
+      - "benchmarks/optimization-rounds/**"
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: Baseline revision (branch, tag or commit)
+        required: true
+        default: main
+      candidate:
+        description: Candidate revision (the baseline again for an A/A control)
+        required: true
+        default: main
+      cases:
+        description: Case set
+        type: choice
+        options: [screen, broad]
+        default: broad
+      pairs:
+        description: Paired windows per round and case
+        required: true
+        default: "5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench-x86-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: never
+
+jobs:
+  paired:
+    name: paired (host ${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      # A pull request that changes the harness measures itself against itself.
+      BASELINE: ${{ inputs.baseline || github.event.pull_request.head.sha }}
+      CANDIDATE: ${{ inputs.candidate || github.event.pull_request.head.sha }}
+      CASES: ${{ inputs.cases || 'broad' }}
+      PAIRS: ${{ inputs.pairs || '5' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+      - name: Describe the host
+        run: |
+          {
+            uname -srm
+            echo "cpus: $(nproc)"
+            lscpu | grep -E '^(Model name|Thread|Core|Socket|L2|L3)' || true
+            echo "simd: $(grep -o -w -E 'sse4_2|avx2|avx512f|avx512bw' /proc/cpuinfo | sort -u | tr '\n' ' ')"
+            rustc +1.95 -V
+          } | tee "$RUNNER_TEMP/host.txt"
+      - name: Export baseline and candidate sources
+        run: |
+          set -euo pipefail
+          resolve() {
+            git rev-parse --verify --quiet "origin/$1^{commit}" || git rev-parse --verify "$1^{commit}"
+          }
+          base="$(resolve "$BASELINE")"
+          cand="$(resolve "$CANDIDATE")"
+          echo "BASE_SHA=$base" >> "$GITHUB_ENV"
+          echo "CAND_SHA=$cand" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/paired/baseline" "$RUNNER_TEMP/paired/candidate"
+          git archive "$base" | tar -x -C "$RUNNER_TEMP/paired/baseline"
+          git archive "$cand" | tar -x -C "$RUNNER_TEMP/paired/candidate"
+      - name: Fetch crates for the offline worker builds
+        run: cargo +1.95 fetch --locked --manifest-path "$RUNNER_TEMP/paired/baseline/Cargo.toml"
+      - name: Build the paired workers
+        run: >-
+          python3 benchmarks/optimization-rounds/prepare.py
+          --baseline-path "$RUNNER_TEMP/paired/baseline"
+          --candidate-path "$RUNNER_TEMP/paired/candidate"
+          --out "$RUNNER_TEMP/paired/build"
+          --baseline-revision "$BASE_SHA"
+      - name: Generate the corpus
+        run: >-
+          python3 benchmarks/optimization-rounds/make_corpus.py
+          "$RUNNER_TEMP/paired/corpus.json" --include-scanner-diagnostics
+      - name: Measure
+        run: |
+          set -euo pipefail
+          python3 benchmarks/optimization-rounds/run.py \
+            "$RUNNER_TEMP/paired/build" "$RUNNER_TEMP/paired/corpus.json" "$RUNNER_TEMP/paired/results" \
+            --rounds 3 --pairs "$PAIRS" --window-ms 40 \
+            --filter "$(cat "benchmarks/optimization-rounds/filters/$CASES.txt")" \
+            --modes fresh reuse parse render
+          python3 benchmarks/optimization-rounds/summarize.py \
+            "$RUNNER_TEMP/paired/results" "$RUNNER_TEMP/paired/results/grouped.json"
+      - name: Summarize
+        run: >-
+          python3 benchmarks/optimization-rounds/step_summary.py "$RUNNER_TEMP/paired/results"
+          --title "Host ${{ matrix.host }}: ${BASE_SHA::10} vs ${CAND_SHA::10}, $CASES cases, $PAIRS pairs"
+          --host "$RUNNER_TEMP/host.txt" >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: paired-x86-host-${{ matrix.host }}
+          path: |
+            ${{ runner.temp }}/host.txt
+            ${{ runner.temp }}/paired/results/summary.json
+            ${{ runner.temp }}/paired/results/grouped.json
+            ${{ runner.temp }}/paired/results/run.json
+            ${{ runner.temp }}/paired/build/build.json
+          retention-days: 30
