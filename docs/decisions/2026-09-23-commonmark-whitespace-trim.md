@@ -38,11 +38,23 @@ cells.
   now pass the offset plus the length of the trimmed prefix. Block spans are
   unchanged: a paragraph still starts at its line.
 
+- **Made-up tab spaces are not source bytes.** Inside a container, and for
+  an item that starts with indented code, a tab after a list marker is
+  expanded into spaces in front of the item content, and those spaces have
+  no bytes in the source. The parsed item records how many there are. The
+  one-line fast path leaves them out of the trimmed prefix, and the item's
+  sub-source maps them to the point where the real content starts. Without
+  this, the new offsets would shift `> -\t*foo*` one to three bytes right.
+  The inline spans of such items now match their source text, which they
+  did not always do before either: in `> -\tfoo` + `>   bar` the text span
+  stopped two bytes short of its end.
+
 - **A lint keeps the rule in place.** `clippy.toml` disallows `str::trim`,
   `str::trim_start` and `str::trim_end`, pointing at the helper module. The
-  lint is denied only in `src/parser` (`#![deny(clippy::disallowed_methods)]`
-  in `src/parser/mod.rs`); the workspace allows it elsewhere, so the renderer
-  and bindings are unaffected. The remaining legitimate calls carry a local
+  workspace allows `clippy::disallowed_methods`, and only `src/parser`,
+  `src/ast` and `src/allocator` deny it; the latter two call none of the trim
+  methods, and the renderer and bindings are unaffected. The remaining
+  legitimate parser calls carry a local
   `#[allow(clippy::disallowed_methods, reason = "...")]`.
 
 ## Specification references
@@ -156,9 +168,11 @@ ATX headings, table cells and delimiter rows, list item content, paragraph
 interruption, a no-break-space line inside a list next to a real blank line,
 thematic breaks, and the inline spans of `"\u{a0}*a*"`, an indented paragraph,
 an indented setext heading and a leading vertical tab. All eight tests fail on
-the previous parser. `src/parser/whitespace.rs` checks the helper's byte set
-against `char::is_whitespace`, keeps every non-ASCII `White_Space` character up
-to U+3000, and matches the `str` methods on ASCII input.
+the previous parser. A ninth pins the inline spans of list items whose tab was
+expanded inside a container, on the fast path and on the sub-parser path.
+`src/parser/whitespace.rs` checks the helper's byte set against
+`char::is_whitespace`, keeps every non-ASCII `White_Space` character up to
+U+3000, and matches the `str` methods on ASCII input.
 
 The CommonMark and GFM conformance suites and every snapshot are unchanged.
 A temporary `str::trim` call in `src/parser` fails `cargo clippy` with the

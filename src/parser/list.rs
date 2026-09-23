@@ -63,30 +63,29 @@ impl<'a> Parser<'a> {
             };
 
             let mut content_spread = false;
-            let item_children = if item_source.is_none()
-                && Self::can_inline_parse_list_item(item.content)
-            {
-                self.parse_inline_list_item_children(item.content, item.content_offset, item_end)?
-            } else {
-                let item_source = item_source
-                    .unwrap_or_else(|| self.init_list_item_source(&item, consumed_newline));
-                let source_map = item_source.source_map;
-                let item_source = item_source.text.into_bump_str();
-                let sub_parser =
-                    self.sub_parser_with_source_map(item_source, lazy_lines, &source_map);
-                let sub_doc = sub_parser
-                    .parse()
-                    .map_err(|error| error.remapped(&source_map))?;
-                // The item directly contains blank-separated blocks iff a
-                // gap between consecutive top-level children spans a line
-                // break (spans are still in item-source coordinates).
-                content_spread = item_content_has_blank_gap(item_source, &sub_doc.children);
-                let mut item_children = sub_doc.children;
-                for child in &mut item_children {
-                    source_map.remap_node_spans(child);
-                }
-                item_children
-            };
+            let item_children =
+                if item_source.is_none() && Self::can_inline_parse_list_item(item.content) {
+                    self.parse_inline_list_item_children(&item, item_end)?
+                } else {
+                    let item_source = item_source
+                        .unwrap_or_else(|| self.init_list_item_source(&item, consumed_newline));
+                    let source_map = item_source.source_map;
+                    let item_source = item_source.text.into_bump_str();
+                    let sub_parser =
+                        self.sub_parser_with_source_map(item_source, lazy_lines, &source_map);
+                    let sub_doc = sub_parser
+                        .parse()
+                        .map_err(|error| error.remapped(&source_map))?;
+                    // The item directly contains blank-separated blocks iff a
+                    // gap between consecutive top-level children spans a line
+                    // break (spans are still in item-source coordinates).
+                    content_spread = item_content_has_blank_gap(item_source, &sub_doc.children);
+                    let mut item_children = sub_doc.children;
+                    for child in &mut item_children {
+                        source_map.remap_node_spans(child);
+                    }
+                    item_children
+                };
             list_spread |= gap_spread || content_spread;
 
             let list_item = ListItem {

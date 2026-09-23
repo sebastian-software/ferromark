@@ -176,3 +176,43 @@ fn inline_spans_start_at_the_trimmed_paragraph_content() {
     // A vertical tab is still trimmed, now without shifting the text.
     assert_eq!(spans("\u{b}a\n"), ["Paragraph [0, 3]", "  Text [1, 2]"]);
 }
+
+#[test]
+fn tab_columns_after_a_nested_list_marker_do_not_shift_inline_spans() {
+    // Inside a container, a tab after a list marker becomes spaces that have
+    // no source bytes. Only the real bytes move the inline offset, on the
+    // one-line fast path and on the sub-parser path alike.
+    assert_eq!(
+        spans("> -\t*foo*"),
+        [
+            "BlockQuote [0, 9]",
+            "  List [2, 9]",
+            "    Paragraph [4, 9]",
+            "      Emphasis [4, 9]",
+            "        Text [5, 8]"
+        ]
+    );
+    assert_eq!(
+        spans("-\ta\n\t-\t*b*"),
+        [
+            "List [0, 10]",
+            "  Paragraph [2, 4]",
+            "    Text [2, 3]",
+            "  List [4, 10]",
+            "    Paragraph [7, 10]",
+            "      Emphasis [7, 10]",
+            "        Text [8, 9]"
+        ]
+    );
+    assert_eq!(
+        spans("> -\tfoo\n>   bar"),
+        [
+            "BlockQuote [0, 15]",
+            "  List [2, 15]",
+            "    Paragraph [4, 15]",
+            "      Text [4, 15]"
+        ]
+    );
+    // A space before the tab is a real byte inside the expanded run.
+    assert_eq!(spans("> - \tfoo")[3], "      Text [5, 8]");
+}

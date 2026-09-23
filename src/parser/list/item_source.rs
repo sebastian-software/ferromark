@@ -38,9 +38,15 @@ impl<'a> Parser<'a> {
         if consumed_newline {
             source.push('\n');
         }
+        // Spaces standing for tab columns have no source bytes: they all map
+        // to the point where the real content starts.
+        let synthetic = item.synthetic_indent;
+        if synthetic > 0 {
+            source_map.push_line(0, synthetic, item.content_offset, 0);
+        }
         source_map.push_line(
-            0,
-            item.content.len() + usize::from(consumed_newline),
+            synthetic,
+            item.content.len() - synthetic + usize::from(consumed_newline),
             item.content_offset,
             item.content_source_end.saturating_sub(item.content_offset)
                 + usize::from(consumed_newline),
@@ -96,27 +102,29 @@ impl<'a> Parser<'a> {
 
     /// Creates the direct AST for the single-paragraph list-item fast path.
     ///
-    /// `content_offset` is the byte position of `content` in the original
-    /// document, so inline spans are produced with their final coordinates on
-    /// the first parse. `item_end` remains the list-item line end to preserve
-    /// the paragraph span that callers observed when this went through the
-    /// sub-parser.
+    /// The item's `content_offset` is the byte position of its content, past
+    /// any made-up tab spaces, in the original document, so inline spans are
+    /// produced with their final coordinates on the first parse. `item_end`
+    /// remains the list-item line end to preserve the paragraph span that
+    /// callers observed when this went through the sub-parser.
     pub(super) fn parse_inline_list_item_children(
         &self,
-        content: &'a str,
-        content_offset: usize,
+        item: &super::super::list_item::ParsedListItem<'a>,
         item_end: usize,
     ) -> ParseResult<Vec<'a, Node<'a>>> {
         let mut children = self.allocator.new_vec();
-        let (inline, leading) = whitespace::trim_with_leading(content);
+        let (inline, leading) = whitespace::trim_with_leading(item.content);
         if inline.is_empty() {
             return Ok(children);
         }
 
-        let paragraph_children = self.parse_inline_block(inline, content_offset + leading)?;
+        // The trimmed prefix starts with the made-up spaces, which the
+        // content offset already skips.
+        let inline_offset = item.content_offset + leading.saturating_sub(item.synthetic_indent);
+        let paragraph_children = self.parse_inline_block(inline, inline_offset)?;
         children.push(Node::Paragraph(self.allocator.boxed(Paragraph {
             children: paragraph_children,
-            span: Span::new(content_offset as u32, item_end as u32),
+            span: Span::new(item.content_offset as u32, item_end as u32),
         })));
         Ok(children)
     }

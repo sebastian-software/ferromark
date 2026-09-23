@@ -9,7 +9,12 @@ pub(super) struct ParsedListItem<'a> {
     pub(super) marker: u8,
     pub(super) start: Option<u32>,
     pub(super) content: &'a str,
+    /// Source offset of `content[synthetic_indent..]`.
     pub(super) content_offset: usize,
+    /// Leading spaces of `content` that stand for tab columns and have no
+    /// source bytes of their own; zero unless a tab after the marker was
+    /// expanded into spaces.
+    pub(super) synthetic_indent: usize,
     pub(super) content_source_end: usize,
     /// Column (relative to the marker line's start) where continuation
     /// lines must be indented to belong to this item: marker indent +
@@ -198,6 +203,7 @@ impl<'a> Parser<'a> {
                     start,
                     content: rest,
                     content_offset: trimmed_offset + marker_width + ws_run,
+                    synthetic_indent: 0,
                     content_source_end: line_start + line.len(),
                     content_indent: end_col,
                     checked: None,
@@ -221,6 +227,11 @@ impl<'a> Parser<'a> {
                 start,
                 content,
                 content_offset: trimmed_offset + marker_width + 1,
+                // The whitespace after the first separating byte stands for
+                // `extra_columns` spaces. Each of its `ws_run - 1` bytes is
+                // at least one column wide, so the rest of the spaces are
+                // made up.
+                synthetic_indent: extra_columns.saturating_sub(ws_run - 1),
                 content_source_end: line_start + line.len(),
                 content_indent: marker_end_col + 1,
                 checked: None,
@@ -252,6 +263,7 @@ impl<'a> Parser<'a> {
             start,
             content,
             content_offset,
+            synthetic_indent: 0,
             content_source_end: line_start + line.len(),
             content_indent,
             checked,
