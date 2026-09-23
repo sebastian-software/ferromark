@@ -658,6 +658,24 @@ test("a reusable renderer recovers after a bounded-depth parse error", () => {
   assert.equal(renderer.toHtml("recovered"), "<p>recovered</p>\n");
 });
 
+test("a reusable renderer returns independent strings from its kept buffer", () => {
+  // `Renderer.toHtml` copies out of an output buffer it keeps between calls,
+  // so a later, shorter document must neither shorten nor overwrite a string
+  // returned earlier.
+  const long = `# Title\n\n${"Some *prose* with a [link](/u).\n\n".repeat(200)}`;
+  const short = "short";
+  const renderer = new Renderer();
+  const first = renderer.toHtml(long);
+  const second = renderer.toHtml(short);
+  const third = renderer.toHtml(long);
+
+  assert.equal(first, toHtml(long));
+  assert.equal(second, "<p>short</p>\n");
+  assert.equal(third, first);
+  assert.equal(renderer.toHtmlBuffer(short).toString(), second);
+  assert.equal(first, toHtml(long));
+});
+
 test("deeply nested inline brackets throw instead of killing the process", () => {
   // Issue #349: these calls used to take the whole process down with a
   // stack overflow, which is not a panic and so cannot be caught or
