@@ -665,6 +665,71 @@ test("metadata deduplicates generated suffixes and repeated explicit IDs", () =>
   for (const id of ids) assert.ok(result.html.includes(`id="${id}"`));
 });
 
+test("headingOffset adjusts HTML and transform metadata consistently", () => {
+  const source = "# Top\n\n## Middle\n\n###### Deep\n\n> ### Nested";
+  const options = { headingOffset: 1 };
+  const result = transform(source, options);
+
+  assert.equal(
+    result.html,
+    '<h2 id="top">Top</h2>\n<h3 id="middle">Middle</h3>\n<h6 id="deep">Deep</h6>\n<blockquote>\n<h4 id="nested">Nested</h4>\n</blockquote>\n',
+  );
+  assert.deepEqual(
+    result.headings.map(({ level }) => level),
+    [2, 3, 6, 4],
+  );
+  assert.deepEqual(
+    result.headings.map(({ id }) => id),
+    ["top", "middle", "deep", "nested"],
+  );
+  assert.equal(toHtml(source, options), result.html);
+  assert.equal(toHtmlBuffer(source, options).toString(), result.html);
+
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    result.html,
+  );
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), result.html);
+});
+
+test("headingOffset clamps both ends and survives reusable renderer resets", () => {
+  const source = "# Top\n\n### Middle\n\n###### Deep";
+  assert.equal(
+    toHtml(source, { headingOffset: -2 }),
+    '<h1 id="top">Top</h1>\n<h1 id="middle">Middle</h1>\n<h4 id="deep">Deep</h4>\n',
+  );
+  assert.deepEqual(
+    transform(source, { headingOffset: -2 }).headings.map(({ level }) => level),
+    [1, 1, 4],
+  );
+  assert.equal(toHtml("# Top", { headingOffset: 2 ** 31 - 1 }), '<h6 id="top">Top</h6>\n');
+  assert.equal(toHtml("###### Deep", { headingOffset: -(2 ** 31) }), '<h1 id="deep">Deep</h1>\n');
+
+  const renderer = new Renderer({ headingOffset: 1 });
+  assert.equal(renderer.toHtml("# Before"), '<h2 id="before">Before</h2>\n');
+  assert.throws(() => renderer.toHtml(`${"> ".repeat(150)}deep`), /nest|depth/i);
+  assert.equal(renderer.toHtml("## After error"), '<h3 id="after-error">After error</h3>\n');
+  assert.equal(renderer.toHtmlBuffer("# Reused").toString(), '<h2 id="reused">Reused</h2>\n');
+});
+
+test("headingOffset rejects non-integer and out-of-range configuration values", () => {
+  for (const headingOffset of [
+    "1",
+    1.5,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    2 ** 31,
+    -(2 ** 31) - 1,
+  ]) {
+    assert.throws(
+      () => toHtml("# Heading", { headingOffset }),
+      /headingOffset|convert|integer|number|range/i,
+      `headingOffset ${String(headingOffset)} should be rejected`,
+    );
+  }
+});
+
 test("a reusable renderer recovers after a bounded-depth parse error", () => {
   const renderer = new Renderer();
   assert.throws(() => renderer.toHtml(`${"> ".repeat(150)}deep`), /nest|depth/i);

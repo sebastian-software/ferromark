@@ -37,6 +37,7 @@ pub struct Options {
     pub allow_link_refs: Option<bool>,
     pub front_matter: Option<bool>,
     pub heading_ids: Option<bool>,
+    pub heading_offset: Option<f64>,
     pub heading_attributes: Option<bool>,
     pub math: Option<bool>,
     pub callouts: Option<bool>,
@@ -52,6 +53,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     let CoreOptions {
         mut parser,
         mut html,
+        mut heading_level_offset,
     } = addon_defaults();
     if let Some(options) = options {
         if let Some(policy) = options.render_policy {
@@ -93,6 +95,19 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.allow_link_refs, options.allow_link_refs);
         apply!(parser.front_matter, options.front_matter);
         apply!(html.heading_ids, options.heading_ids);
+        if let Some(offset) = options.heading_offset {
+            if !offset.is_finite()
+                || offset.fract() != 0.0
+                || offset < f64::from(i32::MIN)
+                || offset > f64::from(i32::MAX)
+            {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "headingOffset must be an integer in the signed 32-bit range",
+                ));
+            }
+            heading_level_offset = offset as i32;
+        }
         apply!(parser.heading_attributes, options.heading_attributes);
         apply!(parser.math, options.math);
         apply!(html.callouts, options.callouts);
@@ -108,7 +123,11 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             html.convert_md_links = true;
         }
     }
-    Ok(CoreOptions { parser, html })
+    Ok(CoreOptions {
+        parser,
+        html,
+        heading_level_offset,
+    })
 }
 
 fn parse_error(error: ferromark::ParseError) -> Error {
@@ -144,10 +163,12 @@ impl Renderer {
     #[napi(constructor, catch_unwind)]
     pub fn new(options: Option<Options>) -> Result<Self> {
         let options = core_options(options)?;
+        let html = HtmlRenderer::with_options(options.html)
+            .with_heading_level_offset(options.heading_level_offset);
         Ok(Self {
             allocator: Allocator::new(),
             parser: options.parser,
-            html: HtmlRenderer::with_options(options.html),
+            html,
         })
     }
 
@@ -199,6 +220,7 @@ struct Metadata {
     headings: Vec<Heading>,
     id_planner: HeadingIdPlanner,
     heading_ids: bool,
+    heading_level_offset: i32,
 }
 
 impl<'a> Visit<'a> for Metadata {
@@ -213,7 +235,10 @@ impl<'a> Visit<'a> for Metadata {
             None
         };
         self.headings.push(Heading {
-            level: u32::from(heading.depth),
+            level: u32::from(ferromark::map_heading_level(
+                heading.depth,
+                self.heading_level_offset,
+            )),
             id,
             text,
         });
@@ -268,13 +293,15 @@ fn render_document(
         headings: Vec::new(),
         id_planner: HeadingIdPlanner::new(),
         heading_ids: options.html.heading_ids,
+        heading_level_offset: options.heading_level_offset,
     };
     metadata.visit_document(&document);
     let front_matter = document
         .front_matter
         .as_ref()
         .map(|front| front.value.to_owned());
-    let mut renderer = HtmlRenderer::with_options(options.html);
+    let mut renderer = HtmlRenderer::with_options(options.html)
+        .with_heading_level_offset(options.heading_level_offset);
     let html = if let Some(callback) = callback {
         let mut hooks = CallbackRenderer {
             callback,

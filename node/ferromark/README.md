@@ -147,12 +147,19 @@ the highlighter helpers below accept trusted highlighter HTML.
 
 ## Options reference
 
-Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions default off; `renderPolicy` defaults to `'untrusted'` and `linkBasePath` is unset.
+Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `linkBasePath` is unset.
 
 Unknown option names throw a `TypeError` that identifies the rejected key, so
 misspellings such as `taskList` cannot silently change rendered output.
 
 `mergedTableCells`, `tableColgroup`, and `tableColumnNames` require `tables`. `disallowedRawHtml` only filters a narrow GFM tag list in trusted mode and is not a sanitizer. `renderPolicy: 'trusted'` permits raw HTML and unrestricted URL schemes, so use it only for trusted Markdown. See [`Options`](./index.d.mts) for each field's semantics and examples above for `frontMatter` and `linkBasePath`.
+
+`headingOffset` shifts rendered `h1`–`h6` elements and the `level` returned in
+`transform()` metadata by the same amount. Positive values move toward `h6`,
+negative values toward `h1`, and out-of-range levels clamp to that range. Pass
+an integer in the signed 32-bit range. It does not change generated IDs or
+fragment links. The setting applies to every document rendered by a reusable
+`Renderer` and to each Rust incremental fragment.
 
 ## Input size limit
 
