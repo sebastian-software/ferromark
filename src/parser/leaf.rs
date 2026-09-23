@@ -3,6 +3,7 @@ use crate::ast::{Node, Span};
 
 use super::Parser;
 use super::line_scan::{line_end as line_end_scan, line_terminator_end};
+use super::whitespace;
 use crate::parser::error::ParseResult;
 
 impl<'a> Parser<'a> {
@@ -22,7 +23,7 @@ impl<'a> Parser<'a> {
     }
 
     pub(super) fn try_parse_thematic_break_line(line: &str) -> bool {
-        let bytes = line.trim().as_bytes();
+        let bytes = whitespace::trim(line).as_bytes();
         if bytes.len() < 3 {
             return false;
         }

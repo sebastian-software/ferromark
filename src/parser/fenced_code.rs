@@ -3,6 +3,7 @@ use crate::ast::{Node, Span};
 use super::Parser;
 use super::line_scan::{line_end, line_terminator_end, next_line_start};
 use super::prepass::next_fence_run_line;
+use super::whitespace;
 use crate::parser::error::ParseResult;
 
 impl<'a> Parser<'a> {
@@ -140,7 +141,7 @@ impl<'a> Parser<'a> {
             }
             self.advance();
         }
-        let info = self.source[info_start..self.position].trim();
+        let info = whitespace::trim(&self.source[info_start..self.position]);
         let (lang, meta) = if info.is_empty() {
             (None, None)
         } else if let Some(space_idx) = info.find(' ') {

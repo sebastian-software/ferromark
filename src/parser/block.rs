@@ -6,6 +6,7 @@ use super::line_scan::{
     is_line_ending_byte, line_end as scan_line_end, line_terminator_end,
     next_line_start as scan_next_line_start,
 };
+use super::whitespace;
 use crate::parser::error::{ParseErrorKind, ParseResult};
 
 impl<'a> Parser<'a> {
@@ -312,9 +313,10 @@ impl<'a> Parser<'a> {
                         Some((depth, heading_end)),
                     );
                 }
-                let content = self.source[start..content_end].trim();
+                let (content, leading) =
+                    whitespace::trim_with_leading(&self.source[start..content_end]);
                 let (content, id, classes) = self.split_heading_attributes(content);
-                let children = self.parse_inline_block(content, start)?;
+                let children = self.parse_inline_block(content, start + leading)?;
                 return Ok(Some(Node::Heading(self.allocator.boxed(Heading {
                     depth,
                     id,
@@ -351,12 +353,14 @@ impl<'a> Parser<'a> {
         {
             return self.parse_commented_paragraph(start, content_end, first_comment, None);
         }
-        let content = self.source[start..content_end].trim();
+        // Inline spans start at the content, past the indentation that
+        // `start` still includes.
+        let (content, leading) = whitespace::trim_with_leading(&self.source[start..content_end]);
         if content.is_empty() {
             return Ok(None);
         }
         let span = Span::new(start as u32, content_end as u32);
-        let children = self.parse_inline_block(content, start)?;
+        let children = self.parse_inline_block(content, start + leading)?;
         Ok(Some(Node::Paragraph(
             self.allocator.boxed(Paragraph { children, span }),
         )))
@@ -376,7 +380,7 @@ impl<'a> Parser<'a> {
     ) -> ParseResult<Option<Node<'a>>> {
         let (raw_content, source_map) =
             self.without_line_comments_with_first(start, content_end, Some(first_comment));
-        let content = raw_content.trim();
+        let (content, leading) = whitespace::trim_with_leading(raw_content);
         if heading.is_none() && content.is_empty() {
             return Ok(None);
         }
@@ -385,10 +389,12 @@ impl<'a> Parser<'a> {
         } else {
             (content, None, self.allocator.new_vec())
         };
+        // A remapped copy starts its own coordinates at zero; a borrowed
+        // slice starts at `start`.
         let offset = if source_map.is_some() {
-            raw_content.len() - raw_content.trim_start().len()
+            leading
         } else {
-            start
+            start + leading
         };
         let mut children =
             self.parse_inline_block(content, offset)

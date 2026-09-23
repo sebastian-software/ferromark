@@ -6,6 +6,7 @@ use super::line_scan::{
     line_end as scan_line_end, line_terminator_end, next_line_start as scan_next_line_start,
 };
 use super::spans::SourceMap;
+use super::whitespace;
 use crate::parser::error::ParseResult;
 
 impl<'a> Parser<'a> {
@@ -172,11 +173,11 @@ impl<'a> Parser<'a> {
     /// though they cannot interrupt one: a bare list marker opens an
     /// (empty) list block when the quote marker is imagined present.
     fn quote_lazy_blocked(trimmed: &str) -> bool {
-        let line = trimmed.trim_end();
+        let line = whitespace::trim_end(trimmed);
         Self::try_parse_list_line(line) && {
             let after_digits = line.trim_start_matches(|ch: char| ch.is_ascii_digit());
             let after_marker = after_digits.trim_start_matches(['-', '*', '+', '.', ')']);
-            after_marker.trim().is_empty()
+            whitespace::is_blank(after_marker)
         }
     }
 

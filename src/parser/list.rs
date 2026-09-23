@@ -6,6 +6,7 @@ use super::Parser;
 use super::lazy_paragraph::OpenParagraph;
 use super::line_scan::{is_line_ending_byte, line_terminator_end};
 use super::list_item::ParsedListItem;
+use super::whitespace;
 use crate::parser::error::ParseResult;
 
 mod item_source;
@@ -62,30 +63,29 @@ impl<'a> Parser<'a> {
             };
 
             let mut content_spread = false;
-            let item_children = if item_source.is_none()
-                && Self::can_inline_parse_list_item(item.content)
-            {
-                self.parse_inline_list_item_children(item.content, item.content_offset, item_end)?
-            } else {
-                let item_source = item_source
-                    .unwrap_or_else(|| self.init_list_item_source(&item, consumed_newline));
-                let source_map = item_source.source_map;
-                let item_source = item_source.text.into_bump_str();
-                let sub_parser =
-                    self.sub_parser_with_source_map(item_source, lazy_lines, &source_map);
-                let sub_doc = sub_parser
-                    .parse()
-                    .map_err(|error| error.remapped(&source_map))?;
-                // The item directly contains blank-separated blocks iff a
-                // gap between consecutive top-level children spans a line
-                // break (spans are still in item-source coordinates).
-                content_spread = item_content_has_blank_gap(item_source, &sub_doc.children);
-                let mut item_children = sub_doc.children;
-                for child in &mut item_children {
-                    source_map.remap_node_spans(child);
-                }
-                item_children
-            };
+            let item_children =
+                if item_source.is_none() && Self::can_inline_parse_list_item(item.content) {
+                    self.parse_inline_list_item_children(&item, item_end)?
+                } else {
+                    let item_source = item_source
+                        .unwrap_or_else(|| self.init_list_item_source(&item, consumed_newline));
+                    let source_map = item_source.source_map;
+                    let item_source = item_source.text.into_bump_str();
+                    let sub_parser =
+                        self.sub_parser_with_source_map(item_source, lazy_lines, &source_map);
+                    let sub_doc = sub_parser
+                        .parse()
+                        .map_err(|error| error.remapped(&source_map))?;
+                    // The item directly contains blank-separated blocks iff a
+                    // gap between consecutive top-level children spans a line
+                    // break (spans are still in item-source coordinates).
+                    content_spread = item_content_has_blank_gap(item_source, &sub_doc.children);
+                    let mut item_children = sub_doc.children;
+                    for child in &mut item_children {
+                        source_map.remap_node_spans(child);
+                    }
+                    item_children
+                };
             list_spread |= gap_spread || content_spread;
 
             let list_item = ListItem {
@@ -142,7 +142,7 @@ impl<'a> Parser<'a> {
         Option<ParsedListItem<'a>>,
     ) {
         let content_indent = item.content_indent;
-        let item_is_empty = item.content.trim().is_empty();
+        let item_is_empty = whitespace::is_blank(item.content);
         let mut item_source = None;
         let mut item_end = self.position;
         let mut gap_spread = false;
@@ -190,7 +190,7 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
-            if continuation_line.trim().is_empty() {
+            if whitespace::is_blank(continuation_line) {
                 let mut lookahead = continuation_next;
                 // The line that stops the walk is the one a sibling marker
                 // would be read from, so carry it out instead of scanning it
@@ -198,7 +198,7 @@ impl<'a> Parser<'a> {
                 let mut lookahead_line = "";
                 while lookahead < self.source.len() {
                     let (line, next) = self.line_and_next(lookahead);
-                    if !line.trim().is_empty() && !self.is_line_comment_at(lookahead) {
+                    if !whitespace::is_blank(line) && !self.is_line_comment_at(lookahead) {
                         lookahead_line = line;
                         break;
                     }

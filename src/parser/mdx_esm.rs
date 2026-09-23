@@ -191,8 +191,13 @@ impl<'a> Parser<'a> {
         }
         let end = scan_esm_statement(self.source, trimmed_start);
         self.position = end;
+        #[allow(
+            clippy::disallowed_methods,
+            reason = "ESM values are JavaScript source, not Markdown block content"
+        )]
+        let value = self.source[trimmed_start..end].trim_end();
         Some(Node::MdxjsEsm(MdxjsEsm {
-            value: self.source[trimmed_start..end].trim_end(),
+            value,
             span: Span::new(start as u32, end as u32),
         }))
     }
