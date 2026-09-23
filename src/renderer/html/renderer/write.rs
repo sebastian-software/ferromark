@@ -15,7 +15,7 @@ use super::super::escape::{
 };
 use super::super::heading::{
     HEADING_PERMALINK_CLASS, collect_heading_text_into, heading_has_permalink_marker,
-    single_text_child, slugify_heading_into,
+    single_text_child,
 };
 use super::{HtmlRenderer, reserve_heading_scratch};
 
@@ -276,27 +276,37 @@ impl HtmlRenderer {
         }
     }
 
-    /// Writes the heading's unique id into `heading_id_scratch` and `self.output`.
+    /// Plans the heading's unique id and writes it into `self.output`.
     ///
-    /// Permalinks read the same scratch so the `href` matches the `id`
-    /// attribute, including duplicate `-N` suffixes.
+    /// Permalinks read the same planned id back from the planner so the
+    /// `href` matches the `id` attribute, including duplicate `-N` suffixes.
     pub(in crate::renderer::html::renderer) fn write_heading_id(&mut self, heading: &Heading<'_>) {
         self.prepare_heading_id(heading);
         self.write_prepared_heading_id();
     }
 
-    /// Emits the prepared id from `heading_id_scratch` into the output.
+    /// Emits the configured prefix and the planned id into the output.
     ///
     /// Only an author-supplied `{#id}` can contain a byte that attribute
     /// escaping replaces. A generated slug is lowercase alphanumerics, `-`,
     /// and an optional `-N` suffix, so running the CR/LF `memchr2` pass and
     /// the escape scanner over it can only ever copy it back unchanged — the
     /// `heading_id_is_explicit` flag lets that whole pass be skipped.
+    ///
+    /// The prefix is validated to ASCII letters, digits, `_`, and `-`, which
+    /// attribute escaping leaves alone, and escaping maps each byte on its
+    /// own. Writing the prefix verbatim before the escaped id is therefore the
+    /// same as escaping the concatenated id.
     fn write_prepared_heading_id(&mut self) {
+        let prefix = self.options.heading_id_prefix();
+        if !prefix.is_empty() {
+            self.output.push_str(prefix);
+        }
+        let id = self.heading_id_planner.id(self.heading_id);
         if self.heading_id_is_explicit {
-            write_attribute_escaped_into(&mut self.output, &self.heading_id_scratch);
+            write_attribute_escaped_into(&mut self.output, id);
         } else {
-            self.output.push_str(&self.heading_id_scratch);
+            self.output.push_str(id);
         }
     }
 
@@ -307,7 +317,11 @@ impl HtmlRenderer {
         if !self.options.heading_ids || !self.options.heading_permalinks {
             return;
         }
-        if heading_has_permalink_marker(&heading.children, &self.heading_id_scratch) {
+        if heading_has_permalink_marker(
+            &heading.children,
+            self.options.heading_id_prefix(),
+            self.heading_id_planner.id(self.heading_id),
+        ) {
             return;
         }
         self.output.push_str("<a class=\"");
@@ -343,37 +357,25 @@ impl HtmlRenderer {
             collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
         }
 
+        // The planner keeps the claimed id in its own storage, so neither
+        // path copies the id into a renderer buffer; the prefix is written
+        // separately in `write_prepared_heading_id`, after planning, as the
+        // prefix decision requires.
         if let Some(id) = heading.id {
             self.heading_id_is_explicit = true;
-            reserve_heading_scratch(&mut self.heading_id_scratch);
-            self.heading_id_planner
-                .plan_into(id, &mut self.heading_id_scratch);
-            self.apply_heading_id_prefix();
+            self.heading_id = self.heading_id_planner.claim(id);
             return;
         }
         self.heading_id_is_explicit = false;
-        self.heading_slug_scratch.clear();
-        reserve_heading_scratch(&mut self.heading_slug_scratch);
-        if let Some(text) = single_text {
-            slugify_heading_into(text, &mut self.heading_slug_scratch);
-        } else {
-            slugify_heading_into(&self.heading_text_scratch, &mut self.heading_slug_scratch);
-        }
-
-        reserve_heading_scratch(&mut self.heading_id_scratch);
-        self.heading_id_planner
-            .plan_into(&self.heading_slug_scratch, &mut self.heading_id_scratch);
-        self.apply_heading_id_prefix();
-    }
-
-    fn apply_heading_id_prefix(&mut self) {
-        let prefix = self.options.heading_id_prefix();
-        if prefix.is_empty() {
-            return;
-        }
-        self.heading_id_scratch.insert_str(0, prefix);
+        // A single `Text` child is slugified straight from the source; the
+        // slug itself is written into the planner's storage, where a
+        // not-yet-taken slug is claimed in place.
+        let text = single_text.unwrap_or(&self.heading_text_scratch);
+        self.heading_id = self.heading_id_planner.claim_slug(text);
     }
 }
 
+#[cfg(test)]
+mod heading_equivalence;
 #[cfg(test)]
 mod tests;

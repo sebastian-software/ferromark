@@ -7,7 +7,12 @@
 
 use std::fmt::Write as _;
 
-use super::{HeadingIdPlanner, slugify_heading, slugify_heading_into};
+use super::{
+    HeadingIdPlanner, heading_has_permalink_marker, slugify_heading, slugify_heading_into,
+};
+use crate::allocator::Allocator;
+use crate::ast::Node;
+use crate::parser::Parser;
 use crate::renderer::html::escape::write_attribute_escaped_into;
 
 /// The `String::push`-per-character slugifier that `slugify_heading_into`
@@ -398,4 +403,47 @@ fn heading_id_planner_skips_taken_suffixes_and_deduplicates_explicit_ids() {
     assert_eq!(planner.plan("a"), "a");
     assert_eq!(planner.plan("日本語"), "日本語");
     assert_eq!(planner.plan("日本語"), "日本語-1");
+}
+
+#[test]
+fn permalink_marker_matches_the_emitted_id_however_the_prefix_splits_it() {
+    // The renderer passes the configured prefix and the planned ID separately
+    // instead of concatenating them. Every split of the emitted ID has to
+    // answer like the whole ID with an empty prefix, which is the plain
+    // `url == "#" + id` comparison.
+    for (source, emitted, expected) in [
+        ("## Hello [#](#docs-hello)", "docs-hello", true),
+        ("## Hello *[#](#docs-hello)*", "docs-hello", true),
+        ("## Hello [#](#hello)", "docs-hello", false),
+        ("## Hello [#](#docs-hello-1)", "docs-hello", false),
+        ("## Hello [#](#docs-hell)", "docs-hello", false),
+        ("## Hello [#](docs-hello)", "docs-hello", false),
+        ("## Hello [x](#docs-hello)", "docs-hello", false),
+        ("## はじめに [#](#p_はじめに)", "p_はじめに", true),
+        (
+            "## Hello <a class=\"header-anchor\">#</a>",
+            "docs-hello",
+            true,
+        ),
+        ("## Hello", "docs-hello", false),
+    ] {
+        let allocator = Allocator::new();
+        let document = Parser::new(&allocator, source).parse().unwrap();
+        let [Node::Heading(heading)] = &document.children[..] else {
+            panic!("{source:?} is not a single heading");
+        };
+        assert_eq!(
+            heading_has_permalink_marker(&heading.children, "", emitted),
+            expected,
+            "{source:?}"
+        );
+        for split in (0..=emitted.len()).filter(|&split| emitted.is_char_boundary(split)) {
+            let (prefix, id) = emitted.split_at(split);
+            assert_eq!(
+                heading_has_permalink_marker(&heading.children, prefix, id),
+                expected,
+                "{source:?} split as {prefix:?} + {id:?}"
+            );
+        }
+    }
 }

@@ -82,6 +82,10 @@ mod whitespace;
 #[cfg(test)]
 mod tests;
 
+/// Test-only gzip reader for the frozen measurement corpora.
+#[cfg(test)]
+pub(crate) use prepass::gzip::gunzip;
+
 pub use options::ParserOptions;
 
 /// Internal parse phase, inherited by container sub-parsers. Collection uses
