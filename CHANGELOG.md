@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.1.0](https://github.com/sebastian-software/ferromark/compare/v2.0.1...v2.1.0) (2026-09-23)
+
+
+### Features
+
+* prefix emitted heading IDs ([#410](https://github.com/sebastian-software/ferromark/issues/410)) ([1667e19](https://github.com/sebastian-software/ferromark/commit/1667e199fd0a76aa48b4dca2ab09c59c81f5ef4c))
+* support heading level offsets ([#409](https://github.com/sebastian-software/ferromark/issues/409)) ([aceafd3](https://github.com/sebastian-software/ferromark/commit/aceafd32a14d4c6d1b20b46ec3c2c5b0db69d34e))
+
+
+### Bug Fixes
+
+* ensure unique heading IDs ([#408](https://github.com/sebastian-software/ferromark/issues/408)) ([e890ccb](https://github.com/sebastian-software/ferromark/commit/e890ccbd85018d7af1876d4f9ae4d41a0deadada))
+* **parser:** trim only ASCII whitespace at block boundaries ([#414](https://github.com/sebastian-software/ferromark/issues/414)) ([7eda5a4](https://github.com/sebastian-software/ferromark/commit/7eda5a4bb06c859c1045ba81f0c1178f9e88b065))
+
+
+### Performance Improvements
+
+* **node:** keep the reusable renderer's output buffer between calls ([#412](https://github.com/sebastian-software/ferromark/issues/412)) ([1a4b606](https://github.com/sebastian-software/ferromark/commit/1a4b60646d1cb36431855bc0429ea493ea5af795))
+* **parser:** find NUL bytes and the first ]: in one root scan ([#413](https://github.com/sebastian-software/ferromark/issues/413)) ([c12698b](https://github.com/sebastian-software/ferromark/commit/c12698bddc10a6573b1e75f9a0eadb33967e90e4))
+* **renderer:** gate the GFM tag filter on the first name byte ([#411](https://github.com/sebastian-software/ferromark/issues/411)) ([6833228](https://github.com/sebastian-software/ferromark/commit/6833228649b301b7e6f8c8c271c3259206a4f458))
+
 ## [2.0.1](https://github.com/sebastian-software/ferromark/compare/v2.0.0...v2.0.1) (2026-09-22)
 
 
