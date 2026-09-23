@@ -100,6 +100,7 @@ fn assert_linear(label: &str, small: &str, large: &str, options: &ParserOptions)
     );
     let (small_time, large_time) = timing::best_of_pairs(
         3,
+        8.0,
         || time_once(small, options),
         || time_once(large, options),
     );

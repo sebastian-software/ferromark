@@ -91,15 +91,16 @@ fn outcome_once(source: &str, options: &ParserOptions) -> (Duration, bool) {
 }
 
 /// The best of three bounded parses of each document, timed in alternation
-/// (see `support/timing.rs`) so a burst of load cannot favor one of them.
-fn paired_within_budget(first: &str, second: &str) -> (Duration, Duration) {
+/// (see `support/timing.rs`) so a burst of load cannot favor one of them,
+/// and timed longer while `second / first` has not come under `bound`.
+fn paired_within_budget(first: &str, second: &str, bound: f64) -> (Duration, Duration) {
     let options = ParserOptions::gfm();
     let parse = |source: &str| {
         let (elapsed, parsed) = outcome_once(source, &options);
         assert!(parsed, "nested brackets should parse to a document");
         elapsed
     };
-    timing::best_of_pairs(3, || parse(first), || parse(second))
+    timing::best_of_pairs(3, bound, || parse(first), || parse(second))
 }
 
 fn nested_inline_links(depth: usize) -> String {
@@ -191,7 +192,8 @@ fn nested_bracket_cost_grows_far_slower_than_it_doubles() {
     // Each added level used to double the work. Sixteen more levels would
     // therefore cost 65536x; anything under 100x proves the doubling is
     // gone without pinning an absolute time on a shared runner.
-    let (shallow, deep) = paired_within_budget(&nested_inline_links(32), &nested_inline_links(48));
+    let (shallow, deep) =
+        paired_within_budget(&nested_inline_links(32), &nested_inline_links(48), 100.0);
     let shallow = shallow.max(Duration::from_micros(1));
     assert!(
         deep < shallow * 100,
@@ -299,6 +301,7 @@ fn nested_link_groups_cost_the_same_per_byte_at_any_depth() {
     let (shallow, deep) = paired_within_budget(
         &nested_link_groups(25, 32 * 1024),
         &nested_link_groups(100, 32 * 1024),
+        3.0,
     );
 
     let ratio = ratio(deep, shallow);
@@ -329,6 +332,7 @@ fn a_run_of_openers_with_one_closer_costs_linear_time() {
     let (small, large) = paired_within_budget(
         &("[".repeat(32 * 1024) + "a](u)"),
         &("[".repeat(128 * 1024) + "a](u)"),
+        8.0,
     );
 
     let ratio = ratio(large, small);

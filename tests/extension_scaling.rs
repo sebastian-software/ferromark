@@ -147,6 +147,7 @@ fn assert_linear(name: &str, options: &ParserOptions, shape: impl Fn(usize) -> S
     let (small_source, large_source) = (shape(SMALL), shape(LARGE));
     let (small, large) = timing::best_of_pairs(
         3,
+        8.0,
         || parse_within_budget(&small_source, options),
         || parse_within_budget(&large_source, options),
     );

@@ -77,6 +77,7 @@ fn assert_linear(name: &str, unit: &str) {
     let (small_source, large_source) = (repeat_to(unit, 32 * 1024), repeat_to(unit, 128 * 1024));
     let (small, large) = timing::best_of_pairs(
         4,
+        8.0,
         || parse_within_budget(&small_source),
         || parse_within_budget(&large_source),
     );

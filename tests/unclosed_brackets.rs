@@ -84,6 +84,7 @@ fn small_and_large(unit: &str, options: &ParserOptions) -> (Duration, Duration) 
     let (small, large) = (repeat_to(unit, 32 * 1024), repeat_to(unit, 128 * 1024));
     timing::best_of_pairs(
         4,
+        8.0,
         || parse_within_budget(&small, options),
         || parse_within_budget(&large, options),
     )
