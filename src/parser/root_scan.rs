@@ -19,6 +19,12 @@
 //! paths are what a portable word scan would have to beat, and no speedup is
 //! established there.
 //!
+//! The 1 to 16 bytes the loops leave are answered by one vector over the last
+//! 16 bytes of the body, as `memchr` finishes its own searches, rather than
+//! byte by byte: on a comment-sized body those few trailing bytes are a large
+//! share of the whole scan. Only a body shorter than one vector is walked one
+//! byte at a time.
+//!
 //! The answer describes the unmodified body. A body that holds a NUL is
 //! rewritten by normalization, which moves every later offset, so the caller
 //! keeps only the NUL's position and the pre-pass searches the rewritten
@@ -107,12 +113,16 @@ fn scan_fused(body: &[u8]) -> RootScan {
 fn first_nul_or_closer(bytes: &[u8]) -> Option<usize> {
     use std::arch::aarch64::*;
     let len = bytes.len();
+    if len < 16 {
+        return first_nul_or_closer_short(bytes);
+    }
     let ptr = bytes.as_ptr();
     let mut at = 0;
     // SAFETY: a block at `from` loads `from..from + 16`, and its lookahead
     // loads `from + 1..from + 17`. The grouped loop runs only while the
     // lookahead of its fourth block ends in bounds (`at + 65 <= len`), and the
-    // block loop only while its own does (`at + 17 <= len`).
+    // block loop only while its own does (`at + 17 <= len`). The last vector
+    // loads `len - 16..len`, and `len >= 16` was checked above.
     unsafe {
         let close = vdupq_n_u8(b']');
         let colon = vdupq_n_u8(b':');
@@ -155,15 +165,31 @@ fn first_nul_or_closer(bytes: &[u8]) -> Option<usize> {
             }
             at += 16;
         }
+        // One vector over the last 16 bytes answers for the 1 to 16 bytes the
+        // loops left. It re-reads bytes the loops already cleared, which hold
+        // no NUL and start no `]:`, so its first set lane is at or past `at`
+        // without a mask. Nothing follows its last lane, so a zero lane stands
+        // in for that lookahead: a `]` in the final byte starts no `]:`.
+        let base = len - 16;
+        let here = vld1q_u8(ptr.add(base));
+        let next = vextq_u8::<1>(here, vdupq_n_u8(0));
+        let mask = lanes(vorrq_u8(
+            vceqzq_u8(here),
+            vandq_u8(vceqq_u8(here, close), vceqq_u8(next, colon)),
+        ));
+        if mask == 0 {
+            None
+        } else {
+            Some(base + (mask.trailing_zeros() / 4) as usize)
+        }
     }
-    first_nul_or_closer_scalar(bytes, at)
 }
 
-/// [`first_nul_or_closer`] from `from`, one byte at a time: the tail of the
-/// vector loop, shorter than one block and its lookahead byte.
+/// [`first_nul_or_closer`] for a body shorter than one vector, one byte at a
+/// time.
 #[cfg(target_arch = "aarch64")]
-fn first_nul_or_closer_scalar(bytes: &[u8], from: usize) -> Option<usize> {
-    let mut at = from;
+fn first_nul_or_closer_short(bytes: &[u8]) -> Option<usize> {
+    let mut at = 0;
     while at < bytes.len() {
         match bytes[at] {
             0 => return Some(at),
@@ -217,8 +243,9 @@ mod tests {
         }
     }
 
-    /// Lengths that cover the scalar tail, one block with and without its
-    /// lookahead byte, and several four-block groups with a remainder.
+    /// Lengths that cover bodies shorter than one vector, one block with and
+    /// without its lookahead byte, several four-block groups, and the last
+    /// vector after every number of bytes the loops leave.
     const LENGTHS: std::ops::RangeInclusive<usize> = 0..=160;
 
     #[test]
@@ -245,6 +272,22 @@ mod tests {
     }
 
     #[test]
+    fn every_short_body_over_the_deciding_bytes() {
+        // Exhaustive over the bytes that decide an answer, up to seven bytes.
+        let alphabet = [b'x', b']', b':', 0];
+        for len in 0..=7u32 {
+            for mut code in 0..alphabet.len().pow(len) {
+                let mut body = Vec::new();
+                for _ in 0..len {
+                    body.push(alphabet[code % alphabet.len()]);
+                    code /= alphabet.len();
+                }
+                check(&body);
+            }
+        }
+    }
+
+    #[test]
     fn a_closer_at_every_offset_across_block_and_group_boundaries() {
         for len in LENGTHS {
             for filler in [b'x', b':', b']'] {
@@ -260,6 +303,46 @@ mod tests {
                         check(&body);
                     }
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn the_last_vector_answers_for_every_tail_length() {
+        // From 16 bytes on, a body ends on one vector over its last 16 bytes,
+        // however many of them the loops before it already cleared. Put each
+        // needle in each of the last 17 positions, behind every filler, up to
+        // the final byte, which has no lookahead byte after it.
+        for len in 16..=200usize {
+            for filler in [b'x', b']', b':'] {
+                for at in len.saturating_sub(17)..len {
+                    for needle in [&b"\0"[..], b"]:", b"]", b":"] {
+                        if at + needle.len() > len {
+                            continue;
+                        }
+                        let mut body = vec![filler; len];
+                        body[at..at + needle.len()].copy_from_slice(needle);
+                        check(&body);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_prefix_of_a_comment_sized_body() {
+        // A real sub-kilobyte comment without `[`, `]:` or NUL: the scan runs
+        // to its end, so every prefix ends on a different tail length.
+        let comment = "Does this also apply when the connection is already open? I can \
+                       still reproduce the original behavior after refreshing the page, \
+                       but only on the first request.\n";
+        for end in 0..=comment.len() {
+            let prefix = &comment.as_bytes()[..end];
+            check(prefix);
+            for needle in [&b"]:"[..], b"\0", b"]"] {
+                let mut body = prefix.to_vec();
+                body.extend_from_slice(needle);
+                check(&body);
             }
         }
     }

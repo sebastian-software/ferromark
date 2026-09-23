@@ -234,6 +234,23 @@ mod tests {
     }
 
     #[test]
+    fn every_prefix_of_short_documents() {
+        // Every body length up to a few vectors, so the root scan ends on each
+        // tail length, through the same variants as the fixtures.
+        for document in [
+            "Does this also apply when the connection is already open? I can still \
+             reproduce the original behavior after refreshing the page, but only on \
+             the first request.\n",
+            "Thanks, see [the docs][ref] and `a]:b`.\n\n[ref]: /target \"Title\"\n\n\
+             [^n]: note é🙂\n\nMore prose after the definitions, [ref] again.\n",
+        ] {
+            for end in (0..=document.len()).filter(|&end| document.is_char_boundary(end)) {
+                check_variants(&document[..end], &format!("prefix {end} of {document:?}"));
+            }
+        }
+    }
+
+    #[test]
     fn specification_fixtures() {
         const FENCE: &str = "````````````````````````````````";
         let root = Path::new(env!("CARGO_MANIFEST_DIR"));

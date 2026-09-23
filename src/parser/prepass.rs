@@ -793,6 +793,13 @@ mod tests {
         ] {
             check(source);
         }
+        // Every prefix of a short document with definitions, so the root scan
+        // ends on each tail length and stops at each `]:` in turn.
+        let document = "Thanks, see [the docs][ref] and `a]:b`.\n\n[ref]: /target \"Title\"\n\n\
+                        [^n]: note é🙂\n\nMore prose after the definitions, [ref] again.\n";
+        for end in (0..=document.len()).filter(|&end| document.is_char_boundary(end)) {
+            check(&document[..end]);
+        }
         for_each_generated_mix(check);
         // Agreement alone would also hold if both sides found nothing.
         let allocator = Allocator::new();
