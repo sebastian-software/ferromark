@@ -52,20 +52,22 @@ pub(super) fn write_filtered_into(out: &mut String, value: &str) {
     out.push_str(&value[copied..]);
 }
 
-/// Bytes a disallowed name can start with, in either case, derived from
-/// [`DISALLOWED`] so the two cannot drift apart.
+/// For every byte, the [`DISALLOWED`] names starting with it in either case,
+/// as a bit set of their indices. Derived at compile time, so the two cannot
+/// drift apart.
 ///
 /// Most raw HTML is ordinary markup (`<div`, `<a`, `<br`, `</div`, `<!--`),
-/// and every `<` in it used to try all nine names. Six first letters cover
-/// the whole list, so one table lookup settles the common tag before any
-/// name is compared.
-static STARTS_DISALLOWED: [bool; 256] = {
-    let mut table = [false; 256];
+/// which no name starts like, so an empty set settles it with one lookup.
+/// Common tags that do share an initial (`<td`, `<tr`, `<span`, `<p`,
+/// `<img`) then compare against the one or two names in their set instead of
+/// walking all nine.
+static CANDIDATES: [u16; 256] = {
+    let mut table = [0u16; 256];
     let mut i = 0;
     while i < DISALLOWED.len() {
         let first = DISALLOWED[i].as_bytes()[0];
-        table[first as usize] = true;
-        table[first.to_ascii_uppercase() as usize] = true;
+        table[first as usize] |= 1 << i;
+        table[first.to_ascii_uppercase() as usize] |= 1 << i;
         i += 1;
     }
     table
@@ -76,27 +78,31 @@ static STARTS_DISALLOWED: [bool; 256] = {
 /// The match is case-insensitive and must end at a tag boundary so that
 /// longer names starting with a disallowed one (`<titlebar>`) pass through.
 fn matching_tag(rest: &str) -> Option<&'static str> {
-    let first = *rest.as_bytes().first()?;
-    if !STARTS_DISALLOWED[first as usize] {
-        return None;
+    let mut candidates = CANDIDATES[*rest.as_bytes().first()? as usize];
+    while candidates != 0 {
+        let tag = DISALLOWED[candidates.trailing_zeros() as usize];
+        candidates &= candidates - 1;
+        if starts_with_tag(rest.as_bytes(), tag) {
+            return Some(tag);
+        }
     }
-    let first = first.to_ascii_lowercase();
-    DISALLOWED.into_iter().find(|tag| {
-        if tag.as_bytes()[0] != first {
-            return false;
-        }
-        let Some(after) = rest.get(..tag.len()) else {
-            return false;
-        };
-        if !after.eq_ignore_ascii_case(tag) {
-            return false;
-        }
+    None
+}
+
+/// Whether `rest` opens with `tag`, case-insensitively, followed by a tag
+/// boundary.
+///
+/// Comparing bytes needs no char-boundary check: the names are ASCII, so a
+/// prefix that equals one ignoring ASCII case is ASCII itself and ends on a
+/// boundary.
+fn starts_with_tag(rest: &[u8], tag: &str) -> bool {
+    rest.len() >= tag.len()
+        && rest[..tag.len()].eq_ignore_ascii_case(tag.as_bytes())
         // End of input counts as a boundary: cmark-gfm filters a trailing
         // `<script` with no `>` just as it filters a complete tag.
-        rest.as_bytes()
+        && rest
             .get(tag.len())
             .is_none_or(|byte| byte.is_ascii_whitespace() || matches!(byte, b'>' | b'/'))
-    })
 }
 
 /// Whether `value` contains anything the filter would rewrite. Lets callers
@@ -158,7 +164,7 @@ mod tests {
         assert_eq!(filter("text <script"), "text &lt;script");
     }
 
-    /// The matcher before the first-byte gate, kept as the oracle.
+    /// The matcher before any first-byte dispatch, kept as the oracle.
     fn reference_matching_tag(rest: &str) -> Option<&'static str> {
         DISALLOWED.into_iter().find(|tag| {
             let Some(after) = rest.get(..tag.len()) else {
@@ -173,22 +179,21 @@ mod tests {
     }
 
     #[test]
-    fn first_byte_gate_admits_exactly_the_disallowed_initials() {
+    fn candidate_sets_hold_exactly_the_names_with_that_initial() {
         for byte in 0..=u8::MAX {
             let expected = DISALLOWED
                 .iter()
-                .any(|tag| tag.as_bytes()[0].eq_ignore_ascii_case(&byte));
-            assert_eq!(
-                STARTS_DISALLOWED[byte as usize], expected,
-                "byte {byte:#04x}"
-            );
+                .enumerate()
+                .filter(|(_, tag)| tag.as_bytes()[0].eq_ignore_ascii_case(&byte))
+                .fold(0u16, |set, (index, _)| set | 1 << index);
+            assert_eq!(CANDIDATES[byte as usize], expected, "byte {byte:#04x}");
         }
     }
 
     /// Ordinary tags and non-tags sharing an initial with a disallowed name,
     /// plus bytes the gate has to turn away.
-    const OTHER_NAMES: &str =
-        "a p P pre s span strong svg t table td i img n nav x !-- ?php é ß 😀";
+    const OTHER_NAMES: &str = "a p P pre s span strong svg small sub sup source section t table td \
+         tr th tbody thead tt i img input n nav noscript nobr x !-- ?php é ß 😀";
 
     #[test]
     fn gated_matcher_agrees_with_the_reference() {
