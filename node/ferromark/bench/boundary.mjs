@@ -12,8 +12,23 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 
 import { loadDocuments } from "./boundary/corpus.mjs";
-import { documentLanes, documentState, fixedLanes, lastResult, verify } from "./boundary/lanes.mjs";
-import { attribution, byRound, candidates, mapValues, median } from "./boundary/model.mjs";
+import { loadFacade } from "./boundary/facade.mjs";
+import {
+  documentLanes,
+  documentState,
+  fixedLanes,
+  lastResult,
+  verify,
+  verifyFixed,
+} from "./boundary/lanes.mjs";
+import {
+  attribution,
+  byRound,
+  candidates,
+  mapValues,
+  median,
+  optionComparison,
+} from "./boundary/model.mjs";
 import { printDocuments, printEnvironment, printFixed, printGroups } from "./boundary/report.mjs";
 import { measureLanes } from "./boundary/timing.mjs";
 
@@ -21,12 +36,14 @@ const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..");
 
 const settings = readSettings();
 const addon = loadAddon(settings.addon);
+const facade = await loadFacade(addon, settings.facade);
 const documents = loadDocuments(settings);
 const environment = {
   addon: addon.file,
   arch: process.arch,
   cpu: cpus()[0]?.model ?? "unknown",
   exposeGc: typeof globalThis.gc === "function",
+  facade: settings.facade,
   node: process.version,
   platform: process.platform,
   v8: process.versions.v8,
@@ -62,6 +79,7 @@ function readSettings() {
         ),
         type: "string",
       },
+      facade: { default: path.resolve(import.meta.dirname, ".."), type: "string" },
       filter: { type: "string" },
       json: { type: "string" },
       rounds: { type: "string" },
@@ -72,9 +90,10 @@ function readSettings() {
   });
   const { smoke } = values;
   return {
-    addon: values.addon,
+    addon: path.resolve(values.addon),
     batchMs: positive(values["batch-ms"], smoke ? 0.25 : 2),
     corpus: values.corpus,
+    facade: path.resolve(values.facade),
     filter: values.filter,
     json: values.json,
     rounds: Math.round(positive(values.rounds, smoke ? 3 : 15)),
@@ -108,8 +127,14 @@ function loadAddon(location) {
 }
 
 async function measureFixed() {
-  const { iterations, rounds } = await measureLanes(fixedLanes(addon.native), settings);
-  return { iterations, medians: mapValues(rounds, median), rounds };
+  verifyFixed(addon.native, facade);
+  const { iterations, rounds } = await measureLanes(fixedLanes(addon.native, facade), settings);
+  return {
+    comparison: optionComparison(rounds),
+    iterations,
+    medians: mapValues(rounds, median),
+    rounds,
+  };
 }
 
 async function measureDocument(document) {

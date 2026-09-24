@@ -23,6 +23,7 @@ use napi::{Env, JsString, JsStringLatin1};
 use napi_derive::napi;
 
 use crate::input::Utf8Input;
+use crate::packed::unpack;
 use crate::{Options, Renderer, core_options, render_one_shot};
 
 /// Returns nothing: the floor of a free-function N-API call.
@@ -145,6 +146,21 @@ pub fn core_only(
 #[napi(catch_unwind, js_name = "boundaryOptions")]
 pub fn options(options: Option<Options>) -> Result<u32> {
     let options = core_options(options)?;
+    Ok(u32::from(black_box(options).html.sanitize))
+}
+
+/// Option handling as the facade passes options now: packed into plain
+/// arguments (see `packed.rs`), unpacked and resolved like `boundaryOptions`.
+#[napi(catch_unwind, js_name = "boundaryOptionsPacked")]
+pub fn options_packed(
+    set: u32,
+    on: u32,
+    heading_offset: Option<f64>,
+    heading_id_prefix: Option<String>,
+    link_base_path: Option<String>,
+) -> Result<u32> {
+    let options = unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
+    let options = core_options(Some(options))?;
     Ok(u32::from(black_box(options).html.sanitize))
 }
 

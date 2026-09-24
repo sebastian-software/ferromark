@@ -2,6 +2,7 @@
 pub mod boundary;
 pub mod input;
 mod options;
+pub mod packed;
 
 use ferromark::{
     Allocator, HeadingIdPlanner, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks,
@@ -200,6 +201,19 @@ impl Renderer {
             parser: options.parser,
             html,
         })
+    }
+
+    /// Internal to the `ferromark` facade: the constructor with packed options.
+    #[napi(factory, catch_unwind, js_name = "withPackedOptions")]
+    pub fn with_packed_options(
+        set: u32,
+        on: u32,
+        heading_offset: Option<f64>,
+        heading_id_prefix: Option<String>,
+        link_base_path: Option<String>,
+    ) -> Result<Self> {
+        let options = packed::unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
+        Self::new(Some(options))
     }
 
     // Returns a borrow of the renderer's own output buffer. N-API copies it

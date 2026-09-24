@@ -93,3 +93,33 @@ export function candidates(rounds) {
   }
   return result;
 }
+
+// Options before and after the facade packed them, as [label, object path,
+// packed path]. The object path is what the facade called before: the export
+// that converts an `Options` object field by field. The facade rows time the
+// facade itself, so the packed side includes its validation and packing in
+// JavaScript, while the object side leaves out the facade's validation.
+const optionPairs = [
+  ["options: {}, native side", "optionsEmpty", "optionsPackedNone"],
+  ["options: { renderPolicy }, native side", "optionsTrusted", "optionsPackedTrusted"],
+  ["toHtml('', {})", "toHtmlEmptyOptions", "facadeToHtmlEmptyOptions"],
+  ["toHtml('', { renderPolicy })", "toHtmlTrusted", "facadeToHtmlTrusted"],
+  ["new Renderer({ renderPolicy })", "rendererConstructTrusted", "facadeRendererTrusted"],
+];
+
+/**
+ * Per option pair: the median of the object path, of the packed path, and of
+ * the paired per-round saving (object minus packed). An addon without the
+ * packed exports, and so its facade, has no packed path: the list is empty.
+ */
+export function optionComparison(rounds) {
+  if (!("optionsPackedNone" in rounds)) return [];
+  return optionPairs
+    .filter(([, before, after]) => before in rounds && after in rounds)
+    .map(([label, before, after]) => ({
+      after: median(rounds[after]),
+      before: median(rounds[before]),
+      label,
+      savedNs: median(rounds[before].map((value, index) => value - rounds[after][index])),
+    }));
+}

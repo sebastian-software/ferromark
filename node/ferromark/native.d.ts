@@ -3,6 +3,8 @@
 /** Reuses arena storage and HTML buffers; documents never outlive a call. */
 export declare class Renderer {
   constructor(options?: Options | undefined | null)
+  /** Internal to the `ferromark` facade: the constructor with packed options. */
+  static withPackedOptions(set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null): Renderer
   toHtml(markdown: string): string
   toHtmlBuffer(markdown: string): Buffer
 }
@@ -50,9 +52,24 @@ export declare function toHtml(markdown: string, options?: Options | undefined |
 
 export declare function toHtmlBuffer(markdown: string, options?: Options | undefined | null): Buffer
 
+/** Internal to the `ferromark` facade: `toHtmlBuffer` with packed options. */
+export declare function toHtmlBufferPacked(markdown: string, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null): Buffer
+
+/** Internal to the `ferromark` facade: `toHtml` with packed options. */
+export declare function toHtmlPacked(markdown: string, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null): string
+
 export declare function toHtmlWithRenderer(markdown: string, options: Options | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): string
 
+/**
+ * Internal to the `ferromark` facade: `toHtmlWithRenderer` with packed
+ * options.
+ */
+export declare function toHtmlWithRendererPacked(markdown: string, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): string
+
 export declare function transform(markdown: string, options?: Options | undefined | null): TransformResult
+
+/** Internal to the `ferromark` facade: `transform` with packed options. */
+export declare function transformPacked(markdown: string, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null): TransformResult
 
 export interface TransformResult {
   html: string
@@ -61,3 +78,9 @@ export interface TransformResult {
 }
 
 export declare function transformWithRenderer(markdown: string, options: Options | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): TransformResult
+
+/**
+ * Internal to the `ferromark` facade: `transformWithRenderer` with packed
+ * options.
+ */
+export declare function transformWithRendererPacked(markdown: string, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): TransformResult
