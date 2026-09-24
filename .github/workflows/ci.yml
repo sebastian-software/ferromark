@@ -395,11 +395,12 @@ jobs:
     # release. The arm64 musl addon stays inspected only; loading it needs an
     # arm runner with a musl container.
     #
-    # `verify-panic-unwind.mjs` deliberately stays out of this job. It builds a
-    # throwaway addon from source with the `panic-test` Cargo feature, which no
-    # packed addon carries, and this container has no Rust toolchain. Panic
-    # unwinding is a property of the shared `release-node` profile, and the
-    # six same-architecture `native` jobs verify it through `pnpm test`.
+    # `verify-panic-unwind.mjs` and `verify-input-conversion.mjs` deliberately
+    # stay out of this job. They build throwaway addons from source with the
+    # `panic-test` and `boundary-bench` Cargo features, which no packed addon
+    # carries, and this container has no Rust toolchain. Panic unwinding is a
+    # property of the shared `release-node` profile, and the six
+    # same-architecture `native` jobs verify both through `pnpm test`.
     name: Alpine musl runtime test
     needs: npm-packages
     runs-on: ubuntu-latest

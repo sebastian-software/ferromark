@@ -1,5 +1,6 @@
 #[cfg(feature = "boundary-bench")]
 pub mod boundary;
+pub mod input;
 mod options;
 
 use ferromark::{
@@ -10,6 +11,7 @@ use ferromark::{
 use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
 use napi_derive::napi;
 
+use crate::input::Utf8Input;
 use crate::options::{CoreOptions, addon_defaults};
 
 #[cfg(feature = "panic-test")]
@@ -156,13 +158,23 @@ fn render_one_shot(markdown: &str, options: Option<Options>) -> Result<String> {
     Ok(renderer.html.render(&document))
 }
 
+// Every export that takes Markdown converts it in one N-API pass through
+// `Utf8Input` (see `input.rs`) and declares it as `string`, as a `String`
+// argument would be. (Plain comments: doc comments on exports become the
+// published TypeScript declarations.)
 #[napi(catch_unwind)]
-pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
+pub fn to_html(
+    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    options: Option<Options>,
+) -> Result<String> {
     render_one_shot(&markdown, options)
 }
 
 #[napi(catch_unwind)]
-pub fn to_html_buffer(markdown: String, options: Option<Options>) -> Result<Buffer> {
+pub fn to_html_buffer(
+    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    options: Option<Options>,
+) -> Result<Buffer> {
     Renderer::new(options)?.to_html_buffer(markdown)
 }
 
@@ -197,12 +209,15 @@ impl Renderer {
     // its regrowth. (A plain comment: doc comments become the published
     // TypeScript declarations.)
     #[napi(catch_unwind, js_name = "toHtml")]
-    pub fn to_html(&mut self, markdown: String) -> Result<&str> {
+    pub fn to_html(&mut self, #[napi(ts_arg_type = "string")] markdown: Utf8Input) -> Result<&str> {
         self.render_reused(&markdown)
     }
 
     #[napi(catch_unwind, js_name = "toHtmlBuffer")]
-    pub fn to_html_buffer(&mut self, markdown: String) -> Result<Buffer> {
+    pub fn to_html_buffer(
+        &mut self,
+        #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    ) -> Result<Buffer> {
         Ok(self.render_reused(&markdown)?.as_bytes().to_vec().into())
     }
 }
@@ -348,14 +363,17 @@ fn render_document(
 }
 
 #[napi(catch_unwind)]
-pub fn transform(markdown: String, options: Option<Options>) -> Result<TransformResult> {
+pub fn transform(
+    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    options: Option<Options>,
+) -> Result<TransformResult> {
     render_document(&markdown, core_options(options)?, None)
 }
 
 #[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn to_html_with_renderer(
-    markdown: String,
+    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
     options: Option<Options>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
@@ -365,7 +383,7 @@ pub fn to_html_with_renderer(
 #[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn transform_with_renderer(
-    markdown: String,
+    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
     options: Option<Options>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<TransformResult> {

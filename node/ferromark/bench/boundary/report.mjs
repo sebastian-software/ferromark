@@ -166,6 +166,7 @@ function candidateTable(groups) {
   table(["group", ...candidateNames], rows);
   console.log(
     "\nPaired per round: current path minus candidate, as a share of the baseline call.\n" +
+      "singlePassInput has shipped: napi-rs's String conversion minus the exports' single pass.\n" +
       "latin1Output covers ASCII HTML only; externalOutput uses the current path for non-ASCII HTML.",
   );
   return data;
