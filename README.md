@@ -44,10 +44,13 @@ fine until an author added one more footnote.
   the document tree before rendering it.
 
 <!-- native-benchmarks -->
-On 50 real documents rendered to equivalent HTML, v2 completes Markdown to HTML
-2.1× faster than Ferromark v1, 2.6× faster than pulldown-cmark, 3.5× faster than
-md4c, and 6.0× faster than Bun's native engine (Apple M1 Pro, fresh parser
-state, 2026-09-21).
+On 50 real documents that five native engines render to equivalent HTML, v2
+completes Markdown to HTML 2.1× faster than Ferromark v1, 2.7× faster than
+pulldown-cmark, 3.6× faster than md4c, and 6.2× faster than Bun's native engine
+on Apple Silicon (Apple M1 Pro, fresh parser state, 2026-09-24). On Linux x86-64
+(GitHub-hosted runner, AMD EPYC 7763, 2026-09-24) the four ratios are 2.1×,
+2.5×, 3.2×, and 4.7×; that runner is shared, so
+[compare the ratios, not the times](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/native-comparison/README.md#what-a-ci-report-can-and-cannot-claim).
 <!-- /native-benchmarks -->
 
 [Syntax and features](https://ferromark.dev/guide/features),

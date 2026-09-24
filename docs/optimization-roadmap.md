@@ -120,6 +120,18 @@ and two AMD EPYC 7763. The round also found that on x86, code placement moves
 stages a change does not touch by ±2–3%, consistently on all three hosts, and it
 used a placebo build to tell that apart from real cost.
 
+The native comparison of release 2.1.2 (`09e5e866`) is published for two
+platforms, each from its own report. On the
+[M1 Pro](reports/2026-09-24-native-macos-arm64/README.md), v2 measures 2.14× v1,
+2.72× pulldown-cmark, 3.62× md4c and 6.24× Bun's native engine fresh on the 50
+five-engine documents, and 1.25× OX on the 14 all-six documents. On a
+[GitHub-hosted AMD EPYC 7763](reports/2026-09-24-native-linux-x86-64/README.md)
+the same ratios are 2.09×, 2.48×, 3.24×, 4.68× and 1.39×. Of the two
+[repeat runs](reports/2026-09-24-native-linux-x86-64-repeats/README.md), the one
+on another EPYC 7763 agrees within 0.03 on every headline ratio, and the one on
+an EPYC 9V74 differs by up to 0.24. PGO gives v2 1.23× (M1 Pro) and 1.28× (EPYC
+7763) fresh on the held-out half.
+
 ## Next questions
 
 The [iteration-round report](reports/2026-09-15-arm-iterations/README.md) ranked

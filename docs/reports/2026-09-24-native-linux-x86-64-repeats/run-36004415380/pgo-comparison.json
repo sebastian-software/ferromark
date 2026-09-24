@@ -1,0 +1,122 @@
+{
+  "held_out_documents": 28,
+  "engine_profile_data": {
+    "v2": "rust-pgo",
+    "ox-content": "rust-pgo",
+    "v1": "rust-pgo",
+    "pulldown-cmark": "rust-pgo",
+    "bun": "rust-pgo-partial: Rust crates only; the C++ Highway/support objects are clang -O3 without PGO",
+    "md4c": "none: the C engine is clang -O3 without PGO; only its Rust FFI wrapper is in the Rust build"
+  },
+  "speedup_default_over_pgo_time": {
+    "v2": {
+      "fresh": {
+        "geomean": 1.2352838670882622,
+        "min": 1.0743838931075331,
+        "max": 1.3722177898300965
+      },
+      "reuse": {
+        "geomean": 1.2224222899404855,
+        "min": 1.0715591257093058,
+        "max": 1.344681101064031
+      }
+    },
+    "ox-content": {
+      "fresh": {
+        "geomean": 1.1806897939317222,
+        "min": 1.055049069719286,
+        "max": 1.315973387548202
+      },
+      "reuse": {
+        "geomean": 1.1889627974015262,
+        "min": 1.0653389393201353,
+        "max": 1.389759561126992
+      }
+    },
+    "v1": {
+      "fresh": {
+        "geomean": 1.208144536360895,
+        "min": 0.9675934757944525,
+        "max": 1.4776398585841668
+      },
+      "reuse": {
+        "geomean": 1.2258560872601187,
+        "min": 0.9681185439407279,
+        "max": 1.4644170781856762
+      }
+    },
+    "md4c": {
+      "fresh": {
+        "geomean": 1.0170643647765143,
+        "min": 0.9666908044245222,
+        "max": 1.1277813898227476
+      },
+      "reuse": {
+        "geomean": 1.0106640222178933,
+        "min": 0.969056798751035,
+        "max": 1.1102858503129578
+      }
+    },
+    "pulldown-cmark": {
+      "fresh": {
+        "geomean": 1.2086624348098085,
+        "min": 1.1200786068963602,
+        "max": 1.3043700132286893
+      },
+      "reuse": {
+        "geomean": 1.217501224011792,
+        "min": 1.1255474155388157,
+        "max": 1.3090929739527375
+      }
+    },
+    "bun": {
+      "fresh": {
+        "geomean": 1.0187234428017988,
+        "min": 0.8462332773241203,
+        "max": 1.2825719323465308
+      },
+      "reuse": {
+        "geomean": 1.0181003353114961,
+        "min": 0.852338820585411,
+        "max": 1.2781875972587682
+      }
+    }
+  },
+  "v2_relative_throughput": {
+    "ox-content": {
+      "documents": 5,
+      "default_fresh": 1.3915930155834377,
+      "default_reuse": 1.240372326354433,
+      "pgo_fresh": 1.4549400591958566,
+      "pgo_reuse": 1.251024417254339
+    },
+    "v1": {
+      "documents": 24,
+      "default_fresh": 1.9975127006336098,
+      "default_reuse": 1.8990937128735468,
+      "pgo_fresh": 2.0127543181364347,
+      "pgo_reuse": 1.8605421901469186
+    },
+    "md4c": {
+      "documents": 24,
+      "default_fresh": 3.0542432105671407,
+      "default_reuse": 3.1660527543563863,
+      "pgo_fresh": 3.6912065466076434,
+      "pgo_reuse": 3.803556545219807
+    },
+    "pulldown-cmark": {
+      "documents": 24,
+      "default_fresh": 2.274903296500122,
+      "default_reuse": 2.3395369290757477,
+      "pgo_fresh": 2.3129541716038386,
+      "pgo_reuse": 2.3304050291041705
+    },
+    "bun": {
+      "documents": 24,
+      "default_fresh": 4.091822425381817,
+      "default_reuse": 4.423607160111269,
+      "pgo_fresh": 4.874009625729977,
+      "pgo_reuse": 5.200140339321847
+    }
+  }
+}

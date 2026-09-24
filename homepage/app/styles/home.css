@@ -101,10 +101,34 @@
 .landing-evidence code {
   font: 0.9em var(--mono);
 }
-.landing-figures {
+/* One column per platform. The subgrid keeps both heads the same height, so the
+   same engine sits on the same row in every column. */
+.landing-platforms {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
+  grid-template-rows: auto auto;
+  gap: 1.5rem 2rem;
+  align-content: start;
+}
+.landing-platform {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+}
+.landing-platform-head h3 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+.landing-platform-head p {
+  margin: 0.25rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.landing-figures {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
   margin: 0;
   align-content: start;
 }

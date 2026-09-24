@@ -10,16 +10,20 @@ evidence live on the website; the README introduces the product and its first
 working example. Edit the Rust and Node.js sections under `homepage/app/routes/`,
 with common behavior in `guide/` and navigation in `homepage/app/navigation.ts`.
 
-Run `python3 scripts/publish-native-readme.py` after archiving a new native
-comparison report. It regenerates the website benchmark guide, the homepage
-figures in `homepage/app/data/native-benchmarks.json`, and the sentence between
-the `<!-- native-benchmarks -->` markers in both `README.md.src` and the
-generated `README.md`, all from that one archive. `--check` verifies the three
-against the archived measurements in CI. The wrapper runs the frozen publisher in
-a temporary copy, preserving report checksums. Do not edit the generated block
-or format generated measurement tables independently of the publisher; the
-markers are the only README content the wrapper touches, so the mdtheme check
-still passes.
+The native comparison is published for two platforms, Apple Silicon and Linux
+x86-64, each from its own archived report. After archiving a new report, point
+its platform in `REPORTS` at the top of `scripts/publish-native-readme.py` at
+the new directory and run `python3 scripts/publish-native-readme.py`. It
+regenerates the website benchmark guide, the homepage figures in
+`homepage/app/data/native-benchmarks.json`, and the sentences between the
+`<!-- native-benchmarks -->` markers in both `README.md.src` and the generated
+`README.md`, all from those archives. `--check` verifies the three against the
+archived measurements in CI. The wrapper only reads each report's data files and
+its archived `harness/report.py`, preserving report checksums; it refuses a
+report measured on a different platform than the slot it is assigned to. Do not
+edit the generated block or format generated measurement tables independently
+of the publisher; the markers are the only README content the wrapper touches,
+so the mdtheme check still passes.
 
 The npm README retains its separate compact family generator:
 `node scripts/check-readme-family.mjs --write`.

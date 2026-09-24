@@ -1,0 +1,538 @@
+{
+  "rounds": 3,
+  "samples": 6,
+  "window_ms": 40,
+  "warmup_ms": 60,
+  "seed": 20260914,
+  "jobs": [
+    {
+      "name": "comment-question",
+      "profile": "gfm",
+      "members": [
+        "comment-question"
+      ]
+    },
+    {
+      "name": "comment-links",
+      "profile": "gfm",
+      "members": [
+        "comment-links"
+      ]
+    },
+    {
+      "name": "comment-quote",
+      "profile": "gfm",
+      "members": [
+        "comment-quote"
+      ]
+    },
+    {
+      "name": "comment-inline-code",
+      "profile": "gfm",
+      "members": [
+        "comment-inline-code"
+      ]
+    },
+    {
+      "name": "comment-table",
+      "profile": "gfm",
+      "members": [
+        "comment-table"
+      ]
+    },
+    {
+      "name": "comment-incident",
+      "profile": "gfm",
+      "members": [
+        "comment-incident"
+      ]
+    },
+    {
+      "name": "legacy-contributing",
+      "profile": "gfm",
+      "members": [
+        "legacy-contributing"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-2",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-migration-0-2"
+      ]
+    },
+    {
+      "name": "legacy-docs-migration-0-4",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-migration-0-4"
+      ]
+    },
+    {
+      "name": "legacy-docs-releasing",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-releasing"
+      ]
+    },
+    {
+      "name": "legacy-docs-markdown-extensions",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-markdown-extensions"
+      ]
+    },
+    {
+      "name": "legacy-docs-readme",
+      "profile": "gfm",
+      "members": [
+        "legacy-docs-readme"
+      ]
+    },
+    {
+      "name": "rust-book-ch03-04-comments",
+      "profile": "gfm",
+      "members": [
+        "rust-book-ch03-04-comments"
+      ]
+    },
+    {
+      "name": "rust-book-ch00-00-introduction",
+      "profile": "gfm",
+      "members": [
+        "rust-book-ch00-00-introduction"
+      ]
+    },
+    {
+      "name": "vue-docs-ways-of-using-vue",
+      "profile": "gfm",
+      "members": [
+        "vue-docs-ways-of-using-vue"
+      ]
+    },
+    {
+      "name": "vue-docs-slots",
+      "profile": "gfm",
+      "members": [
+        "vue-docs-slots"
+      ]
+    },
+    {
+      "name": "vite-docs-philosophy",
+      "profile": "gfm",
+      "members": [
+        "vite-docs-philosophy"
+      ]
+    },
+    {
+      "name": "vite-docs-api-plugin",
+      "profile": "gfm",
+      "members": [
+        "vite-docs-api-plugin"
+      ]
+    },
+    {
+      "name": "typescript-handbook-the-handbook",
+      "profile": "gfm",
+      "members": [
+        "typescript-handbook-the-handbook"
+      ]
+    },
+    {
+      "name": "typescript-handbook-compiler-options",
+      "profile": "gfm",
+      "members": [
+        "typescript-handbook-compiler-options"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-rainbow-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-article-body"
+      ]
+    },
+    {
+      "name": "wiki-tea-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-tea-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-tea-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-tea-article-body"
+      ]
+    },
+    {
+      "name": "wiki-chess-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-chess-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-chess-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-chess-article-body"
+      ]
+    },
+    {
+      "name": "wiki-volcano-first-paragraph",
+      "profile": "commonmark",
+      "members": [
+        "wiki-volcano-first-paragraph"
+      ]
+    },
+    {
+      "name": "wiki-volcano-article-body",
+      "profile": "commonmark",
+      "members": [
+        "wiki-volcano-article-body"
+      ]
+    },
+    {
+      "name": "rotating-commonmark",
+      "profile": "commonmark",
+      "members": [
+        "wiki-rainbow-first-paragraph",
+        "wiki-rainbow-article-body",
+        "wiki-tea-first-paragraph",
+        "wiki-tea-article-body",
+        "wiki-chess-first-paragraph",
+        "wiki-chess-article-body",
+        "wiki-volcano-first-paragraph",
+        "wiki-volcano-article-body"
+      ]
+    },
+    {
+      "name": "rotating-gfm",
+      "profile": "gfm",
+      "members": [
+        "comment-question",
+        "comment-links",
+        "comment-quote",
+        "comment-inline-code",
+        "comment-table",
+        "comment-incident",
+        "legacy-contributing",
+        "legacy-docs-migration-0-2",
+        "legacy-docs-migration-0-4",
+        "legacy-docs-releasing",
+        "legacy-docs-markdown-extensions",
+        "legacy-docs-readme",
+        "rust-book-ch03-04-comments",
+        "rust-book-ch00-00-introduction",
+        "vue-docs-ways-of-using-vue",
+        "vue-docs-slots",
+        "vite-docs-philosophy",
+        "vite-docs-api-plugin",
+        "typescript-handbook-the-handbook",
+        "typescript-handbook-compiler-options"
+      ]
+    }
+  ],
+  "modes": [
+    "fresh",
+    "reuse"
+  ],
+  "engines": [
+    "v2",
+    "ox-content",
+    "v1",
+    "md4c",
+    "pulldown-cmark",
+    "bun"
+  ],
+  "host_before": {
+    "time_utc": "2026-09-24T14:35:41Z",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "load_average": [
+      1.0966796875,
+      1.14501953125,
+      0.89404296875
+    ],
+    "proc_stat_cpu": {
+      "user": 120781,
+      "nice": 2,
+      "system": 7342,
+      "idle": 280630,
+      "iowait": 1852,
+      "irq": 0,
+      "softirq": 91,
+      "steal": 0,
+      "guest": 0,
+      "guest_nice": 0
+    },
+    "cpu_mhz": [
+      3242.244,
+      3241.009,
+      3248.455,
+      3227.357
+    ],
+    "thermal": "no thermal zones exposed"
+  },
+  "observations": [
+    {
+      "round": 0,
+      "before": {
+        "time_utc": "2026-09-24T14:35:41Z",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "load_average": [
+          1.0966796875,
+          1.14501953125,
+          0.89404296875
+        ],
+        "proc_stat_cpu": {
+          "user": 120782,
+          "nice": 2,
+          "system": 7342,
+          "idle": 280631,
+          "iowait": 1852,
+          "irq": 0,
+          "softirq": 91,
+          "steal": 0,
+          "guest": 0,
+          "guest_nice": 0
+        },
+        "cpu_mhz": [
+          3242.857,
+          3242.582,
+          3280.216,
+          3292.926
+        ],
+        "thermal": "no thermal zones exposed"
+      },
+      "after": {
+        "time_utc": "2026-09-24T14:37:35Z",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "load_average": [
+          1.05029296875,
+          1.10888671875,
+          0.91748046875
+        ],
+        "proc_stat_cpu": {
+          "user": 133105,
+          "nice": 2,
+          "system": 7625,
+          "idle": 313567,
+          "iowait": 1853,
+          "irq": 0,
+          "softirq": 94,
+          "steal": 0,
+          "guest": 0,
+          "guest_nice": 0
+        },
+        "cpu_mhz": [
+          3353.444,
+          3114.447,
+          3240.369,
+          3241.841
+        ],
+        "thermal": "no thermal zones exposed"
+      }
+    },
+    {
+      "round": 1,
+      "before": {
+        "time_utc": "2026-09-24T14:37:35Z",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "load_average": [
+          1.05029296875,
+          1.10888671875,
+          0.91748046875
+        ],
+        "proc_stat_cpu": {
+          "user": 133106,
+          "nice": 2,
+          "system": 7626,
+          "idle": 313570,
+          "iowait": 1853,
+          "irq": 0,
+          "softirq": 94,
+          "steal": 0,
+          "guest": 0,
+          "guest_nice": 0
+        },
+        "cpu_mhz": [
+          3353.444,
+          3114.447,
+          3240.369,
+          3242.171
+        ],
+        "thermal": "no thermal zones exposed"
+      },
+      "after": {
+        "time_utc": "2026-09-24T14:39:29Z",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "load_average": [
+          1.06982421875,
+          1.10009765625,
+          0.93896484375
+        ],
+        "proc_stat_cpu": {
+          "user": 145441,
+          "nice": 2,
+          "system": 7928,
+          "idle": 346499,
+          "iowait": 1853,
+          "irq": 0,
+          "softirq": 96,
+          "steal": 0,
+          "guest": 0,
+          "guest_nice": 0
+        },
+        "cpu_mhz": [
+          3221.177,
+          3243.085,
+          3363.507,
+          3284.687
+        ],
+        "thermal": "no thermal zones exposed"
+      }
+    },
+    {
+      "round": 2,
+      "before": {
+        "time_utc": "2026-09-24T14:39:29Z",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "load_average": [
+          1.06982421875,
+          1.10009765625,
+          0.93896484375
+        ],
+        "proc_stat_cpu": {
+          "user": 145442,
+          "nice": 2,
+          "system": 7928,
+          "idle": 346505,
+          "iowait": 1853,
+          "irq": 0,
+          "softirq": 96,
+          "steal": 0,
+          "guest": 0,
+          "guest_nice": 0
+        },
+        "cpu_mhz": [
+          3315.266,
+          3242.298,
+          2445.43,
+          2445.43
+        ],
+        "thermal": "no thermal zones exposed"
+      },
+      "after": {
+        "time_utc": "2026-09-24T14:41:23Z",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "load_average": [
+          1.0390625,
+          1.07763671875,
+          0.95556640625
+        ],
+        "proc_stat_cpu": {
+          "user": 157767,
+          "nice": 2,
+          "system": 8216,
+          "idle": 379468,
+          "iowait": 1853,
+          "irq": 0,
+          "softirq": 99,
+          "steal": 0,
+          "guest": 0,
+          "guest_nice": 0
+        },
+        "cpu_mhz": [
+          3240.386,
+          2445.43,
+          3246.58,
+          3241.45
+        ],
+        "thermal": "no thermal zones exposed"
+      }
+    }
+  ],
+  "case_filter": "^(comment-question|comment-links|comment-quote|comment-inline-code|comment-table|comment-incident|legacy-contributing|legacy-docs-migration-0-2|legacy-docs-migration-0-4|legacy-docs-releasing|legacy-docs-markdown-extensions|legacy-docs-readme|rust-book-ch03-04-comments|rust-book-ch00-00-introduction|vue-docs-ways-of-using-vue|vue-docs-slots|vite-docs-philosophy|vite-docs-api-plugin|typescript-handbook-the-handbook|typescript-handbook-compiler-options|wiki-rainbow-first-paragraph|wiki-rainbow-article-body|wiki-tea-first-paragraph|wiki-tea-article-body|wiki-chess-first-paragraph|wiki-chess-article-body|wiki-volcano-first-paragraph|wiki-volcano-article-body)$",
+  "case_filter_file": "docs/reports/2026-09-16-arm-round-3/harness/filter-broad-test.txt",
+  "cases": [
+    "comment-question",
+    "comment-links",
+    "comment-quote",
+    "comment-inline-code",
+    "comment-table",
+    "comment-incident",
+    "legacy-contributing",
+    "legacy-docs-migration-0-2",
+    "legacy-docs-migration-0-4",
+    "legacy-docs-releasing",
+    "legacy-docs-markdown-extensions",
+    "legacy-docs-readme",
+    "rust-book-ch03-04-comments",
+    "rust-book-ch00-00-introduction",
+    "vue-docs-ways-of-using-vue",
+    "vue-docs-slots",
+    "vite-docs-philosophy",
+    "vite-docs-api-plugin",
+    "typescript-handbook-the-handbook",
+    "typescript-handbook-compiler-options",
+    "wiki-rainbow-first-paragraph",
+    "wiki-rainbow-article-body",
+    "wiki-tea-first-paragraph",
+    "wiki-tea-article-body",
+    "wiki-chess-first-paragraph",
+    "wiki-chess-article-body",
+    "wiki-volcano-first-paragraph",
+    "wiki-volcano-article-body"
+  ],
+  "corpus_case_count": 57,
+  "runner_sha256": "2efd45977f7def07e80b2014ab9e2556d27b81de576e0c54c22d46e6a4b41ee2",
+  "verifier_sha256": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018",
+  "corpus_sha256": "e8b7e468863b14a90ec4fe2b0ac54382dcc327c513ce9b9fdce8e871f8ffff43",
+  "aggregation": "Per-engine median of per-process round medians; equal-document geometric mean of time ratios.",
+  "lifecycle": "Fresh: new parser and owned HTML. Reuse: retained arenas/scratch/output where public API permits; Bun still uses its fresh owned-output API.",
+  "host_after": {
+    "time_utc": "2026-09-24T14:41:23Z",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "load_average": [
+      1.0390625,
+      1.07763671875,
+      0.95556640625
+    ],
+    "proc_stat_cpu": {
+      "user": 157770,
+      "nice": 2,
+      "system": 8216,
+      "idle": 379476,
+      "iowait": 1853,
+      "irq": 0,
+      "softirq": 99,
+      "steal": 0,
+      "guest": 0,
+      "guest_nice": 0
+    },
+    "cpu_mhz": [
+      2445.43,
+      2445.43,
+      2445.43,
+      3242.208
+    ],
+    "thermal": "no thermal zones exposed"
+  }
+}
