@@ -1,3 +1,5 @@
+#[cfg(feature = "boundary-bench")]
+pub mod boundary;
 mod options;
 
 use ferromark::{
@@ -142,15 +144,21 @@ fn parse_error(error: ferromark::ParseError) -> Error {
     Error::new(Status::InvalidArg, error.to_string())
 }
 
-#[napi(catch_unwind)]
-pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
+/// The Rust side of `toHtml`, shared with the `boundary-bench` diagnostics so
+/// they time exactly the code the export runs.
+fn render_one_shot(markdown: &str, options: Option<Options>) -> Result<String> {
     // A one-shot renderer is dropped with this call, so its output buffer is
     // handed over whole rather than copied out of a borrow.
     let mut renderer = Renderer::new(options)?;
-    let document = Parser::with_options(&renderer.allocator, &markdown, renderer.parser.clone())
+    let document = Parser::with_options(&renderer.allocator, markdown, renderer.parser.clone())
         .parse()
         .map_err(parse_error)?;
     Ok(renderer.html.render(&document))
+}
+
+#[napi(catch_unwind)]
+pub fn to_html(markdown: String, options: Option<Options>) -> Result<String> {
+    render_one_shot(&markdown, options)
 }
 
 #[napi(catch_unwind)]
@@ -190,25 +198,24 @@ impl Renderer {
     // TypeScript declarations.)
     #[napi(catch_unwind, js_name = "toHtml")]
     pub fn to_html(&mut self, markdown: String) -> Result<&str> {
-        self.allocator.reset();
-        let document = Parser::with_options(&self.allocator, &markdown, self.parser.clone())
-            .parse()
-            .map_err(parse_error)?;
-        Ok(self.html.render_borrowed(&document))
+        self.render_reused(&markdown)
     }
 
     #[napi(catch_unwind, js_name = "toHtmlBuffer")]
     pub fn to_html_buffer(&mut self, markdown: String) -> Result<Buffer> {
+        Ok(self.render_reused(&markdown)?.as_bytes().to_vec().into())
+    }
+}
+
+impl Renderer {
+    /// The Rust side of the reused `toHtml` and `toHtmlBuffer`, shared with
+    /// the `boundary-bench` diagnostics so they time exactly this code.
+    fn render_reused(&mut self, markdown: &str) -> Result<&str> {
         self.allocator.reset();
-        let document = Parser::with_options(&self.allocator, &markdown, self.parser.clone())
+        let document = Parser::with_options(&self.allocator, markdown, self.parser.clone())
             .parse()
             .map_err(parse_error)?;
-        Ok(self
-            .html
-            .render_borrowed(&document)
-            .as_bytes()
-            .to_vec()
-            .into())
+        Ok(self.html.render_borrowed(&document))
     }
 }
 

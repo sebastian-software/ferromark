@@ -1,0 +1,208 @@
+// The timed lanes. Each lane runs `k` units: `k` calls, or for the core loops
+// one call of `k` iterations. Every lane is its own loop, so V8 optimizes each
+// call site separately, and every result lands in `sink`.
+
+import { representation } from "./corpus.mjs";
+
+let sink;
+
+/** The last lane result, read once so no lane result is dead. */
+export function lastResult() {
+  return sink;
+}
+
+/** Per-document state shared by verification and the lanes. */
+export function documentState(native, document) {
+  const { markdown } = document;
+  const probe = new native.BoundaryProbe(markdown);
+  return {
+    bytes: Buffer.from(markdown, "utf8"),
+    encoder: new TextEncoder(),
+    html: probe.html(),
+    markdown,
+    native,
+    outputAscii: probe.htmlIsAscii,
+    outputBytes: probe.htmlByteLength,
+    outputRepresentation: representation(native.toHtml(markdown)),
+    probe,
+    renderer: new native.Renderer(),
+    scratch: new Uint8Array(markdown.length * 3 + 16),
+  };
+}
+
+function encodeIntoLength({ encoder, native, scratch }, markdown) {
+  const { written } = encoder.encodeInto(markdown, scratch);
+  return native.boundaryBytesLen(scratch.subarray(0, written));
+}
+
+const utf8 = (buffer) => buffer.toString("utf8");
+
+function outputChecks({ html, markdown, native, outputAscii, probe, renderer }) {
+  return {
+    "Renderer.toHtml": renderer.toHtml(markdown) === html,
+    "Renderer.toHtmlBuffer": utf8(renderer.toHtmlBuffer(markdown)) === html,
+    boundaryToHtmlExternal: native.boundaryToHtmlExternal(markdown) === html,
+    htmlBuffer: utf8(probe.htmlBuffer()) === html,
+    htmlBufferCopy: utf8(probe.htmlBufferCopy()) === html,
+    htmlLatin1: !outputAscii || probe.htmlLatin1() === html,
+    toHtml: native.toHtml(markdown) === html,
+    toHtmlBuffer: utf8(native.toHtmlBuffer(markdown)) === html,
+  };
+}
+
+function partChecks(state, inputBytes) {
+  const { bytes, markdown, native, outputBytes } = state;
+  const threeOutputs = (outputBytes * 3) >>> 0;
+  return {
+    boundaryBytesLen: native.boundaryBytesLen(bytes) === inputBytes,
+    boundaryEcho: native.boundaryEcho(markdown) === markdown,
+    boundaryLen: native.boundaryLen(markdown) === inputBytes,
+    boundaryLenSinglePass: native.boundaryLenSinglePass(markdown) === inputBytes,
+    boundaryMake: native.boundaryMake(outputBytes).length === outputBytes,
+    coreFresh: native.boundaryCoreOnly(markdown, 3, "fresh") === threeOutputs,
+    coreReuse: native.boundaryCoreOnly(markdown, 3, "reuse") === threeOutputs,
+    coreSetup: native.boundaryCoreOnly("", 3, "setup") === 3,
+    encodeIntoLen: encodeIntoLength(state, markdown) === inputBytes,
+  };
+}
+
+/** Output equality comes before timing: every lane must produce what it claims. */
+export function verify(document, state) {
+  const checks = { ...outputChecks(state), ...partChecks(state, document.inputBytes) };
+  const failed = Object.keys(checks).filter((name) => !checks[name]);
+  if (failed.length > 0) {
+    throw new Error(`${document.name}: output mismatch in ${failed.join(", ")}`);
+  }
+}
+
+// The public exports, exactly as the package calls them.
+function publicLanes({ markdown, native, renderer }) {
+  return {
+    rendererToHtml(k) {
+      for (let i = 0; i < k; i++) sink = renderer.toHtml(markdown);
+    },
+    rendererToHtmlBuffer(k) {
+      for (let i = 0; i < k; i++) sink = renderer.toHtmlBuffer(markdown);
+    },
+    toHtml(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtml(markdown);
+    },
+    toHtmlBuffer(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtmlBuffer(markdown);
+    },
+  };
+}
+
+// Call floors, input and output conversion.
+function boundaryLanes({ markdown, native, outputBytes, probe }) {
+  return {
+    echo(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryEcho(markdown);
+    },
+    html(k) {
+      for (let i = 0; i < k; i++) sink = probe.html();
+    },
+    htmlBuffer(k) {
+      for (let i = 0; i < k; i++) sink = probe.htmlBuffer();
+    },
+    len(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryLen(markdown);
+    },
+    make(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryMake(outputBytes);
+    },
+    methodNoop(k) {
+      for (let i = 0; i < k; i++) sink = probe.noop();
+    },
+    noop(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryNoop();
+    },
+  };
+}
+
+// The Rust core, `k` iterations inside one call.
+function coreLanes({ markdown, native }) {
+  return {
+    coreFresh(k) {
+      sink = native.boundaryCoreOnly(markdown, k, "fresh");
+    },
+    coreReuse(k) {
+      sink = native.boundaryCoreOnly(markdown, k, "reuse");
+    },
+    coreSetup(k) {
+      sink = native.boundaryCoreOnly("", k, "setup");
+    },
+  };
+}
+
+// Prototypes of the reductions README.md describes.
+function candidateLanes({ bytes, encoder, markdown, native, outputAscii, probe, scratch }) {
+  const lanes = {
+    bytesLen(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryBytesLen(bytes);
+    },
+    encodeIntoLen(k) {
+      for (let i = 0; i < k; i++) {
+        const { written } = encoder.encodeInto(markdown, scratch);
+        sink = native.boundaryBytesLen(scratch.subarray(0, written));
+      }
+    },
+    htmlBufferCopy(k) {
+      for (let i = 0; i < k; i++) sink = probe.htmlBufferCopy();
+    },
+    lenSinglePass(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryLenSinglePass(markdown);
+    },
+    toHtmlExternal(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryToHtmlExternal(markdown);
+    },
+  };
+  if (outputAscii) {
+    lanes.htmlLatin1 = (k) => {
+      for (let i = 0; i < k; i++) sink = probe.htmlLatin1();
+    };
+  }
+  return lanes;
+}
+
+/** Every per-document lane. */
+export function documentLanes(state) {
+  return {
+    ...publicLanes(state),
+    ...boundaryLanes(state),
+    ...coreLanes(state),
+    ...candidateLanes(state),
+  };
+}
+
+/** Document-independent costs: call floors, options and renderer setup. */
+export function fixedLanes(native) {
+  const probe = new native.BoundaryProbe("");
+  const trusted = { renderPolicy: "trusted" };
+  const empty = {};
+  const { coreSetup } = coreLanes({ markdown: "", native });
+  const { methodNoop, noop } = boundaryLanes({ markdown: "", native, outputBytes: 0, probe });
+  return {
+    coreSetup,
+    methodNoop,
+    noop,
+    optionsEmpty(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryOptions(empty);
+    },
+    optionsNone(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryOptions();
+    },
+    optionsTrusted(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryOptions(trusted);
+    },
+    rendererConstruct(k) {
+      for (let i = 0; i < k; i++) sink = new native.Renderer();
+    },
+    toHtmlEmpty(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtml("");
+    },
+    toHtmlEmptyOptions(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtml("", empty);
+    },
+  };
+}
