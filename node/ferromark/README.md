@@ -140,12 +140,10 @@ view renders like `""`. Any other value, including an `ArrayBuffer`, another
 typed array or a `DataView`, throws a `TypeError` with the code
 `ERR_INVALID_ARG_TYPE`; wrap an `ArrayBuffer` in a `Uint8Array` first.
 
-The bytes are read once per call. A highlighter passed to
-`toHtmlWithHighlighter()` or `transformWithHighlighter()` may change them
-without affecting that call, and a `Uint8Array` over a `SharedArrayBuffer` is
-copied first, so a worker may keep writing it. Do not pass a buffer that
-native code is still filling, such as the target of an unfinished
-asynchronous `fs.read()`.
+Each call copies the bytes once, after it has read the options, and renders
+from that copy. A highlighter passed to `toHtmlWithHighlighter()` or
+`transformWithHighlighter()`, or a worker writing a `SharedArrayBuffer`, can
+change the buffer without affecting the call.
 
 ## Untrusted by default
 

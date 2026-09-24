@@ -1,9 +1,8 @@
 // Markdown as UTF-8 bytes. Every entry that takes Markdown accepts a
 // `Uint8Array` (a `Buffer` is one), and renders it exactly as it renders the
-// string `Buffer#toString('utf8')` makes of it. The addon borrows the bytes
-// where that is sound and copies them where JavaScript could change them
-// during the call; see node/native/src/input.rs and
-// docs/decisions/2026-09-24-node-bytes-input.md.
+// string `Buffer#toString('utf8')` makes of it. The addon copies the bytes when
+// it first uses them, after reading the options, and renders from the copy;
+// see node/native/src/input.rs and docs/decisions/2026-09-24-node-bytes-input.md.
 /* eslint-disable max-lines */
 import assert from "node:assert/strict";
 import { once } from "node:events";
@@ -352,9 +351,9 @@ test("keeps a byte order mark where Buffer#toString keeps it", () => {
 const highlighted =
   "# Title\n\n```js\nfirst\n```\n\nBetween *text*.\n\n```\nsecond\n```\n\n## End\n";
 
-/** `text` in a resizable buffer of its own. */
-function resizableCopy(text) {
-  const buffer = new ArrayBuffer(text.length, { maxByteLength: text.length });
+/** `text` in a resizable buffer of its own, which can grow to `maxByteLength`. */
+function resizableCopy(text, maxByteLength = text.length) {
+  const buffer = new ArrayBuffer(text.length, { maxByteLength });
   const bytes = new Uint8Array(buffer);
   bytes.set(Buffer.from(text));
   return bytes;
@@ -406,6 +405,54 @@ test("copies bytes before a highlighter could change them", () => {
       bytes = mutableForms[kind]();
       const result = transformWithHighlighter(bytes, mutating, highlightOptions);
       assert.deepEqual(result, expectedTransform, label);
+    }
+  }
+});
+
+// What an option getter does to the bytes before the addon reads them.
+const getterMutations = [
+  ["overwrite", () => Buffer.from("# Before"), (bytes) => bytes.write("# After!")],
+  ["overwrite with invalid UTF-8", () => Buffer.from("# Before"), (bytes) => bytes.fill(0xff, 2)],
+  ["detach", () => new Uint8Array(Buffer.from("# Before")), (bytes) => bytes.buffer.transfer()],
+  ["shrink", () => resizableCopy("# Before", 64), (bytes) => bytes.buffer.resize(3)],
+  [
+    "grow",
+    () => resizableCopy("# Before", 64),
+    (bytes) => {
+      bytes.buffer.resize(12);
+      bytes.set(Buffer.from(" now"), 8);
+    },
+  ],
+];
+
+// The entries whose options are read on every call and which call no
+// highlighter while they render.
+const optionEntries = {
+  toHtml: (markdown, options) => toHtml(markdown, options),
+  toHtmlBuffer: (markdown, options) => toHtmlBuffer(markdown, options),
+  transform: (markdown, options) => transform(markdown, options),
+};
+
+test("renders the bytes as an option getter left them", () => {
+  // The facade reads the options, which runs their getters, before the addon
+  // reads the bytes, so the render matches the bytes at that point: whatever
+  // the getter wrote, or empty input once it detached the buffer.
+  for (const [name, render] of Object.entries(optionEntries)) {
+    for (const [mutation, create, mutate] of getterMutations) {
+      const bytes = create();
+      const options = {
+        get superscript() {
+          mutate(bytes);
+          return true;
+        },
+      };
+      const actual = outcome(() => render(bytes, options));
+      const text = bytes.byteLength === 0 ? "" : decode(bytes);
+      assert.deepEqual(
+        actual,
+        outcome(() => render(text, { superscript: true })),
+        `${name}: ${mutation}`,
+      );
     }
   }
 });

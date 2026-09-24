@@ -12,9 +12,10 @@ splits each call into four parts:
   Latin-1 or UTF-16 storage on the way. Before that, napi-rs's `String`
   conversion called it twice: a UTF-8 length pass, then a copy into a
   zero-filled buffer. Markdown passed as UTF-8 bytes (a `Buffer` or other
-  `Uint8Array`) skips this: the exports validate the bytes and borrow them.
-  The [bytes lanes](#bytes-input) time `toHtml`, `Renderer.toHtml` and
-  `toHtmlBuffer` that way next to the string calls.
+  `Uint8Array`) skips the transcoding: the exports copy the bytes into memory
+  of their own and validate the copy. The [bytes lanes](#bytes-input) time
+  `toHtml`, `Renderer.toHtml` and `toHtmlBuffer` that way next to the string
+  calls.
 - **core**: arena, parse and render in Rust.
 - **output**: `napi_create_string_utf8` decodes the HTML into a V8 string.
   `toHtmlBuffer` copies the HTML into a `Vec` and wraps it in an external
@@ -219,10 +220,11 @@ Every export that takes Markdown also takes it as UTF-8 bytes
 The bytes lanes call `toHtml`, `Renderer.toHtml` and `toHtmlBuffer` with the
 document as a `Buffer`, encoded once before timing, so one build times a caller
 that holds the string against one that holds the bytes, for example from
-`fs.readFile` without an encoding. The table pairs each API's string lane with
-its bytes lane per round and reports the median saving per size bin, and its
-share of the string call. `--two-byte` changes only the string lanes; the bytes
-are the same.
+`fs.readFile` without an encoding. Every bytes call copies the bytes before it
+validates and renders them, so the bytes lanes include that copy. The table
+pairs each API's string lane with its bytes lane per round and reports the
+median saving per size bin, and its share of the string call. `--two-byte`
+changes only the string lanes; the bytes are the same.
 
 An addon built before the exports took bytes has no bytes lanes, and the table
 shows `n/a`.
@@ -250,8 +252,9 @@ measurements, not API.
   the switch within one build. An addon built before the switch lacks
   `boundaryLenNapiString`, and the column shows `n/a` for it.
 - `bytesInput` has shipped as public API: every export takes UTF-8 bytes,
-  validates them and borrows them where that is sound. A caller who reads
-  files as `Buffer` never builds a JavaScript string at all. Its column pairs
+  copies them and validates the copy. The `boundaryBytesLen` prototype
+  borrowed them instead, which the shipped conversion does not. A caller who
+  reads files as `Buffer` never builds a JavaScript string at all. Its column pairs
   the string conversion (`len`) with the exports' own conversion of the bytes,
   `boundaryLen(Buffer)`, which replaced the `boundaryBytesLen` prototype. On an
   addon from before, which still has the prototype, the column times that

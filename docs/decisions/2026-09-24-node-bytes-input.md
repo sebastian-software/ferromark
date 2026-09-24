@@ -11,7 +11,9 @@ decode it into a string, which the addon then encoded straight back. The N-API
 boundary measurement from #435 prototyped the alternative as its `bytesInput`
 candidate: borrow the caller's bytes, validate them and render from them. It
 was the one reduction on that list that changes the public API, so it needed
-this record. Measured savings belong to the benchmark reports, not here.
+this record. The shipped version copies the bytes before it validates them;
+[Safety](#safety-always-copied-then-validated) explains why, with the cost
+of the copy. Other measured savings belong to the benchmark reports.
 
 ## Decision
 
@@ -139,69 +141,87 @@ non-string Markdown did before.
 and the generated `native.d.ts` does the same for the native exports. Passing
 an `ArrayBuffer` is a type error.
 
-## Safety: when the addon borrows
+## Safety: always copied, then validated
 
 A Rust `&str` promises valid UTF-8 for as long as it lives, and the parser and
-renderer rely on that promise, including in `unsafe` code. Borrowing a
-JavaScript-owned byte range as a `&str` is only sound while nothing can change
-those bytes. All of the addon's `unsafe` code sits in
-`node/native/src/input.rs`, the only module allowed to use it, with a `SAFETY`
-comment on every block. It borrows the bytes of a `Uint8Array` only when all
-of the following hold, and copies them otherwise.
+renderer rely on that promise, including in `unsafe` code. The bytes of a
+`Uint8Array` belong to JavaScript, and code outside the call can change them
+while it renders: a highlighter the call invokes, an option getter, a worker
+writing a `SharedArrayBuffer`, or native code that still fills the buffer,
+such as an unfinished asynchronous `fs.read()` into the same `Buffer`. The
+addon therefore never renders from that memory. Every entry copies the bytes
+into memory of its own, then validates and decodes the copy. All of the
+addon's `unsafe` code sits in `node/native/src/input.rs`, the only module
+allowed to use it, with a `SAFETY` comment on every block.
 
-**The bytes are read after the last JavaScript before the render.** napi-rs
-converts the Markdown argument first and an `Options` object after it, and
-converting options runs their getters — JavaScript that could overwrite,
-detach, transfer or resize the buffer. The argument conversion therefore only
-records the typed array's handle. The first use of the text in the export body
-asks N-API for the view's current data pointer and length, validates the
-bytes, and caches the result for the rest of the call. Through the facade, the
-options have already been read in JavaScript by then; the rule matters for the
-object-taking exports, and a test drives them with getters that overwrite,
-detach, shrink and grow the input.
+**The bytes are read after the option getters.** napi-rs converts the Markdown
+argument first and an `Options` object after it, and converting options runs
+their getters, which are JavaScript that can overwrite, detach, transfer or
+resize the buffer. The argument conversion therefore only records the typed
+array's handle. The first use of the text in the export body asks N-API for
+the view's current data pointer and length, copies the bytes and caches the
+text for the rest of the call. Through the facade, the options have already
+been read in JavaScript by then. Tests drive both the facade and the
+object-taking exports with getters that overwrite, detach, shrink and grow the
+input, and check that the render matches the bytes as the getter left them.
 
-**No JavaScript runs while the borrow lives.** `toHtml`, `toHtmlBuffer`,
-`transform`, the `Renderer` methods and their packed forms parse and render in
-Rust only. The highlighter entries call the highlighter for every code block,
-and that JavaScript could change the input mid-render, so they take a second
-argument type, `OwnedUtf8Input`: it reads the bytes at the same point but
-copies them before decoding. A highlighter that overwrites, detaches or shrinks
-the input changes nothing in that call, which the tests check. Without
-JavaScript nothing on the thread can detach or resize the buffer either,
-garbage collection does not move an `ArrayBuffer`'s backing store, and N-API
-moves a small on-heap typed array's bytes into a backing store before it
-returns their address.
+**The copy fits the memory it comes from.** For a plain `ArrayBuffer`, which
+`napi_is_arraybuffer` confirms, the copy is one `memcpy` through raw
+pointers. No other JavaScript thread can write that memory, and no JavaScript
+runs on this one during the copy. Native code racing on the same buffer can at
+most change which bytes are copied, and it cannot make the parser see invalid
+UTF-8. For a `SharedArrayBuffer`, for which V8 answers `false`, and for
+anything else the check does not confirm, the copy reads each byte with a
+relaxed atomic load, since Rust allows memory that another thread writes to be
+read only through atomics. A growable `SharedArrayBuffer` never shrinks, so
+the length read before the copy stays readable. Either copy may mix bytes from
+before and after a concurrent write, and it is validated like any other input.
+The check sits in the addon, not the facade. A facade check
+(`bytes.buffer instanceof SharedArrayBuffer`) would go through a patchable
+`buffer` getter and a realm-specific constructor, and the native exports can
+be called without the facade.
 
-**No other thread can write the bytes.** A `Uint8Array` over a
-`SharedArrayBuffer` can be written by a worker at any moment. The addon asks
-`napi_is_arraybuffer` about the view's buffer, for which V8 answers `true` only
-for a non-shared `ArrayBuffer`, and borrows only then. Everything else is
-copied first, byte by byte with relaxed atomic loads, since Rust allows memory
-that another thread writes to be read only through atomics. A copy can mix old
-and new bytes, but it is the call's own memory and is decoded like any other
-input. A growable `SharedArrayBuffer` never shrinks, so the length read before
-the copy stays readable. The check sits in the addon, not the facade: a
-facade check (`bytes.buffer instanceof SharedArrayBuffer`) would go through a
-patchable `buffer` getter and a realm-specific constructor, and the native
-exports can be called without the facade.
+**Then it is validated.** `String::from_utf8` takes a valid copy as it is,
+and anything else goes through `String::from_utf8_lossy`, so the parser only
+ever sees valid UTF-8. The copy's memory is reserved with `try_reserve_exact`,
+as the string conversion reserves its buffer. If that allocation fails, the
+call throws an error instead of aborting the process.
 
-**The borrow cannot outlive the call.** The argument types carry the lifetime
-of the call's handles, so no code can move them into anything that outlives
-the export.
+**The handles stay inside the call.** The argument type carries the lifetime
+of the call's handles, so no code can move it into anything that outlives the
+export, where the recorded handles would dangle.
 
-**Invalid bytes are never a `&str`.** Validation with `str::from_utf8` comes
-before the `&str` exists; where it fails, the addon builds an owned string
-with the replacements instead.
+Copying costs little next to what the bytes path saves. The owner measured
+borrowing against always-copy on Apple M1 Pro with PGO `boundary-bench`
+addons, pairing the string and bytes lanes per round and alternating the two
+builds over two passes. The machine was under load (15 to 40), so the numbers
+are indicative. As the geomean over the 57 broad-corpus documents of the
+bytes call's speed over the string call's:
 
-One case is outside what any addon can detect. JavaScript cannot reach a
-non-shared `ArrayBuffer` from another thread, but native code holding its data
-pointer can: an unfinished asynchronous `fs.read()` into the same `Buffer`
-writes from the thread pool. Rendering a buffer that is still being filled was
-never meaningful, and the package README states that it is not supported. The
-borrow-or-copy decision is one condition in `input.rs`, so copying every input
-instead is a small change should that contract prove too weak.
+| Entry | Borrow | Copy |
+| --- | ---: | ---: |
+| `toHtml` | 1.53× | 1.47× |
+| `Renderer.toHtml` | 1.53× | 1.49× |
+| `toHtmlBuffer` | 1.69× | 1.57× |
+
+The copy costs 3 to 8% of the bytes call, and up to about 10 to 19% of it
+below 512 B, where that is tens of nanoseconds. In exchange, no input and no
+caller behavior can break the `&str` invariant.
 
 ## Alternatives considered
+
+**Borrowing when no JavaScript runs.** The first version of this change
+borrowed the bytes of a plain `ArrayBuffer` as a `&str` for the render in the
+entries that call no JavaScript while they render, and copied only for the
+highlighter entries and shared memory. That is sound against everything
+JavaScript can do. It is not sound against native code that holds the
+buffer's data pointer and writes from another thread, such as an unfinished
+asynchronous `fs.read()` into the same `Buffer`. Such a write during the
+render would break the `&str` invariant, which is undefined behavior, not
+just wrong output. No addon can detect that case, so the borrow needed a
+documented caller contract. With a copy, the same race can only produce odd
+text. The measurement above puts the price of dropping the contract at a few
+percent of the bytes call, so the borrow was rejected.
 
 **Separate entries (`toHtmlFromBytes` and friends).** Seven more functions and
 two more `Renderer` methods, each needing its own packed native export, type
@@ -228,12 +248,6 @@ construction, at the price of a second path through the facade and a string
 round trip for exactly the inputs that need care. The comparison above showed
 Rust's decoder to be identical, and the verifier keeps checking it.
 
-**Copying always.** One copy per call is simpler to argue about and still
-avoids the string round trip, but the borrow is what the owner approved and
-what the measurement in #435 prototyped. The conditions above make it sound
-for everything JavaScript can do; the copy stays the path for shared memory
-and for the highlighter entries.
-
 ## Verification
 
 Output equality is the binding constraint, and every test compares a bytes
@@ -242,23 +256,24 @@ call with the string call of the equivalence rule:
 - **Corpus and fixtures:** all seven entries, with and without options, on the
   57 broad-corpus documents and the documents of the other Node tests, each as
   a `Buffer`, a plain `Uint8Array`, a subarray at a non-zero offset and a view
-  of a `SharedArrayBuffer` (`test/bytes.test.mjs`).
+  of a `SharedArrayBuffer` (`test/bytes.test.mjs`). The kept default renderer's
+  A-B-A sequences run with bytes as well (`test/default-renderer.test.mjs`).
 - **Invalid UTF-8:** the rendered sweep in the test suite and the exact
   conversion sweep in `scripts/verify-input-conversion.mjs`, described above,
-  for both argument types, and for every form of `Uint8Array` on the random
-  input and every eighth block of the exhaustive sweep.
-- **Borrow and copy:** the verifier checks through a `boundary-bench`
-  diagnostic that valid bytes of a plain `ArrayBuffer` are borrowed, and that
-  shared, growable shared, invalid, empty and detached input is not.
+  for every form of `Uint8Array` on the random input and every eighth block of
+  the exhaustive sweep.
+- **Copy paths:** the verifier checks through a `boundary-bench` diagnostic
+  that plain buffers are copied with `memcpy`, shared and growable shared ones
+  with atomic loads, and that empty and detached views read no bytes.
 - **Mutation:** highlighters that overwrite, detach or shrink the input, a
   worker writing a `SharedArrayBuffer` while it is rendered, and option getters
-  that change the input of the object-taking exports.
+  that change the input through the facade and through the object-taking
+  exports.
 - **Rejected values:** the class, code and message for every kind of value,
   that describing it runs none of its code, and the error order.
-- **Mutation checks** (not committed): making the highlighter entries borrow,
-  reading the bytes before the option getters, borrowing shared memory and a
-  per-byte replacement decoder each fail the suite — the first two by crashing
-  the test process with a memory fault, which is what the rules above prevent.
+- **Mutation checks** (not committed): reading the bytes before the option
+  getters, copying shared memory with `memcpy` and a per-byte replacement
+  decoder each fail the suite.
 
 The existing Node tests pass unchanged; they match the Markdown type error by
 `/string/i`, which the new message still satisfies.

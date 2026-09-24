@@ -11,11 +11,10 @@
 //!   `ERR_INVALID_ARG_TYPE`. The message names the kind of value it received,
 //!   and describing it runs no JavaScript.
 //!
-//! [`Utf8Input`] and [`OwnedUtf8Input`] both read a `Uint8Array` when the
-//! export first uses the text, after napi-rs has converted every argument.
-//! `Utf8Input` may then borrow the bytes for the rest of the call.
-//! `OwnedUtf8Input` always copies them, and the exports that call JavaScript
-//! while they render take it.
+//! [`Utf8Input`] reads a `Uint8Array` when the export first uses the text,
+//! after napi-rs has converted every argument, and always copies the bytes
+//! before it validates and decodes them. The text an export renders is
+//! therefore always its own memory.
 //!
 //! This is the addon's only module with `unsafe` code. Every block states why
 //! it is sound.
@@ -73,50 +72,44 @@
 //! (code `ERR_OUT_OF_RANGE`), because the parser stores offsets as `u32`; no
 //! JavaScript string can be that long, so only bytes need the check.
 //!
-//! ## Borrowing
+//! ## Reading and copying
 //!
 //! A `&str` promises valid UTF-8 for as long as it lives, and the parser and
-//! renderer rely on that promise, including in `unsafe` code. [`Utf8Input`]
-//! therefore borrows a `Uint8Array`'s bytes only when nothing can change them
-//! while the `&str` lives:
+//! renderer rely on that promise, including in `unsafe` code. JavaScript owns
+//! a `Uint8Array`'s memory, and code outside this call can change it: a
+//! highlighter the export calls, an option getter, a worker writing a
+//! `SharedArrayBuffer`, or native code that still fills the buffer, such as an
+//! unfinished asynchronous `fs.read`. So the text is never a borrow of that
+//! memory:
 //!
-//! 1. **It reads the bytes only when the export first uses them**, after napi-rs
-//!    has converted every argument. Converting an `Options` object runs its
+//! 1. **The bytes are read when the export first uses them**, after napi-rs has
+//!    converted every argument. Converting an `Options` object runs its
 //!    getters, which are JavaScript and can overwrite, detach or resize the
-//!    buffer. The conversion itself only records the argument's handle; the
-//!    first dereference asks N-API for the view's current data and length,
-//!    validates them, and caches the result for the rest of the call.
-//! 2. **No JavaScript runs after that.** An export that takes a
-//!    [`Utf8Input`] must not call into JavaScript between its first
-//!    dereference and its return. `toHtml`, `toHtmlBuffer`, `transform`, the
-//!    `Renderer` methods and their packed forms parse and render in Rust
-//!    only. The highlighter exports call a JavaScript function for each code
-//!    block, and that function could overwrite the input, so they take an
-//!    [`OwnedUtf8Input`] instead, which reads the bytes at the same point but
-//!    copies them before it decodes them. Without JavaScript, nothing on this
-//!    thread can detach, resize or write the buffer either. Garbage collection
-//!    does not move an `ArrayBuffer`'s backing store, and N-API moves a small
-//!    on-heap typed array's bytes into a backing store before it hands out
-//!    their address.
-//! 3. **No other thread can write the bytes.** The view's buffer must be a
-//!    plain `ArrayBuffer`, which `napi_is_arraybuffer` confirms: V8 answers
-//!    false for a `SharedArrayBuffer`, which a worker can write at any time.
-//!    Shared bytes, and any the check does not confirm, are copied first, with
-//!    relaxed atomic loads, because another thread may be writing them during
-//!    the copy. A copy may then mix old and new bytes, but it is this call's
-//!    own memory and is validated like any other input. A growable
+//!    buffer. The argument conversion only records the handle; the first
+//!    dereference asks N-API for the view's current data and length, and
+//!    caches the text for the rest of the call.
+//! 2. **They are copied, then validated.** The copy is the call's own memory,
+//!    so nothing that runs later, and nothing another thread does meanwhile,
+//!    can change the text the parser sees. Bytes of a plain `ArrayBuffer`,
+//!    which `napi_is_arraybuffer` confirms, are copied with one `memcpy`: only
+//!    this thread's JavaScript can write them, and none runs during the copy.
+//!    Native code that races on the same buffer can at most change which
+//!    bytes are copied. Bytes of a `SharedArrayBuffer`, for which V8 answers
+//!    false, and of anything else the check does not confirm, are copied with
+//!    relaxed atomic loads, because Rust allows memory that another thread
+//!    writes at the same time to be read only through atomics. A growable
 //!    `SharedArrayBuffer` never shrinks, so its first `length` bytes stay
-//!    readable. JavaScript cannot reach a plain `ArrayBuffer` from another
-//!    thread. Native code that holds its data pointer can, such as an
-//!    unfinished asynchronous `fs.read` into the same `Buffer`; no addon can
-//!    detect that, and the package contract excludes rendering such a buffer.
-//! 4. **The borrow ends with the call.** Both types carry the lifetime of the
-//!    call's argument handles, so neither can be moved into anything that
-//!    outlives the export.
-//!
-//! Invalid UTF-8 never becomes a `&str`: the first dereference validates the
-//! bytes with `str::from_utf8` and, where that fails, builds an owned `String`
-//! with the replacements instead.
+//!    readable for the copy. Either copy may mix bytes from before and after a
+//!    concurrent write, and is then validated like any other input: valid
+//!    UTF-8 becomes the text as it is, and anything else the text with its
+//!    replacements.
+//! 3. **The copy's memory is reserved fallibly**, with `try_reserve_exact`, as
+//!    the string conversion reserves its buffer. If the allocation fails, the
+//!    export throws an error instead of aborting the process. Decoding invalid
+//!    input allocates as `String::from_utf8_lossy` does.
+//! 4. **The handles stay inside the call.** `Utf8Input` carries the lifetime of
+//!    the call's argument handles, so it cannot be moved into anything that
+//!    outlives the export, where the recorded handles would dangle.
 
 // The only module of the addon allowed to use `unsafe`; see above.
 #![allow(unsafe_code)]
@@ -146,12 +139,10 @@ const MAX_CAPACITY: usize = i32::MAX as usize;
 const MAX_BYTES: usize = u32::MAX as usize;
 
 /// A Markdown argument: a string converted to UTF-8, or a `Uint8Array` whose
-/// bytes the export may borrow for the call.
+/// bytes the export copies when it first uses the text.
 ///
 /// It holds exactly the text `Buffer#toString('utf8')` makes of the bytes, and
-/// for a string exactly the bytes napi-rs's `String` conversion produces. Only
-/// an export that runs no JavaScript from its first dereference of the value
-/// to its return may take it; the module documentation has the full contract.
+/// for a string exactly the bytes napi-rs's `String` conversion produces.
 /// Exports declare it with `#[napi(ts_arg_type = "string | Uint8Array")]`.
 pub struct Utf8Input<'call> {
     source: Source,
@@ -170,66 +161,35 @@ enum Source {
 struct Bytes {
     env: sys::napi_env,
     value: sys::napi_value,
-    /// Whether to copy the bytes even where they could be borrowed.
-    copy: bool,
-    text: OnceCell<Text>,
-}
-
-enum Text {
-    /// Validated UTF-8 in the `Uint8Array`'s own memory.
-    Borrowed(*const str),
-    /// A copy, or the text with invalid UTF-8 replaced.
-    Owned(String),
+    text: OnceCell<String>,
 }
 
 impl Utf8Input<'_> {
-    /// Converts a string, or records a `Uint8Array` to read at the first
-    /// dereference: borrowed where that is sound, or always copied.
-    ///
-    /// # Safety
-    ///
-    /// `env` and `value` must be the valid handles of the current N-API call.
-    unsafe fn convert(env: sys::napi_env, value: sys::napi_value, copy: bool) -> Result<Self> {
-        // SAFETY: the caller's handles.
-        let source = match unsafe { classify(env, value) }? {
-            // SAFETY: the same handles; `value` is a string of `units` units.
-            Kind::String(units) => Source::Text(unsafe { convert_string(env, value, units) }?),
-            // The bytes are read when the export first uses them.
-            Kind::Bytes => Source::Bytes(Bytes {
-                env,
-                value,
-                copy,
-                text: OnceCell::new(),
-            }),
-        };
-        Ok(Self {
-            source,
-            call: PhantomData,
-        })
-    }
-
     /// The text, owned.
     pub fn into_string(self) -> String {
         match self.source {
             Source::Text(text) => text,
-            Source::Bytes(bytes) => bytes.text().to_owned(),
+            Source::Bytes(bytes) => {
+                bytes.text();
+                bytes.text.into_inner().unwrap_or_default()
+            }
         }
     }
 
-    /// How the text was obtained: `"string"`, or for bytes `"borrowed"` when
-    /// the export reads the `Uint8Array`'s own memory and `"owned"` when it
-    /// reads a copy or a replacement. For the boundary diagnostics.
+    /// How the text is obtained: `"string"`, or for a `Uint8Array` `"empty"`
+    /// (no bytes to read), `"copied"` (one `memcpy` from a plain
+    /// `ArrayBuffer`) or `"copied atomically"` (relaxed atomic loads, for a
+    /// `SharedArrayBuffer`). For the boundary diagnostics.
     #[cfg(feature = "boundary-bench")]
     pub fn origin(&self) -> &'static str {
         match &self.source {
             Source::Text(_) => "string",
-            Source::Bytes(bytes) => {
-                bytes.text();
-                match bytes.text.get() {
-                    Some(Text::Borrowed(_)) => "borrowed",
-                    _ => "owned",
-                }
-            }
+            // SAFETY: the handles of the current call, as for `Bytes::text`.
+            Source::Bytes(bytes) => match unsafe { view(bytes.env, bytes.value) } {
+                View::Empty => "empty",
+                View::Private(..) => "copied",
+                View::Shared(..) => "copied atomically",
+            },
         }
     }
 }
@@ -246,26 +206,14 @@ impl Deref for Utf8Input<'_> {
 }
 
 impl Bytes {
-    /// Reads the bytes on first use, then returns the same text for the rest
-    /// of the call.
+    /// Reads and copies the bytes on first use, then returns the same text for
+    /// the rest of the call.
     fn text(&self) -> &str {
         // SAFETY: `self.env` and `self.value` are the handles of the current
-        // call: `Bytes` only comes from `Utf8Input::convert`, whose lifetime
-        // keeps it inside the export. `value` is a `Uint8Array`.
-        let text = self
-            .text
-            .get_or_init(|| unsafe { read(self.env, self.value, self.copy) });
-        match text {
-            // SAFETY: `read` validated these bytes as UTF-8 in this call, after
-            // napi-rs had converted every argument. The buffer is a plain
-            // `ArrayBuffer`, so no other thread writes it, and an export that
-            // borrows runs no JavaScript from here until it returns, so nothing
-            // on this thread writes, detaches or resizes it either. The
-            // argument handle keeps the typed array alive, and the returned
-            // borrow cannot outlive `self`, which cannot outlive the call.
-            Text::Borrowed(text) => unsafe { &**text },
-            Text::Owned(text) => text,
-        }
+        // call: `Bytes` only comes from `Utf8Input::from_napi_value`, whose
+        // lifetime keeps it inside the export. `value` is a `Uint8Array`.
+        self.text
+            .get_or_init(|| unsafe { read(self.env, self.value) })
     }
 }
 
@@ -273,31 +221,20 @@ impl FromNapiValue for Utf8Input<'_> {
     unsafe fn from_napi_value(env: sys::napi_env, value: sys::napi_value) -> Result<Self> {
         // SAFETY: napi-rs passes the `env` and `value` handles of the current
         // call, and both stay valid for it.
-        unsafe { Self::convert(env, value, false) }
-    }
-}
-
-/// A Markdown argument that always owns its text.
-///
-/// The exports that call JavaScript while they render take it. A string
-/// converts as for [`Utf8Input`]. A `Uint8Array` is read at the same point, at
-/// the first dereference, but copied before it is decoded, so JavaScript that
-/// runs later, such as a highlighter, cannot change the text.
-pub struct OwnedUtf8Input<'call>(Utf8Input<'call>);
-
-impl Deref for OwnedUtf8Input<'_> {
-    type Target = str;
-
-    fn deref(&self) -> &str {
-        &self.0
-    }
-}
-
-impl FromNapiValue for OwnedUtf8Input<'_> {
-    unsafe fn from_napi_value(env: sys::napi_env, value: sys::napi_value) -> Result<Self> {
-        // SAFETY: napi-rs passes the `env` and `value` handles of the current
-        // call, and both stay valid for it.
-        unsafe { Utf8Input::convert(env, value, true) }.map(Self)
+        let source = match unsafe { classify(env, value) }? {
+            // SAFETY: the same handles; `value` is a string of `units` units.
+            Kind::String(units) => Source::Text(unsafe { convert_string(env, value, units) }?),
+            // The bytes are read when the export first uses them.
+            Kind::Bytes => Source::Bytes(Bytes {
+                env,
+                value,
+                text: OnceCell::new(),
+            }),
+        };
+        Ok(Self {
+            source,
+            call: PhantomData,
+        })
     }
 }
 
@@ -438,8 +375,8 @@ unsafe fn exact(env: sys::napi_env, value: sys::napi_value) -> Result<String> {
 enum View {
     /// No bytes: an empty, detached or out-of-bounds view.
     Empty,
-    /// Bytes of a plain `ArrayBuffer`, which only this thread's JavaScript
-    /// can write.
+    /// Bytes of a plain `ArrayBuffer`, which no other JavaScript thread can
+    /// write.
     Private(*const u8, usize),
     /// Bytes another thread may write: a `SharedArrayBuffer`'s, or those of
     /// any buffer N-API does not confirm as a plain `ArrayBuffer`.
@@ -492,37 +429,55 @@ unsafe fn view(env: sys::napi_env, value: sys::napi_value) -> View {
     }
 }
 
-/// Reads a `Uint8Array`: borrowed when it is valid UTF-8 in a plain
-/// `ArrayBuffer` and `copy` is false, otherwise owned.
+/// Reads a `Uint8Array`: copies its current bytes, then decodes the copy.
 ///
 /// # Safety
 ///
 /// `env` and `value` must be the valid handles of the current N-API call, and
 /// `value` must be a typed array.
-unsafe fn read(env: sys::napi_env, value: sys::napi_value, copy: bool) -> Text {
+unsafe fn read(env: sys::napi_env, value: sys::napi_value) -> String {
     // SAFETY: the caller's handles.
-    match unsafe { view(env, value) } {
-        View::Empty => Text::Owned(String::new()),
-        View::Private(data, length) => {
-            // SAFETY: N-API reported `length` readable bytes at `data`, a
-            // non-null pointer into the view's plain `ArrayBuffer`. No other
-            // thread writes it. A borrowing export runs no JavaScript while
-            // this slice or the text made from it lives, and a copying one
-            // drops the slice right after the copy, before it can run any.
-            let bytes = unsafe { std::slice::from_raw_parts(data, length) };
-            if copy {
-                return Text::Owned(text_from_vec(bytes.to_vec()));
-            }
-            match std::str::from_utf8(bytes) {
-                Ok(text) => Text::Borrowed(ptr::from_ref(text)),
-                Err(_) => Text::Owned(String::from_utf8_lossy(bytes).into_owned()),
-            }
-        }
+    let bytes = match unsafe { view(env, value) } {
+        View::Empty => return String::new(),
         // SAFETY: N-API reported `length` readable bytes at `data`.
-        View::Shared(data, length) => {
-            Text::Owned(text_from_vec(unsafe { copy_shared(data, length) }))
-        }
+        View::Private(data, length) => unsafe { copy_private(data, length) },
+        // SAFETY: the same.
+        View::Shared(data, length) => unsafe { copy_shared(data, length) },
+    };
+    String::from_utf8(bytes)
+        .unwrap_or_else(|error| String::from_utf8_lossy(error.as_bytes()).into_owned())
+}
+
+/// Reserves `length` bytes for a copy, or panics with a message the export
+/// throws as a JavaScript error, rather than aborting the process.
+fn reserve(length: usize) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let reserved = bytes.try_reserve_exact(length);
+    assert!(
+        reserved.is_ok(),
+        "ferromark could not allocate {length} bytes to copy the Markdown"
+    );
+    bytes
+}
+
+/// Copies the bytes of a plain `ArrayBuffer` with one `memcpy`.
+///
+/// # Safety
+///
+/// `data` must point to `length` readable bytes that stay allocated for the
+/// copy and that no JavaScript can write during it.
+unsafe fn copy_private(data: *const u8, length: usize) -> Vec<u8> {
+    let mut bytes = reserve(length);
+    // SAFETY: `data` points to `length` readable bytes, and `bytes` owns at
+    // least `length` bytes of fresh capacity, so the ranges cannot overlap.
+    // The copy goes through raw pointers and never forms a reference to the
+    // JavaScript memory. Once it has written them, the first `length` bytes
+    // are initialized.
+    unsafe {
+        ptr::copy_nonoverlapping(data, bytes.as_mut_ptr(), length);
+        bytes.set_len(length);
     }
+    bytes
 }
 
 /// Copies bytes that another thread may be writing.
@@ -535,20 +490,14 @@ unsafe fn read(env: sys::napi_env, value: sys::napi_value, copy: bool) -> Text {
 ///
 /// `data` must point to `length` bytes that stay allocated for the copy.
 unsafe fn copy_shared(data: *const u8, length: usize) -> Vec<u8> {
-    (0..length)
-        .map(|index| {
-            // SAFETY: `index` is below `length`, so the byte is allocated, and
-            // a `u8` needs no alignment. The reference lives only for the load.
-            unsafe { AtomicU8::from_ptr(data.add(index).cast_mut()) }.load(Ordering::Relaxed)
-        })
-        .collect()
-}
-
-/// Decodes owned bytes: kept as they are when valid, with each maximal
-/// invalid subpart replaced by U+FFFD otherwise.
-fn text_from_vec(bytes: Vec<u8>) -> String {
-    String::from_utf8(bytes)
-        .unwrap_or_else(|error| String::from_utf8_lossy(error.as_bytes()).into_owned())
+    let mut bytes = reserve(length);
+    for index in 0..length {
+        // SAFETY: `index` is below `length`, so the byte is allocated, and a
+        // `u8` needs no alignment. The reference lives only for the load.
+        let byte = unsafe { AtomicU8::from_ptr(data.add(index).cast_mut()) };
+        bytes.push(byte.load(Ordering::Relaxed));
+    }
+    bytes
 }
 
 /// The message for Markdown bytes above `MAX_BYTES`.

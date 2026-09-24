@@ -14,7 +14,7 @@ use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
-use crate::input::{OwnedUtf8Input, Utf8Input};
+use crate::input::Utf8Input;
 use crate::options::{CoreOptions, addon_defaults};
 
 #[cfg(feature = "panic-test")]
@@ -208,13 +208,11 @@ fn html_buffer(html: &str) -> Result<Buffer> {
 }
 
 // Every export that takes Markdown accepts a string or a `Uint8Array` of UTF-8
-// through `Utf8Input` (see `input.rs`), which may borrow the bytes for the
-// call. Such an export must run no JavaScript while it renders; the two that
-// call a highlighter take `OwnedUtf8Input`, which copies them. `toHtml`
-// creates its JavaScript string itself, from HTML the renderer still holds,
-// which runs no JavaScript either, and napi-rs declares the `JsString` it
-// returns as `string`. (Plain comments: doc comments on exports become the
-// published TypeScript declarations.)
+// through `Utf8Input` (see `input.rs`), which copies the bytes when the export
+// first uses the text. `toHtml` creates its JavaScript string itself, from HTML
+// the renderer still holds, and napi-rs declares the `JsString` it returns as
+// `string`. (Plain comments: doc comments on exports become the published
+// TypeScript declarations.)
 #[napi(catch_unwind)]
 pub fn to_html<'env>(
     env: &'env Env,
@@ -448,7 +446,7 @@ pub fn transform(
 #[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn to_html_with_renderer(
-    #[napi(ts_arg_type = "string | Uint8Array")] markdown: OwnedUtf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
@@ -458,7 +456,7 @@ pub fn to_html_with_renderer(
 #[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn transform_with_renderer(
-    #[napi(ts_arg_type = "string | Uint8Array")] markdown: OwnedUtf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<TransformResult> {

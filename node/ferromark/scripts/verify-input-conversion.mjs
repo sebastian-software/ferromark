@@ -1,15 +1,15 @@
-// Verifies how the addon converts a Markdown argument (`Utf8Input` and
-// `OwnedUtf8Input` in node/native/src/input.rs), through the `boundary-bench`
-// diagnostic exports:
+// Verifies how the addon converts a Markdown argument (`Utf8Input` in
+// node/native/src/input.rs), through the `boundary-bench` diagnostic exports:
 //
 // - Strings: the single-pass conversion returns the bytes of napi-rs's
 //   `String` conversion, which the exports used before, and of `Buffer.from`,
 //   on strings chosen to hit every representation and edge case.
-// - UTF-8 bytes: both input types return the text `Buffer#toString('utf8')`
+// - UTF-8 bytes: the conversion returns the text `Buffer#toString('utf8')`
 //   makes of the bytes, on every sequence of up to three bytes, on four-byte
 //   sequences across all byte classes, on truncated sequences and on seeded
-//   random input, in every form of `Uint8Array`. Valid bytes of a plain
-//   `ArrayBuffer` are borrowed; shared and invalid bytes are not.
+//   random input, in every form of `Uint8Array`. The bytes of a plain
+//   `ArrayBuffer` are copied with one memcpy, and those of a
+//   `SharedArrayBuffer` with atomic loads.
 // - Anything else: the `TypeError` names the value's kind and runs none of
 //   its code.
 //
@@ -120,7 +120,6 @@ function compareStrings(addon) {
     const singlePass = addon.boundaryInputBytes(text);
     assert.ok(singlePass.equals(napiString), `bytes differ from napi-rs's String: ${label}`);
     assert.ok(singlePass.equals(Buffer.from(text, "utf8")), `bytes differ from Buffer: ${label}`);
-    assert.ok(addon.boundaryOwnedInputBytes(text).equals(singlePass), `owned: ${label}`);
     assert.equal(addon.boundaryLen(text), napiString.length, label);
     assert.ok(addon.boundaryEcho(text) === text.toWellFormed(), `round trip: ${label}`);
   }
@@ -251,7 +250,7 @@ const forms = {
   },
 };
 
-/** Both input types return what `Buffer#toString('utf8')` makes of the bytes. */
+/** The conversion returns what `Buffer#toString('utf8')` makes of the bytes. */
 function compareBytes(addon) {
   let checked = 0;
   let replaced = 0;
@@ -259,11 +258,9 @@ function compareBytes(addon) {
     const expected = Buffer.from(bytes.toString("utf8"), "utf8");
     const actual = addon.boundaryInputBytes(bytes);
     assert.ok(actual.equals(expected), `bytes differ from Buffer#toString: ${label}`);
-    assert.ok(addon.boundaryOwnedInputBytes(bytes).equals(expected), `owned: ${label}`);
     if (allForms) {
       for (const [form, make] of Object.entries(forms)) {
         assert.ok(addon.boundaryInputBytes(make(bytes)).equals(expected), `${form}: ${label}`);
-        assert.ok(addon.boundaryOwnedInputBytes(make(bytes)).equals(expected), `${form}: ${label}`);
       }
     }
     checked++;
@@ -279,7 +276,7 @@ function compareBytes(addon) {
   return checked;
 }
 
-/** Valid bytes of a plain `ArrayBuffer` are borrowed, and nothing else is. */
+/** Shared bytes are copied with atomic loads, and no bytes are read from an empty view. */
 function compareOrigins(addon) {
   const text = Buffer.from("# Grüße *aus* Köln\n");
   const resizable = new Uint8Array(new ArrayBuffer(text.length, { maxByteLength: 64 }));
@@ -290,15 +287,15 @@ function compareOrigins(addon) {
   detached.buffer.transfer();
   const cases = [
     ["a string", text.toString(), "string"],
-    ["a Buffer", Buffer.from(text), "borrowed"],
-    ["a Uint8Array", new Uint8Array(text), "borrowed"],
-    ["a subarray", forms.subarray(text), "borrowed"],
-    ["a resizable buffer", resizable, "borrowed"],
-    ["invalid UTF-8", Buffer.from([0x23, 0x20, 0xff]), "owned"],
-    ["a SharedArrayBuffer", forms.SharedArrayBuffer(text), "owned"],
-    ["a growable SharedArrayBuffer", growable, "owned"],
-    ["no bytes", new Uint8Array(0), "owned"],
-    ["a detached buffer", detached, "owned"],
+    ["a Buffer", Buffer.from(text), "copied"],
+    ["a Uint8Array", new Uint8Array(text), "copied"],
+    ["a subarray", forms.subarray(text), "copied"],
+    ["a resizable buffer", resizable, "copied"],
+    ["invalid UTF-8", Buffer.from([0x23, 0x20, 0xff]), "copied"],
+    ["a SharedArrayBuffer", forms.SharedArrayBuffer(text), "copied atomically"],
+    ["a growable SharedArrayBuffer", growable, "copied atomically"],
+    ["no bytes", new Uint8Array(0), "empty"],
+    ["a detached buffer", detached, "empty"],
   ];
   for (const [label, markdown, origin] of cases) {
     assert.equal(addon.boundaryInputOrigin(markdown), origin, label);
@@ -378,13 +375,11 @@ function compareErrors(addon) {
   const ran = [];
   const values = rejectedValues(ran);
   for (const [value, received] of values) {
-    for (const convert of [addon.boundaryInputBytes, addon.boundaryOwnedInputBytes]) {
-      assert.deepEqual(
-        thrown(() => convert(value)),
-        rejection(received),
-        received,
-      );
-    }
+    assert.deepEqual(
+      thrown(() => addon.boundaryInputBytes(value)),
+      rejection(received),
+      received,
+    );
   }
   // A missing argument arrives as `undefined`.
   assert.deepEqual(
@@ -403,8 +398,8 @@ function compare(addon) {
   console.log(
     `The Markdown input conversion matches napi-rs's String conversion ` +
       `(${stored["one-byte"]} one-byte and ${stored["two-byte"]} two-byte strings) and ` +
-      `Buffer#toString('utf8') (${byteStringCount} byte strings), borrows only valid bytes ` +
-      `of a plain ArrayBuffer (${originCount} kinds of input), and rejects ` +
+      `Buffer#toString('utf8') (${byteStringCount} byte strings), copies shared bytes ` +
+      `atomically (${originCount} kinds of input), and rejects ` +
       `${rejectedCount} other values with a TypeError.`,
   );
 }

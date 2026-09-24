@@ -26,7 +26,7 @@ use napi::bindgen_prelude::{Buffer, BufferSlice, Error, Result, Status};
 use napi::{Env, JsString, JsStringLatin1};
 use napi_derive::napi;
 
-use crate::input::{OwnedUtf8Input, Utf8Input};
+use crate::input::Utf8Input;
 use crate::packed::unpack;
 use crate::{Options, Renderer, core_options, parse_error, render_fresh, render_one_shot};
 
@@ -37,7 +37,7 @@ pub fn noop() {}
 /// Input conversion only, as the public exports convert Markdown.
 ///
 /// A string takes one `napi_get_value_string_utf8` pass into a reserved
-/// buffer, and a `Uint8Array` has its bytes read and validated. The text is
+/// buffer, and a `Uint8Array` has its bytes copied and validated. The text is
 /// dropped again.
 #[napi(catch_unwind, js_name = "boundaryLen")]
 pub fn len(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> u32 {
@@ -58,18 +58,11 @@ pub fn input_bytes(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8In
     markdown.into_string().into_bytes().into()
 }
 
-/// The UTF-8 text the highlighter exports convert a string or bytes to, from
-/// a copy of the bytes rather than a borrow.
-#[napi(catch_unwind, js_name = "boundaryOwnedInputBytes")]
-pub fn owned_input_bytes(
-    #[napi(ts_arg_type = "string | Uint8Array")] markdown: OwnedUtf8Input,
-) -> Buffer {
-    markdown.as_bytes().to_vec().into()
-}
-
-/// How the public exports obtain the text: `"string"`, or for bytes
-/// `"borrowed"` (the `Uint8Array`'s own memory) or `"owned"` (a copy or a
-/// replacement of invalid UTF-8).
+/// How the public exports obtain the text.
+///
+/// `"string"` for a string; for bytes `"empty"`, `"copied"` (one `memcpy`
+/// from a plain `ArrayBuffer`) or `"copied atomically"` (relaxed atomic loads
+/// from a `SharedArrayBuffer`).
 #[napi(catch_unwind, js_name = "boundaryInputOrigin")]
 pub fn input_origin(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
