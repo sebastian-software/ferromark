@@ -24,6 +24,11 @@ path = "src/bin/pgo_train.rs"
 required-features = ["pgo-train"]
 
 [features]
+# Diagnostic N-API exports for `node/ferromark/bench/boundary.mjs`. Like
+# `panic-test`, never part of a published addon: `build-native.mjs` builds it
+# only into an isolated output directory. `napi10` adds the external-string
+# call one candidate prototypes; it touches no code the public exports run.
+boundary-bench = ["napi/napi10"]
 panic-test = []
 pgo-train = []
 

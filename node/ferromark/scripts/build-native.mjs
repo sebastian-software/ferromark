@@ -55,6 +55,18 @@ if (process.env.FERROMARK_RUST_TARGET) {
 }
 
 if (process.env.FERROMARK_NAPI_FEATURES) {
+  // Diagnostic features add exports that must never reach the package: a
+  // package build copies its declarations into native.d.ts and its addon into
+  // the platform package, so they only build into an isolated directory.
+  const diagnostic = process.env.FERROMARK_NAPI_FEATURES.split(/[\s,]+/).filter((feature) =>
+    ["boundary-bench", "panic-test"].includes(feature),
+  );
+  if (diagnostic.length > 0 && outputDir === ".") {
+    throw new Error(
+      `The diagnostic feature(s) ${diagnostic.join(", ")} build only with FERROMARK_NATIVE_OUTPUT_DIR ` +
+        "set to a directory outside the package, so neither native.d.ts nor a platform package carries them.",
+    );
+  }
   args.push("--features", process.env.FERROMARK_NAPI_FEATURES);
 }
 

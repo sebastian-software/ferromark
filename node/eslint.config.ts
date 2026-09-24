@@ -64,10 +64,16 @@ config.push({
 });
 
 // Release and package contracts inspect repository paths and generated
-// manifests; their filenames are trusted local inputs rather than user data.
+// manifests, and the benchmark reads a corpus and addon path its runner names;
+// their filenames are trusted local inputs rather than user data.
 config.push({
   name: "ferromark/local-contract-paths",
-  files: ["scripts/**/*.mjs", "ferromark/scripts/**/*.mjs", "ferromark/test/**/*.mjs"],
+  files: [
+    "scripts/**/*.mjs",
+    "ferromark/bench/**/*.mjs",
+    "ferromark/scripts/**/*.mjs",
+    "ferromark/test/**/*.mjs",
+  ],
   rules: {
     "security/detect-non-literal-fs-filename": "off",
     "security/detect-non-literal-regexp": "off",
