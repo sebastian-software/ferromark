@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.2](https://github.com/sebastian-software/ferromark/compare/v2.1.1...v2.1.2) (2026-09-24)
+
+
+### Performance Improvements
+
+* **parser:** scan ByteClass stop bytes with SSSE3 and AVX2 on x86-64 ([#426](https://github.com/sebastian-software/ferromark/issues/426)) ([f8fff4c](https://github.com/sebastian-software/ferromark/commit/f8fff4c905efdd145bf3c5e1fe0544ae1108015e))
+* **parser:** scan line ends with SSE2 on x86-64 ([#431](https://github.com/sebastian-software/ferromark/issues/431)) ([c6a29e3](https://github.com/sebastian-software/ferromark/commit/c6a29e34460038055ecf7744cace59b0b60e8e70))
+* **renderer:** classify escape bytes with inlined SSE2 on x86-64 ([#430](https://github.com/sebastian-software/ferromark/issues/430)) ([dfcfe98](https://github.com/sebastian-software/ferromark/commit/dfcfe983435e3f1291fce75c49ead3ed99ac0723))
+
 ## [2.1.1](https://github.com/sebastian-software/ferromark/compare/v2.1.0...v2.1.1) (2026-09-23)
 
 
