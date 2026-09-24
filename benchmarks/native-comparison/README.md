@@ -130,11 +130,12 @@ listed in `prepare.PLATFORMS` and recorded in every `build.json` under
 | Aspect | macOS (Apple Silicon) | Linux (x86-64) |
 | --- | --- | --- |
 | C++ runtime linked for Highway | libc++, Apple clang's only runtime | libstdc++, clang's default on Linux |
-| Rust link driver | rustc's default `cc` (Apple clang); environment unchanged | `clang`, through `CARGO_TARGET_<host>_LINKER` |
+| Rust link driver and linker | rustc's default `cc` (Apple clang) with the system ld64; environment unchanged | `clang`, through `CARGO_TARGET_<host>_LINKER`, with the system GNU ld rather than rustc's bundled rust-lld |
 | Stack bound for Bun's recursion check (`stack.c`) | `pthread_get_stackaddr_np` and `pthread_get_stacksize_np` | `pthread_getattr_np` and `pthread_attr_getstack`, as `WTF::StackBounds` does on Linux |
 | Bun's `OS()` branch (`native.h`) | `OS(DARWIN)`: Highway `memmem` replaces libc's through an assembler alias | `OS(LINUX)`: the same replacement through a weak alias |
 | `-C target-cpu=generic` | generic AArch64 | the x86-64 baseline (SSE2); v2, v1's `memchr`, and Highway still select SSSE3/AVX2 paths at run time |
-| Compiler versions | Apple clang from the installed Xcode | the runner's default clang |
+| Compiler and linker versions | Apple clang and ld64 from the installed Xcode tools | the runner's default clang and GNU ld |
+| PGO training-binary stubs (`pgo_stubs.c`) | the shared list | the shared list plus the Bun support symbols GNU ld also resolves; the measured executable links none of them |
 
 On macOS, the adapters compile to byte-identical objects and `prepare.py`
 passes Cargo the same environment as before Linux support, so the macOS

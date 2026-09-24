@@ -153,6 +153,12 @@ jobs:
             --pgo-measurement-filter "$SPLIT/filter-broad-test.txt" \
             > "$WORK/pgo-build-log.txt" 2>&1 || status=$?
           { grep -v -e 'no profile data available' "$WORK/pgo-build-log.txt" || true; } | tail -n 80
+          if [ "$status" -ne 0 ]; then
+            echo "::group::Every unresolved symbol and error in the PGO build"
+            { grep -o -E "undefined (reference to|symbol:) [^ ]+" "$WORK/pgo-build-log.txt" || true; } | sort -u
+            { grep -E "^error|: error" "$WORK/pgo-build-log.txt" || true; } | sort -u | head -n 100
+            echo "::endgroup::"
+          fi
           exit "$status"
 
       - name: Measure all 57 documents

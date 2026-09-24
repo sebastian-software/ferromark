@@ -397,13 +397,15 @@ def write_provenance(out: Path, facts: dict) -> None:
     rows = [
         ("C/C++ compiler", "clang, clang++ (Apple clang)", "clang, clang++ (runner default)"),
         ("C++ runtime", darwin["cxx_runtime_note"], linux["cxx_runtime_note"]),
-        ("Rust link driver", darwin["rust_linker_note"], linux["rust_linker_note"]),
+        ("Rust link driver and linker", darwin["rust_linker_note"], linux["rust_linker_note"]),
         ("Stack bound for Bun's recursion check", darwin["stack_bounds"], linux["stack_bounds"]),
         ("Bun Highway platform branch", darwin["bun_os_branch"], linux["bun_os_branch"]),
         ("`-C target-cpu=generic`", "generic AArch64 (NEON)", "x86-64 baseline (SSE2); engines "
          "with runtime detection still select SSSE3/AVX2 paths"),
         ("Highway targets", "runtime dispatch; SVE list disabled as in Bun", "runtime dispatch over "
          "the x86 targets; the SVE list has no effect"),
+        ("PGO training-binary stubs", "the shared list", "the shared list plus the Bun support "
+         "symbols GNU ld also resolves; the measured executable links none of them"),
     ]
     table = ["| Aspect | macOS (Apple Silicon) | Linux (x86-64) |", "| --- | --- | --- |"]
     table += [f"| {a} | {b} | {c} |" for a, b, c in rows]
@@ -445,7 +447,7 @@ def write_provenance(out: Path, facts: dict) -> None:
         f"- Host: {source['host_summary']}; `{platform['host_triple']}`.",
         f"- Rust: `{first_line(build['rustc'])}`, LLVM {llvm_version(build['rustc'])}, the pinned "
         f"`{build['toolchain']}` required by the native Bun integration.",
-        f"- C/C++: `{first_line(platform['clang'])}`.",
+        f"- C/C++: `{first_line(platform['clang'])}`. Linker: `{platform.get('linker', 'not recorded')}`.",
         f"- `RUSTFLAGS`: `{build['rustflags']}`; optimization level {build['optimization']['opt_level']}, "
         f"{build['optimization']['lto']} LTO, {build['optimization']['codegen_units']} codegen unit, "
         f"panic {build['optimization']['panic']}. No PGO in the default build.",
@@ -470,9 +472,8 @@ def write_provenance(out: Path, facts: dict) -> None:
         "",
         f"The build seeded Cargo with `{Path(registry['seed_lock']).as_posix()}` through `--bun-lock` "
         "because the v2 path package's version line differs from that lock. `CARGO_NET_OFFLINE=true` "
-        "and `--offline` kept the build itself offline after `cargo fetch` filled the registry "
-        "cache, and `prepare.py` fails if Cargo resolves any registry package outside the union "
-        "of the engine locks. "
+        "and `--offline` kept the build itself offline, and `prepare.py` fails if Cargo resolves "
+        "any registry package outside the union of the engine locks. "
         + (f"All {registry['registry_packages']} resolved registry packages are identical to the "
            "seed lock in name, version, and checksum."
            if registry["identical_to_seed"] else

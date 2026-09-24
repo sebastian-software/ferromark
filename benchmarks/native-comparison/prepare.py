@@ -81,7 +81,7 @@ PLATFORMS = {
         "bun_os_branch": "OS(DARWIN): Highway memmem replaces libc memmem through an assembler alias",
         # rustc's default `cc` is Apple clang; the environment is left unchanged.
         "rust_linker": None,
-        "rust_linker_note": "rustc default `cc` (Apple clang), environment unchanged",
+        "rust_linker_note": "rustc default `cc` (Apple clang) with the system ld64; environment unchanged",
     },
     "Linux": {
         "cxx_runtime": "stdc++",
@@ -90,8 +90,11 @@ PLATFORMS = {
         "bun_os_branch": "OS(LINUX): Highway memmem replaces libc memmem through a weak alias",
         # rustc's default `cc` is usually GCC on Linux; drive the link with
         # clang so one compiler family builds and links on both platforms.
+        # An explicit clang driver links with the system GNU ld, as clang
+        # links with the system ld64 on macOS, instead of rustc's bundled
+        # rust-lld.
         "rust_linker": "clang",
-        "rust_linker_note": "clang through CARGO_TARGET_<host>_LINKER; rustc still picks the linker itself",
+        "rust_linker_note": "clang through CARGO_TARGET_<host>_LINKER with the system GNU ld, not rustc's bundled rust-lld",
     },
 }
 
@@ -139,6 +142,15 @@ def tool_version(command: list[str]) -> str:
         return f"unavailable: {error}"
 
 
+def system_linker(driver: str) -> str:
+    """The linker a C compiler driver invokes, with its version banner."""
+    path = tool_version([driver, "-print-prog-name=ld"])
+    if path.startswith("unavailable"):
+        return path
+    banner = tool_version([path, "-v"]).splitlines()
+    return f"{path}: {banner[0] if banner else 'no version banner'}"
+
+
 def platform_record(details: dict, triple: str, linker_env: dict[str, str]) -> dict:
     """What build.json records about the host and its platform-specific choices."""
     return {
@@ -146,6 +158,7 @@ def platform_record(details: dict, triple: str, linker_env: dict[str, str]) -> d
         "machine": platform.machine(),
         "host_triple": triple,
         "rust_linker_environment": linker_env,
+        "linker": system_linker(details["rust_linker"] or "cc"),
         "clang": tool_version(["clang", "--version"]),
         "clang++": tool_version(["clang++", "--version"]),
     }
