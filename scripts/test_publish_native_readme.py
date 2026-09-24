@@ -77,6 +77,14 @@ class ArchivedFigures(unittest.TestCase):
         self.assertFalse(self.published["sharedRunner"])
         self.assertEqual((self.published["revision"], self.published["measured"]), ("39b1f0b7", "2026-09-21"))
 
+    def test_a_local_archive_py_report_is_not_a_shared_runner(self):
+        # archive.py reports record the host's origin; a Mac run records only "arm64" as its CPU.
+        local = publisher.measure("macos-arm64", Path("docs/reports/2026-09-24-native-macos-arm64"))
+        self.assertEqual((local["machine"], local["sharedRunner"]), ("Apple M1 Pro", False))
+
+    def test_reading_an_archive_writes_nothing_into_it(self):
+        self.assertFalse((ROOT / ROUND_4 / "harness/__pycache__").exists())
+
 
 class PlatformNames(unittest.TestCase):
     def test_reports_from_before_linux_support_derive_the_platform_from_run_json(self):
@@ -111,6 +119,9 @@ class TwoPlatforms(unittest.TestCase):
     def setUpClass(cls):
         cls.directory = tempfile.TemporaryDirectory()
         cls.linux_report = linux_shaped_copy(Path(cls.directory.name))
+        cls.repeats = cls.linux_report.parent / (cls.linux_report.name + "-repeats")
+        cls.repeats.mkdir()
+        (cls.repeats / "README.md").write_text("# Repeat runs\n")
         cls.reports = {"macos-arm64": ROUND_4, "linux-x86-64": cls.linux_report}
         cls.platforms = [publisher.measure(key, path) for key, path in cls.reports.items()]
 
@@ -168,6 +179,11 @@ class TwoPlatforms(unittest.TestCase):
         earlier = section.split("### Earlier comparisons")[1]
         self.assertNotIn(ROUND_4.as_posix(), earlier)
         self.assertIn("2026-09-21-native-release-fixed", earlier)
+
+    def test_only_a_platform_with_archived_repeats_links_them(self):
+        apple, linux = (publisher.platform_section(p) for p in self.platforms)
+        self.assertIn(publisher.link(self.repeats.as_posix() + "/README.md"), linux)
+        self.assertNotIn("Repeat runs", apple)
 
     def test_the_guide_stays_valid_mdx(self):
         section = publisher.guide_section(self.platforms)

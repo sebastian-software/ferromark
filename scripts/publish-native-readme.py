@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # One archived report per platform, in publishing order. To publish a new
 # measurement, archive it under docs/reports/ and point its platform here.
 REPORTS = {
-    "macos-arm64": Path("docs/reports/2026-09-21-native-round-4"),
+    "macos-arm64": Path("docs/reports/2026-09-24-native-macos-arm64"),
     "linux-x86-64": Path("docs/reports/2026-09-24-native-linux-x86-64"),
 }
 
@@ -50,6 +50,7 @@ HARNESS = PREFIX + "benchmarks/native-comparison/README.md"
 CI_CLAIMS = HARNESS + "#what-a-ci-report-can-and-cannot-claim"
 HELD_OUT_HEADING = "## Profile-guided optimization, measured on the held-out half"
 HELD_OUT_ANCHOR = "#profile-guided-optimization-measured-on-the-held-out-half"
+REPEATS_SUFFIX = "-repeats"
 # What distinguishes an earlier report once it is no longer published.
 EARLIER = {
     "2026-09-21-native-round-4": "after optimization round 4",
@@ -89,7 +90,12 @@ def load_harness(directory):
     name = "native_report_" + re.sub(r"\W", "_", directory.name)
     spec = importlib.util.spec_from_file_location(name, directory / "harness/report.py")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Importing would otherwise write harness/__pycache__ into the archive.
+    writes_bytecode, sys.dont_write_bytecode = sys.dont_write_bytecode, True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = writes_bytecode
     return module
 
 
@@ -185,6 +191,9 @@ def measure(key, relative):
                             reuse=1 / scores[group, "reuse"][engine]))
     readme = (directory / "README.md").read_text()
     platform = PLATFORMS[key]
+    # Reduced evidence of further runs of the same measurement, archived next to the report.
+    repeats = relative.parent / (relative.name + REPEATS_SUFFIX)
+    repeats = repeats.as_posix() if (ROOT / repeats / "README.md").exists() else None
     return dict(
         id=key, label=platform["label"], executable=platform["executable"],
         machine=machine_name(run["host_before"].get("cpu", ""), platform["machine"], hosted),
@@ -195,7 +204,7 @@ def measure(key, relative):
         corpus=corpus, six=len(six), five=len(five), scores=scores, groups=groups, figures=figures,
         pgo=held_out(tables, directory, verification), labels=tables.LABELS, engines=tables.ENGINES,
         files=[name for name in ("FLAGS.md", "OUTPUT-REVIEW.md", "PROVENANCE.md") if (directory / name).exists()],
-        heldOutSection=HELD_OUT_HEADING in readme,
+        heldOutSection=HELD_OUT_HEADING in readme, repeats=repeats,
     )
 
 
@@ -344,6 +353,9 @@ def platform_section(p):
     links += [f"[{names[name]}]({link(report + '/' + name)})" for name in p["files"]]
     listed = ", ".join(links[:-1]) + ", and " + links[-1] if len(links) > 1 else links[0]
     parts += [fill(f"{listed} include raw measurements, source hashes, and reproducible configuration."), ""]
+    if p["repeats"]:
+        parts += [fill(f"[Repeat runs on other runners]({link(p['repeats'] + '/README.md')}) show how "
+                       "much these figures move between runs and runner CPUs."), ""]
     return "\n".join(parts)
 
 

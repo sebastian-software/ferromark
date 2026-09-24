@@ -55,50 +55,48 @@ and is not PGO-built; a PGO row is compared only with PGO rows.
 
 ### Apple Silicon
 
-Apple M1 Pro, measured 2026-09-21: v2 `39b1f0b7` and v1 `4e15141` in one macOS
+Apple M1 Pro, measured 2026-09-24: v2 `09e5e866` and v1 `4e15141` in one macOS
 arm64 executable, 3 process rounds with 6 rotating windows per round.
 
 | Engine | Fresh, 14 agreeing across six | Reuse, same 14 | Fresh, 50 agreeing across five | Reuse, same 50 |
 | --- | ---: | ---: | ---: | ---: |
 | Ferromark v2 | 1.00× | 1.00× | 1.00× | 1.00× |
-| OX-Content original | 0.84× | 0.92× | — | — |
-| Ferromark v1 | 0.60× | 0.67× | 0.48× | 0.52× |
-| md4c | 0.22× | 0.19× | 0.29× | 0.27× |
-| pulldown-cmark | 0.39× | 0.36× | 0.38× | 0.37× |
-| Bun native bun_md | 0.14× | 0.12× | 0.17× | 0.15× |
+| OX-Content original | 0.80× | 0.88× | — | — |
+| Ferromark v1 | 0.57× | 0.63× | 0.47× | 0.50× |
+| md4c | 0.21× | 0.18× | 0.28× | 0.26× |
+| pulldown-cmark | 0.37× | 0.34× | 0.37× | 0.36× |
+| Bun native bun_md | 0.13× | 0.11× | 0.16× | 0.15× |
 
-On the 50 documents all five configurable engines render alike, v2 runs at 2.07×
-v1's speed fresh and 1.93× with reuse, 2.65× pulldown-cmark's, 3.51× md4c's, and
-6.03× Bun's native engine's fresh. On the 14 documents all six engines agree on,
-it runs at 1.19× OX's throughput fresh and 1.08× with reuse.
+On the 50 documents all five configurable engines render alike, v2 runs at 2.14×
+v1's speed fresh and 2.01× with reuse, 2.72× pulldown-cmark's, 3.62× md4c's, and
+6.24× Bun's native engine's fresh. On the 14 documents all six engines agree on,
+it runs at 1.25× OX's throughput fresh and 1.14× with reuse.
 
 Selected groups, **fresh**, using only the five-engine agreement subset and the
 same speed scale:
 
 | Group, five-engine agreement | N | V1 | md4c | pulldown | Bun native |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| &lt;512 B | 10 | 0.57× | 0.21× | 0.44× | 0.21× |
-| 32–128 KiB | 7 | 0.50× | 0.26× | 0.33× | 0.09× |
-| comments | 11 | 0.60× | 0.22× | 0.45× | 0.20× |
-| technical-docs | 21 | 0.47× | 0.32× | 0.37× | 0.17× |
-| plain-prose | 4 | 0.61× | 0.24× | 0.28× | 0.06× |
+| &lt;512 B | 10 | 0.56× | 0.20× | 0.43× | 0.20× |
+| 32–128 KiB | 7 | 0.48× | 0.24× | 0.32× | 0.09× |
+| comments | 11 | 0.58× | 0.22× | 0.43× | 0.19× |
+| technical-docs | 21 | 0.46× | 0.32× | 0.36× | 0.16× |
+| plain-prose | 4 | 0.56× | 0.23× | 0.26× | 0.05× |
 
 On the 28 held-out documents no profile saw, profile-guided optimization gives
-v2 1.27× fresh and 1.26× with reuse over its default build; against the PGO
-builds of the other engines, v2 stands at 2.13× v1, 2.59× pulldown-cmark, 4.24×
-md4c, and 5.75× Bun's native engine fresh.
+v2 1.23× fresh and 1.22× with reuse over its default build; against the PGO
+builds of the other engines, v2 stands at 2.18× v1, 2.66× pulldown-cmark, 4.34×
+md4c, and 5.89× Bun's native engine fresh.
 
-[Full results and per-document timings](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-round-4/README.md),
-[held-out PGO comparison](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-round-4/README.md#profile-guided-optimization-measured-on-the-held-out-half),
-[exact flags](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-round-4/FLAGS.md),
-[HTML differences](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-round-4/OUTPUT-REVIEW.md),
+[Full results and per-document timings](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-24-native-macos-arm64/README.md),
+[held-out PGO comparison](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-24-native-macos-arm64/README.md#profile-guided-optimization-measured-on-the-held-out-half),
 and
-[source and build provenance](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-round-4/PROVENANCE.md)
+[source and build provenance](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-24-native-macos-arm64/PROVENANCE.md)
 include raw measurements, source hashes, and reproducible configuration.
 
 ### Linux x86-64
 
-GitHub-hosted runner, AMD EPYC 9V74, measured 2026-09-24: v2 `09e5e866` and v1
+GitHub-hosted runner, AMD EPYC 7763, measured 2026-09-24: v2 `09e5e866` and v1
 `4e15141` in one Linux x86-64 executable, 3 process rounds with 6 rotating
 windows per round.
 
@@ -111,32 +109,32 @@ run. See
 | Engine | Fresh, 14 agreeing across six | Reuse, same 14 | Fresh, 50 agreeing across five | Reuse, same 50 |
 | --- | ---: | ---: | ---: | ---: |
 | Ferromark v2 | 1.00× | 1.00× | 1.00× | 1.00× |
-| OX-Content original | 0.70× | 0.76× | — | — |
-| Ferromark v1 | 0.60× | 0.64× | 0.50× | 0.52× |
-| md4c | 0.22× | 0.19× | 0.31× | 0.30× |
-| pulldown-cmark | 0.40× | 0.37× | 0.41× | 0.40× |
-| Bun native bun_md | 0.20× | 0.17× | 0.22× | 0.20× |
+| OX-Content original | 0.72× | 0.73× | — | — |
+| Ferromark v1 | 0.59× | 0.62× | 0.48× | 0.50× |
+| md4c | 0.24× | 0.20× | 0.31× | 0.29× |
+| pulldown-cmark | 0.42× | 0.36× | 0.40× | 0.39× |
+| Bun native bun_md | 0.20× | 0.16× | 0.21× | 0.20× |
 
-On the 50 documents all five configurable engines render alike, v2 runs at 2.01×
-v1's speed fresh and 1.91× with reuse, 2.44× pulldown-cmark's, 3.22× md4c's, and
-4.52× Bun's native engine's fresh. On the 14 documents all six engines agree on,
-it runs at 1.43× OX's throughput fresh and 1.32× with reuse.
+On the 50 documents all five configurable engines render alike, v2 runs at 2.09×
+v1's speed fresh and 2.00× with reuse, 2.48× pulldown-cmark's, 3.24× md4c's, and
+4.68× Bun's native engine's fresh. On the 14 documents all six engines agree on,
+it runs at 1.39× OX's throughput fresh and 1.36× with reuse.
 
 Selected groups, **fresh**, using only the five-engine agreement subset and the
 same speed scale:
 
 | Group, five-engine agreement | N | V1 | md4c | pulldown | Bun native |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| &lt;512 B | 10 | 0.60× | 0.22× | 0.50× | 0.29× |
-| 32–128 KiB | 7 | 0.50× | 0.24× | 0.29× | 0.12× |
-| comments | 11 | 0.61× | 0.24× | 0.50× | 0.29× |
-| technical-docs | 21 | 0.48× | 0.36× | 0.39× | 0.22× |
-| plain-prose | 4 | 0.60× | 0.21× | 0.24× | 0.09× |
+| &lt;512 B | 10 | 0.58× | 0.25× | 0.51× | 0.29× |
+| 32–128 KiB | 7 | 0.48× | 0.23× | 0.30× | 0.12× |
+| comments | 11 | 0.59× | 0.26× | 0.51× | 0.29× |
+| technical-docs | 21 | 0.45× | 0.34× | 0.38× | 0.21× |
+| plain-prose | 4 | 0.59× | 0.22× | 0.26× | 0.09× |
 
 On the 28 held-out documents no profile saw, profile-guided optimization gives
-v2 1.24× fresh and 1.22× with reuse over its default build; against the PGO
-builds of the other engines, v2 stands at 2.01× v1, 2.31× pulldown-cmark, 3.69×
-md4c, and 4.87× Bun's native engine fresh.
+v2 1.28× fresh and 1.26× with reuse over its default build; against the PGO
+builds of the other engines, v2 stands at 2.10× v1, 2.26× pulldown-cmark, 3.84×
+md4c, and 5.12× Bun's native engine fresh.
 
 [Full results and per-document timings](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-24-native-linux-x86-64/README.md),
 [held-out PGO comparison](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-24-native-linux-x86-64/README.md#profile-guided-optimization-measured-on-the-held-out-half),
@@ -144,9 +142,14 @@ and
 [source and build provenance](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-24-native-linux-x86-64/PROVENANCE.md)
 include raw measurements, source hashes, and reproducible configuration.
 
+[Repeat runs on other runners](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-24-native-linux-x86-64-repeats/README.md)
+show how much these figures move between runs and runner CPUs.
+
 ### Earlier comparisons
 
 Earlier native comparisons remain archived as historical evidence:
+[`39b1f0b7`](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-round-4/README.md)
+(2026-09-21, after optimization round 4),
 [`60602a5a`](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-release-fixed/README.md)
 (2026-09-21, the repaired release head, before round 4),
 [`bffc89f6`](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-21-native-release/README.md)
