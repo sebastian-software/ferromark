@@ -28,9 +28,10 @@ measurement loop. Each worker loads its input before accepting commands.
 The standalone Bun integration is adapted from Ferromark v1's
 `benchmarks/bun-comparison` (MIT OR Apache-2.0). Its original Rust parser,
 renderer, internal crates, Highway search implementation, and mimalloc sources
-are compiled directly. The macOS stack adapter supplies the actual cached
-pthread stack boundary; recursion checks remain active. A forced header supplies
-platform/release assertion macros in place of Bun's WebKit umbrella header.
+are compiled directly. The stack adapter supplies the actual cached pthread
+stack boundary on macOS and Linux; recursion checks remain active. A forced
+header supplies platform/release assertion macros in place of Bun's WebKit
+umbrella header.
 The resulting executable is **not the full Bun runtime** and these timings do
 not estimate the JavaScript-facing `Bun.markdown.html()` call.
 
@@ -43,8 +44,9 @@ baseline, release optimization, fat LTO, one codegen unit, and panic abort.
 C/C++ use clang `-O3`; Highway retains runtime target dispatch. The default
 build enables no PGO and no cross-language LTO; `prepare.py --pgo` adds the
 separate, clearly labeled build described in
-[Profile-guided optimization](#profile-guided-optimization) below. Current
-reproduction supports macOS.
+[Profile-guided optimization](#profile-guided-optimization) below. The build
+runs on macOS (Apple Silicon) and Linux (x86-64); the few platform differences
+are listed under [Platforms](#platforms).
 
 The single Cargo workspace also uses a common pinned dependency resolution,
 seeded from the existing Bun comparison lock. This differs from individual
@@ -116,6 +118,39 @@ are kept separate; overlapping Wikipedia views are not independent samples.
 This is one-machine steady-state evidence, not a universal ranking or a
 statistical significance claim. Raw windows and process-round ranges are retained.
 
+## Platforms
+
+`prepare.py` builds on macOS and Linux and refuses other hosts. Both platforms
+use clang and clang++ with the same flags, the same pinned sources and
+adapters, the same mimalloc configuration and md4c allocator redirection, the
+same pinned nightly Rust toolchain, and the same `RUSTFLAGS`. What differs is
+listed in `prepare.PLATFORMS` and recorded in every `build.json` under
+`platform`, together with the host triple and both clang versions:
+
+| Aspect | macOS (Apple Silicon) | Linux (x86-64) |
+| --- | --- | --- |
+| C++ runtime linked for Highway | libc++, Apple clang's only runtime | libstdc++, clang's default on Linux |
+| Rust link driver and linker | rustc's default `cc` (Apple clang) with the system ld64; environment unchanged | `clang`, through `CARGO_TARGET_<host>_LINKER`, with the system GNU ld rather than rustc's bundled rust-lld |
+| Stack bound for Bun's recursion check (`stack.c`) | `pthread_get_stackaddr_np` and `pthread_get_stacksize_np` | `pthread_getattr_np` and `pthread_attr_getstack`, as `WTF::StackBounds` does on Linux |
+| Bun's `OS()` branch (`native.h`) | `OS(DARWIN)`: Highway `memmem` replaces libc's through an assembler alias | `OS(LINUX)`: the same replacement through a weak alias |
+| `-C target-cpu=generic` | generic AArch64 | the x86-64 baseline (SSE2); v2, v1's `memchr`, and Highway still select SSSE3/AVX2 paths at run time |
+| Compiler and linker versions | Apple clang and ld64 from the installed Xcode tools | the runner's default clang and GNU ld |
+| PGO training-binary stubs (`pgo_stubs.c`) | the shared list | the shared list plus the Bun support symbols GNU ld also resolves; the measured executable links none of them |
+
+On macOS, the adapters compile to byte-identical objects and `prepare.py`
+passes Cargo the same environment as before Linux support, so the macOS
+executable is unchanged. Bun's own Linux release build also turns on
+mimalloc's global `malloc` override and disables transparent huge pages for
+mimalloc arenas. The harness applies neither, on either platform: every engine
+already allocates through the same mimalloc, and one mimalloc configuration
+keeps the platforms comparable.
+
+The Linux path is exercised on GitHub's x86-64 runners by the
+[workflow](#linux-x86-64-workflow) below. `run.py` records `pmset` power and
+thermal state on macOS; on Linux it records `/proc/stat` CPU counters (including
+hypervisor steal), per-CPU clocks, and any exposed thermal zones before and
+after every process round.
+
 ## Profile-guided optimization
 
 Ferromark's published native binaries are moving to profile-guided
@@ -131,8 +166,10 @@ and adds:
    Cargo's own build scripts write elsewhere, so only training profiles are
    merged. That throwaway binary also links `pgo_stubs.c`: instrumentation
    keeps Bun's unreachable WebKit, URL, and simdutf support code alive, so the
-   linker needs symbols the standalone integration does not build. Every stub
-   aborts, and none of them reaches the measured worker — the final
+   linker needs symbols the standalone integration does not build. GNU ld on
+   Linux resolves more of them than ld64 on macOS, so Linux adds 42 function
+   stubs and one zero-initialized data symbol (Bun's closed-stdio flags). Every
+   function stub aborts, and none of them reaches the measured worker — the final
    `-Cprofile-use` build carries no instrumentation, so that dead code is
    removed again and the measured executable links exactly like the default
    build.
@@ -228,9 +265,14 @@ supplied source checkouts. Dependency choices and any lockfile differences are
 recorded with the build.
 
 If the temporary caches are missing, copy the current report's `restore.py` to
-an empty `/private/tmp/native-bench-cache` directory and run it there. It restores
-the original source pins and checks the original archive hashes. Adjust source
-paths below for your checkout layout.
+an empty `/private/tmp/native-bench-cache` directory, create its `native/`
+subdirectory, and run it there. It restores the original source pins and checks
+the original archive hashes. Adjust source paths below for your checkout layout;
+on Linux, use a directory under `/tmp` instead of `/private/tmp`. The commands
+are the same on both platforms. The builds run with `--offline`, so on a
+machine whose Cargo registry cache lacks the locked crates, fill it first with
+`cargo +nightly-2026-07-20 fetch` in the `bun/` directory of a throwaway
+`prepare.py` run without `--compile`, as the workflow does.
 
 ```sh
 python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-build \
@@ -285,6 +327,80 @@ unchanged. The
 [previous matched-flags comparison](../../docs/reports/2026-09-14-native-matched/README.md)
 and original pre-correction comparison are preserved separately in
 [`2026-09-14-native-engines`](../../docs/reports/2026-09-14-native-engines/README.md).
+
+`archive.py` turns a finished run into a `docs/reports`-style directory: it
+copies and compresses the evidence, copies this harness, `restore.py`, the
+source audit and the host description, rechecks every timed window, compares
+every HTML output with a reference report, and generates `README.md`,
+`PROVENANCE.md`, `checks/commands.json`, and `SHA256SUMS` from the archived
+files. `python3 benchmarks/native-comparison/archive.py --help` lists its inputs.
+
+## Linux x86-64 workflow
+
+[`.github/workflows/native-comparison.yml`](../../.github/workflows/native-comparison.yml)
+produces a complete comparison report on a GitHub-hosted `ubuntu-latest`
+x86-64 runner. It runs on every pull request that changes this directory or the
+workflow, measuring the pull request's head, and on demand:
+
+```sh
+gh workflow run native-comparison.yml -f revision=main            # default build, 57 documents
+gh workflow run native-comparison.yml -f revision=<commit> -f pgo=true
+```
+
+`revision` accepts a branch, tag, or commit and is resolved to a full commit
+before `prepare.py` exports it. With `pgo` (always on for pull requests, so both
+paths stay working) the job also builds the PGO executable and measures both
+builds on the held-out half, as described above. One job does everything on one
+runner:
+
+1. Describe the host (`lscpu`, CPU flags, transparent huge page mode, memory,
+   clang) into `host.txt`, and pass the CPU model to `run.py` as `BENCH_CPU`.
+2. Install the pinned nightly named by `prepare.BUN_TOOLCHAIN`, with
+   `llvm-tools` for PGO, and run the harness unit tests.
+3. Restore the sources with a copy of the latest report's `restore.py`, then
+   fill Cargo's registry cache from a throwaway workspace so the real builds
+   stay `--offline`.
+4. Build with the latest report's `Cargo.lock` seeded through `--bun-lock`,
+   run `run.py --verify-only`, and build the PGO executable if requested — all
+   builds finish before any timing starts.
+5. Measure all 57 documents (and the held-out half with both builds), generate
+   the tables, audit the built sources, and assemble the report with
+   `archive.py`.
+
+The artifact `native-report-linux-x86-64` holds one directory,
+`<date>-native-linux-x86-64/`, in the layout of the archived reports. The job
+summary shows its headline table. On a 4-vCPU runner a default run takes about
+17 minutes (the build about 90 seconds, the timed run about 11 minutes) and a
+PGO run about 30; the job stops at 90.
+
+### What a CI report can and cannot claim
+
+- **One host per run.** All six engines alternate in the same process rounds
+  and rotating windows on that runner, one worker at a time, so the ratios
+  between engines are meaningful for that host's CPU.
+- **A shared runner.** The runner is a virtual machine on shared hardware.
+  Neighbors, clocks, and even the CPU model change between runs, so absolute
+  nanoseconds are not comparable across runs; `run.json` records hypervisor
+  steal for every process round and `host.txt` names the CPU. A second run on a
+  different host is an independent measurement, not a replication.
+- **Its own platform.** An x86-64 figure does not describe Apple Silicon or
+  the reverse: SIMD paths, compiler back ends, and cache hierarchies differ.
+  Publish the two platforms side by side, each with its own machine named.
+- **No significance claim**, as for every report of this harness.
+
+### Archiving a CI report
+
+1. Download the artifact:
+   `gh run download <run-id> -n native-report-linux-x86-64 -D /tmp/native-ci`.
+2. Check it: `(cd /tmp/native-ci/<date>-native-linux-x86-64 && sha256sum -c SHA256SUMS)`
+   and read `checks/commands.json` — the registry resolution, the source audit,
+   and the HTML comparison with the reference report should be clean, and any
+   output that differs from the Apple Silicon reference needs an explanation
+   before publication.
+3. Move the directory unchanged to `docs/reports/`. Its README links the
+   reference report as a sibling directory. Add narrative, such as comparisons
+   with earlier runs, as separate files so the generated evidence and its
+   checksums stay intact.
 
 ## Release-readiness reruns
 
