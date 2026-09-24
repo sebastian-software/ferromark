@@ -17,6 +17,13 @@ for (const name of ["Options", "toHtml", "toHtmlBuffer", "toHtmlWithRenderer"]) 
     throw new Error(`Generated native declarations are missing ${name}`);
   }
 }
+// The `panic-test` and `boundary-bench` Cargo features add diagnostic exports
+// that no published addon or declaration file may carry.
+assert.doesNotMatch(
+  declarations,
+  /\b(?:testPanicUnwind|boundary[A-Z]\w*|BoundaryProbe)\b/,
+  "the package declarations must not include diagnostic exports",
+);
 
 assert.ok(
   !packageJson.files.some((file) => file.endsWith(".node")),
