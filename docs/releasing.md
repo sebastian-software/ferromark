@@ -222,11 +222,13 @@ pass against a glibc addon.
 
 Two limits there are deliberate. `aarch64-unknown-linux-musl` stays inspected
 only; loading it needs an arm runner with a musl container. And
-`verify-panic-unwind.mjs` does not run in that container: it builds a throwaway
-addon from source with the `panic-test` Cargo feature, which no packed addon
-carries and which needs a Rust toolchain. Panic unwinding comes from the shared
-`release-node` profile, and `pnpm test` verifies it on the same-architecture
-native jobs.
+`verify-panic-unwind.mjs` and `verify-input-conversion.mjs` do not run in that
+container: they build throwaway addons from source with the `panic-test` and
+`boundary-bench` Cargo features, which no packed addon carries and which need a
+Rust toolchain. Panic unwinding comes from the shared `release-node` profile,
+and `pnpm test` verifies it on the same-architecture native jobs. The package
+test suite in the container still renders every V8 string representation
+through the musl addon.
 
 Seven native jobs set `FERROMARK_PGO=1`, so each published addon is built from a
 profile collected on its own runner. The Windows ARM64 job builds without PGO

@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
+import { serialize } from "node:v8";
 
 // This integration suite covers the complete public Node API.
 /* eslint-disable max-lines */
@@ -50,6 +51,105 @@ test("rejects non-string Markdown across every public render entry point", () =>
 
   for (const call of calls) {
     assert.throws(call, (error) => error instanceof Error && /string/i.test(error.message));
+  }
+});
+
+// V8 stores a string as one-byte (Latin-1) when every character fits and as
+// two-byte (UTF-16) otherwise, and the addon converts both. V8's serializer
+// tags a one-byte string '"'.
+const storage = (text) => (serialize(text)[2] === 0x22 ? "one-byte" : "two-byte");
+// The same characters, stored as two-byte: from 13 characters on, a slice of a
+// two-byte string stays two-byte.
+const widen = (text) => `${text}Ā`.slice(0, -1);
+
+/**
+ * Checks that `toHtml(markdown)` is `html`, and that every other public entry
+ * point returns the same bytes.
+ * @param markdown Markdown to render.
+ * @param html The expected HTML.
+ */
+function assertEveryEntryPoint(markdown, html) {
+  assert.ok(toHtml(markdown) === html, `toHtml(${JSON.stringify(markdown.slice(0, 40))})`);
+  const expected = Buffer.from(html, "utf8");
+  const highlighter = { codeToHtml: () => "<pre>unused</pre>" };
+  const renderer = new Renderer();
+  const outputs = {
+    "Renderer.toHtml": renderer.toHtml(markdown),
+    "Renderer.toHtmlBuffer": renderer.toHtmlBuffer(markdown),
+    toHtmlBuffer: toHtmlBuffer(markdown),
+    toHtmlWithHighlighter: toHtmlWithHighlighter(markdown, highlighter, { theme: "dark" }),
+    transform: transform(markdown).html,
+    transformWithHighlighter: transformWithHighlighter(markdown, highlighter, { theme: "dark" })
+      .html,
+  };
+  for (const [entry, output] of Object.entries(outputs)) {
+    const bytes = Buffer.isBuffer(output) ? output : Buffer.from(output, "utf8");
+    assert.ok(bytes.equals(expected), `${entry} differs from toHtml`);
+  }
+}
+
+test("converts Markdown in every V8 string representation", () => {
+  const latin1 = "Grüße aus Köln: ½ × ¾, ÿ";
+  const cases = [
+    ["plain *ASCII* text", "one-byte", "<p>plain <em>ASCII</em> text</p>\n"],
+    [widen("plain *ASCII* text"), "two-byte", "<p>plain <em>ASCII</em> text</p>\n"],
+    [latin1, "one-byte", `<p>${latin1}</p>\n`],
+    [widen(latin1), "two-byte", `<p>${latin1}</p>\n`],
+    ["世界 *😀* € 𝄞", "two-byte", "<p>世界 <em>😀</em> € 𝄞</p>\n"],
+    ["", "one-byte", ""],
+  ];
+
+  for (const [markdown, expectedStorage, html] of cases) {
+    assert.equal(storage(markdown), expectedStorage, JSON.stringify(markdown));
+    assertEveryEntryPoint(markdown, html);
+  }
+});
+
+test("replaces lone surrogates with U+FFFD, as napi-rs's String conversion does", () => {
+  const markdown =
+    "\uDC00lead \uD800x trail\uDC00 swapped \uDE00\uD83D pair \uD83D\uDE00 end\uDBFF";
+  assert.equal(storage(markdown), "two-byte");
+  assertEveryEntryPoint(
+    markdown,
+    "<p>\uFFFDlead \uFFFDx trail\uFFFD swapped \uFFFD\uFFFD pair \uD83D\uDE00 end\uFFFD</p>\n",
+  );
+
+  // Code for a highlighter and heading metadata come from the converted text.
+  const code = [];
+  const highlighter = {
+    codeToHtml(source) {
+      code.push(source);
+      return "<pre>ok</pre>";
+    },
+  };
+  toHtmlWithHighlighter("```\nx\uD800\n```", highlighter, { theme: "dark" });
+  assert.deepEqual(code, ["x\uFFFD\n"]);
+  assert.equal(transform("# a\uDFFF").headings[0]?.text, "a\uFFFD");
+});
+
+test("converts large inputs whole at every UTF-8 width", () => {
+  // The addon reserves three UTF-8 bytes per UTF-16 unit. These inputs take
+  // one, two and three bytes per unit; the last three reach that bound exactly.
+  // Node.js decodes a large buffer into an external string, kept outside the V8 heap.
+  const units = 1 << 20;
+  const cases = [
+    ["x".repeat(4 * units), "one-byte"],
+    ["é".repeat(units), "one-byte"],
+    [Buffer.alloc(units, 0xe9).toString("latin1"), "one-byte"],
+    ["😀".repeat(units / 2), "two-byte"],
+    [Buffer.alloc(2 * units, 0x4e).toString("utf16le"), "two-byte"],
+    ["€".repeat(units), "two-byte"],
+    ["\uD800".repeat(units), "two-byte"],
+  ];
+
+  const renderer = new Renderer();
+  for (const [markdown, expectedStorage] of cases) {
+    assert.equal(storage(markdown), expectedStorage);
+    const html = `<p>${markdown.toWellFormed()}</p>\n`;
+    const label = `${markdown.length} units of ${JSON.stringify(markdown.slice(0, 1))}`;
+    assert.ok(toHtml(markdown) === html, `toHtml: ${label}`);
+    assert.ok(renderer.toHtml(markdown) === html, `Renderer.toHtml: ${label}`);
+    assert.ok(toHtmlBuffer(markdown).equals(Buffer.from(html, "utf8")), `toHtmlBuffer: ${label}`);
   }
 });
 
