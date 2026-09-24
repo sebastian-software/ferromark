@@ -16,8 +16,7 @@ The harness, syntax and renderer flags, sources, adapters, and allocator setup a
 ## What this run can and cannot claim
 
 - **One host.** Measured locally on the maintainer's Apple M1 Pro (MacBook Pro) with the harness at 8b9d4e0f. All six engines ran in the same process rounds and rotating windows on that host, one worker at a time, so the ratios between engines describe that host's CPU.
-- **A shared machine.** A GitHub-hosted runner is a virtual machine on shared hardware. Neighbors, clock behavior, and the CPU model can change between runs, so absolute nanoseconds are not comparable with any other run, and another run may land on a different CPU. Compare engine ratios, not times.
-- **Hypervisor steal** was not recorded on this host.
+- **A single local machine.** The run used one physical machine that other desktop workloads can share, not an isolated benchmark host; its load during timing is stated under [measurement conditions](PROVENANCE.md#measurement-conditions). Absolute nanoseconds describe that machine under that load, so compare engine ratios, not times.
 - **Not a universal ranking** and not a statistical significance claim. Positions on x86-64 and Apple Silicon can differ because the engines' SIMD paths, the compilers' code generation, and the cache hierarchies differ; neither platform's figures describe the other.
 
 ## Validation

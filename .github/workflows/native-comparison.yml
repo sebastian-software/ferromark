@@ -196,6 +196,7 @@ jobs:
             --seed-lock "$LATEST_REPORT/Cargo.lock" --reference "$LATEST_REPORT" \
             --restore-dir "$CACHE" --host-file "$WORK/host.txt" --host-summary "$HOST_SUMMARY" \
             --origin "The [native comparison workflow]($RUN_URL) ran on a GitHub-hosted ubuntu-latest runner for a $EVENT event." \
+            --host-kind github-hosted --verify-only-passed \
             --harness-revision "$HARNESS_SHA" --build-log "$WORK/build-log.txt" \
             --measurement-note "The job runs one step at a time, so no build or other step ran while run.py was timing." \
             --source-audit "$WORK/source-audit.json" --tests-log "$WORK/harness-tests.txt" \

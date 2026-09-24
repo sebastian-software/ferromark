@@ -168,8 +168,11 @@ def measure(key, relative):
     if slug != key:
         raise SystemExit(f"{relative} was measured on {slug}, not {key}")
     checks = directory / "checks/commands.json"
-    origin = json.loads(checks.read_text()).get("workflow_origin", "") if checks.exists() else ""
-    hosted = "GitHub-hosted" in origin
+    checks = json.loads(checks.read_text()) if checks.exists() else {}
+    # archive.py records the host kind it was given; reports archived before that
+    # flag existed only name a GitHub-hosted runner in their origin sentence.
+    kind = checks.get("host_kind")
+    hosted = kind == "github-hosted" if kind else "GitHub-hosted" in checks.get("workflow_origin", "")
     corpus = tables.read(directory, "corpus.json")["cases"]
     verification = tables.read(directory, "verification.json")
     summary = tables.read(directory, "summary.json")

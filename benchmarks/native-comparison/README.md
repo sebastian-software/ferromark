@@ -334,6 +334,15 @@ source audit and the host description, rechecks every timed window, compares
 every HTML output with a reference report, and generates `README.md`,
 `PROVENANCE.md`, `checks/commands.json`, and `SHA256SUMS` from the archived
 files. `python3 benchmarks/native-comparison/archive.py --help` lists its inputs.
+`--host-kind` states where the run happened, and the report's caveats follow it:
+`github-hosted` for a CI runner virtual machine on shared hardware, `local` for
+one physical machine that desktop workloads can share, whose load the
+`--measurement-note` should state. Pass `--verify-only-passed` only when a
+separate `run.py --verify-only` passed on the default build before any timing,
+as the workflow does. The generated files name paths relative to their
+repository, for example the seed lock as `docs/reports/<report>/Cargo.lock`,
+and `archive.py` refuses to write one that names an absolute input path or the
+home directory.
 
 ## Linux x86-64 workflow
 

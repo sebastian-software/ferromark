@@ -145,6 +145,15 @@ class TwoPlatforms(unittest.TestCase):
         self.assertTrue(linux["sharedRunner"])
         self.assertEqual(linux["files"], ["PROVENANCE.md"])
 
+    def test_the_recorded_host_kind_decides_over_the_origin_sentence(self):
+        checks = self.linux_report / "checks/commands.json"
+        original = checks.read_text()
+        try:
+            checks.write_text(json.dumps({**json.loads(original), "host_kind": "local"}))
+            self.assertFalse(publisher.measure("linux-x86-64", self.linux_report)["sharedRunner"])
+        finally:
+            checks.write_text(original)
+
     def test_the_readme_states_each_platform_separately_without_a_table(self):
         block = publisher.readme_block(self.platforms)
         self.assertTrue(block.startswith(publisher.README_START + "\n"))

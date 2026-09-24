@@ -1,6 +1,6 @@
 # Source and build provenance
 
-Measured locally on the maintainer's Apple M1 Pro (MacBook Pro) with the harness at 8b9d4e0f. The workflow checked out `8b9d4e0f40b6ac87f5212362249ae928e6273ef2` for the harness and exported the measured revisions with `git archive`; working-tree sources are never built.
+Measured locally on the maintainer's Apple M1 Pro (MacBook Pro) with the harness at 8b9d4e0f. The harness at `8b9d4e0f40b6ac87f5212362249ae928e6273ef2` exported the measured revisions with `git archive`; working-tree sources are never built.
 
 | Engine | Pin |
 | --- | --- |
@@ -29,7 +29,7 @@ Recorded per build in `build.json` under `platform`:
 
 | Aspect | macOS (Apple Silicon) | Linux (x86-64) |
 | --- | --- | --- |
-| C/C++ compiler | clang, clang++ (Apple clang) | clang, clang++ (runner default) |
+| C/C++ compiler | clang, clang++ (Apple clang) | clang, clang++ (the system's default) |
 | C++ runtime | libc++, the only C++ runtime Apple clang links | libstdc++, clang's default C++ runtime on Linux |
 | Rust link driver and linker | rustc default `cc` (Apple clang) with the system ld64; environment unchanged | clang through CARGO_TARGET_<host>_LINKER with the system GNU ld, not rustc's bundled rust-lld |
 | Stack bound for Bun's recursion check | pthread_get_stackaddr_np and pthread_get_stacksize_np | pthread_getattr_np and pthread_attr_getstack |
@@ -38,11 +38,11 @@ Recorded per build in `build.json` under `platform`:
 | Highway targets | runtime dispatch; SVE list disabled as in Bun | runtime dispatch over the x86 targets; the SVE list has no effect |
 | PGO training-binary stubs | the shared list | the shared list plus the Bun support symbols GNU ld also resolves; the measured executable links none of them |
 
-Bun's own Linux release build also turns on mimalloc's global `malloc` override and disables transparent huge pages for mimalloc arenas. The harness applies neither on either platform: every engine already allocates through the same mimalloc, Rust through Bun's global allocator and md4c through `md4c_alloc.h`, and one mimalloc configuration keeps the platforms comparable. The runner's transparent huge page mode is in [host.txt](host.txt).
+Bun's own Linux release build also turns on mimalloc's global `malloc` override and disables transparent huge pages for mimalloc arenas. The harness applies neither on either platform: every engine already allocates through the same mimalloc, Rust through Bun's global allocator and md4c through `md4c_alloc.h`, and one mimalloc configuration keeps the platforms comparable.
 
 ### The lock was seeded, not replayed with `--locked`
 
-The build seeded Cargo with `/Users/sebastian/Workspace/ferromark/.claude/worktrees/ci-x86-profile/docs/reports/2026-09-21-native-round-4/Cargo.lock` through `--bun-lock` because the v2 path package's version line differs from that lock. `CARGO_NET_OFFLINE=true` and `--offline` kept the build itself offline, and `prepare.py` fails if Cargo resolves any registry package outside the union of the engine locks. All 67 resolved registry packages are identical to the seed lock in name, version, and checksum.
+The build seeded Cargo with `docs/reports/2026-09-21-native-round-4/Cargo.lock` through `--bun-lock` because the v2 path package's version line differs from that lock. `CARGO_NET_OFFLINE=true` and `--offline` kept the build itself offline, and `prepare.py` fails if Cargo resolves any registry package outside the union of the engine locks. All 67 resolved registry packages are identical to the seed lock in name, version, and checksum.
 
 ## Source audit
 
@@ -58,22 +58,16 @@ The build seeded Cargo with `/Users/sebastian/Workspace/ferromark/.claude/worktr
 
 ## Measurement conditions
 
-Every timed run waited for no compiler process and a one-minute load below 4; the full run started at load 3.6 and ended at 5.0, the held-out default and PGO runs at 3.8-5.2. The remaining load came from desktop applications. An earlier run of the same revision with the harness before #433 gave the same headline ratios (configurable-five fresh: v1 0.47x, md4c 0.28x, pulldown-cmark 0.37x, Bun 0.16x; all-six OX 0.80x). Load averages and hypervisor steal per process round:
+Every timed run waited for no compiler process and a one-minute load below 4; the full run started at load 3.6 and ended at 5.0, the held-out default and PGO runs at 3.8-5.2. The remaining load came from desktop applications. An earlier run of the same revision with the harness before #433 gave the same headline ratios (configurable-five fresh: v1 0.47x, md4c 0.28x, pulldown-cmark 0.37x, Bun 0.16x; all-six OX 0.80x). Load averages per process round:
 
-| Round | Start (UTC) | End | Load before | Load after | Steal |
-| ---: | --- | --- | ---: | ---: | ---: |
-| 1 | 14:53:27 | 14:57:09 | 3.83 | 4.76 | unavailable |
-| 2 | 14:57:09 | 15:00:51 | 4.76 | 5.22 | unavailable |
-| 3 | 15:00:51 | 15:04:33 | 5.22 | 4.95 | unavailable |
+| Round | Start (UTC) | End | Load before | Load after |
+| ---: | --- | --- | ---: | ---: |
+| 1 | 14:53:27 | 14:57:09 | 3.83 | 4.76 |
+| 2 | 14:57:09 | 15:00:51 | 4.76 | 5.22 |
+| 3 | 15:00:51 | 15:04:33 | 5.22 | 4.95 |
 
-Thermal and clock readings, where the virtual machine exposes them, are in `run.json`.
+The power, thermal, and clock readings the host exposes are in `run.json`.
 
 ## Reproduction
 
-Run the workflow again with the same v2 revision:
-
-```sh
-gh workflow run native-comparison.yml -f revision=09e5e866 -f pgo=true
-```
-
-or follow the harness README's reproduction commands on a Linux x86-64 host with clang, using this report's `restore.py` in an empty cache directory.
+Follow the harness README's reproduction commands on a macOS arm64 host with clang and `--ferromark-v2-revision 09e5e866`, adding the PGO build and the held-out runs, using this report's `restore.py` in an empty cache directory.

@@ -1,8 +1,9 @@
 {
   "workflow_origin": "Measured locally on the maintainer's Apple M1 Pro (MacBook Pro) with the harness at 8b9d4e0f.",
+  "host_kind": "local",
   "harness_revision": "8b9d4e0f40b6ac87f5212362249ae928e6273ef2",
   "harness_tests": "44 tests passed",
-  "verify_before_timing": "run.py --verify-only passed on the default build before any timing",
+  "verify_before_timing": "run.py verified every engine's output, fresh/reuse equality, and rotating-batch state in the measured run itself before its first timed window; no separate --verify-only step was recorded",
   "timed_windows": {
     "main": 12744,
     "checksums": "all passed; rechecked from samples.json",
@@ -10,7 +11,7 @@
     "pgo_pgo": 6480
   },
   "registry": {
-    "seed_lock": "/Users/sebastian/Workspace/ferromark/.claude/worktrees/ci-x86-profile/docs/reports/2026-09-21-native-round-4/Cargo.lock",
+    "seed_lock": "docs/reports/2026-09-21-native-round-4/Cargo.lock",
     "seed_lock_sha256": "dcd99aa42554a095c9798bb3a70578f90512be17315af72d16767345797cb6d0",
     "resolved_lock_sha256": "b1fde1668d1cdf88920e29706880f37bae9b3c64ceb17a1fcebb1495d3367ca1",
     "registry_packages": 67,

@@ -27,6 +27,9 @@ import report as tables  # noqa: E402
 
 COMPRESSED = ("corpus.json", "verification.json", "behavior.json", "samples.json")
 PLAIN = ("run.json", "summary.json", "TABLES.md", "aggregates.json", "timings.csv")
+# Where the run happened, as the caller states it: the text a report may claim depends on it.
+HOST_KINDS = ("github-hosted", "local")
+GENERATED = ("README.md", "PROVENANCE.md", "checks/commands.json", "comparison-rounds.json", "pgo-comparison.json")
 
 
 def read(directory: Path, name: str):
@@ -81,6 +84,26 @@ def audit_windows(run: dict, samples: list, verification: dict) -> int:
     return len(samples) * len(run["engines"])
 
 
+def portable_path(path: Path) -> str:
+    """A path as it reads inside its repository, never an absolute local path.
+
+    A file in a Git checkout (a worktree's `.git` is a file) is named relative to
+    that checkout, for example `docs/reports/<report>/Cargo.lock`; anything else
+    by its directory and file name.
+    """
+    resolved = Path(path).resolve()
+    for parent in resolved.parents:
+        if (parent / ".git").exists():
+            return resolved.relative_to(parent).as_posix()
+    return f"{resolved.parent.name}/{resolved.name}"
+
+
+def leaked_paths(text: str, paths) -> list[str]:
+    """The absolute local paths among `paths` (and the home directory) that `text` mentions."""
+    roots = {str(Path(p).resolve()) for p in paths} | {str(Path.home())}
+    return sorted(root for root in roots if len(root) > 1 and root in text)
+
+
 def registry_check(resolved_lock: Path, seed_lock: Path) -> dict:
     """Compare the registry packages Cargo resolved with the lock the build was seeded from."""
     resolved = prepare.registry_packages(resolved_lock)
@@ -89,7 +112,7 @@ def registry_check(resolved_lock: Path, seed_lock: Path) -> dict:
     removed = sorted(f"{n}@{v}" for n, v in set(seed) - set(resolved))
     changed = sorted(f"{n}@{v}" for (n, v) in set(resolved) & set(seed) if resolved[n, v] != seed[n, v])
     return {
-        "seed_lock": str(seed_lock),
+        "seed_lock": portable_path(seed_lock),
         "seed_lock_sha256": prepare.sha(seed_lock),
         "resolved_lock_sha256": prepare.sha(resolved_lock),
         "registry_packages": len(resolved),
@@ -232,6 +255,29 @@ def percent(value: float | None) -> str:
     return "unavailable" if value is None else f"{value * 100:.2f}%"
 
 
+def host_claims(host_kind: str, steal: float | None) -> list[str]:
+    """The README's bullets on what the kind of host lets a run claim."""
+    steal_line = ("- **Hypervisor steal** was " + percent(steal) + " of all CPU time during the timed run "
+                  "(from `/proc/stat`, recorded before and after every process round in `run.json`).")
+    if host_kind == "github-hosted":
+        return [
+            "- **A shared machine.** A GitHub-hosted runner is a virtual machine on shared hardware. "
+            "Neighbors, clock behavior, and the CPU model can change between runs, so absolute "
+            "nanoseconds are not comparable with any other run, and another run may land on a "
+            "different CPU. Compare engine ratios, not times.",
+            steal_line if steal is not None else "- **Hypervisor steal** was not recorded on this host.",
+        ]
+    if host_kind == "local":
+        return [
+            "- **A single local machine.** The run used one physical machine that other desktop "
+            "workloads can share, not an isolated benchmark host; its load during timing is stated "
+            "under [measurement conditions](PROVENANCE.md#measurement-conditions). Absolute "
+            "nanoseconds describe that machine under that load, so compare engine ratios, not times.",
+            *([steal_line] if steal is not None else []),
+        ]
+    raise ValueError(f"unknown host kind {host_kind!r}; expected one of {HOST_KINDS}")
+
+
 def write_readme(out: Path, facts: dict) -> None:
     build, run = facts["build"], facts["run"]
     v2 = build["engines"]["ferromark_v2"]["revision"]
@@ -277,14 +323,7 @@ def write_readme(out: Path, facts: dict) -> None:
         f"- **One host.** {source['origin']} All six engines ran in the same process rounds and "
         "rotating windows on that host, one worker at a time, so the ratios between engines "
         "describe that host's CPU.",
-        "- **A shared machine.** A GitHub-hosted runner is a virtual machine on shared hardware. "
-        "Neighbors, clock behavior, and the CPU model can change between runs, so absolute "
-        "nanoseconds are not comparable with any other run, and another run may land on a "
-        "different CPU. Compare engine ratios, not times.",
-        (f"- **Hypervisor steal** was {percent(steal)} of all CPU time during the timed run "
-         "(from `/proc/stat`, recorded before and after every process round in `run.json`)."
-         if steal is not None else
-         "- **Hypervisor steal** was not recorded on this host."),
+        *host_claims(facts["host_kind"], steal),
         "- **Not a universal ranking** and not a statistical significance claim. Positions on "
         "x86-64 and Apple Silicon can differ because the engines' SIMD paths, the compilers' "
         "code generation, and the cache hierarchies differ; neither platform's figures describe "
@@ -396,7 +435,7 @@ def write_provenance(out: Path, facts: dict) -> None:
     audit = facts["source_audit"]
     darwin, linux = prepare.PLATFORMS["Darwin"], prepare.PLATFORMS["Linux"]
     rows = [
-        ("C/C++ compiler", "clang, clang++ (Apple clang)", "clang, clang++ (runner default)"),
+        ("C/C++ compiler", "clang, clang++ (Apple clang)", "clang, clang++ (the system's default)"),
         ("C++ runtime", darwin["cxx_runtime_note"], linux["cxx_runtime_note"]),
         ("Rust link driver and linker", darwin["rust_linker_note"], linux["rust_linker_note"]),
         ("Stack bound for Bun's recursion check", darwin["stack_bounds"], linux["stack_bounds"]),
@@ -415,18 +454,55 @@ def write_provenance(out: Path, facts: dict) -> None:
                    for name, value in audit.items() if name != "native_dependencies"]
     audit_lines += [f"- {name} archive: {value['checked_files']} files, {len(value['mismatches'])} mismatches"
                     for name, value in audit.get("native_dependencies", {}).items()]
+    # Only a host that exposes /proc/stat records steal; a Mac never does.
+    steal_recorded = any(cpu_steal(item["before"], item.get("after", {})) is not None
+                         for item in run["observations"])
     observations = []
     for item in run["observations"]:
         before, after = item["before"], item.get("after", {})
         observations.append(
             f"| {item['round'] + 1} | {before['time_utc'][11:19]} | {after.get('time_utc', '')[11:19]} | "
-            f"{before['load_average'][0]:.2f} | {after.get('load_average', [float('nan')])[0]:.2f} | "
-            f"{percent(cpu_steal(before, after))} |")
+            f"{before['load_average'][0]:.2f} | {after.get('load_average', [float('nan')])[0]:.2f} |"
+            + (f" {percent(cpu_steal(before, after))} |" if steal_recorded else ""))
+    observation_head = (["| Round | Start (UTC) | End | Load before | Load after | Steal |",
+                         "| ---: | --- | --- | ---: | ---: | ---: |"] if steal_recorded else
+                        ["| Round | Start (UTC) | End | Load before | Load after |",
+                         "| ---: | --- | --- | ---: | ---: |"])
+    hosted = facts["host_kind"] == "github-hosted"
+    checkout = (f"The workflow checked out `{source['harness_revision']}` for the harness and exported"
+                if hosted else f"The harness at `{source['harness_revision']}` exported")
+    host_file = ""
+    if platform.get("system") == "Linux":
+        host_file = (f" The {'runner' if hosted else 'host'}'s transparent huge page mode is in "
+                     "[host.txt](host.txt).")
+    readings = ("Thermal and clock readings, where the virtual machine exposes them, are in `run.json`."
+                if hosted else
+                "The power, thermal, and clock readings the host exposes are in `run.json`.")
+    revision = engines['ferromark_v2']['revision']
+    if hosted:
+        reproduction = [
+            "Run the workflow again with the same v2 revision:",
+            "",
+            "```sh",
+            f"gh workflow run native-comparison.yml -f revision={revision}"
+            + (" -f pgo=true" if facts.get("pgo") else ""),
+            "```",
+            "",
+            f"or follow the harness README's reproduction commands on a {facts['platform_label']} host "
+            "with clang, using this report's `restore.py` in an empty cache directory.",
+        ]
+    else:
+        reproduction = [
+            f"Follow the harness README's reproduction commands on a {facts['platform_label']} host with "
+            f"clang and `--ferromark-v2-revision {revision}`"
+            + (", adding the PGO build and the held-out runs" if facts.get("pgo") else "")
+            + ", using this report's `restore.py` in an empty cache directory.",
+        ]
     lines = [
         "# Source and build provenance",
         "",
-        f"{source['origin']} The workflow checked out `{source['harness_revision']}` for the harness "
-        "and exported the measured revisions with `git archive`; working-tree sources are never built.",
+        f"{source['origin']} {checkout} the measured revisions with `git archive`; working-tree sources "
+        "are never built.",
         "",
         "| Engine | Pin |",
         "| --- | --- |",
@@ -467,7 +543,7 @@ def write_provenance(out: Path, facts: dict) -> None:
         "disables transparent huge pages for mimalloc arenas. The harness applies neither on either "
         "platform: every engine already allocates through the same mimalloc, Rust through Bun's "
         "global allocator and md4c through `md4c_alloc.h`, and one mimalloc configuration keeps the "
-        "platforms comparable. The runner's transparent huge page mode is in [host.txt](host.txt).",
+        f"platforms comparable.{host_file}",
         "",
         "### The lock was seeded, not replayed with `--locked`",
         "",
@@ -490,25 +566,17 @@ def write_provenance(out: Path, facts: dict) -> None:
         "",
         "## Measurement conditions",
         "",
-        f"{facts['measurement_note']} Load averages and hypervisor steal per process round:",
+        f"{facts['measurement_note']} Load averages"
+        + (" and hypervisor steal" if steal_recorded else "") + " per process round:",
         "",
-        "| Round | Start (UTC) | End | Load before | Load after | Steal |",
-        "| ---: | --- | --- | ---: | ---: | ---: |",
+        *observation_head,
         *observations,
         "",
-        "Thermal and clock readings, where the virtual machine exposes them, are in `run.json`.",
+        readings,
         "",
         "## Reproduction",
         "",
-        "Run the workflow again with the same v2 revision:",
-        "",
-        "```sh",
-        f"gh workflow run native-comparison.yml -f revision={engines['ferromark_v2']['revision']}"
-        + (" -f pgo=true" if facts.get("pgo") else ""),
-        "```",
-        "",
-        "or follow the harness README's reproduction commands on a Linux x86-64 host with clang, "
-        "using this report's `restore.py` in an empty cache directory.",
+        *reproduction,
         "",
     ]
     (out / "PROVENANCE.md").write_text("\n".join(lines))
@@ -532,6 +600,11 @@ def main() -> None:
     p.add_argument("--host-file", type=Path, required=True, help="host description, for example lscpu output")
     p.add_argument("--host-summary", required=True, help="one-line host description for the README")
     p.add_argument("--origin", required=True, help="one sentence naming where and how the run happened")
+    p.add_argument("--host-kind", required=True, choices=HOST_KINDS,
+                   help="github-hosted: a CI runner virtual machine on shared hardware; "
+                        "local: one physical machine that desktop workloads can share")
+    p.add_argument("--verify-only-passed", action="store_true",
+                   help="run.py --verify-only passed on the default build in a separate step before any timing")
     p.add_argument("--harness-revision", required=True)
     p.add_argument("--measurement-note", help="one sentence on what else ran during timing",
                    default="No other benchmark process was started while `run.py` was timing.")
@@ -587,9 +660,13 @@ def main() -> None:
         assert not mismatches, ("source audit mismatch", name, mismatches)
     checks = {
         "workflow_origin": args.origin,
+        "host_kind": args.host_kind,
         "harness_revision": args.harness_revision,
         "harness_tests": harness_tests(args.tests_log),
-        "verify_before_timing": "run.py --verify-only passed on the default build before any timing",
+        "verify_before_timing": (
+            "run.py --verify-only passed on the default build before any timing" if args.verify_only_passed else
+            "run.py verified every engine's output, fresh/reuse equality, and rotating-batch state in the "
+            "measured run itself before its first timed window; no separate --verify-only step was recorded"),
         "timed_windows": {"main": windows, "checksums": "all passed; rechecked from samples.json"},
         "registry": registry,
         "outputs_vs_reference": {"reference": args.reference.name, **outputs},
@@ -604,7 +681,7 @@ def main() -> None:
                  source=dict(origin=args.origin, host_summary=args.host_summary,
                              harness_revision=args.harness_revision),
                  source_audit=audit, date=date, platform_label=label,
-                 measurement_note=args.measurement_note)
+                 measurement_note=args.measurement_note, host_kind=args.host_kind)
     (out / "comparison-rounds.json").write_text(json.dumps(facts["rounds"], indent=2) + "\n")
 
     if args.pgo_build_dir:
@@ -631,6 +708,14 @@ def main() -> None:
     (out / "checks" / "commands.json").write_text(json.dumps(checks, indent=2) + "\n")
     write_readme(out, facts)
     write_provenance(out, facts)
+    inputs = [args.parent, args.results, args.build_dir, args.seed_lock, args.reference, args.restore_dir,
+              args.host_file, args.build_log, args.source_audit, *pgo_inputs, args.tests_log,
+              args.pgo_build_log]
+    for name in GENERATED:
+        path = out / name
+        leaks = leaked_paths(path.read_text(), [p for p in inputs if p]) if path.exists() else []
+        if leaks:
+            raise SystemExit(f"{path} names local paths {leaks}; record them relative to the repository")
     checksums(out)
     if args.step_summary:
         with args.step_summary.open("a") as stream:
