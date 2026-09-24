@@ -11,7 +11,9 @@
 //! the rest: rust-book-style prose (median line ~57 bytes, nearly half of
 //! lines 64+) pays four to eight SWAR iterations per line, and those documents
 //! are exactly the ones that cannot bail out of the pre-pass because they
-//! hold link reference definitions.
+//! hold link reference definitions. x86-64 runs the same scan with SSE2,
+//! which is part of its baseline: one 16-byte probe inline, the rest out of
+//! line (see `line_end_x86`).
 //!
 //! That advantage is specific to this access pattern. Block parsing walks the
 //! long prose lines of a paragraph, where `memchr`'s wider SIMD step overtakes
@@ -46,6 +48,58 @@ pub(in crate::parser) fn line_end(bytes: &[u8], from: usize) -> usize {
         if bytes.len() - from >= 16 {
             return line_end_neon(bytes, from);
         }
+    }
+    #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+    {
+        line_end_x86(bytes, from)
+    }
+    #[cfg(not(all(target_arch = "x86_64", target_feature = "sse2")))]
+    {
+        line_end_swar(bytes, from)
+    }
+}
+
+/// [`line_end`] on x86-64: one inline 16-byte probe, then an out-of-line
+/// call for whatever the probe leaves.
+///
+/// `line_end` is `#[inline]` and reached from dozens of block-parser sites.
+/// Inlining the whole SSE2 scan into each of them, as aarch64 does with
+/// NEON, adds 63–70 instructions per site to the x86-64 release build
+/// (+3,100 in the parser, +874 in `parse_document` alone). Moving all of it
+/// out of line makes every scan pay a call, however short its line. The
+/// probe answers every line that ends within the 16 bytes at `from` in
+/// about 16 inline instructions, fewer than the word scan the sites used to
+/// inline, so the parser still shrinks. Longer lines, and scans that start
+/// in a document's last 15 bytes, continue in [`line_end_x86_rest`].
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[allow(unsafe_code)]
+#[inline]
+fn line_end_x86(bytes: &[u8], from: usize) -> usize {
+    // `from <= bytes.len()` holds for every caller, so the sum cannot
+    // overflow; the comparison also keeps an out-of-range `from` away from
+    // the load.
+    let rest = if from + 16 <= bytes.len() {
+        // SAFETY: the 16 bytes at `from` exist, checked just above.
+        let mask = unsafe { newline_lanes(bytes, from) };
+        if mask != 0 {
+            return from + mask.trailing_zeros() as usize;
+        }
+        from + 16
+    } else {
+        from
+    };
+    line_end_x86_rest(bytes, rest)
+}
+
+/// The scan past [`line_end_x86`]'s probe, out of line: [`line_end_sse2`]
+/// for any start once the document holds one vector (its overlapping tail
+/// covers starts in the last 15 bytes), the word scan for shorter
+/// documents.
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[inline(never)]
+fn line_end_x86_rest(bytes: &[u8], from: usize) -> usize {
+    if bytes.len() >= 16 {
+        return line_end_sse2(bytes, from);
     }
     line_end_swar(bytes, from)
 }
@@ -103,7 +157,87 @@ fn line_end_neon(bytes: &[u8], from: usize) -> usize {
     i
 }
 
-/// Portable eight-byte word scan used for short remainders and non-aarch64.
+/// SSE2 sibling of `line_end_neon` for x86-64, where SSE2 is part of the
+/// baseline, so nothing is detected at run time. Needs `bytes.len() >= 16`
+/// and answers any `from` up to `bytes.len()`.
+///
+/// The steps mirror the NEON scan: 32 bytes per iteration, then at most one
+/// 16-byte step, then one overlapping load of the last vector for the
+/// remaining 1–15 bytes. The two halves of a 32-byte step fold into one
+/// 32-bit mask, so the step takes a single branch.
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[allow(unsafe_code)]
+#[inline]
+fn line_end_sse2(bytes: &[u8], from: usize) -> usize {
+    let end = bytes.len();
+    debug_assert!(from <= end && end >= 16);
+    let mut i = from;
+    // SAFETY: every 16-byte load starts at an offset `at` with
+    // `at + 16 <= end`: the loop conditions bound the stepped loads, and the
+    // tail load starts at `end - 16`, which exists because the caller
+    // guarantees `end >= 16`.
+    unsafe {
+        let lanes = |at: usize| newline_lanes(bytes, at);
+        while i + 32 <= end {
+            let mask = lanes(i) | (lanes(i + 16) << 16);
+            if mask != 0 {
+                return i + mask.trailing_zeros() as usize;
+            }
+            i += 32;
+        }
+        if i + 16 <= end {
+            let mask = lanes(i);
+            if mask != 0 {
+                return i + mask.trailing_zeros() as usize;
+            }
+            i += 16;
+        }
+        if i < end {
+            // Overlapping tail: `end - 16 < i < end` here, so the shift is
+            // 1..=15 and drops the lanes before `i`, which the steps already
+            // cleared or which lie before `from`. Each lane's compare is
+            // exact, so nothing leaks across the mask.
+            let base = end - 16;
+            let mask = lanes(base) & (u32::MAX << (i - base));
+            if mask != 0 {
+                return base + mask.trailing_zeros() as usize;
+            }
+            return end;
+        }
+    }
+    i
+}
+
+/// The line terminators among the 16 bytes at `at`: bit `k` is set iff
+/// `bytes[at + k]` is `\n` or `\r`, and bits 16 and up are clear.
+///
+/// # Safety
+///
+/// `at + 16 <= bytes.len()`.
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[allow(unsafe_code)]
+#[inline]
+unsafe fn newline_lanes(bytes: &[u8], at: usize) -> u32 {
+    use std::arch::x86_64::{
+        _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_or_si128, _mm_set1_epi8,
+    };
+    debug_assert!(at + 16 <= bytes.len());
+    // SAFETY: the `cfg` above admits only builds with SSE2 enabled, and the
+    // caller guarantees the 16 bytes at `at`. `_mm_loadu_si128` has no
+    // alignment requirement.
+    let mask = unsafe {
+        let v = _mm_loadu_si128(bytes.as_ptr().add(at).cast());
+        let nl = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'\n'.cast_signed()));
+        let cr = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'\r'.cast_signed()));
+        _mm_movemask_epi8(_mm_or_si128(nl, cr))
+    };
+    // `movemask` fills only the low 16 bits, so the value is never negative
+    // and the conversion is exact.
+    mask.cast_unsigned()
+}
+
+/// Portable eight-byte word scan used for short remainders, and for every
+/// input on targets without a vector scan.
 #[inline]
 fn line_end_swar(bytes: &[u8], from: usize) -> usize {
     let end = bytes.len();
@@ -158,6 +292,12 @@ fn copy_eight(bytes: &[u8], from: usize) -> [u8; 8] {
 
 #[cfg(test)]
 mod tests {
+    #![allow(
+        clippy::disallowed_macros,
+        clippy::disallowed_methods,
+        clippy::disallowed_types
+    )]
+
     use super::*;
 
     #[test]
@@ -284,5 +424,185 @@ mod tests {
             }
             assert_eq!(line_index, expected.len());
         }
+    }
+
+    /// The definition every scanner must meet, for each start at once:
+    /// `answers[from]` is the offset of the first `\n` or `\r` at or after
+    /// `from`, or `bytes.len()` when there is none.
+    fn first_terminators(bytes: &[u8]) -> Vec<usize> {
+        let mut answers = vec![bytes.len(); bytes.len() + 1];
+        for at in (0..bytes.len()).rev() {
+            answers[at] = if is_line_ending_byte(bytes[at]) {
+                at
+            } else {
+                answers[at + 1]
+            };
+        }
+        answers
+    }
+
+    /// Checks the scans from `from` against `expected`: `line_end` and
+    /// `next_line_start` on every target. On x86-64 also the two out-of-line
+    /// pieces on their own, from any start: the rest that follows the inline
+    /// probe, and the SSE2 scan for every input of at least one vector,
+    /// including starts in the last 15 bytes, where the tail's mask must
+    /// drop the lanes before `from`.
+    fn check_from(bytes: &[u8], from: usize, expected: usize) {
+        assert_eq!(
+            line_end(bytes, from),
+            expected,
+            "line_end from {from} of {bytes:02x?}"
+        );
+        assert_eq!(
+            next_line_start(bytes, from),
+            line_terminator_end(bytes, expected),
+            "next_line_start from {from} of {bytes:02x?}"
+        );
+        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+        {
+            assert_eq!(
+                line_end_x86_rest(bytes, from),
+                expected,
+                "rest from {from} of {bytes:02x?}"
+            );
+            if bytes.len() >= 16 {
+                assert_eq!(
+                    line_end_sse2(bytes, from),
+                    expected,
+                    "SSE2 from {from} of {bytes:02x?}"
+                );
+            }
+        }
+    }
+
+    /// [`check_from`] from every start in `bytes`.
+    fn check_every_start(bytes: &[u8]) {
+        for (from, &expected) in first_terminators(bytes).iter().enumerate() {
+            check_from(bytes, from, expected);
+        }
+    }
+
+    #[test]
+    fn matches_definition_with_terminators_at_every_offset() {
+        // LF, CR and CRLF at every offset of every length up to 200, scanned
+        // from every start: before the terminator the 32-byte step (either
+        // half), the 16-byte step or the overlapping tail finds it, at it the
+        // scan stops at once, and past it the scan must ignore it, including
+        // lanes of the overlapping tail that the steps already cleared.
+        for len in 0..=200usize {
+            let mut buffer = vec![b'x'; len];
+            check_every_start(&buffer);
+            for terminator in [&b"\n"[..], b"\r", b"\r\n"] {
+                let Some(last) = len.checked_sub(terminator.len()) else {
+                    continue;
+                };
+                for at in 0..=last {
+                    buffer[at..at + terminator.len()].copy_from_slice(terminator);
+                    check_every_start(&buffer);
+                    buffer[at..at + terminator.len()].fill(b'x');
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn matches_definition_around_the_probe_boundary() {
+        // On x86-64 the 16 bytes at `from` are probed inline, and the scan
+        // continues out of line at `from + 16`, or starts out of line when
+        // fewer than 16 bytes remain. Terminators in the probe's first and
+        // last lanes, just past it, and at the continuation's 16- and
+        // 32-byte edges, or only just before `from`, from every start of
+        // every length up to 96: the probe ends before, exactly at, or past
+        // the end of the document.
+        for len in 0..=96usize {
+            for from in 0..=len {
+                let clean = vec![b'x'; len];
+                check_from(&clean, from, len);
+                if from > 0 {
+                    let mut behind = clean.clone();
+                    behind[from - 1] = b'\n';
+                    check_from(&behind, from, len);
+                }
+                for offset in [0usize, 1, 14, 15, 16, 17, 31, 32, 33, 47, 48] {
+                    let at = from + offset;
+                    for terminator in [&b"\n"[..], b"\r", b"\r\n"] {
+                        if at + terminator.len() > len {
+                            continue;
+                        }
+                        let mut bytes = clean.clone();
+                        bytes[at..at + terminator.len()].copy_from_slice(terminator);
+                        check_from(&bytes, from, at);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn matches_definition_on_terminator_only_input() {
+        for len in 0..=200usize {
+            for unit in [&b"\n"[..], b"\r", b"\r\n"] {
+                let bytes: Vec<u8> = unit.iter().copied().cycle().take(len).collect();
+                check_every_start(&bytes);
+            }
+        }
+    }
+
+    #[test]
+    fn matches_definition_for_every_byte_value_in_every_lane() {
+        // Every byte value in every lane of the 32-byte step (both halves),
+        // the 16-byte step and the overlapping tail: 32 bytes take one
+        // 32-byte step, 47 add the tail, and 48 add the 16-byte step. The
+        // backgrounds are non-terminators close to `\n` and `\r`: a plain
+        // letter, `0x0B` between the two, and `0x8A`/`0x8D`, which differ
+        // from them only in the high bit that every non-ASCII byte sets.
+        for background in [b'x', 0x0B, 0x8A, 0x8D] {
+            for len in [32usize, 47, 48] {
+                let mut buffer = vec![background; len];
+                for at in 0..len {
+                    for value in 0..=u8::MAX {
+                        buffer[at] = value;
+                        let found = if is_line_ending_byte(value) { at } else { len };
+                        check_from(&buffer, 0, found);
+                        check_from(&buffer, at, found);
+                        check_from(&buffer, at + 1, len);
+                    }
+                    buffer[at] = background;
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn matches_definition_on_non_ascii_lines() {
+        // Lines of up to 80 bytes built from 1- to 4-byte UTF-8 sequences,
+        // ended in turn by LF, CRLF and CR, with an unterminated last line,
+        // scanned from every start and walked line by line.
+        let mut source = String::new();
+        for len in 0..=80usize {
+            let line_start = source.len();
+            for ch in "aé中🙂".chars().cycle() {
+                if source.len() - line_start + ch.len_utf8() > len {
+                    break;
+                }
+                source.push(ch);
+            }
+            source.push_str(["\n", "\r\n", "\r"][len % 3]);
+        }
+        source.push_str("last line 🙂 without a terminator, long enough for a vector");
+        let bytes = source.as_bytes();
+        check_every_start(bytes);
+
+        let answers = first_terminators(bytes);
+        let mut pos = 0;
+        let mut lines = 0;
+        while pos < bytes.len() {
+            let end = line_end(bytes, pos);
+            assert_eq!(end, answers[pos], "line {lines}");
+            assert!(source.is_char_boundary(end), "line {lines}");
+            pos = next_line_start(bytes, pos);
+            lines += 1;
+        }
+        assert_eq!(lines, 82);
     }
 }
