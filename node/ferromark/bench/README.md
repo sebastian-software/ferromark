@@ -5,10 +5,13 @@ and how much goes to the Rust core. It covers `toHtml` (one-shot),
 `Renderer.toHtml` (reused), `toHtmlBuffer` and `Renderer.toHtmlBuffer`, and
 splits each call into four parts:
 
-- **input**: the JavaScript string becomes a Rust `String`. napi-rs calls
-  `napi_get_value_string_utf8` twice: first a UTF-8 length pass, then a copy
-  into a zero-filled buffer. V8 transcodes its Latin-1 or UTF-16 storage on
-  the way.
+- **input**: the JavaScript string becomes a Rust `String`. The exports read
+  V8's stored UTF-16 length, reserve three UTF-8 bytes per unit and call
+  `napi_get_value_string_utf8` once (`Utf8Input` in
+  [`node/native/src/input.rs`](../../native/src/input.rs)). V8 transcodes its
+  Latin-1 or UTF-16 storage on the way. Before that, napi-rs's `String`
+  conversion called it twice: a UTF-8 length pass, then a copy into a
+  zero-filled buffer.
 - **core**: arena, parse and render in Rust.
 - **output**: `napi_create_string_utf8` decodes the HTML into a V8 string.
   `toHtmlBuffer` copies the HTML into a `Vec` and wraps it in an external
@@ -42,6 +45,10 @@ Add `FERROMARK_PGO=1` to profile the addon as published builds are profiled
 ([ADR-0019](../../../docs/arch/ADR-0019-profile-guided-native-addon.md)). The
 feature adds exports but leaves the profiled core code unchanged.
 
+To compare two revisions, build one addon from each checkout into its own
+directory and pass each directory with `--addon`. The script skips diagnostic
+exports that an older addon lacks, so one checkout's script can time both.
+
 ## Run
 
 From `node/ferromark/`:
@@ -70,7 +77,8 @@ garbage between documents, and the script runs without it too.
 Before timing, the script checks every lane's output for each document. The
 public exports, the probe's HTML and `Buffer`, and every candidate must return
 the same HTML. The core loops must match the HTML length, and each input path
-must match `Buffer.byteLength`.
+must match `Buffer.byteLength`. The exports' input conversion must return the
+same bytes as napi-rs's `String` conversion and `Buffer.from`.
 
 Each lane is one loop over `k` calls, timed with `process.hrtime.bigint()`.
 `k` is calibrated per lane so that a batch lasts `--batch-ms`. The core lanes
@@ -89,6 +97,7 @@ lane.
 | `noop`                                   | `boundaryNoop()`: the free-function call floor                                        |
 | `methodNoop`                             | `BoundaryProbe#noop()`: the method call floor, including the unwrap of `this`         |
 | `len`                                    | `boundaryLen(markdown)`: the call plus input conversion                               |
+| `lenNapiString`                          | `boundaryLenNapiString(markdown)`: the same with napi-rs's `String` conversion        |
 | `echo`                                   | `boundaryEcho(markdown)`: input plus output conversion of the Markdown                |
 | `make`                                   | `boundaryMake(n)`: output conversion of `n` ASCII bytes, `n` = HTML length            |
 | `html`, `htmlBuffer`                     | the exact HTML as `Renderer.toHtml` and `toHtmlBuffer` return it, rendered beforehand |
@@ -144,19 +153,23 @@ identical text.
 The `boundary-bench` feature also prototypes reductions. They are
 measurements, not API.
 
-| Candidate          | Lane                             | Compared with | Share of          | Public API change                                               |
-| ------------------ | -------------------------------- | ------------- | ----------------- | --------------------------------------------------------------- |
-| `singlePassInput`  | `boundaryLenSinglePass`          | `len`         | `toHtml`          | none: an internal conversion                                    |
-| `bytesInput`       | `boundaryBytesLen(Buffer)`       | `len`         | `toHtml`          | new: accept UTF-8 bytes (`Buffer`/`Uint8Array`)                 |
-| `encodeIntoInput`  | `TextEncoder.encodeInto` + bytes | `len`         | `toHtml`          | none if the facade does it with a kept scratch buffer           |
-| `latin1Output`     | `BoundaryProbe#htmlLatin1`       | `html`        | `Renderer.toHtml` | none: an internal conversion for ASCII HTML                     |
-| `externalOutput`   | `boundaryToHtmlExternal`         | `toHtml`      | `toHtml`          | none: an internal conversion for ASCII HTML                     |
-| `bufferCopyOutput` | `BoundaryProbe#htmlBufferCopy`   | `htmlBuffer`  | `toHtmlBuffer`    | none: an internal conversion                                    |
-| `cachedRenderer`   | `Renderer.toHtml`                | `toHtml`      | `toHtml`          | none if `toHtml` without options reuses a module-level renderer |
+| Candidate          | Lane                             | Compared with   | Share of          | Public API change                                               |
+| ------------------ | -------------------------------- | --------------- | ----------------- | --------------------------------------------------------------- |
+| `singlePassInput`  | `boundaryLen`                    | `lenNapiString` | `toHtml`          | none: shipped as the exports' conversion                        |
+| `bytesInput`       | `boundaryBytesLen(Buffer)`       | `len`           | `toHtml`          | new: accept UTF-8 bytes (`Buffer`/`Uint8Array`)                 |
+| `encodeIntoInput`  | `TextEncoder.encodeInto` + bytes | `len`           | `toHtml`          | none if the facade does it with a kept scratch buffer           |
+| `latin1Output`     | `BoundaryProbe#htmlLatin1`       | `html`          | `Renderer.toHtml` | none: an internal conversion for ASCII HTML                     |
+| `externalOutput`   | `boundaryToHtmlExternal`         | `toHtml`        | `toHtml`          | none: an internal conversion for ASCII HTML                     |
+| `bufferCopyOutput` | `BoundaryProbe#htmlBufferCopy`   | `htmlBuffer`    | `toHtmlBuffer`    | none: an internal conversion                                    |
+| `cachedRenderer`   | `Renderer.toHtml`                | `toHtml`        | `toHtml`          | none if `toHtml` without options reuses a module-level renderer |
 
-- `singlePassInput` reads V8's string length in O(1), allocates the UTF-8
-  worst case (three bytes per UTF-16 unit) without zero-filling it, and
-  converts in one `napi_get_value_string_utf8` pass.
+- `singlePassInput` has shipped. The exports read V8's string length in O(1),
+  reserve the UTF-8 worst case (three bytes per UTF-16 unit) without
+  zero-filling it, and convert in one `napi_get_value_string_utf8` pass. Its
+  column now pairs napi-rs's `String` conversion (`boundaryLenNapiString`,
+  the path before) with the exports' own (`len`), so it reports the saving of
+  the switch within one build. An addon built before the switch lacks
+  `boundaryLenNapiString`, and the column shows `n/a` for it.
 - `bytesInput` borrows the bytes and validates them as UTF-8, and it copies
   nothing. A caller who reads files as `Buffer` never builds a JavaScript
   string at all.

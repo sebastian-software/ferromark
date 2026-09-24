@@ -69,6 +69,8 @@ export function attribution(rounds) {
 }
 
 // Each candidate as [current path, candidate path, baseline API for the ratio].
+// `singlePassInput` has shipped: its pair is now napi-rs's `String` conversion,
+// which the exports used before, and the exports' own single pass (`len`).
 const candidatePairs = {
   bufferCopyOutput: ["htmlBuffer", "htmlBufferCopy", "toHtmlBuffer"],
   bytesInput: ["len", "bytesLen", "toHtml"],
@@ -76,7 +78,7 @@ const candidatePairs = {
   encodeIntoInput: ["len", "encodeIntoLen", "toHtml"],
   externalOutput: ["toHtml", "toHtmlExternal", "toHtml"],
   latin1Output: ["html", "htmlLatin1", "rendererToHtml"],
-  singlePassInput: ["len", "lenSinglePass", "toHtml"],
+  singlePassInput: ["lenNapiString", "len", "toHtml"],
 };
 export const candidateNames = Object.keys(candidatePairs);
 

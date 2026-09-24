@@ -9,34 +9,59 @@
 //!
 //! Every export does one isolated piece of a real call, and the core loops call
 //! the same helpers as the public exports (`render_one_shot`,
-//! `Renderer::render_reused`), so the parts add up to the real thing. The
+//! `Renderer::render_reused`), so the parts add up to the real thing. Markdown
+//! arguments convert through [`Utf8Input`], as the public exports' do. The
 //! `candidate` exports prototype reductions; they are measurements, not API.
+//! The `NapiString` exports keep napi-rs's own `String` conversion, which the
+//! public exports used before `Utf8Input`, as a reference.
 
 use std::cell::{Cell, RefCell};
 use std::hint::black_box;
 
 use napi::bindgen_prelude::{Buffer, BufferSlice, Error, Result, Status, Uint8ArraySlice};
-use napi::{Env, JsString, JsStringLatin1, JsValue, sys};
+use napi::{Env, JsString, JsStringLatin1};
 use napi_derive::napi;
 
+use crate::input::Utf8Input;
 use crate::{Options, Renderer, core_options, render_one_shot};
 
 /// Returns nothing: the floor of a free-function N-API call.
 #[napi(catch_unwind, js_name = "boundaryNoop")]
 pub fn noop() {}
 
-/// Input conversion only: napi-rs converts the argument into a `String`
-/// (`napi_get_value_string_utf8` twice: a UTF-8 length pass, then the copy),
-/// and the `String` is dropped again.
+/// Input conversion only, as the public exports convert Markdown: one
+/// `napi_get_value_string_utf8` pass into a reserved buffer. The string is
+/// dropped again.
 #[napi(catch_unwind, js_name = "boundaryLen")]
-pub fn len(markdown: String) -> u32 {
+pub fn len(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> u32 {
     markdown.len() as u32
+}
+
+/// Input conversion only, with napi-rs's `String` conversion
+/// (`napi_get_value_string_utf8` twice: a UTF-8 length pass, then the copy
+/// into a zero-filled buffer), which the public exports used before.
+#[napi(catch_unwind, js_name = "boundaryLenNapiString")]
+pub fn len_napi_string(markdown: String) -> u32 {
+    markdown.len() as u32
+}
+
+/// The UTF-8 bytes the public exports convert a string to.
+#[napi(catch_unwind, js_name = "boundaryInputBytes")]
+pub fn input_bytes(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> Buffer {
+    markdown.into_string().into_bytes().into()
+}
+
+/// The UTF-8 bytes napi-rs's `String` conversion produces, to compare with
+/// `boundaryInputBytes`.
+#[napi(catch_unwind, js_name = "boundaryNapiStringBytes")]
+pub fn napi_string_bytes(markdown: String) -> Buffer {
+    markdown.into_bytes().into()
 }
 
 /// Input and output conversion of the same string, without the core.
 #[napi(catch_unwind, js_name = "boundaryEcho")]
-pub fn echo(markdown: String) -> String {
-    markdown
+pub fn echo(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> String {
+    markdown.into_string()
 }
 
 thread_local! {
@@ -75,7 +100,11 @@ pub fn make(n: u32) -> &'static str {
 /// - `fresh`: `toHtml`'s Rust side (`Renderer::new`, parse, owned render, drops).
 /// - `setup`: `Renderer::new` with default options and its drop, nothing else.
 #[napi(catch_unwind, js_name = "boundaryCoreOnly")]
-pub fn core_only(markdown: String, iterations: u32, lifecycle: String) -> Result<u32> {
+pub fn core_only(
+    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    iterations: u32,
+    lifecycle: String,
+) -> Result<u32> {
     let mut checksum = 0u32;
     match lifecycle.as_str() {
         "reuse" => REUSED.with_borrow_mut(|reused| -> Result<()> {
@@ -128,60 +157,16 @@ pub fn bytes_len(bytes: Uint8ArraySlice) -> Result<u32> {
     Ok(markdown.len() as u32)
 }
 
-/// Candidate string input path: a single `napi_get_value_string_utf8` pass.
-///
-/// It writes into an uninitialized worst-case buffer (three UTF-8 bytes per
-/// UTF-16 unit) instead of napi-rs's UTF-8 length pass plus a zero-filled
-/// exact buffer.
-#[napi(catch_unwind, js_name = "boundaryLenSinglePass")]
-pub fn len_single_pass(markdown: JsString) -> Result<u32> {
-    Ok(single_pass_string(markdown)?.len() as u32)
-}
-
-// The only unsafe code in the addon, and only in this diagnostic build: a
-// prototype of a conversion napi-rs does not offer.
-#[allow(unsafe_code)]
-fn single_pass_string(value: JsString) -> Result<String> {
-    // O(1): V8 reports the stored length without scanning the string.
-    let units = value.utf16_len()?;
-    let capacity = units * 3 + 1;
-    let mut bytes = Vec::<u8>::with_capacity(capacity);
-    let raw = value.value();
-    let mut written = 0usize;
-    // SAFETY: `bytes` owns `capacity` writable bytes, which is the size passed
-    // as `bufsize`. N-API writes at most `bufsize - 1` UTF-8 bytes plus a NUL
-    // terminator and reports the UTF-8 byte count in `written`.
-    let status = unsafe {
-        sys::napi_get_value_string_utf8(
-            raw.env,
-            raw.value,
-            bytes.as_mut_ptr().cast(),
-            capacity,
-            &raw mut written,
-        )
-    };
-    if status != sys::Status::napi_ok {
-        return Err(Error::new(
-            Status::StringExpected,
-            "boundaryLenSinglePass expects a string",
-        ));
-    }
-    // SAFETY: N-API initialized `written` bytes of complete, valid UTF-8 (it
-    // replaces lone surrogates), and every UTF-16 unit fits in three bytes, so
-    // nothing was truncated.
-    unsafe {
-        bytes.set_len(written);
-        Ok(String::from_utf8_unchecked(bytes))
-    }
-}
-
 /// Candidate one-shot output path: an external Latin-1 string for ASCII HTML.
 ///
 /// The owned HTML is handed to V8 without a copy and freed by the garbage
 /// collector; non-ASCII HTML is converted like `toHtml`. Everything else is
 /// `toHtml`.
 #[napi(catch_unwind, js_name = "boundaryToHtmlExternal")]
-pub fn to_html_external<'env>(env: &'env Env, markdown: String) -> Result<JsString<'env>> {
+pub fn to_html_external<'env>(
+    env: &'env Env,
+    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+) -> Result<JsString<'env>> {
     let html = render_one_shot(&markdown, None)?;
     if !html.is_empty() && html.is_ascii() {
         Ok(JsStringLatin1::from_data(env, html.into_bytes())?.into_value())
@@ -201,7 +186,7 @@ pub struct BoundaryProbe {
 impl BoundaryProbe {
     /// Renders `markdown` once, as `new Renderer().toHtml(markdown)` does.
     #[napi(constructor, catch_unwind)]
-    pub fn new(markdown: String) -> Result<Self> {
+    pub fn new(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> Result<Self> {
         let mut renderer = Renderer::new(None)?;
         let html = renderer.render_reused(&markdown)?.to_owned();
         Ok(Self { html })

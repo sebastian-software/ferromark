@@ -50,6 +50,27 @@ function outputChecks({ html, markdown, native, outputAscii, probe, renderer }) 
   };
 }
 
+/**
+ * Whether the addon has napi-rs's `String` conversion as a reference next to
+ * the exports' single pass. An addon built before the exports switched lacks
+ * it, and the script then skips its checks and lane, so one script can time a
+ * build from before and one from after the switch.
+ * @param native The loaded addon.
+ */
+function hasNapiStringReference(native) {
+  return typeof native.boundaryLenNapiString === "function";
+}
+
+function inputChecks({ bytes, markdown, native }) {
+  if (!hasNapiStringReference(native)) return {};
+  const converted = native.boundaryInputBytes(markdown);
+  return {
+    boundaryInputBytes:
+      converted.equals(bytes) && converted.equals(native.boundaryNapiStringBytes(markdown)),
+    boundaryLenNapiString: native.boundaryLenNapiString(markdown) === bytes.length,
+  };
+}
+
 function partChecks(state, inputBytes) {
   const { bytes, markdown, native, outputBytes } = state;
   const threeOutputs = (outputBytes * 3) >>> 0;
@@ -57,12 +78,12 @@ function partChecks(state, inputBytes) {
     boundaryBytesLen: native.boundaryBytesLen(bytes) === inputBytes,
     boundaryEcho: native.boundaryEcho(markdown) === markdown,
     boundaryLen: native.boundaryLen(markdown) === inputBytes,
-    boundaryLenSinglePass: native.boundaryLenSinglePass(markdown) === inputBytes,
     boundaryMake: native.boundaryMake(outputBytes).length === outputBytes,
     coreFresh: native.boundaryCoreOnly(markdown, 3, "fresh") === threeOutputs,
     coreReuse: native.boundaryCoreOnly(markdown, 3, "reuse") === threeOutputs,
     coreSetup: native.boundaryCoreOnly("", 3, "setup") === 3,
     encodeIntoLen: encodeIntoLength(state, markdown) === inputBytes,
+    ...inputChecks(state),
   };
 }
 
@@ -150,9 +171,6 @@ function candidateLanes({ bytes, encoder, markdown, native, outputAscii, probe, 
     htmlBufferCopy(k) {
       for (let i = 0; i < k; i++) sink = probe.htmlBufferCopy();
     },
-    lenSinglePass(k) {
-      for (let i = 0; i < k; i++) sink = native.boundaryLenSinglePass(markdown);
-    },
     toHtmlExternal(k) {
       for (let i = 0; i < k; i++) sink = native.boundaryToHtmlExternal(markdown);
     },
@@ -160,6 +178,11 @@ function candidateLanes({ bytes, encoder, markdown, native, outputAscii, probe, 
   if (outputAscii) {
     lanes.htmlLatin1 = (k) => {
       for (let i = 0; i < k; i++) sink = probe.htmlLatin1();
+    };
+  }
+  if (hasNapiStringReference(native)) {
+    lanes.lenNapiString = (k) => {
+      for (let i = 0; i < k; i++) sink = native.boundaryLenNapiString(markdown);
     };
   }
   return lanes;
