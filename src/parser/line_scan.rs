@@ -12,7 +12,8 @@
 //! lines 64+) pays four to eight SWAR iterations per line, and those documents
 //! are exactly the ones that cannot bail out of the pre-pass because they
 //! hold link reference definitions. x86-64 runs the same scan with SSE2,
-//! which is part of its baseline, but out of line (see `line_end_x86`).
+//! which is part of its baseline: one 16-byte probe inline, the rest out of
+//! line (see `line_end_x86`).
 //!
 //! That advantage is specific to this access pattern. Block parsing walks the
 //! long prose lines of a paragraph, where `memchr`'s wider SIMD step overtakes
@@ -58,21 +59,46 @@ pub(in crate::parser) fn line_end(bytes: &[u8], from: usize) -> usize {
     }
 }
 
-/// [`line_end`] on x86-64: the aarch64 dispatch with [`line_end_sse2`] in
-/// place of the NEON scan, kept out of line.
+/// [`line_end`] on x86-64: one inline 16-byte probe, then an out-of-line
+/// call for whatever the probe leaves.
 ///
 /// `line_end` is `#[inline]` and reached from dozens of block-parser sites.
-/// Inlined into each of them the way the NEON scan is, the SSE2 loop adds
-/// 63–70 instructions per site to the x86-64 release build (+3,100 in the
-/// parser, +874 in `parse_document` alone). Out of line, each site keeps
-/// only a call, and the word scan the sites used to inline moves here as
-/// well: it serves only scans that start in a document's last 15 bytes, so
-/// it no longer occupies code and registers in every caller.
+/// Inlining the whole SSE2 scan into each of them, as aarch64 does with
+/// NEON, adds 63–70 instructions per site to the x86-64 release build
+/// (+3,100 in the parser, +874 in `parse_document` alone). Moving all of it
+/// out of line makes every scan pay a call, however short its line. The
+/// probe answers every line that ends within the 16 bytes at `from` in
+/// about 16 inline instructions, fewer than the word scan the sites used to
+/// inline, so the parser still shrinks. Longer lines, and scans that start
+/// in a document's last 15 bytes, continue in [`line_end_x86_rest`].
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[allow(unsafe_code)]
+#[inline]
+fn line_end_x86(bytes: &[u8], from: usize) -> usize {
+    // `from <= bytes.len()` holds for every caller, so the sum cannot
+    // overflow; the comparison also keeps an out-of-range `from` away from
+    // the load.
+    let rest = if from + 16 <= bytes.len() {
+        // SAFETY: the 16 bytes at `from` exist, checked just above.
+        let mask = unsafe { newline_lanes(bytes, from) };
+        if mask != 0 {
+            return from + mask.trailing_zeros() as usize;
+        }
+        from + 16
+    } else {
+        from
+    };
+    line_end_x86_rest(bytes, rest)
+}
+
+/// The scan past [`line_end_x86`]'s probe, out of line: [`line_end_sse2`]
+/// for any start once the document holds one vector (its overlapping tail
+/// covers starts in the last 15 bytes), the word scan for shorter
+/// documents.
 #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
 #[inline(never)]
-fn line_end_x86(bytes: &[u8], from: usize) -> usize {
-    // The NEON threshold, for the same reason.
-    if bytes.len() - from >= 16 {
+fn line_end_x86_rest(bytes: &[u8], from: usize) -> usize {
+    if bytes.len() >= 16 {
         return line_end_sse2(bytes, from);
     }
     line_end_swar(bytes, from)
@@ -132,9 +158,8 @@ fn line_end_neon(bytes: &[u8], from: usize) -> usize {
 }
 
 /// SSE2 sibling of `line_end_neon` for x86-64, where SSE2 is part of the
-/// baseline, so nothing is detected at run time. Needs `bytes.len() >= 16`;
-/// `line_end_x86` calls it only while at least one vector remains after
-/// `from`.
+/// baseline, so nothing is detected at run time. Needs `bytes.len() >= 16`
+/// and answers any `from` up to `bytes.len()`.
 ///
 /// The steps mirror the NEON scan: 32 bytes per iteration, then at most one
 /// 16-byte step, then one overlapping load of the last vector for the
@@ -144,28 +169,15 @@ fn line_end_neon(bytes: &[u8], from: usize) -> usize {
 #[allow(unsafe_code)]
 #[inline]
 fn line_end_sse2(bytes: &[u8], from: usize) -> usize {
-    use std::arch::x86_64::{
-        _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_or_si128, _mm_set1_epi8,
-    };
     let end = bytes.len();
     debug_assert!(from <= end && end >= 16);
     let mut i = from;
-    // SAFETY: the `cfg` above admits only builds with SSE2 enabled. Every
-    // 16-byte load starts at an offset `at` with `at + 16 <= end`: the loop
-    // conditions bound the stepped loads, and the tail load starts at
-    // `end - 16`, which exists because the caller guarantees `end >= 16`.
-    // `_mm_loadu_si128` has no alignment requirement.
+    // SAFETY: every 16-byte load starts at an offset `at` with
+    // `at + 16 <= end`: the loop conditions bound the stepped loads, and the
+    // tail load starts at `end - 16`, which exists because the caller
+    // guarantees `end >= 16`.
     unsafe {
-        let nl = _mm_set1_epi8(b'\n'.cast_signed());
-        let cr = _mm_set1_epi8(b'\r'.cast_signed());
-        // Bit `k` is set iff byte `at + k` is `\n` or `\r`. `movemask` fills
-        // only the low 16 bits, so the value is never negative and the
-        // conversion is exact.
-        let lanes = |at: usize| {
-            let v = _mm_loadu_si128(bytes.as_ptr().add(at).cast());
-            _mm_movemask_epi8(_mm_or_si128(_mm_cmpeq_epi8(v, nl), _mm_cmpeq_epi8(v, cr)))
-                .cast_unsigned()
-        };
+        let lanes = |at: usize| newline_lanes(bytes, at);
         while i + 32 <= end {
             let mask = lanes(i) | (lanes(i + 16) << 16);
             if mask != 0 {
@@ -194,6 +206,34 @@ fn line_end_sse2(bytes: &[u8], from: usize) -> usize {
         }
     }
     i
+}
+
+/// The line terminators among the 16 bytes at `at`: bit `k` is set iff
+/// `bytes[at + k]` is `\n` or `\r`, and bits 16 and up are clear.
+///
+/// # Safety
+///
+/// `at + 16 <= bytes.len()`.
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[allow(unsafe_code)]
+#[inline]
+unsafe fn newline_lanes(bytes: &[u8], at: usize) -> u32 {
+    use std::arch::x86_64::{
+        _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_or_si128, _mm_set1_epi8,
+    };
+    debug_assert!(at + 16 <= bytes.len());
+    // SAFETY: the `cfg` above admits only builds with SSE2 enabled, and the
+    // caller guarantees the 16 bytes at `at`. `_mm_loadu_si128` has no
+    // alignment requirement.
+    let mask = unsafe {
+        let v = _mm_loadu_si128(bytes.as_ptr().add(at).cast());
+        let nl = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'\n'.cast_signed()));
+        let cr = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'\r'.cast_signed()));
+        _mm_movemask_epi8(_mm_or_si128(nl, cr))
+    };
+    // `movemask` fills only the low 16 bits, so the value is never negative
+    // and the conversion is exact.
+    mask.cast_unsigned()
 }
 
 /// Portable eight-byte word scan used for short remainders, and for every
@@ -402,10 +442,11 @@ mod tests {
     }
 
     /// Checks the scans from `from` against `expected`: `line_end` and
-    /// `next_line_start` on every target, and on x86-64 the SSE2 scan on its
-    /// own for every input of at least one vector. That includes starts in
-    /// the last 15 bytes, which `line_end` leaves to the word scan, so the
-    /// tail's mask must drop the lanes before `from`.
+    /// `next_line_start` on every target. On x86-64 also the two out-of-line
+    /// pieces on their own, from any start: the rest that follows the inline
+    /// probe, and the SSE2 scan for every input of at least one vector,
+    /// including starts in the last 15 bytes, where the tail's mask must
+    /// drop the lanes before `from`.
     fn check_from(bytes: &[u8], from: usize, expected: usize) {
         assert_eq!(
             line_end(bytes, from),
@@ -419,6 +460,11 @@ mod tests {
         );
         #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
         {
+            assert_eq!(
+                line_end_x86_rest(bytes, from),
+                expected,
+                "rest from {from} of {bytes:02x?}"
+            );
             if bytes.len() >= 16 {
                 assert_eq!(
                     line_end_sse2(bytes, from),
@@ -454,6 +500,39 @@ mod tests {
                     buffer[at..at + terminator.len()].copy_from_slice(terminator);
                     check_every_start(&buffer);
                     buffer[at..at + terminator.len()].fill(b'x');
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn matches_definition_around_the_probe_boundary() {
+        // On x86-64 the 16 bytes at `from` are probed inline, and the scan
+        // continues out of line at `from + 16`, or starts out of line when
+        // fewer than 16 bytes remain. Terminators in the probe's first and
+        // last lanes, just past it, and at the continuation's 16- and
+        // 32-byte edges, or only just before `from`, from every start of
+        // every length up to 96: the probe ends before, exactly at, or past
+        // the end of the document.
+        for len in 0..=96usize {
+            for from in 0..=len {
+                let clean = vec![b'x'; len];
+                check_from(&clean, from, len);
+                if from > 0 {
+                    let mut behind = clean.clone();
+                    behind[from - 1] = b'\n';
+                    check_from(&behind, from, len);
+                }
+                for offset in [0usize, 1, 14, 15, 16, 17, 31, 32, 33, 47, 48] {
+                    let at = from + offset;
+                    for terminator in [&b"\n"[..], b"\r", b"\r\n"] {
+                        if at + terminator.len() > len {
+                            continue;
+                        }
+                        let mut bytes = clean.clone();
+                        bytes[at..at + terminator.len()].copy_from_slice(terminator);
+                        check_from(&bytes, from, at);
+                    }
                 }
             }
         }
