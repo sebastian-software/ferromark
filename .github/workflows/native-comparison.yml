@@ -1,0 +1,206 @@
+name: Native comparison (x86-64)
+
+# The six-engine native comparison (benchmarks/native-comparison) on a
+# GitHub-hosted x86-64 runner. It restores the pinned comparison sources,
+# builds the shared executable with the pinned toolchain, verifies every
+# engine's HTML, measures all 57 documents, and uploads the complete report
+# directory in the layout of docs/reports/<date>-native-*. All six engines
+# alternate in the same process rounds on one host, so the engine ratios
+# describe that host; absolute times are not comparable across runs.
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/native-comparison.yml"
+      - "benchmarks/native-comparison/**"
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Ferromark v2 revision to measure (branch, tag or commit)
+        required: true
+        default: main
+      pgo:
+        description: Also build the PGO executable and measure both builds on the held-out half
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-comparison-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: never
+  # The latest archived Apple Silicon report: its restore.py restores the
+  # sources, its Cargo.lock seeds the registry resolution, and its HTML is the
+  # cross-platform output reference.
+  LATEST_REPORT: docs/reports/2026-09-21-native-round-4
+  CORPUS: docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz
+  SPLIT: docs/reports/2026-09-16-arm-round-3/harness
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  compare:
+    name: six engines, linux x86-64
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      # A pull request that changes the harness measures its own head.
+      REVISION: ${{ inputs.revision || github.event.pull_request.head.sha }}
+      # Pull requests exercise the PGO build too, so both paths stay working.
+      PGO: ${{ github.event_name == 'pull_request' || inputs.pgo }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # prepare.py exports the pinned v1 commit and the measured v2 commit
+          # from this repository's history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up the work directory
+        run: |
+          work="$RUNNER_TEMP/native"
+          mkdir -p "$work/cache/native" "$work/report"
+          echo "WORK=$work" >> "$GITHUB_ENV"
+          echo "CACHE=$work/cache" >> "$GITHUB_ENV"
+
+      - name: Describe the host
+        run: |
+          {
+            echo "runner image: ${ImageOS:-unknown} ${ImageVersion:-unknown}"
+            uname -srvm
+            echo "logical cpus: $(nproc)"
+            lscpu
+            echo "transparent huge pages: $(cat /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || echo unavailable)"
+            echo "simd: $(grep -o -w -E 'sse4_2|ssse3|avx2|avx512f|avx512bw|bmi2' /proc/cpuinfo | sort -u | tr '\n' ' ')"
+            free -m
+            clang --version
+            clang++ --version | head -1
+            python3 --version
+          } | tee "$WORK/host.txt"
+          model="$(lscpu | sed -n 's/^Model name:[[:space:]]*//p' | head -1)"
+          echo "BENCH_CPU=${model:-$(uname -m)}" >> "$GITHUB_ENV"
+          echo "HOST_SUMMARY=$(nproc) vCPUs, Linux $(uname -r), runner image ${ImageOS:-unknown} ${ImageVersion:-unknown}" >> "$GITHUB_ENV"
+
+      - name: Resolve the measured revision
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse --verify --quiet "origin/$REVISION^{commit}" || git rev-parse --verify "$REVISION^{commit}")"
+          echo "V2_SHA=$sha" >> "$GITHUB_ENV"
+          echo "HARNESS_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "Measuring Ferromark v2 $sha with the harness at $(git rev-parse HEAD); PGO: $PGO"
+
+      - name: Install the pinned toolchain
+        run: |
+          set -euo pipefail
+          toolchain="$(python3 -c 'import sys; sys.path.insert(0, "benchmarks/native-comparison"); import prepare; print(prepare.BUN_TOOLCHAIN)')"
+          echo "TOOLCHAIN=$toolchain" >> "$GITHUB_ENV"
+          rustup toolchain install "$toolchain" --profile minimal --component llvm-tools
+          rustc "+$toolchain" -vV
+
+      - name: Test the harness
+        run: python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py' 2>&1 | tee "$WORK/harness-tests.txt"
+
+      - name: Restore the pinned sources
+        run: |
+          cp "$LATEST_REPORT/restore.py" "$CACHE/restore.py"
+          python3 "$CACHE/restore.py"
+
+      - name: Fetch registry crates for the offline builds
+        # prepare.py builds with --offline. A throwaway workspace from the same
+        # inputs fills Cargo's registry cache; the real builds then resolve
+        # offline and prepare.py rejects any package outside the lock union.
+        run: |
+          python3 benchmarks/native-comparison/prepare.py "$WORK/fetch-workspace" \
+            --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
+            --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
+            --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
+            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock"
+          cargo "+$TOOLCHAIN" fetch --manifest-path "$WORK/fetch-workspace/bun/Cargo.toml"
+          rm -rf "$WORK/fetch-workspace"
+
+      - name: Build the default executable
+        run: |
+          python3 benchmarks/native-comparison/prepare.py "$WORK/build" \
+            --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
+            --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
+            --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
+            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock" \
+            --compile 2>&1 | tee "$WORK/build-log.txt"
+
+      - name: Verify every engine's output before timing
+        run: python3 benchmarks/native-comparison/run.py "$WORK/build/build.json" "$CORPUS" "$WORK/verify" --verify-only
+
+      - name: Build the PGO executable
+        if: env.PGO == 'true'
+        # -pgo-warn-missing-function makes this log long; it is kept in full
+        # in the log file and only its end is printed.
+        run: |
+          python3 benchmarks/optimization-rounds/make_corpus.py \
+            "$WORK/training-corpus.json.gz" --include-scanner-diagnostics
+          status=0
+          python3 benchmarks/native-comparison/prepare.py "$WORK/pgo-build" \
+            --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
+            --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
+            --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
+            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock" \
+            --compile --pgo --pgo-training-corpus "$WORK/training-corpus.json.gz" \
+            --pgo-training-filter "$SPLIT/filter-broad-train.txt" \
+            --pgo-measurement-filter "$SPLIT/filter-broad-test.txt" \
+            > "$WORK/pgo-build-log.txt" 2>&1 || status=$?
+          { grep -v -e 'no profile data available' "$WORK/pgo-build-log.txt" || true; } | tail -n 80
+          exit "$status"
+
+      - name: Measure all 57 documents
+        run: |
+          python3 benchmarks/native-comparison/run.py "$WORK/build/build.json" "$CORPUS" "$WORK/results"
+          python3 benchmarks/native-comparison/report.py "$WORK/results"
+
+      - name: Measure the held-out half with both builds
+        if: env.PGO == 'true'
+        run: |
+          for build in build pgo-build; do
+            python3 benchmarks/native-comparison/run.py "$WORK/$build/build.json" "$CORPUS" \
+              "$WORK/heldout-$build" --filter-file "$SPLIT/filter-broad-test.txt"
+            python3 benchmarks/native-comparison/report.py "$WORK/heldout-$build"
+          done
+
+      - name: Audit the built sources
+        run: |
+          python3 benchmarks/native-comparison/audit_sources.py "$WORK/build" "$WORK/source-audit.json" \
+            --v1 . --v2 . --bun "$CACHE/bun" --md4c "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz"
+
+      - name: Assemble the report
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          pgo=()
+          if [ "$PGO" = true ]; then
+            pgo=(--pgo-build-dir "$WORK/pgo-build" --pgo-default-results "$WORK/heldout-build"
+                 --pgo-results "$WORK/heldout-pgo-build" --pgo-build-log "$WORK/pgo-build-log.txt")
+          fi
+          report="$(python3 benchmarks/native-comparison/archive.py "$WORK/report" \
+            --results "$WORK/results" --build-dir "$WORK/build" \
+            --seed-lock "$LATEST_REPORT/Cargo.lock" --reference "$LATEST_REPORT" \
+            --restore-dir "$CACHE" --host-file "$WORK/host.txt" --host-summary "$HOST_SUMMARY" \
+            --origin "The [native comparison workflow]($RUN_URL) ran on a GitHub-hosted ubuntu-latest runner for a $EVENT event." \
+            --harness-revision "$HARNESS_SHA" --build-log "$WORK/build-log.txt" \
+            --measurement-note "The job runs one step at a time, so no build or other step ran while run.py was timing." \
+            --source-audit "$WORK/source-audit.json" --tests-log "$WORK/harness-tests.txt" \
+            --step-summary "$GITHUB_STEP_SUMMARY" "${pgo[@]}")"
+          echo "Assembled $(basename "$report")"
+
+      - name: Keep the report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: native-report-linux-x86-64
+          path: ${{ runner.temp }}/native/report/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 90
