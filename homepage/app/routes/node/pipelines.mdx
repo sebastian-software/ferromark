@@ -12,6 +12,21 @@ import { RuntimeSwitch } from "../../components/runtime-switch";
 Choose the result your application needs: an HTML string, UTF-8 bytes, or HTML
 with document metadata. All operations are synchronous.
 
+## Render a file from bytes
+
+```js
+import { toHtml } from "ferromark";
+import { readFile } from "node:fs/promises";
+
+const html = toHtml(await readFile("guide.md"));
+console.log(html);
+```
+
+Every call that takes Markdown accepts `markdown: string | Uint8Array`, so the
+`Buffer` that `readFile(path)` returns without an encoding goes in as it is.
+Bytes render exactly like the string `buffer.toString("utf8")` returns, so a file
+read as a `Buffer` produces the same HTML as the same file read with `"utf8"`.
+
 ## Get HTML, front matter, and headings
 
 ```js
@@ -63,6 +78,8 @@ server.listen(3000, "127.0.0.1");
 `toHtmlBuffer()` returns a UTF-8 Node.js `Buffer` copied from the rendered
 bytes. It avoids converting the HTML into a JavaScript string when the next
 consumer wants bytes. Reusable renderers also expose `renderer.toHtmlBuffer()`.
+With Markdown read as bytes, `toHtmlBuffer(await readFile(path))` takes bytes in
+and returns bytes.
 
 ## Deploy under a subpath
 

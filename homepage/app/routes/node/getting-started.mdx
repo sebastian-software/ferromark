@@ -53,6 +53,10 @@ package for your platform.
 | Highlight code                 | `toHtmlWithHighlighter()`          | HTML with custom code-block output    |
 | Highlight and collect metadata | `transformWithHighlighter()`       | HTML, headings, optional front matter |
 
+Every call that takes Markdown accepts `markdown: string | Uint8Array`: a string,
+or its UTF-8 bytes in a `Uint8Array` such as a `Buffer` from `fs.readFile(path)`.
+[Render a file from bytes](/node/pipelines) shows the example.
+
 These calls are synchronous. For sustained CPU work in a server, use a worker
 thread so rendering does not occupy the request-handling event loop.
 

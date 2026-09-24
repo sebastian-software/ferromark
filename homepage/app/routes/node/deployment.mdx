@@ -49,9 +49,10 @@ does not verify native loading.
 
 Ferromark stores source positions as compact `u32` offsets, so the parser
 addresses just under 4 GB of Markdown. Node.js strings stop far below that
-(`buffer.constants.MAX_STRING_LENGTH`), so no JavaScript input can reach the
-limit and the binding does not check for it. Unknown option names throw
-`TypeError`.
+(`buffer.constants.MAX_STRING_LENGTH`), so no string can reach the limit; a
+`Uint8Array` of more than 4,294,967,295 bytes throws a `RangeError`. Markdown
+that is neither a string nor a `Uint8Array` throws a `TypeError` with the code
+`ERR_INVALID_ARG_TYPE`, and unknown option names throw `TypeError`.
 
 The package exposes Markdown rendering, metadata, and highlighter helpers.
 `mdx: true` enables syntax capture and static island output; it does not compile
