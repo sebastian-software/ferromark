@@ -11,16 +11,10 @@ import { cpus } from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+import { verify, verifyFixed } from "./boundary/checks.mjs";
 import { loadDocuments } from "./boundary/corpus.mjs";
 import { loadFacade } from "./boundary/facade.mjs";
-import {
-  documentLanes,
-  documentState,
-  fixedLanes,
-  lastResult,
-  verify,
-  verifyFixed,
-} from "./boundary/lanes.mjs";
+import { documentLanes, documentState, fixedLanes, lastResult } from "./boundary/lanes.mjs";
 import {
   attribution,
   byRound,
