@@ -61,7 +61,8 @@ def main():
     result = {}
     for name, repo, rev, root, paths in (
         ('v1', args.v1, prepare.FERROMARK_V1_REVISION, b / 'sources/ferromark_v1', ['src', 'Cargo.toml', 'Cargo.lock']),
-        ('v2', args.v2, v2_revision, b / 'sources/ferromark_v2', ['crates', 'Cargo.toml', 'Cargo.lock']),
+        # v2 is the repository root package since 885e5b1c; older pins nest it under crates/.
+        ('v2', args.v2, v2_revision, b / 'sources/ferromark_v2', ['src', 'crates', 'Cargo.toml', 'Cargo.lock']),
         ('bun', args.bun, prepare.BUN_REVISION, b / 'bun', ['src', 'scripts/build']),
         ('md4c', args.md4c, prepare.MD4C_REVISION, b / 'sources/md4c', ['src']),
     ):

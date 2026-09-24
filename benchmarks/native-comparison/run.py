@@ -14,6 +14,7 @@ import shutil
 import statistics
 import struct
 import subprocess
+import sys
 import time
 
 from verify import classify, groups
@@ -75,15 +76,58 @@ class Worker:
         assert self.process.returncode == 0, err
 
 
+PROC_STAT_FIELDS = ('user', 'nice', 'system', 'idle', 'iowait', 'irq', 'softirq', 'steal', 'guest', 'guest_nice')
+
+
+def proc_stat_cpu(text):
+    """Aggregate CPU time counters (USER_HZ ticks) from Linux /proc/stat.
+
+    Differences between two observations give the share of time the
+    hypervisor withheld (steal) while a shared runner was measuring.
+    """
+    for line in text.splitlines():
+        fields = line.split()
+        if fields and fields[0] == 'cpu':
+            return dict(zip(PROC_STAT_FIELDS, map(int, fields[1:])))
+    raise ValueError('no aggregate cpu line in /proc/stat')
+
+
+def read_text(path):
+    try:
+        return Path(path).read_text()
+    except OSError:
+        return None
+
+
+def linux_host():
+    """Linux counterpart of the macOS power/thermal probe: steal time, clocks, zones."""
+    stat = read_text('/proc/stat')
+    cpuinfo = read_text('/proc/cpuinfo') or ''
+    thermal = {}
+    for zone in sorted(Path('/sys/class/thermal').glob('thermal_zone*')):
+        value = read_text(zone / 'temp')
+        if value and value.strip().lstrip('-').isdigit():
+            thermal[zone.name] = int(value) / 1000
+    return dict(
+        proc_stat_cpu=proc_stat_cpu(stat) if stat else 'unavailable',
+        cpu_mhz=[float(line.split(':', 1)[1]) for line in cpuinfo.splitlines() if line.startswith('cpu MHz')],
+        thermal=thermal or 'no thermal zones exposed')
+
+
 def host():
     def probe(args):
         try:
             return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT, timeout=5).strip()
         except (OSError, subprocess.SubprocessError) as error:
             return str(error)
-    return dict(time_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+    result = dict(time_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
         platform=platform.platform(), cpu=os.environ.get('BENCH_CPU', platform.machine()),
-        load_average=os.getloadavg(), power=probe(['pmset', '-g', 'batt']), thermal=probe(['pmset', '-g', 'therm']))
+        load_average=os.getloadavg())
+    if sys.platform == 'linux':
+        result.update(linux_host())
+    else:
+        result.update(power=probe(['pmset', '-g', 'batt']), thermal=probe(['pmset', '-g', 'therm']))
+    return result
 
 
 def behavior_checks(binary, directory):

@@ -10,6 +10,10 @@ modify any source checkout.
 ``--pgo`` adds a profile-guided optimization pass on top of the unchanged
 release recipe.  It leaves the default build byte-identical: every PGO step is
 skipped unless the flag is given.
+
+The build runs on macOS and Linux.  Compilers, flags, sources, adapters, and
+the allocator setup are shared; the few platform differences are listed in
+``PLATFORMS`` and recorded in ``build.json``.
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ import io
 import json
 import os
 from pathlib import Path
+import platform
 import re
 import shutil
 import subprocess
@@ -62,6 +67,34 @@ ENGINE_PROFILE_DATA = {
     "md4c": "none: the C engine is clang -O3 without PGO; only its Rust FFI wrapper is in the Rust build",
 }
 
+# Everything that differs between the supported build hosts.  Both use clang
+# and clang++ with the same flags, the same sources and adapters, the same
+# mimalloc configuration, and `-C target-cpu=generic` (generic AArch64 on Apple
+# Silicon, the x86-64 baseline on x86-64).  The C++ runtime and the pthread
+# stack query are the platform's own; Bun's Highway search selects its own
+# OS(DARWIN)/OS(LINUX) branch through native.h.
+PLATFORMS = {
+    "Darwin": {
+        "cxx_runtime": "c++",
+        "cxx_runtime_note": "libc++, the only C++ runtime Apple clang links",
+        "stack_bounds": "pthread_get_stackaddr_np and pthread_get_stacksize_np",
+        "bun_os_branch": "OS(DARWIN): Highway memmem replaces libc memmem through an assembler alias",
+        # rustc's default `cc` is Apple clang; the environment is left unchanged.
+        "rust_linker": None,
+        "rust_linker_note": "rustc default `cc` (Apple clang), environment unchanged",
+    },
+    "Linux": {
+        "cxx_runtime": "stdc++",
+        "cxx_runtime_note": "libstdc++, clang's default C++ runtime on Linux",
+        "stack_bounds": "pthread_getattr_np and pthread_attr_getstack",
+        "bun_os_branch": "OS(LINUX): Highway memmem replaces libc memmem through a weak alias",
+        # rustc's default `cc` is usually GCC on Linux; drive the link with
+        # clang so one compiler family builds and links on both platforms.
+        "rust_linker": "clang",
+        "rust_linker_note": "clang through CARGO_TARGET_<host>_LINKER; rustc still picks the linker itself",
+    },
+}
+
 
 def sha(path: Path) -> str:
     digest = hashlib.sha256()
@@ -73,6 +106,49 @@ def sha(path: Path) -> str:
 
 def run(command: list[object], *, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
     subprocess.run([str(part) for part in command], check=True, cwd=cwd, env=env)
+
+
+def host_triple(rustc_version: str) -> str:
+    return next(
+        line.split(":", 1)[1].strip()
+        for line in rustc_version.splitlines()
+        if line.startswith("host:")
+    )
+
+
+def build_platform(system: str | None = None) -> dict:
+    """The platform-specific build choices for this host, or a clear refusal."""
+    system = system or platform.system()
+    if system not in PLATFORMS:
+        raise SystemExit(f"the native comparison builds on macOS and Linux only, not {system}")
+    return {"system": system, **PLATFORMS[system]}
+
+
+def linker_environment(details: dict, triple: str) -> dict[str, str]:
+    """Cargo's linker override for the host target, empty where rustc's default is kept."""
+    if details["rust_linker"] is None:
+        return {}
+    key = "CARGO_TARGET_" + re.sub(r"[^A-Za-z0-9]", "_", triple).upper() + "_LINKER"
+    return {key: details["rust_linker"]}
+
+
+def tool_version(command: list[str]) -> str:
+    try:
+        return subprocess.check_output(command, text=True, stderr=subprocess.STDOUT).strip()
+    except (OSError, subprocess.CalledProcessError) as error:
+        return f"unavailable: {error}"
+
+
+def platform_record(details: dict, triple: str, linker_env: dict[str, str]) -> dict:
+    """What build.json records about the host and its platform-specific choices."""
+    return {
+        **details,
+        "machine": platform.machine(),
+        "host_triple": triple,
+        "rust_linker_environment": linker_env,
+        "clang": tool_version(["clang", "--version"]),
+        "clang++": tool_version(["clang++", "--version"]),
+    }
 
 
 def git(source: Path, *args: str) -> str:
@@ -442,11 +518,7 @@ def pgo_argument_error(args: argparse.Namespace) -> str | None:
 
 def profdata_tool(toolchain: str, rustc_version: str) -> Path:
     """The pinned toolchain's own llvm-profdata, so profile formats match."""
-    host = next(
-        line.split(":", 1)[1].strip()
-        for line in rustc_version.splitlines()
-        if line.startswith("host:")
-    )
+    host = host_triple(rustc_version)
     sysroot = Path(subprocess.check_output(
         ["rustc", f"+{toolchain}", "--print", "sysroot"], text=True
     ).strip())
@@ -635,12 +707,15 @@ def main() -> None:
         raise SystemExit(f"build directory already exists: {build}")
     if not args.worker.is_file():
         raise SystemExit(f"worker does not exist: {args.worker}")
+    host = build_platform()
     build.mkdir(parents=True)
     sources = build / "sources"
     bun = build / "bun"
+    rustc_version = subprocess.check_output(["rustc", f"+{BUN_TOOLCHAIN}", "-vV"], text=True)
+    linker_env = linker_environment(host, host_triple(rustc_version))
     records = {
         "toolchain": BUN_TOOLCHAIN,
-        "rustc": subprocess.check_output(["rustc", f"+{BUN_TOOLCHAIN}", "-vV"], text=True),
+        "rustc": rustc_version,
         "rustflags": "-C target-cpu=generic",
         "optimization": {
             "opt_level": 3,
@@ -649,6 +724,7 @@ def main() -> None:
             "panic": "abort",
             "debug": "line-tables-only",
         },
+        "platform": platform_record(host, host_triple(rustc_version), linker_env),
         "engines": {},
     }
     for name, source, revision in (
@@ -743,6 +819,7 @@ serde_json = "1"
         if key.startswith("CARGO_PROFILE_"):
             env.pop(key)
     env["RUSTFLAGS"] = "-C target-cpu=generic"
+    env.update(linker_env)
     env["BUN_CODEGEN_DIR"] = str(build / "codegen")
     (build / "codegen").mkdir()
     (build / "codegen" / "build_options.rs").write_text(
@@ -765,13 +842,11 @@ serde_json = "1"
     println!("cargo:rustc-link-lib=static=bun_bench_native");
     println!("cargo:rustc-link-lib=static=md4c");
     println!("cargo:rustc-link-lib=static=mimalloc");
-    println!("cargo:rustc-link-lib=c++");
+    println!("cargo:rustc-link-lib={host["cxx_runtime"]}");
 }}
 ''')
 
     if args.compile:
-        if os.uname().sysname != "Darwin":
-            raise SystemExit("the Bun standalone stack shim is macOS-only")
         compile_native(bun, sources / "md4c", native, env)
         # Compilation is deliberately opt-in: parent timing workers should
         # build once, then run without competing preparation processes.
