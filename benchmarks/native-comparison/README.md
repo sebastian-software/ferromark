@@ -166,8 +166,10 @@ and adds:
    Cargo's own build scripts write elsewhere, so only training profiles are
    merged. That throwaway binary also links `pgo_stubs.c`: instrumentation
    keeps Bun's unreachable WebKit, URL, and simdutf support code alive, so the
-   linker needs symbols the standalone integration does not build. Every stub
-   aborts, and none of them reaches the measured worker — the final
+   linker needs symbols the standalone integration does not build. GNU ld on
+   Linux resolves more of them than ld64 on macOS, so Linux adds 42 function
+   stubs and one zero-initialized data symbol (Bun's closed-stdio flags). Every
+   function stub aborts, and none of them reaches the measured worker — the final
    `-Cprofile-use` build carries no instrumentation, so that dead code is
    removed again and the measured executable links exactly like the default
    build.
