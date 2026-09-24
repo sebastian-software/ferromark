@@ -353,7 +353,8 @@ def write_readme(out: Path, facts: dict) -> None:
                          + " | ".join("—" if v is None else f"{v:.2f}×" for v in cells) + " |")
         lines += [
             "",
-            "md4c is C and is not PGO-built; Bun's engine gains through its Rust crates only. "
+            "md4c is C and is not PGO-built; for Bun's engine the recipe reaches only its Rust "
+            "crates, not the C++ Highway and support objects. "
             + ("The held-out runs reproduce the same HTML from the default and the PGO executable."
                if facts["pgo_outputs_equal"] else
                "**The held-out runs did not reproduce the same HTML from both executables.**"),

@@ -369,8 +369,9 @@ runner:
 
 The artifact `native-report-linux-x86-64` holds one directory,
 `<date>-native-linux-x86-64/`, in the layout of the archived reports. The job
-summary shows its headline table. Budget about 30 minutes for a default run and
-60 for a PGO run; the job stops at 90.
+summary shows its headline table. On a 4-vCPU runner a default run takes about
+17 minutes (the build about 90 seconds, the timed run about 11 minutes) and a
+PGO run about 30; the job stops at 90.
 
 ### What a CI report can and cannot claim
 
