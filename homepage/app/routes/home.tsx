@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 
 import {
+  agreementDocuments,
   formatSpeed,
   nativeBenchmarkFigure,
   NativeBenchmarkFigures,
@@ -40,6 +41,22 @@ function LandingIntro() {
   );
 }
 
+/**
+ * The v1 and pulldown-cmark figures of every platform, for example "2.1× the speed of
+ * Ferromark v1 and 2.6× the speed of pulldown-cmark on Apple Silicon, 2.0× and 2.4× on Linux x86-64".
+ */
+function storySpeeds(): string {
+  return nativeBenchmarks.platforms
+    .map((platform, index) => {
+      const v1 = formatSpeed(nativeBenchmarkFigure(platform, "v1").fresh);
+      const pulldown = formatSpeed(nativeBenchmarkFigure(platform, "pulldown-cmark").fresh);
+      return index === 0
+        ? `${v1} the speed of Ferromark v1 and ${pulldown} the speed of pulldown-cmark on ${platform.label}`
+        : `${v1} and ${pulldown} on ${platform.label}`;
+    })
+    .join(", ");
+}
+
 const storyBeats = [
   {
     title: "Conformance first, speed second",
@@ -60,10 +77,8 @@ const storyBeats = [
     title: "Fast, and measured before it is said",
     text: (
       <>
-        Same input, equivalent HTML, six native engines in one executable:{" "}
-        {formatSpeed(nativeBenchmarkFigure("v1").fresh)} the speed of Ferromark v1 and{" "}
-        {formatSpeed(nativeBenchmarkFigure("pulldown-cmark").fresh)} the speed of pulldown-cmark on{" "}
-        {nativeBenchmarkFigure("v1").documents} real documents. Every report keeps its source
+        Same input, equivalent HTML, six native engines in one executable per platform:{" "}
+        {storySpeeds()}, across {agreementDocuments()} real documents. Every report keeps its source
         revisions, flags, raw timing windows, and reproduction commands. A speed claim without a
         report does not ship.
       </>
@@ -135,20 +150,27 @@ function LandingStory() {
 }
 
 function LandingEvidence() {
-  const { documents, measured, machine, revision } = nativeBenchmarks;
+  const sharedRunners = nativeBenchmarks.platforms.filter((platform) => platform.sharedRunner);
   return (
     <section className="landing-evidence" aria-labelledby="evidence-title">
       <div className="landing-section-head">
         <p className="landing-kicker">Measured throughput</p>
         <h2 id="evidence-title">Faster on real documents.</h2>
         <p>
-          Ferromark v2 throughput relative to each engine on {documents.fiveEngineAgreement} real
-          documents, from short comments to long technical pages, that all five native engines
-          render to equivalent HTML. Fresh parser state, one {machine}; higher is faster.
+          Ferromark v2 throughput relative to each engine on {agreementDocuments()} real documents,
+          from short comments to long technical pages, that all five native engines render to
+          equivalent HTML. Fresh parser state, measured separately on each platform; higher is
+          faster.
         </p>
         <p className="landing-aside">
-          Measured {measured} at <code>{revision}</code> without profile-guided optimization. Reuse
-          lifecycles, PGO builds, per-document timings, and reproduction:{" "}
+          Measured without profile-guided optimization.{" "}
+          {sharedRunners.map((platform) => (
+            <span key={platform.id}>
+              The {platform.label} figures come from a shared CI runner: compare the ratios between
+              engines, not absolute times.{" "}
+            </span>
+          ))}
+          Reuse lifecycles, PGO builds, per-document timings, and reproduction:{" "}
           <Link to="/guide/benchmarks">Inspect the evidence →</Link>
         </p>
       </div>

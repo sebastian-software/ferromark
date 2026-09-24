@@ -50,17 +50,28 @@ const { version } = JSON.parse(
 );
 
 // The landing page states the measured figures that
-// scripts/publish-native-readme.py derives from the archived native comparison;
-// a hard-coded number would survive the next measurement, so the prerendered
-// page must carry the current lead figure and the measured revision.
+// scripts/publish-native-readme.py derives from one archived native comparison
+// per platform; a hard-coded number would survive the next measurement, so the
+// prerendered page must carry every platform's lead figure, machine and
+// measured revision.
 const benchmarks = JSON.parse(
   await readFile(new URL("../app/data/native-benchmarks.json", import.meta.url), "utf8"),
 );
-const leadFigure = benchmarks.figures.find((figure) => figure.id === "pulldown-cmark");
+if (benchmarks.platforms.length < 2) {
+  throw new Error("native-benchmarks.json must publish every measured platform");
+}
+const platformFragments = benchmarks.platforms.flatMap((platform) => {
+  const leadFigure = platform.figures.find((figure) => figure.id === "pulldown-cmark");
+  return [
+    `${leadFigure.fresh.toFixed(1)}×`,
+    platform.label,
+    ...platform.machine.split(", "),
+    platform.revision,
+  ];
+});
 
 const requiredFragments = [
-  `${leadFigure.fresh.toFixed(1)}×`,
-  benchmarks.revision,
+  ...platformFragments,
   'href="/guide/benchmarks"',
   '"/assets/',
   '"/favicon.ico"',
@@ -107,7 +118,15 @@ check(footer, "family footer", {
 
 check(homepage, "homepage", { required: requiredFragments, forbidden: forbiddenFragments });
 check(benchmarkPage, "v2 benchmark evidence", {
-  required: ["v2", "source revisions", benchmarks.report, benchmarks.revision],
+  required: [
+    "v2",
+    "source revisions",
+    ...benchmarks.platforms.flatMap((platform) => [
+      platform.label,
+      platform.report,
+      platform.revision,
+    ]),
+  ],
 });
 check(guidePage, "guide page", { required: requiredGuideFragments, forbidden: forbiddenFragments });
 
