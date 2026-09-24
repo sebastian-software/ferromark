@@ -23,15 +23,17 @@ export function byRound(rounds) {
 
 // The model for one round, as [total, input, core, output, fixed, call floor].
 // Input: `len` over the free-call floor. Output: the exact HTML (`probe.html`,
-// `probe.htmlBuffer`) over the method-call floor. Core: the Rust loops, with
-// `Renderer::new` (setup) moved to fixed. Fixed: the call floor, plus setup for
-// one-shot calls.
+// `probe.htmlBuffer`) over the method-call floor. Core: the Rust loops. Fixed:
+// the call floor. One-shot calls without options render on the thread's kept
+// renderer (`coreDefault`); an addon from before that renders them with a
+// renderer of their own, whose `Renderer::new` (setup) moves to fixed.
 function roundParts(lane) {
   const input = lane.len - lane.noop;
   const text = lane.html - lane.methodNoop;
   const buffer = lane.htmlBuffer - lane.methodNoop;
-  const fresh = lane.coreFresh - lane.coreSetup;
-  const oneShot = lane.noop + lane.coreSetup;
+  const kept = "coreDefault" in lane;
+  const fresh = kept ? lane.coreDefault : lane.coreFresh - lane.coreSetup;
+  const oneShot = kept ? lane.noop : lane.noop + lane.coreSetup;
   return {
     "Renderer.toHtml": [lane.rendererToHtml, input, lane.coreReuse, text, lane.methodNoop],
     "Renderer.toHtmlBuffer": [
@@ -69,14 +71,20 @@ export function attribution(rounds) {
 }
 
 // Each candidate as [current path, candidate path, baseline API for the ratio].
-// `singlePassInput` has shipped: its pair is now napi-rs's `String` conversion,
-// which the exports used before, and the exports' own single pass (`len`).
+// A list of current paths takes the first lane the addon has.
+// - `singlePassInput` has shipped: its pair is now napi-rs's `String`
+//   conversion, which the exports used before, and the exports' own single
+//   pass (`len`).
+// - `cachedRenderer` has shipped: its pair is now `toHtml` with a renderer of
+//   its own, as the export ran before (`toHtmlFresh`), and the export itself.
+// - `externalOutput` hands over the buffer of a renderer of its own, so it
+//   pairs with that path; before the kept renderer, `toHtml` was that path.
 const candidatePairs = {
   bufferCopyOutput: ["htmlBuffer", "htmlBufferCopy", "toHtmlBuffer"],
   bytesInput: ["len", "bytesLen", "toHtml"],
-  cachedRenderer: ["toHtml", "rendererToHtml", "toHtml"],
+  cachedRenderer: ["toHtmlFresh", "toHtml", "toHtml"],
   encodeIntoInput: ["len", "encodeIntoLen", "toHtml"],
-  externalOutput: ["toHtml", "toHtmlExternal", "toHtml"],
+  externalOutput: [["toHtmlFresh", "toHtml"], "toHtmlExternal", "toHtml"],
   latin1Output: ["html", "htmlLatin1", "rendererToHtml"],
   singlePassInput: ["lenNapiString", "len", "toHtml"],
 };
@@ -85,8 +93,9 @@ export const candidateNames = Object.keys(candidatePairs);
 /** Paired per-round savings (current minus candidate) and their share of the call. */
 export function candidates(rounds) {
   const result = {};
-  for (const [name, [current, candidate, baseline]] of Object.entries(candidatePairs)) {
-    if (!(candidate in rounds[0])) continue;
+  for (const [name, [paths, candidate, baseline]] of Object.entries(candidatePairs)) {
+    const current = [paths].flat().find((lane) => lane in rounds[0]);
+    if (current === undefined || !(candidate in rounds[0])) continue;
     const savedNs = median(rounds.map((lane) => lane[current] - lane[candidate]));
     const relative = savedNs / median(rounds.map((lane) => lane[baseline]));
     result[name] = { baseline, relative, savedNs };

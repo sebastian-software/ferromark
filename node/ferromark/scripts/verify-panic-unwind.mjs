@@ -88,6 +88,43 @@ try {
     0,
     `a panic in the Node cdylib was not translated to a JavaScript Error:\n${panicCheck.stderr}`,
   );
+
+  // One-shot calls without options render on a renderer each thread keeps
+  // (node/native/src/default_renderer.rs). A panic while a call holds it must
+  // still reach JavaScript as an Error, and later calls must render as a fresh
+  // renderer does. Exit codes: 2 no error, 3 another error, 4 wrong HTML.
+  const keptRendererCheck = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "--eval",
+      `import { createRequire } from 'node:module';
+const addon = createRequire(import.meta.url)(${JSON.stringify(join(outputDir, nativeBinding))});
+const documents = ['# Same\\n\\n# Same\\n', '[a]\\n\\n[a]: /u\\n', '> [!NOTE]\\n> x\\n', ''];
+for (const markdown of documents) {
+  addon.toHtml(markdown);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      addon.testPanicInDefaultRenderer(markdown);
+      process.exit(2);
+    } catch (error) {
+      if (!(error instanceof Error && error.message.includes('in the kept renderer'))) process.exit(3);
+    }
+  }
+  const expected = new addon.Renderer().toHtml(markdown);
+  if (addon.toHtml(markdown) !== expected) process.exit(4);
+  if (addon.toHtmlBuffer(markdown).toString('utf8') !== expected) process.exit(4);
+}`,
+    ],
+    { encoding: "utf8" },
+  );
+
+  assert.ifError(keptRendererCheck.error);
+  assert.equal(
+    keptRendererCheck.status,
+    0,
+    `a panic in the kept one-shot renderer was not contained:\n${keptRendererCheck.stderr}`,
+  );
 } finally {
   await rm(outputDir, { force: true, recursive: true });
 }

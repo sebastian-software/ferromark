@@ -8,23 +8,26 @@
 //! declaration file that mentions it.
 //!
 //! Every export does one isolated piece of a real call, and the core loops call
-//! the same helpers as the public exports (`render_one_shot`,
+//! the same helpers as the public exports (`render_one_shot`, `render_fresh`,
 //! `Renderer::render_reused`), so the parts add up to the real thing. Markdown
 //! arguments convert through [`Utf8Input`], as the public exports' do. The
 //! `candidate` exports prototype reductions; they are measurements, not API.
 //! The `NapiString` exports keep napi-rs's own `String` conversion, which the
-//! public exports used before `Utf8Input`, as a reference.
+//! public exports used before `Utf8Input`, as a reference, and
+//! `boundaryToHtmlFresh` keeps the one-shot `toHtml` from before it rendered
+//! with a kept renderer.
 
 use std::cell::{Cell, RefCell};
 use std::hint::black_box;
 
+use ferromark::Parser;
 use napi::bindgen_prelude::{Buffer, BufferSlice, Error, Result, Status, Uint8ArraySlice};
 use napi::{Env, JsString, JsStringLatin1};
 use napi_derive::napi;
 
 use crate::input::Utf8Input;
 use crate::packed::unpack;
-use crate::{Options, Renderer, core_options, render_one_shot};
+use crate::{Options, Renderer, core_options, parse_error, render_fresh, render_one_shot};
 
 /// Returns nothing: the floor of a free-function N-API call.
 #[napi(catch_unwind, js_name = "boundaryNoop")]
@@ -98,7 +101,12 @@ pub fn make(n: u32) -> &'static str {
 ///
 /// - `reuse`: `Renderer.toHtml`'s Rust side (arena reset, parse, borrowed
 ///   render) on a renderer kept across calls.
-/// - `fresh`: `toHtml`'s Rust side (`Renderer::new`, parse, owned render, drops).
+/// - `default`: `toHtml`'s Rust side without options: the thread's kept
+///   renderer, or for Markdown over `SOURCE_LIMIT` a renderer of its own (see
+///   `default_renderer.rs`).
+/// - `fresh`: the one-shot Rust side with a renderer of its own
+///   (`Renderer::new`, parse, render, drops), as `toHtml` runs with options
+///   and ran before it kept a renderer.
 /// - `setup`: `Renderer::new` with default options and its drop, nothing else.
 #[napi(catch_unwind, js_name = "boundaryCoreOnly")]
 pub fn core_only(
@@ -107,6 +115,7 @@ pub fn core_only(
     lifecycle: String,
 ) -> Result<u32> {
     let mut checksum = 0u32;
+    let length = |html: &str| Ok(black_box(html).len() as u32);
     match lifecycle.as_str() {
         "reuse" => REUSED.with_borrow_mut(|reused| -> Result<()> {
             let renderer = match reused {
@@ -119,10 +128,16 @@ pub fn core_only(
             }
             Ok(())
         })?,
+        "default" => {
+            for _ in 0..iterations {
+                let len = render_one_shot(black_box(&markdown), None, length)?;
+                checksum = checksum.wrapping_add(len);
+            }
+        }
         "fresh" => {
             for _ in 0..iterations {
-                let html = render_one_shot(black_box(&markdown), None)?;
-                checksum = checksum.wrapping_add(black_box(&html).len() as u32);
+                let len = render_fresh(black_box(&markdown), None, length)?;
+                checksum = checksum.wrapping_add(len);
             }
         }
         "setup" => {
@@ -134,11 +149,29 @@ pub fn core_only(
         _ => {
             return Err(Error::new(
                 Status::InvalidArg,
-                "lifecycle must be 'reuse', 'fresh' or 'setup'",
+                "lifecycle must be 'reuse', 'default', 'fresh' or 'setup'",
             ));
         }
     }
     Ok(checksum)
+}
+
+/// The one-shot `toHtml` from before it kept a renderer: a renderer of its
+/// own, whose output buffer `HtmlRenderer::render` hands over whole, returned
+/// as a `String` for napi-rs to convert.
+fn render_owned(markdown: &str) -> Result<String> {
+    let mut renderer = Renderer::new(None)?;
+    let document = Parser::with_options(&renderer.allocator, markdown, renderer.parser.clone())
+        .parse()
+        .map_err(parse_error)?;
+    Ok(renderer.html.render(&document))
+}
+
+/// `toHtml` without options as it was before it kept a renderer, to pair with
+/// the export in one build.
+#[napi(catch_unwind, js_name = "boundaryToHtmlFresh")]
+pub fn to_html_fresh(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> Result<String> {
+    render_owned(&markdown)
 }
 
 /// Option handling only: napi-rs reads every `Options` field from the object
@@ -177,13 +210,13 @@ pub fn bytes_len(bytes: Uint8ArraySlice) -> Result<u32> {
 ///
 /// The owned HTML is handed to V8 without a copy and freed by the garbage
 /// collector; non-ASCII HTML is converted like `toHtml`. Everything else is
-/// `toHtml`.
+/// `boundaryToHtmlFresh`: only a renderer of its own can hand its buffer away.
 #[napi(catch_unwind, js_name = "boundaryToHtmlExternal")]
 pub fn to_html_external<'env>(
     env: &'env Env,
     #[napi(ts_arg_type = "string")] markdown: Utf8Input,
 ) -> Result<JsString<'env>> {
-    let html = render_one_shot(&markdown, None)?;
+    let html = render_owned(&markdown)?;
     if !html.is_empty() && html.is_ascii() {
         Ok(JsStringLatin1::from_data(env, html.into_bytes())?.into_value())
     } else {

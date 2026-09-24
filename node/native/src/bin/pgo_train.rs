@@ -164,7 +164,8 @@ fn read_corpus(directory: &Path) -> Result<Vec<(String, String)>, Box<dyn Error>
     Ok(sources)
 }
 
-/// One arena and one renderer per document, as `toHtml` uses them.
+/// One arena and one renderer per document, as `transform` and one-shot calls
+/// with options or with long Markdown use them.
 fn train_fresh(
     source: &str,
     parser: &ParserOptions,
@@ -187,7 +188,8 @@ fn train_fresh(
 }
 
 /// A retained arena reset per document and a retained renderer writing into its
-/// own buffer, as the `Renderer` class uses them.
+/// own buffer, as the `Renderer` class and one-shot calls without options use
+/// them.
 fn train_reuse(
     source: &str,
     parser: &ParserOptions,

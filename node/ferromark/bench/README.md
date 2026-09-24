@@ -16,9 +16,13 @@ splits each call into four parts:
 - **output**: `napi_create_string_utf8` decodes the HTML into a V8 string.
   `toHtmlBuffer` copies the HTML into a `Vec` and wraps it in an external
   `Buffer`.
-- **fixed**: the bare N-API call. One-shot calls also pay for
-  `Renderer::new`. Option handling is reported separately because the
-  default call passes no options.
+- **fixed**: the bare N-API call. Without options, a one-shot call renders
+  on a renderer its thread keeps (see
+  [`node/native/src/default_renderer.rs`](../../native/src/default_renderer.rs)),
+  and taking that renderer out and back counts as core. With options, or
+  with Markdown over 64 KiB, a one-shot call also pays for `Renderer::new`,
+  as every one-shot call did before. Option handling is reported separately
+  because the default call passes no options.
 
 The benchmark times the four public exports with the same addon that carries
 the diagnostic exports, so all lanes run in one binary. The per-document lanes
@@ -106,22 +110,28 @@ lane.
 | `echo`                                   | `boundaryEcho(markdown)`: input plus output conversion of the Markdown                |
 | `make`                                   | `boundaryMake(n)`: output conversion of `n` ASCII bytes, `n` = HTML length            |
 | `html`, `htmlBuffer`                     | the exact HTML as `Renderer.toHtml` and `toHtmlBuffer` return it, rendered beforehand |
-| `coreFresh`, `coreReuse`, `coreSetup`    | `boundaryCoreOnly(markdown, k, lifecycle)`: the export's own Rust code, `k` times     |
+| `coreDefault`, `coreFresh`               | `boundaryCoreOnly(markdown, k, lifecycle)`: the export's own Rust code, `k` times     |
+| `coreReuse`, `coreSetup`                 | the same for the other lifecycles                                                     |
 
-`boundaryCoreOnly` calls the same `render_one_shot` and
-`Renderer::render_reused` helpers as the exports. `fresh` is the one-shot
-lifecycle and `reuse` is a renderer kept across calls. `setup` is only
-`Renderer::new` and its drop. The script subtracts one `len` (or `noop`) call
-of the same round before dividing by `k`.
+`boundaryCoreOnly` calls the same `render_one_shot`, `render_fresh` and
+`Renderer::render_reused` helpers as the exports. `default` is the one-shot
+lifecycle without options: the thread's kept renderer, or a renderer of its own
+for Markdown over 64 KiB. `fresh` is the one-shot lifecycle with a renderer of
+its own, which calls with options take and every one-shot call took before.
+`reuse` is a renderer kept across calls, and `setup` is only `Renderer::new`
+and its drop. The script subtracts one `len` (or `noop`) call of the same round
+before dividing by `k`. An addon built before the kept renderer has no
+`default` lifecycle; the script then leaves out `coreDefault` and splits
+`toHtml` as that addon runs it.
 
 Each API is split as follows. The `total` is the public lane.
 
 | Part     | `toHtml`, `toHtmlBuffer`                         | `Renderer.toHtml`, `Renderer.toHtmlBuffer` |
 | -------- | ------------------------------------------------ | ------------------------------------------ |
 | input    | `len - noop`                                     | `len - noop`                               |
-| core     | `coreFresh - coreSetup`                          | `coreReuse`                                |
+| core     | `coreDefault` (before: `coreFresh - coreSetup`)  | `coreReuse`                                |
 | output   | `html - methodNoop` or `htmlBuffer - methodNoop` | the same                                   |
-| fixed    | `noop + coreSetup`                               | `methodNoop`                               |
+| fixed    | `noop` (before: `noop + coreSetup`)              | `methodNoop`                               |
 | residual | `total - input - core - output - fixed`          | the same                                   |
 
 The residual is what the model does not explain: `catch_unwind`, the
@@ -164,7 +174,9 @@ exports lacks the packed lanes; its facade still has the facade lanes.
 The second table pairs each object-path lane with its packed counterpart per
 round. The object side of the `toHtml` and `Renderer` rows is what the facade
 called before it packed options, minus its `validateOptions`, which both
-versions run and the packed side includes.
+versions run and the packed side includes. Packed options with no field
+present are the defaults, so the packed side of `toHtml('', {})` also renders
+on the kept renderer, while the object side builds a renderer of its own.
 
 ## Reading the output
 
@@ -197,15 +209,15 @@ identical text.
 The `boundary-bench` feature also prototypes reductions. They are
 measurements, not API.
 
-| Candidate          | Lane                             | Compared with   | Share of          | Public API change                                               |
-| ------------------ | -------------------------------- | --------------- | ----------------- | --------------------------------------------------------------- |
-| `singlePassInput`  | `boundaryLen`                    | `lenNapiString` | `toHtml`          | none: shipped as the exports' conversion                        |
-| `bytesInput`       | `boundaryBytesLen(Buffer)`       | `len`           | `toHtml`          | new: accept UTF-8 bytes (`Buffer`/`Uint8Array`)                 |
-| `encodeIntoInput`  | `TextEncoder.encodeInto` + bytes | `len`           | `toHtml`          | none if the facade does it with a kept scratch buffer           |
-| `latin1Output`     | `BoundaryProbe#htmlLatin1`       | `html`          | `Renderer.toHtml` | none: an internal conversion for ASCII HTML                     |
-| `externalOutput`   | `boundaryToHtmlExternal`         | `toHtml`        | `toHtml`          | none: an internal conversion for ASCII HTML                     |
-| `bufferCopyOutput` | `BoundaryProbe#htmlBufferCopy`   | `htmlBuffer`    | `toHtmlBuffer`    | none: an internal conversion                                    |
-| `cachedRenderer`   | `Renderer.toHtml`                | `toHtml`        | `toHtml`          | none if `toHtml` without options reuses a module-level renderer |
+| Candidate          | Lane                             | Compared with   | Share of          | Public API change                                     |
+| ------------------ | -------------------------------- | --------------- | ----------------- | ----------------------------------------------------- |
+| `singlePassInput`  | `boundaryLen`                    | `lenNapiString` | `toHtml`          | none: shipped as the exports' conversion              |
+| `bytesInput`       | `boundaryBytesLen(Buffer)`       | `len`           | `toHtml`          | new: accept UTF-8 bytes (`Buffer`/`Uint8Array`)       |
+| `encodeIntoInput`  | `TextEncoder.encodeInto` + bytes | `len`           | `toHtml`          | none if the facade does it with a kept scratch buffer |
+| `latin1Output`     | `BoundaryProbe#htmlLatin1`       | `html`          | `Renderer.toHtml` | none: an internal conversion for ASCII HTML           |
+| `externalOutput`   | `boundaryToHtmlExternal`         | `toHtmlFresh`   | `toHtml`          | none: an internal conversion for ASCII HTML           |
+| `bufferCopyOutput` | `BoundaryProbe#htmlBufferCopy`   | `htmlBuffer`    | `toHtmlBuffer`    | none: an internal conversion                          |
+| `cachedRenderer`   | `toHtml`                         | `toHtmlFresh`   | `toHtml`          | none: shipped as the one-shot calls' kept renderer    |
 
 - `singlePassInput` has shipped. The exports read V8's string length in O(1),
   reserve the UTF-8 worst case (three bytes per UTF-16 unit) without
@@ -225,11 +237,22 @@ measurements, not API.
 - `externalOutput` hands the owned one-shot HTML to V8 as an external Latin-1
   string, which avoids the copy. The garbage collector frees it later. The
   cost of that finalization is charged only when a collection happens during
-  a batch.
+  a batch. Only a renderer of its own can hand its buffer away, so the column
+  pairs it with `toHtmlFresh` (`boundaryToHtmlFresh`, below); with an addon
+  from before the kept renderer, it pairs it with `toHtml`, which was that
+  path.
 - `bufferCopyOutput` uses `napi_create_buffer_copy` straight from the borrowed
   HTML. This drops the extra `Vec` copy and the external-buffer finalizer.
-- `cachedRenderer` is an upper bound. The reused lane already shows what
-  `toHtml` would cost if it rendered with a kept default renderer.
+- `cachedRenderer` has shipped. One-shot calls without options render on a
+  renderer their thread keeps
+  ([`node/native/src/default_renderer.rs`](../../native/src/default_renderer.rs)).
+  Its column now pairs `toHtml` as it ran before (`boundaryToHtmlFresh`: a
+  renderer of its own, whose buffer `HtmlRenderer::render` hands over) with
+  the export, so it reports the saving of the switch within one build. An
+  addon built before the switch lacks `boundaryToHtmlFresh`, and the column
+  shows `n/a` for it. Before the switch, the column compared `toHtml` with
+  `Renderer.toHtml`, which also counted the method call floor against the
+  kept renderer.
 
 Per [AGENTS.md](../../../AGENTS.md), a change to the public API needs its own
 decision record under [docs/decisions/](../../../docs/decisions/).

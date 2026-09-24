@@ -1,5 +1,6 @@
 #[cfg(feature = "boundary-bench")]
 pub mod boundary;
+mod default_renderer;
 pub mod input;
 mod options;
 pub mod packed;
@@ -10,6 +11,7 @@ use ferromark::{
     ast::{Node, Visit},
 };
 use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
+use napi::{Env, JsString};
 use napi_derive::napi;
 
 use crate::input::Utf8Input;
@@ -19,6 +21,19 @@ use crate::options::{CoreOptions, addon_defaults};
 #[napi(catch_unwind)]
 pub fn __test_panic_unwind() {
     panic!("ferromark N-API panic-unwind verification");
+}
+
+// Renders `markdown` on the thread's kept renderer and panics while the
+// renderer is still out of its slot, so the verification can check that later
+// calls render as before.
+#[cfg(feature = "panic-test")]
+#[napi(catch_unwind)]
+pub fn __test_panic_in_default_renderer(
+    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+) -> Result<()> {
+    render_one_shot(&markdown, None, |_| {
+        panic!("ferromark N-API panic-unwind verification in the kept renderer")
+    })
 }
 
 #[napi(object)]
@@ -147,28 +162,64 @@ fn parse_error(error: ferromark::ParseError) -> Error {
     Error::new(Status::InvalidArg, error.to_string())
 }
 
-/// The Rust side of `toHtml`, shared with the `boundary-bench` diagnostics so
-/// they time exactly the code the export runs.
-fn render_one_shot(markdown: &str, options: Option<Options>) -> Result<String> {
-    // A one-shot renderer is dropped with this call, so its output buffer is
-    // handed over whole rather than copied out of a borrow.
+/// The Rust side of `toHtml` and `toHtmlBuffer`, shared with the
+/// `boundary-bench` diagnostics so they time exactly the code the exports run.
+///
+/// Without options, the call renders with this thread's kept renderer (see
+/// `default_renderer.rs`); with options, with a renderer of its own. Either
+/// way `emit` converts the HTML for JavaScript while the renderer still holds
+/// it, and its result is the call's.
+fn render_one_shot<T>(
+    markdown: &str,
+    options: Option<Options>,
+    emit: impl FnOnce(&str) -> Result<T>,
+) -> Result<T> {
+    match options {
+        None => default_renderer::render(markdown, emit),
+        Some(_) => render_fresh(markdown, options, emit),
+    }
+}
+
+/// Renders `markdown` with a renderer built for this call, hands the HTML to
+/// `emit`, and drops the renderer.
+fn render_fresh<T>(
+    markdown: &str,
+    options: Option<Options>,
+    emit: impl FnOnce(&str) -> Result<T>,
+) -> Result<T> {
     let mut renderer = Renderer::new(options)?;
-    let document = Parser::with_options(&renderer.allocator, markdown, renderer.parser.clone())
-        .parse()
-        .map_err(parse_error)?;
-    Ok(renderer.html.render(&document))
+    emit(renderer.render_reused(markdown)?)
+}
+
+/// Copies HTML into a JavaScript string as napi-rs converts a returned
+/// `&str` or `String`: one `napi_create_string_utf8`, with napi-rs's error.
+fn js_string<'env>(env: &'env Env, html: &str) -> Result<JsString<'env>> {
+    env.create_string(html).map_err(|error| {
+        Error::new(
+            error.status,
+            "Failed to convert rust `&str` into napi `string`",
+        )
+    })
+}
+
+/// Copies HTML into a `Buffer`, as `toHtmlBuffer` returns it.
+fn html_buffer(html: &str) -> Result<Buffer> {
+    Ok(html.as_bytes().to_vec().into())
 }
 
 // Every export that takes Markdown converts it in one N-API pass through
 // `Utf8Input` (see `input.rs`) and declares it as `string`, as a `String`
-// argument would be. (Plain comments: doc comments on exports become the
-// published TypeScript declarations.)
+// argument would be. `toHtml` creates its JavaScript string itself, from HTML
+// the renderer still holds, and napi-rs declares the `JsString` it returns as
+// `string`. (Plain comments: doc comments on exports become the published
+// TypeScript declarations.)
 #[napi(catch_unwind)]
-pub fn to_html(
+pub fn to_html<'env>(
+    env: &'env Env,
     #[napi(ts_arg_type = "string")] markdown: Utf8Input,
     options: Option<Options>,
-) -> Result<String> {
-    render_one_shot(&markdown, options)
+) -> Result<JsString<'env>> {
+    render_one_shot(&markdown, options, |html| js_string(env, html))
 }
 
 #[napi(catch_unwind)]
@@ -176,7 +227,7 @@ pub fn to_html_buffer(
     #[napi(ts_arg_type = "string")] markdown: Utf8Input,
     options: Option<Options>,
 ) -> Result<Buffer> {
-    Renderer::new(options)?.to_html_buffer(markdown)
+    render_one_shot(&markdown, options, html_buffer)
 }
 
 /// Reuses arena storage and HTML buffers; documents never outlive a call.
@@ -232,13 +283,18 @@ impl Renderer {
         &mut self,
         #[napi(ts_arg_type = "string")] markdown: Utf8Input,
     ) -> Result<Buffer> {
-        Ok(self.render_reused(&markdown)?.as_bytes().to_vec().into())
+        html_buffer(self.render_reused(&markdown)?)
     }
 }
 
 impl Renderer {
-    /// The Rust side of the reused `toHtml` and `toHtmlBuffer`, shared with
-    /// the `boundary-bench` diagnostics so they time exactly this code.
+    /// The Rust side of the reused `toHtml` and `toHtmlBuffer`, and of the
+    /// one-shot ones, shared with the `boundary-bench` diagnostics so they
+    /// time exactly this code.
+    ///
+    /// The arena is reset, and `HtmlRenderer::render_borrowed` clears the
+    /// output, heading IDs and footnote state before it writes, so a document
+    /// renders the same whatever the renderer rendered before.
     fn render_reused(&mut self, markdown: &str) -> Result<&str> {
         self.allocator.reset();
         let document = Parser::with_options(&self.allocator, markdown, self.parser.clone())

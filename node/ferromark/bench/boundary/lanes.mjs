@@ -37,10 +37,25 @@ function encodeIntoLength({ encoder, native, scratch }, markdown) {
 
 const utf8 = (buffer) => buffer.toString("utf8");
 
+/**
+ * Whether the addon renders one-shot calls without options on a kept renderer
+ * and has `boundaryToHtmlFresh`, the one-shot path from before, as a reference.
+ * An addon built before lacks it, and the script then skips its checks and
+ * lanes and splits `toHtml` as that addon runs it, so one script can time a
+ * build from before and one from after the change.
+ * @param native The loaded addon.
+ */
+export function hasKeptDefault(native) {
+  return typeof native.boundaryToHtmlFresh === "function";
+}
+
 function outputChecks({ html, markdown, native, outputAscii, probe, renderer }) {
   return {
     "Renderer.toHtml": renderer.toHtml(markdown) === html,
     "Renderer.toHtmlBuffer": utf8(renderer.toHtmlBuffer(markdown)) === html,
+    ...(hasKeptDefault(native) && {
+      boundaryToHtmlFresh: native.boundaryToHtmlFresh(markdown) === html,
+    }),
     boundaryToHtmlExternal: native.boundaryToHtmlExternal(markdown) === html,
     htmlBuffer: utf8(probe.htmlBuffer()) === html,
     htmlBufferCopy: utf8(probe.htmlBufferCopy()) === html,
@@ -79,6 +94,9 @@ function partChecks(state, inputBytes) {
     boundaryEcho: native.boundaryEcho(markdown) === markdown,
     boundaryLen: native.boundaryLen(markdown) === inputBytes,
     boundaryMake: native.boundaryMake(outputBytes).length === outputBytes,
+    ...(hasKeptDefault(native) && {
+      coreDefault: native.boundaryCoreOnly(markdown, 3, "default") === threeOutputs,
+    }),
     coreFresh: native.boundaryCoreOnly(markdown, 3, "fresh") === threeOutputs,
     coreReuse: native.boundaryCoreOnly(markdown, 3, "reuse") === threeOutputs,
     coreSetup: native.boundaryCoreOnly("", 3, "setup") === 3,
@@ -144,6 +162,11 @@ function boundaryLanes({ markdown, native, outputBytes, probe }) {
 // The Rust core, `k` iterations inside one call.
 function coreLanes({ markdown, native }) {
   return {
+    ...(hasKeptDefault(native) && {
+      coreDefault(k) {
+        sink = native.boundaryCoreOnly(markdown, k, "default");
+      },
+    }),
     coreFresh(k) {
       sink = native.boundaryCoreOnly(markdown, k, "fresh");
     },
@@ -183,6 +206,11 @@ function candidateLanes({ bytes, encoder, markdown, native, outputAscii, probe, 
   if (hasNapiStringReference(native)) {
     lanes.lenNapiString = (k) => {
       for (let i = 0; i < k; i++) sink = native.boundaryLenNapiString(markdown);
+    };
+  }
+  if (hasKeptDefault(native)) {
+    lanes.toHtmlFresh = (k) => {
+      for (let i = 0; i < k; i++) sink = native.boundaryToHtmlFresh(markdown);
     };
   }
   return lanes;
