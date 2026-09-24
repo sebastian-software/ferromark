@@ -5,7 +5,12 @@ import { setImmediate as nextTurn } from "node:timers/promises";
 // Loop lanes run many core iterations in one call. The named per-call lane of
 // the same round (the call plus its input conversion) is subtracted before the
 // batch is divided by the iteration count.
-export const loopCorrection = { coreFresh: "len", coreReuse: "len", coreSetup: "noop" };
+export const loopCorrection = {
+  coreDefault: "len",
+  coreFresh: "len",
+  coreReuse: "len",
+  coreSetup: "noop",
+};
 const minimumLoopIterations = 8;
 
 function time(run, k) {

@@ -29,10 +29,14 @@
 //! generated `native.d.ts`, but the package types in `index.d.mts` do not.
 
 use napi::bindgen_prelude::{Buffer, FnArgs, Function, Result};
+use napi::{Env, JsString};
 use napi_derive::napi;
 
 use crate::input::Utf8Input;
-use crate::{Options, Renderer, TransformResult, core_options, render_document, render_one_shot};
+use crate::{
+    Options, TransformResult, core_options, html_buffer, js_string, render_document,
+    render_one_shot,
+};
 
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
 ///
@@ -81,18 +85,41 @@ pub fn unpack(
     }
 }
 
+/// [`unpack`], but `None` when no field is present, as napi-rs reads
+/// `undefined` options.
+///
+/// The one-shot entries render without options on the thread's kept renderer
+/// (see `default_renderer.rs`). Packed options with no field present are the
+/// defaults as well: every bit of `set` is clear, so [`unpack`] ignores `on`
+/// and leaves every field unset, and `core_options` changes nothing for
+/// unset fields.
+fn unpack_present(
+    set: u32,
+    on: u32,
+    heading_offset: Option<f64>,
+    heading_id_prefix: Option<String>,
+    link_base_path: Option<String>,
+) -> Option<Options> {
+    let absent = set == 0
+        && heading_offset.is_none()
+        && heading_id_prefix.is_none()
+        && link_base_path.is_none();
+    (!absent).then(|| unpack(set, on, heading_offset, heading_id_prefix, link_base_path))
+}
+
 /// Internal to the `ferromark` facade: `toHtml` with packed options.
 #[napi(catch_unwind, js_name = "toHtmlPacked")]
-pub fn to_html_packed(
+pub fn to_html_packed<'env>(
+    env: &'env Env,
     #[napi(ts_arg_type = "string")] markdown: Utf8Input,
     set: u32,
     on: u32,
     heading_offset: Option<f64>,
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
-) -> Result<String> {
-    let options = unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
-    render_one_shot(&markdown, Some(options))
+) -> Result<JsString<'env>> {
+    let options = unpack_present(set, on, heading_offset, heading_id_prefix, link_base_path);
+    render_one_shot(&markdown, options, |html| js_string(env, html))
 }
 
 /// Internal to the `ferromark` facade: `toHtmlBuffer` with packed options.
@@ -105,8 +132,8 @@ pub fn to_html_buffer_packed(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
 ) -> Result<Buffer> {
-    let options = unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
-    Renderer::new(Some(options))?.to_html_buffer(markdown)
+    let options = unpack_present(set, on, heading_offset, heading_id_prefix, link_base_path);
+    render_one_shot(&markdown, options, html_buffer)
 }
 
 /// Internal to the `ferromark` facade: `transform` with packed options.

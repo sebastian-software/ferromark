@@ -98,10 +98,11 @@ function timeRow(result) {
       medians.toHtmlBuffer,
       medians.len - medians.noop,
       medians.html - medians.methodNoop,
+      medians.coreDefault,
       medians.coreFresh - medians.coreSetup,
       medians.coreReuse,
       medians.coreSetup,
-    ].map((value) => nanoseconds(value)),
+    ].map((value) => (value === undefined ? "n/a" : nanoseconds(value))),
   ];
 }
 
@@ -118,13 +119,17 @@ export function printDocuments(results) {
       "buffer",
       "in conv",
       "out conv",
+      "core default",
       "core fresh",
       "core reuse",
       "setup",
     ],
     results.map((result) => timeRow(result)),
   );
-  console.log("\ninput: content/V8 storage. *: non-ASCII HTML.");
+  console.log(
+    "\ninput: content/V8 storage. *: non-ASCII HTML. core default: toHtml's Rust side\n" +
+      "without options (kept renderer); core fresh: with a renderer of its own, less setup.",
+  );
   console.log("\n## Per document: share of each call (input/core/output/fixed/residual, %)\n");
   table(
     ["document", "in B", ...apiNames],
@@ -195,7 +200,9 @@ function candidateTable(groups) {
   console.log(
     "\nPaired per round: current path minus candidate, as a share of the baseline call.\n" +
       "singlePassInput has shipped: napi-rs's String conversion minus the exports' single pass.\n" +
-      "latin1Output covers ASCII HTML only; externalOutput uses the current path for non-ASCII HTML.",
+      "cachedRenderer has shipped: toHtml with a renderer of its own minus the kept renderer.\n" +
+      "latin1Output covers ASCII HTML only; externalOutput renders with a renderer of its own\n" +
+      "and converts non-ASCII HTML as toHtml does.",
   );
   return data;
 }
