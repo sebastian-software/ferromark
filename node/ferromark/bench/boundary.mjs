@@ -24,6 +24,7 @@ import {
 import {
   attribution,
   byRound,
+  bytesInput,
   candidates,
   mapValues,
   median,
@@ -145,6 +146,7 @@ async function measureDocument(document) {
   const perRound = byRound(rounds);
   return {
     attribution: attribution(perRound),
+    bytes: bytesInput(perRound),
     candidates: candidates(perRound),
     category: document.category,
     content: document.content,

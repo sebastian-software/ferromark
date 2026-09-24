@@ -1,8 +1,10 @@
 // Plain-text tables for the terminal. The JSON output carries the raw rounds.
 
-import { apiNames, candidateNames, median, parts } from "./model.mjs";
+import { apiNames, bytesApiNames, candidateNames, median, parts } from "./model.mjs";
 
 function nanoseconds(value) {
+  // A lane an older addon lacks has no value.
+  if (!Number.isFinite(value)) return "n/a";
   return Math.abs(value) >= 100 ? value.toFixed(0) : value.toFixed(1);
 }
 
@@ -94,6 +96,7 @@ function timeRow(result) {
     `${result.outputBytes}${result.outputAscii ? "" : "*"}`,
     ...[
       medians.toHtml,
+      medians.toHtmlBytes,
       medians.rendererToHtml,
       medians.toHtmlBuffer,
       medians.len - medians.noop,
@@ -115,6 +118,7 @@ export function printDocuments(results) {
       "input",
       "out B",
       "toHtml",
+      "bytes",
       "reuse",
       "buffer",
       "in conv",
@@ -127,8 +131,9 @@ export function printDocuments(results) {
     results.map((result) => timeRow(result)),
   );
   console.log(
-    "\ninput: content/V8 storage. *: non-ASCII HTML. core default: toHtml's Rust side\n" +
-      "without options (kept renderer); core fresh: with a renderer of its own, less setup.",
+    "\ninput: content/V8 storage. *: non-ASCII HTML. bytes: toHtml with a Buffer.\n" +
+      "core default: toHtml's Rust side without options (kept renderer); core fresh: with a\n" +
+      "renderer of its own, less setup.",
   );
   console.log("\n## Per document: share of each call (input/core/output/fixed/residual, %)\n");
   table(
@@ -200,9 +205,37 @@ function candidateTable(groups) {
   console.log(
     "\nPaired per round: current path minus candidate, as a share of the baseline call.\n" +
       "singlePassInput has shipped: napi-rs's String conversion minus the exports' single pass.\n" +
+      "bytesInput has shipped: the string conversion minus the exports' conversion of the bytes.\n" +
       "cachedRenderer has shipped: toHtml with a renderer of its own minus the kept renderer.\n" +
       "latin1Output covers ASCII HTML only; externalOutput renders with a renderer of its own\n" +
       "and converts non-ASCII HTML as toHtml does.",
+  );
+  return data;
+}
+
+function bytesCell(members, api) {
+  const eligible = members.filter((result) => api in result.bytes);
+  if (eligible.length === 0) return { cell: "n/a" };
+  const savedNs = median(eligible.map((result) => result.bytes[api].savedNs));
+  const relative = median(eligible.map((result) => result.bytes[api].relative));
+  return {
+    cell: `${nanoseconds(savedNs)} (${percent(relative)})`,
+    data: { documents: eligible.length, relative, savedNs },
+  };
+}
+
+function bytesTable(groups) {
+  const data = {};
+  const rows = [];
+  for (const [group, members] of groups) {
+    const cells = bytesApiNames.map((api) => bytesCell(members, api));
+    data[group] = Object.fromEntries(bytesApiNames.map((api, index) => [api, cells[index].data]));
+    rows.push([group, ...cells.map(({ cell }) => cell)]);
+  }
+  table(["group", ...bytesApiNames], rows);
+  console.log(
+    "\nPaired per round: the call with the string minus the call with the same document\n" +
+      "as a UTF-8 Buffer, as a share of the string call. n/a: the addon does not take bytes.",
   );
   return data;
 }
@@ -241,6 +274,8 @@ export function printGroups(results) {
     console.log(`\n## ${api}: median share per input representation\n`);
     summary.byRepresentation[api] = groupTable(byRepresentation, api);
   }
+  console.log("\n## Bytes input: median saving per call and size bin (ns, % of the call)\n");
+  summary.bytes = bytesTable(bySize);
   console.log("\n## Candidates: median saving per call and size bin (ns, % of the call)\n");
   summary.candidates = candidateTable(bySize);
   return summary;

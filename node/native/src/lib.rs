@@ -14,7 +14,7 @@ use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
-use crate::input::Utf8Input;
+use crate::input::{OwnedUtf8Input, Utf8Input};
 use crate::options::{CoreOptions, addon_defaults};
 
 #[cfg(feature = "panic-test")]
@@ -29,7 +29,7 @@ pub fn __test_panic_unwind() {
 #[cfg(feature = "panic-test")]
 #[napi(catch_unwind)]
 pub fn __test_panic_in_default_renderer(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
 ) -> Result<()> {
     render_one_shot(&markdown, None, |_| {
         panic!("ferromark N-API panic-unwind verification in the kept renderer")
@@ -207,16 +207,18 @@ fn html_buffer(html: &str) -> Result<Buffer> {
     Ok(html.as_bytes().to_vec().into())
 }
 
-// Every export that takes Markdown converts it in one N-API pass through
-// `Utf8Input` (see `input.rs`) and declares it as `string`, as a `String`
-// argument would be. `toHtml` creates its JavaScript string itself, from HTML
-// the renderer still holds, and napi-rs declares the `JsString` it returns as
-// `string`. (Plain comments: doc comments on exports become the published
-// TypeScript declarations.)
+// Every export that takes Markdown accepts a string or a `Uint8Array` of UTF-8
+// through `Utf8Input` (see `input.rs`), which may borrow the bytes for the
+// call. Such an export must run no JavaScript while it renders; the two that
+// call a highlighter take `OwnedUtf8Input`, which copies them. `toHtml`
+// creates its JavaScript string itself, from HTML the renderer still holds,
+// which runs no JavaScript either, and napi-rs declares the `JsString` it
+// returns as `string`. (Plain comments: doc comments on exports become the
+// published TypeScript declarations.)
 #[napi(catch_unwind)]
 pub fn to_html<'env>(
     env: &'env Env,
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
 ) -> Result<JsString<'env>> {
     render_one_shot(&markdown, options, |html| js_string(env, html))
@@ -224,7 +226,7 @@ pub fn to_html<'env>(
 
 #[napi(catch_unwind)]
 pub fn to_html_buffer(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
 ) -> Result<Buffer> {
     render_one_shot(&markdown, options, html_buffer)
@@ -274,14 +276,17 @@ impl Renderer {
     // its regrowth. (A plain comment: doc comments become the published
     // TypeScript declarations.)
     #[napi(catch_unwind, js_name = "toHtml")]
-    pub fn to_html(&mut self, #[napi(ts_arg_type = "string")] markdown: Utf8Input) -> Result<&str> {
+    pub fn to_html(
+        &mut self,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+    ) -> Result<&str> {
         self.render_reused(&markdown)
     }
 
     #[napi(catch_unwind, js_name = "toHtmlBuffer")]
     pub fn to_html_buffer(
         &mut self,
-        #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     ) -> Result<Buffer> {
         html_buffer(self.render_reused(&markdown)?)
     }
@@ -434,7 +439,7 @@ fn render_document(
 
 #[napi(catch_unwind)]
 pub fn transform(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
 ) -> Result<TransformResult> {
     render_document(&markdown, core_options(options)?, None)
@@ -443,7 +448,7 @@ pub fn transform(
 #[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn to_html_with_renderer(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: OwnedUtf8Input,
     options: Option<Options>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
@@ -453,7 +458,7 @@ pub fn to_html_with_renderer(
 #[napi(catch_unwind)]
 #[allow(clippy::type_complexity)]
 pub fn transform_with_renderer(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: OwnedUtf8Input,
     options: Option<Options>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<TransformResult> {

@@ -1,15 +1,35 @@
-//! Single-pass conversion of a JavaScript Markdown argument to UTF-8.
+//! Conversion of a JavaScript Markdown argument to UTF-8 text.
+//!
+//! Every export that takes Markdown accepts a string or a `Uint8Array`, which
+//! includes a Node.js `Buffer`, holding UTF-8:
+//!
+//! - A **string** converts in one N-API pass (see [Strings](#strings)).
+//! - **Bytes** become the text `Buffer#toString('utf8')` makes of them (see
+//!   [Bytes](#bytes)). Valid UTF-8 stays as it is, a leading byte order mark
+//!   stays U+FEFF, and each maximal invalid subpart becomes one U+FFFD.
+//! - **Anything else** fails with a `TypeError` whose `code` is
+//!   `ERR_INVALID_ARG_TYPE`. The message names the kind of value it received,
+//!   and describing it runs no JavaScript.
+//!
+//! [`Utf8Input`] and [`OwnedUtf8Input`] both read a `Uint8Array` when the
+//! export first uses the text, after napi-rs has converted every argument.
+//! `Utf8Input` may then borrow the bytes for the rest of the call.
+//! `OwnedUtf8Input` always copies them, and the exports that call JavaScript
+//! while they render take it.
+//!
+//! This is the addon's only module with `unsafe` code. Every block states why
+//! it is sound.
+//!
+//! # Strings
 //!
 //! napi-rs converts a `String` argument with two `napi_get_value_string_utf8`
 //! calls. The first only measures the UTF-8 length, which V8 computes by
 //! walking the whole string, and the second transcodes into a zero-filled
-//! buffer of exactly that length. [`Utf8Input`] asks for the UTF-16 length
-//! instead, which V8 stores, reserves the worst case without filling it, and
-//! transcodes once. Both paths use N-API's transcoder, and with enough room it
-//! writes the same bytes. The unused part of the reservation is never written,
-//! and every export drops the string before it returns.
-//!
-//! # Why the reservation is always large enough
+//! buffer of exactly that length. The conversion here asks for the UTF-16
+//! length instead, which V8 stores, reserves the worst case without filling
+//! it, and transcodes once. Both paths use N-API's transcoder, and with enough
+//! room it writes the same bytes. The unused part of the reservation is never
+//! written, and every export drops the string before it returns.
 //!
 //! N-API turns each UTF-16 code unit of the string into at most three UTF-8
 //! bytes:
@@ -32,11 +52,83 @@
 //! therefore written the whole string. One that does not, which the bound rules
 //! out for V8, is redone with napi-rs's exact two-pass conversion, so nothing is
 //! truncated even on an N-API implementation that broke the bound.
+//!
+//! # Bytes
+//!
+//! A `Uint8Array` is accepted by its N-API type, `napi_uint8_array`, which a
+//! `Buffer` and any other subclass report too. Other typed arrays, a
+//! `DataView` and an `ArrayBuffer` are rejected.
+//!
+//! Rust's `String::from_utf8_lossy` replaces invalid UTF-8 the way the Unicode
+//! standard recommends ("substitution of maximal subparts"), and so does V8's
+//! decoder behind `Buffer#toString('utf8')`. `verify-input-conversion.mjs`
+//! checks the two against each other on every sequence of up to three bytes,
+//! on four-byte sequences across all byte classes and on seeded random input.
+//! Neither strips a byte order mark; the parser treats one leading U+FEFF as
+//! metadata, whichever path the text came from.
+//!
+//! A view of no bytes is empty input. That includes a detached buffer, whose
+//! data pointer is null, and a view out of bounds of a shrunk resizable
+//! buffer. Input above `MAX_BYTES` (`u32::MAX`) fails with a `RangeError`
+//! (code `ERR_OUT_OF_RANGE`), because the parser stores offsets as `u32`; no
+//! JavaScript string can be that long, so only bytes need the check.
+//!
+//! ## Borrowing
+//!
+//! A `&str` promises valid UTF-8 for as long as it lives, and the parser and
+//! renderer rely on that promise, including in `unsafe` code. [`Utf8Input`]
+//! therefore borrows a `Uint8Array`'s bytes only when nothing can change them
+//! while the `&str` lives:
+//!
+//! 1. **It reads the bytes only when the export first uses them**, after napi-rs
+//!    has converted every argument. Converting an `Options` object runs its
+//!    getters, which are JavaScript and can overwrite, detach or resize the
+//!    buffer. The conversion itself only records the argument's handle; the
+//!    first dereference asks N-API for the view's current data and length,
+//!    validates them, and caches the result for the rest of the call.
+//! 2. **No JavaScript runs after that.** An export that takes a
+//!    [`Utf8Input`] must not call into JavaScript between its first
+//!    dereference and its return. `toHtml`, `toHtmlBuffer`, `transform`, the
+//!    `Renderer` methods and their packed forms parse and render in Rust
+//!    only. The highlighter exports call a JavaScript function for each code
+//!    block, and that function could overwrite the input, so they take an
+//!    [`OwnedUtf8Input`] instead, which reads the bytes at the same point but
+//!    copies them before it decodes them. Without JavaScript, nothing on this
+//!    thread can detach, resize or write the buffer either. Garbage collection
+//!    does not move an `ArrayBuffer`'s backing store, and N-API moves a small
+//!    on-heap typed array's bytes into a backing store before it hands out
+//!    their address.
+//! 3. **No other thread can write the bytes.** The view's buffer must be a
+//!    plain `ArrayBuffer`, which `napi_is_arraybuffer` confirms: V8 answers
+//!    false for a `SharedArrayBuffer`, which a worker can write at any time.
+//!    Shared bytes, and any the check does not confirm, are copied first, with
+//!    relaxed atomic loads, because another thread may be writing them during
+//!    the copy. A copy may then mix old and new bytes, but it is this call's
+//!    own memory and is validated like any other input. A growable
+//!    `SharedArrayBuffer` never shrinks, so its first `length` bytes stay
+//!    readable. JavaScript cannot reach a plain `ArrayBuffer` from another
+//!    thread. Native code that holds its data pointer can, such as an
+//!    unfinished asynchronous `fs.read` into the same `Buffer`; no addon can
+//!    detect that, and the package contract excludes rendering such a buffer.
+//! 4. **The borrow ends with the call.** Both types carry the lifetime of the
+//!    call's argument handles, so neither can be moved into anything that
+//!    outlives the export.
+//!
+//! Invalid UTF-8 never becomes a `&str`: the first dereference validates the
+//! bytes with `str::from_utf8` and, where that fails, builds an owned `String`
+//! with the replacements instead.
 
+// The only module of the addon allowed to use `unsafe`; see above.
+#![allow(unsafe_code)]
+
+use std::cell::OnceCell;
+use std::ffi::CString;
+use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ptr;
+use std::sync::atomic::{AtomicU8, Ordering};
 
-use napi::bindgen_prelude::{FromNapiValue, Result};
+use napi::bindgen_prelude::{Error, FromNapiValue, Result, Status};
 use napi::sys;
 
 /// UTF-8 bytes per UTF-16 code unit, at most. See the module documentation.
@@ -49,22 +141,151 @@ const MAX_UTF8_CHAR: usize = 4;
 /// `bufsize - 1` to V8 as an `int`, and a larger size could wrap.
 const MAX_CAPACITY: usize = i32::MAX as usize;
 
-/// A Markdown argument, converted to UTF-8 in one pass.
-///
-/// It holds exactly the bytes napi-rs's `String` conversion produces, and a
-/// value that is not a string fails with napi-rs's own error. Exports declare
-/// it with `#[napi(ts_arg_type = "string")]`, so their TypeScript declarations
-/// stay those of a `String` argument.
-pub struct Utf8Input(String);
+/// The most Markdown bytes an export accepts: the parser stores source offsets
+/// as `u32`.
+const MAX_BYTES: usize = u32::MAX as usize;
 
-impl Utf8Input {
-    /// The converted string.
+/// A Markdown argument: a string converted to UTF-8, or a `Uint8Array` whose
+/// bytes the export may borrow for the call.
+///
+/// It holds exactly the text `Buffer#toString('utf8')` makes of the bytes, and
+/// for a string exactly the bytes napi-rs's `String` conversion produces. Only
+/// an export that runs no JavaScript from its first dereference of the value
+/// to its return may take it; the module documentation has the full contract.
+/// Exports declare it with `#[napi(ts_arg_type = "string | Uint8Array")]`.
+pub struct Utf8Input<'call> {
+    source: Source,
+    /// Ties the value to the call whose handles `Source::Bytes` keeps.
+    call: PhantomData<&'call ()>,
+}
+
+enum Source {
+    /// Text the value owns: a converted string.
+    Text(String),
+    /// A `Uint8Array`, read at the first dereference.
+    Bytes(Bytes),
+}
+
+/// The handles of a `Uint8Array` argument and, once read, its text.
+struct Bytes {
+    env: sys::napi_env,
+    value: sys::napi_value,
+    /// Whether to copy the bytes even where they could be borrowed.
+    copy: bool,
+    text: OnceCell<Text>,
+}
+
+enum Text {
+    /// Validated UTF-8 in the `Uint8Array`'s own memory.
+    Borrowed(*const str),
+    /// A copy, or the text with invalid UTF-8 replaced.
+    Owned(String),
+}
+
+impl Utf8Input<'_> {
+    /// Converts a string, or records a `Uint8Array` to read at the first
+    /// dereference: borrowed where that is sound, or always copied.
+    ///
+    /// # Safety
+    ///
+    /// `env` and `value` must be the valid handles of the current N-API call.
+    unsafe fn convert(env: sys::napi_env, value: sys::napi_value, copy: bool) -> Result<Self> {
+        // SAFETY: the caller's handles.
+        let source = match unsafe { classify(env, value) }? {
+            // SAFETY: the same handles; `value` is a string of `units` units.
+            Kind::String(units) => Source::Text(unsafe { convert_string(env, value, units) }?),
+            // The bytes are read when the export first uses them.
+            Kind::Bytes => Source::Bytes(Bytes {
+                env,
+                value,
+                copy,
+                text: OnceCell::new(),
+            }),
+        };
+        Ok(Self {
+            source,
+            call: PhantomData,
+        })
+    }
+
+    /// The text, owned.
     pub fn into_string(self) -> String {
-        self.0
+        match self.source {
+            Source::Text(text) => text,
+            Source::Bytes(bytes) => bytes.text().to_owned(),
+        }
+    }
+
+    /// How the text was obtained: `"string"`, or for bytes `"borrowed"` when
+    /// the export reads the `Uint8Array`'s own memory and `"owned"` when it
+    /// reads a copy or a replacement. For the boundary diagnostics.
+    #[cfg(feature = "boundary-bench")]
+    pub fn origin(&self) -> &'static str {
+        match &self.source {
+            Source::Text(_) => "string",
+            Source::Bytes(bytes) => {
+                bytes.text();
+                match bytes.text.get() {
+                    Some(Text::Borrowed(_)) => "borrowed",
+                    _ => "owned",
+                }
+            }
+        }
     }
 }
 
-impl Deref for Utf8Input {
+impl Deref for Utf8Input<'_> {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        match &self.source {
+            Source::Text(text) => text,
+            Source::Bytes(bytes) => bytes.text(),
+        }
+    }
+}
+
+impl Bytes {
+    /// Reads the bytes on first use, then returns the same text for the rest
+    /// of the call.
+    fn text(&self) -> &str {
+        // SAFETY: `self.env` and `self.value` are the handles of the current
+        // call: `Bytes` only comes from `Utf8Input::convert`, whose lifetime
+        // keeps it inside the export. `value` is a `Uint8Array`.
+        let text = self
+            .text
+            .get_or_init(|| unsafe { read(self.env, self.value, self.copy) });
+        match text {
+            // SAFETY: `read` validated these bytes as UTF-8 in this call, after
+            // napi-rs had converted every argument. The buffer is a plain
+            // `ArrayBuffer`, so no other thread writes it, and an export that
+            // borrows runs no JavaScript from here until it returns, so nothing
+            // on this thread writes, detaches or resizes it either. The
+            // argument handle keeps the typed array alive, and the returned
+            // borrow cannot outlive `self`, which cannot outlive the call.
+            Text::Borrowed(text) => unsafe { &**text },
+            Text::Owned(text) => text,
+        }
+    }
+}
+
+impl FromNapiValue for Utf8Input<'_> {
+    unsafe fn from_napi_value(env: sys::napi_env, value: sys::napi_value) -> Result<Self> {
+        // SAFETY: napi-rs passes the `env` and `value` handles of the current
+        // call, and both stay valid for it.
+        unsafe { Self::convert(env, value, false) }
+    }
+}
+
+/// A Markdown argument that always owns its text.
+///
+/// The exports that call JavaScript while they render take it. A string
+/// converts as for [`Utf8Input`]. A `Uint8Array` is read at the same point, at
+/// the first dereference, but copied before it is decoded, so JavaScript that
+/// runs later, such as a highlighter, cannot change the text.
+pub struct OwnedUtf8Input<'call>(Utf8Input<'call>);
+
+impl Deref for OwnedUtf8Input<'_> {
     type Target = str;
 
     fn deref(&self) -> &str {
@@ -72,83 +293,406 @@ impl Deref for Utf8Input {
     }
 }
 
-// `FromNapiValue::from_napi_value` is an unsafe trait method, and N-API is a C
-// interface. The conversion's safety argument sits next to each call.
-#[allow(unsafe_code)]
-impl FromNapiValue for Utf8Input {
+impl FromNapiValue for OwnedUtf8Input<'_> {
     unsafe fn from_napi_value(env: sys::napi_env, value: sys::napi_value) -> Result<Self> {
-        let mut units = 0usize;
         // SAFETY: napi-rs passes the `env` and `value` handles of the current
-        // call, and both stay valid for it. A null buffer asks only for the
-        // length, which N-API writes to `units`.
-        let status = unsafe {
-            sys::napi_get_value_string_utf16(env, value, ptr::null_mut(), 0, &raw mut units)
-        };
-        if status != sys::Status::napi_ok {
-            // Not a string. napi-rs's conversion fails the same way and builds
-            // its usual message.
-            // SAFETY: the same handles, still within the call.
-            return unsafe { exact(env, value) };
-        }
-        if units == 0 {
-            return Ok(Self(String::new()));
-        }
+        // call, and both stay valid for it.
+        unsafe { Utf8Input::convert(env, value, true) }.map(Self)
+    }
+}
 
-        // The bound, then the spare bytes that prove completeness and the NUL
-        // terminator N-API always writes. No V8 string needs more than
-        // `MAX_CAPACITY`; past it, or when the worst case cannot be allocated
-        // but the exact size still might be, the exact path converts.
-        let bound = units.saturating_mul(MAX_UTF8_PER_UNIT);
-        let capacity = bound.saturating_add(MAX_UTF8_CHAR + 1);
-        let mut bytes = Vec::<u8>::new();
-        if capacity > MAX_CAPACITY || bytes.try_reserve_exact(capacity).is_err() {
-            // SAFETY: the same handles, still within the call.
-            return unsafe { exact(env, value) };
-        }
+/// What a Markdown argument holds.
+enum Kind {
+    /// A string of this many UTF-16 code units.
+    String(usize),
+    /// A `Uint8Array` of at most `MAX_BYTES` bytes.
+    Bytes,
+}
 
-        let mut written = 0usize;
-        // SAFETY: `bytes` owns at least `capacity` writable bytes, the size
-        // passed as `bufsize`. N-API writes at most `bufsize - 1` UTF-8 bytes,
-        // then a NUL terminator, and reports the UTF-8 byte count in `written`.
-        let status = unsafe {
-            sys::napi_get_value_string_utf8(
+/// Tells a string from a `Uint8Array`, and throws the argument's `TypeError`
+/// or `RangeError` for anything else.
+///
+/// # Safety
+///
+/// `env` and `value` must be the valid handles of the current N-API call.
+unsafe fn classify(env: sys::napi_env, value: sys::napi_value) -> Result<Kind> {
+    let mut units = 0usize;
+    // SAFETY: the caller passes the handles of the current call. A null
+    // buffer asks only for the length, which N-API writes to `units`.
+    let status =
+        unsafe { sys::napi_get_value_string_utf16(env, value, ptr::null_mut(), 0, &raw mut units) };
+    if status == sys::Status::napi_ok {
+        return Ok(Kind::String(units));
+    }
+
+    let mut kind = -1;
+    let mut length = 0usize;
+    // SAFETY: the same handles. N-API answers `false` for any value that is
+    // not a typed array.
+    let typed = holds(|result| unsafe { sys::napi_is_typedarray(env, value, result) });
+    // SAFETY: the same handles, and `value` is a typed array. With null data
+    // and buffer pointers, N-API only reports the element type and length and
+    // does not materialize the buffer.
+    if typed
+        && unsafe {
+            sys::napi_get_typedarray_info(
                 env,
                 value,
-                bytes.as_mut_ptr().cast(),
-                capacity,
-                &raw mut written,
+                &raw mut kind,
+                &raw mut length,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
             )
-        };
-        if status != sys::Status::napi_ok || written > bound {
-            // SAFETY: the same handles, still within the call.
-            return unsafe { exact(env, value) };
-        }
+        } != sys::Status::napi_ok
+    {
+        kind = -1;
+    }
+    if kind != sys::TypedarrayType::uint8_array {
+        // SAFETY: the same handles.
+        let received = unsafe { describe(env, value) };
+        let message = format!("markdown must be a string or a Uint8Array, received {received}");
+        // SAFETY: the same call.
+        return Err(unsafe { throw(env, Throw::TypeError, &message) });
+    }
+    if length > MAX_BYTES {
+        // SAFETY: the same call.
+        return Err(unsafe { throw(env, Throw::RangeError, &too_long(length)) });
+    }
+    Ok(Kind::Bytes)
+}
 
-        // SAFETY: N-API initialized the first `written` bytes, and `written`
-        // is at most `bound`, below the reserved capacity. At least
-        // `MAX_UTF8_CHAR` bytes of room stayed unused, so N-API converted the
-        // whole string rather than stopping at a character that did not fit.
-        // A whole conversion is valid UTF-8, because N-API replaces lone
-        // surrogates with U+FFFD.
-        unsafe {
-            bytes.set_len(written);
-            Ok(Self(String::from_utf8_unchecked(bytes)))
-        }
+/// Converts a string of `units` UTF-16 code units in one pass, as the module
+/// documentation describes under "Strings".
+///
+/// # Safety
+///
+/// `env` and `value` must be the valid handles of the current N-API call, and
+/// `value` must be a string of `units` code units.
+unsafe fn convert_string(
+    env: sys::napi_env,
+    value: sys::napi_value,
+    units: usize,
+) -> Result<String> {
+    if units == 0 {
+        return Ok(String::new());
+    }
+
+    // The bound, then the spare bytes that prove completeness and the NUL
+    // terminator N-API always writes. No V8 string needs more than
+    // `MAX_CAPACITY`; past it, or when the worst case cannot be allocated but
+    // the exact size still might be, the exact path converts.
+    let bound = units.saturating_mul(MAX_UTF8_PER_UNIT);
+    let capacity = bound.saturating_add(MAX_UTF8_CHAR + 1);
+    let mut bytes = Vec::<u8>::new();
+    if capacity > MAX_CAPACITY || bytes.try_reserve_exact(capacity).is_err() {
+        // SAFETY: the same handles, still within the call.
+        return unsafe { exact(env, value) };
+    }
+
+    let mut written = 0usize;
+    // SAFETY: `bytes` owns at least `capacity` writable bytes, the size passed
+    // as `bufsize`. N-API writes at most `bufsize - 1` UTF-8 bytes, then a NUL
+    // terminator, and reports the UTF-8 byte count in `written`.
+    let status = unsafe {
+        sys::napi_get_value_string_utf8(
+            env,
+            value,
+            bytes.as_mut_ptr().cast(),
+            capacity,
+            &raw mut written,
+        )
+    };
+    if status != sys::Status::napi_ok || written > bound {
+        // SAFETY: the same handles, still within the call.
+        return unsafe { exact(env, value) };
+    }
+
+    // SAFETY: N-API initialized the first `written` bytes, and `written` is at
+    // most `bound`, below the reserved capacity. At least `MAX_UTF8_CHAR` bytes
+    // of room stayed unused, so N-API converted the whole string rather than
+    // stopping at a character that did not fit. A whole conversion is valid
+    // UTF-8, because N-API replaces lone surrogates with U+FFFD.
+    unsafe {
+        bytes.set_len(written);
+        Ok(String::from_utf8_unchecked(bytes))
     }
 }
 
 /// napi-rs's own `String` conversion: a UTF-8 length pass, then the copy.
 ///
-/// It handles every case the single pass leaves out, and it produces napi-rs's
-/// error for a value that is not a string.
+/// It handles every string the single pass leaves out.
+///
+/// # Safety
+///
+/// `env` and `value` must be the valid handles of the current N-API call, and
+/// `value` must be a string.
+#[cold]
+#[inline(never)]
+unsafe fn exact(env: sys::napi_env, value: sys::napi_value) -> Result<String> {
+    // SAFETY: the caller passes the handles of the current call.
+    unsafe { String::from_napi_value(env, value) }
+}
+
+/// A `Uint8Array`'s bytes as N-API reports them now.
+enum View {
+    /// No bytes: an empty, detached or out-of-bounds view.
+    Empty,
+    /// Bytes of a plain `ArrayBuffer`, which only this thread's JavaScript
+    /// can write.
+    Private(*const u8, usize),
+    /// Bytes another thread may write: a `SharedArrayBuffer`'s, or those of
+    /// any buffer N-API does not confirm as a plain `ArrayBuffer`.
+    Shared(*const u8, usize),
+}
+
+/// Asks N-API for a `Uint8Array`'s current data, length and buffer kind.
+///
+/// It panics if N-API fails for a typed array, or if the view has grown past
+/// `MAX_BYTES` since its conversion, which only a resizable buffer resized by
+/// an option getter can do. Every export catches panics and throws them as
+/// JavaScript errors.
+///
+/// # Safety
+///
+/// `env` and `value` must be the valid handles of the current N-API call, and
+/// `value` must be a typed array.
+unsafe fn view(env: sys::napi_env, value: sys::napi_value) -> View {
+    let mut length = 0usize;
+    let mut data = ptr::null_mut();
+    let mut buffer = ptr::null_mut();
+    // SAFETY: the caller passes the handles of a typed array in the current
+    // call. N-API writes its element count, its data pointer (the buffer's
+    // data plus the view's offset, null once detached) and its buffer.
+    let status = unsafe {
+        sys::napi_get_typedarray_info(
+            env,
+            value,
+            ptr::null_mut(),
+            &raw mut length,
+            &raw mut data,
+            &raw mut buffer,
+            ptr::null_mut(),
+        )
+    };
+    assert!(
+        status == sys::Status::napi_ok,
+        "ferromark could not read the Markdown bytes (N-API status {status})"
+    );
+    if length == 0 || data.is_null() {
+        return View::Empty;
+    }
+    assert!(length <= MAX_BYTES, "{}", too_long(length));
+    // SAFETY: the same call; `buffer` is the handle N-API just returned. V8
+    // reports a `SharedArrayBuffer` as not an `ArrayBuffer`.
+    if holds(|result| unsafe { sys::napi_is_arraybuffer(env, buffer, result) }) {
+        View::Private(data.cast_const().cast(), length)
+    } else {
+        View::Shared(data.cast_const().cast(), length)
+    }
+}
+
+/// Reads a `Uint8Array`: borrowed when it is valid UTF-8 in a plain
+/// `ArrayBuffer` and `copy` is false, otherwise owned.
+///
+/// # Safety
+///
+/// `env` and `value` must be the valid handles of the current N-API call, and
+/// `value` must be a typed array.
+unsafe fn read(env: sys::napi_env, value: sys::napi_value, copy: bool) -> Text {
+    // SAFETY: the caller's handles.
+    match unsafe { view(env, value) } {
+        View::Empty => Text::Owned(String::new()),
+        View::Private(data, length) => {
+            // SAFETY: N-API reported `length` readable bytes at `data`, a
+            // non-null pointer into the view's plain `ArrayBuffer`. No other
+            // thread writes it. A borrowing export runs no JavaScript while
+            // this slice or the text made from it lives, and a copying one
+            // drops the slice right after the copy, before it can run any.
+            let bytes = unsafe { std::slice::from_raw_parts(data, length) };
+            if copy {
+                return Text::Owned(text_from_vec(bytes.to_vec()));
+            }
+            match std::str::from_utf8(bytes) {
+                Ok(text) => Text::Borrowed(ptr::from_ref(text)),
+                Err(_) => Text::Owned(String::from_utf8_lossy(bytes).into_owned()),
+            }
+        }
+        // SAFETY: N-API reported `length` readable bytes at `data`.
+        View::Shared(data, length) => {
+            Text::Owned(text_from_vec(unsafe { copy_shared(data, length) }))
+        }
+    }
+}
+
+/// Copies bytes that another thread may be writing.
+///
+/// Rust allows memory that another thread writes at the same time to be read
+/// only through atomics, so each byte is read with a relaxed atomic load. The
+/// copy may mix bytes from before and after a concurrent write.
+///
+/// # Safety
+///
+/// `data` must point to `length` bytes that stay allocated for the copy.
+unsafe fn copy_shared(data: *const u8, length: usize) -> Vec<u8> {
+    (0..length)
+        .map(|index| {
+            // SAFETY: `index` is below `length`, so the byte is allocated, and
+            // a `u8` needs no alignment. The reference lives only for the load.
+            unsafe { AtomicU8::from_ptr(data.add(index).cast_mut()) }.load(Ordering::Relaxed)
+        })
+        .collect()
+}
+
+/// Decodes owned bytes: kept as they are when valid, with each maximal
+/// invalid subpart replaced by U+FFFD otherwise.
+fn text_from_vec(bytes: Vec<u8>) -> String {
+    String::from_utf8(bytes)
+        .unwrap_or_else(|error| String::from_utf8_lossy(error.as_bytes()).into_owned())
+}
+
+/// The message for Markdown bytes above `MAX_BYTES`.
+fn too_long(length: usize) -> String {
+    format!("markdown must be at most {MAX_BYTES} bytes long, received {length} bytes")
+}
+
+/// Whether an N-API predicate call answers `true`; a failed call counts as
+/// `false`. `query` receives the out pointer for the answer.
+fn holds(query: impl FnOnce(*mut bool) -> sys::napi_status) -> bool {
+    let mut result = false;
+    query(&raw mut result) == sys::Status::napi_ok && result
+}
+
+/// The kind of a rejected Markdown value, for its error message.
+///
+/// It only asks N-API about the value's type, so no getter, proxy trap or
+/// `toJSON` runs. A `SharedArrayBuffer` reads as an object, because N-API on
+/// Node.js 22 cannot tell it from one.
 ///
 /// # Safety
 ///
 /// `env` and `value` must be the valid handles of the current N-API call.
-#[allow(unsafe_code)]
-#[cold]
-#[inline(never)]
-unsafe fn exact(env: sys::napi_env, value: sys::napi_value) -> Result<Utf8Input> {
-    // SAFETY: the caller passes the handles of the current call.
-    unsafe { String::from_napi_value(env, value) }.map(Utf8Input)
+unsafe fn describe(env: sys::napi_env, value: sys::napi_value) -> &'static str {
+    /// Indexed by `napi_valuetype`, whose values are part of the N-API ABI.
+    const VALUE_TYPES: [&str; 10] = [
+        "undefined",
+        "null",
+        "a boolean",
+        "a number",
+        "a string",
+        "a symbol",
+        "an object",
+        "a function",
+        "an external value",
+        "a bigint",
+    ];
+
+    let mut value_type = -1;
+    // SAFETY: the caller's handles.
+    if unsafe { sys::napi_typeof(env, value, &raw mut value_type) } != sys::Status::napi_ok {
+        return "an unsupported value";
+    }
+    if value_type == sys::ValueType::napi_object {
+        // SAFETY: the caller's handles.
+        return unsafe { describe_object(env, value) };
+    }
+    name(&VALUE_TYPES, value_type).unwrap_or("an unsupported value")
+}
+
+/// `describe` for an object.
+///
+/// # Safety
+///
+/// `env` and `value` must be the valid handles of the current N-API call.
+unsafe fn describe_object(env: sys::napi_env, value: sys::napi_value) -> &'static str {
+    /// Indexed by `napi_typedarray_type`, whose values are part of the N-API
+    /// ABI.
+    const TYPED_ARRAYS: [&str; 11] = [
+        "an Int8Array",
+        "a Uint8Array",
+        "a Uint8ClampedArray",
+        "an Int16Array",
+        "a Uint16Array",
+        "an Int32Array",
+        "a Uint32Array",
+        "a Float32Array",
+        "a Float64Array",
+        "a BigInt64Array",
+        "a BigUint64Array",
+    ];
+
+    // SAFETY (every block below): the caller's handles, and N-API only writes
+    // the out pointers it is given.
+    if holds(|result| unsafe { sys::napi_is_typedarray(env, value, result) }) {
+        let mut kind = -1;
+        let status = unsafe {
+            sys::napi_get_typedarray_info(
+                env,
+                value,
+                &raw mut kind,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+            )
+        };
+        return (status == sys::Status::napi_ok)
+            .then(|| name(&TYPED_ARRAYS, kind))
+            .flatten()
+            .unwrap_or("a typed array");
+    }
+    if holds(|result| unsafe { sys::napi_is_dataview(env, value, result) }) {
+        "a DataView"
+    } else if holds(|result| unsafe { sys::napi_is_arraybuffer(env, value, result) }) {
+        "an ArrayBuffer"
+    } else if holds(|result| unsafe { sys::napi_is_array(env, value, result) }) {
+        "an array"
+    } else {
+        "an object"
+    }
+}
+
+/// The entry of `names` for an N-API enum value, if it has one.
+fn name(names: &[&'static str], value: i32) -> Option<&'static str> {
+    names.get(usize::try_from(value).ok()?).copied()
+}
+
+/// The JavaScript error class `throw` raises.
+#[derive(Clone, Copy)]
+enum Throw {
+    TypeError,
+    RangeError,
+}
+
+/// Throws a `TypeError` (code `ERR_INVALID_ARG_TYPE`) or a `RangeError` (code
+/// `ERR_OUT_OF_RANGE`), and returns the error that makes napi-rs leave the
+/// pending exception in place.
+///
+/// If throwing fails, the returned error makes napi-rs throw a plain `Error`
+/// with the same message instead.
+///
+/// # Safety
+///
+/// `env` must be the valid handle of the current N-API call.
+unsafe fn throw(env: sys::napi_env, kind: Throw, message: &str) -> Error {
+    let Ok(text) = CString::new(message) else {
+        return Error::new(Status::InvalidArg, message.to_owned());
+    };
+    // SAFETY: `env` is the handle of the current call, and both strings are
+    // NUL-terminated and live until N-API returns.
+    let status = unsafe {
+        match kind {
+            Throw::TypeError => {
+                sys::napi_throw_type_error(env, c"ERR_INVALID_ARG_TYPE".as_ptr(), text.as_ptr())
+            }
+            Throw::RangeError => {
+                sys::napi_throw_range_error(env, c"ERR_OUT_OF_RANGE".as_ptr(), text.as_ptr())
+            }
+        }
+    };
+    if status == sys::Status::napi_ok {
+        Error::new(Status::PendingException, message.to_owned())
+    } else {
+        Error::new(Status::InvalidArg, message.to_owned())
+    }
 }

@@ -11,7 +11,10 @@ splits each call into four parts:
   [`node/native/src/input.rs`](../../native/src/input.rs)). V8 transcodes its
   Latin-1 or UTF-16 storage on the way. Before that, napi-rs's `String`
   conversion called it twice: a UTF-8 length pass, then a copy into a
-  zero-filled buffer.
+  zero-filled buffer. Markdown passed as UTF-8 bytes (a `Buffer` or other
+  `Uint8Array`) skips this: the exports validate the bytes and borrow them.
+  The [bytes lanes](#bytes-input) time `toHtml`, `Renderer.toHtml` and
+  `toHtmlBuffer` that way next to the string calls.
 - **core**: arena, parse and render in Rust.
 - **output**: `napi_create_string_utf8` decodes the HTML into a V8 string.
   `toHtmlBuffer` copies the HTML into a `Vec` and wraps it in an external
@@ -84,10 +87,11 @@ garbage between documents, and the script runs without it too.
 ## Method
 
 Before timing, the script checks every lane's output for each document. The
-public exports, the probe's HTML and `Buffer`, and every candidate must return
-the same HTML. The core loops must match the HTML length, and each input path
-must match `Buffer.byteLength`. The exports' input conversion must return the
-same bytes as napi-rs's `String` conversion and `Buffer.from`.
+public exports, with the string and with its bytes, the probe's HTML and
+`Buffer`, and every candidate must return the same HTML. The core loops must
+match the HTML length, and each input path must match `Buffer.byteLength`. The
+exports' input conversion must return the same bytes as napi-rs's `String`
+conversion and `Buffer.from`.
 
 Each lane is one loop over `k` calls, timed with `process.hrtime.bigint()`.
 `k` is calibrated per lane so that a batch lasts `--batch-ms`. The core lanes
@@ -103,6 +107,8 @@ lane.
 | ---------------------------------------- | ------------------------------------------------------------------------------------- |
 | `toHtml`, `toHtmlBuffer`                 | the public one-shot exports                                                           |
 | `rendererToHtml`, `rendererToHtmlBuffer` | the public `Renderer` methods on one long-lived renderer                              |
+| `toHtmlBytes`, `toHtmlBufferBytes`       | `toHtml` and `toHtmlBuffer` with the document as a UTF-8 `Buffer`                     |
+| `rendererToHtmlBytes`                    | `Renderer.toHtml` with the document as a UTF-8 `Buffer`                               |
 | `noop`                                   | `boundaryNoop()`: the free-function call floor                                        |
 | `methodNoop`                             | `BoundaryProbe#noop()`: the method call floor, including the unwrap of `this`         |
 | `len`                                    | `boundaryLen(markdown)`: the call plus input conversion                               |
@@ -188,12 +194,14 @@ on the kept renderer, while the object side builds a renderer of its own.
 2. **Per document: time per call**: the median public lanes and parts in
    nanoseconds. `input` shows the characters the Markdown contains and how V8
    stores it: `ascii`, `latin1` (up to U+00FF) or `wide`, and `one-byte` or
-   `two-byte`. A `*` marks non-ASCII HTML.
+   `two-byte`. A `*` marks non-ASCII HTML. `bytes` is `toHtml` with the
+   document as a `Buffer`.
 3. **Per document: share of each call**: input/core/output/fixed/residual as
    percentages of each API's median time.
 4. **Median share per size bin** for each API, and per input representation
    for the string APIs. Documents have equal weight.
-5. **Candidates**: the median saving per call of each reduction prototype per
+5. **Bytes input**: see [below](#bytes-input).
+6. **Candidates**: the median saving per call of each reduction prototype per
    size bin. Each saving is paired per round. In parentheses is the saving's
    share of the call named in the table below.
 
@@ -204,6 +212,21 @@ two-byte storage. `--two-byte` stores every input as UTF-16 with the content
 unchanged, so running with and without it compares the two storage paths on
 identical text.
 
+### Bytes input
+
+Every export that takes Markdown also takes it as UTF-8 bytes
+([decision record](../../../docs/decisions/2026-09-24-node-bytes-input.md)).
+The bytes lanes call `toHtml`, `Renderer.toHtml` and `toHtmlBuffer` with the
+document as a `Buffer`, encoded once before timing, so one build times a caller
+that holds the string against one that holds the bytes, for example from
+`fs.readFile` without an encoding. The table pairs each API's string lane with
+its bytes lane per round and reports the median saving per size bin, and its
+share of the string call. `--two-byte` changes only the string lanes; the bytes
+are the same.
+
+An addon built before the exports took bytes has no bytes lanes, and the table
+shows `n/a`.
+
 ## Candidates
 
 The `boundary-bench` feature also prototypes reductions. They are
@@ -212,7 +235,7 @@ measurements, not API.
 | Candidate          | Lane                             | Compared with   | Share of          | Public API change                                     |
 | ------------------ | -------------------------------- | --------------- | ----------------- | ----------------------------------------------------- |
 | `singlePassInput`  | `boundaryLen`                    | `lenNapiString` | `toHtml`          | none: shipped as the exports' conversion              |
-| `bytesInput`       | `boundaryBytesLen(Buffer)`       | `len`           | `toHtml`          | new: accept UTF-8 bytes (`Buffer`/`Uint8Array`)       |
+| `bytesInput`       | `boundaryLen(Buffer)`            | `len`           | `toHtml`          | shipped: every export takes UTF-8 bytes               |
 | `encodeIntoInput`  | `TextEncoder.encodeInto` + bytes | `len`           | `toHtml`          | none if the facade does it with a kept scratch buffer |
 | `latin1Output`     | `BoundaryProbe#htmlLatin1`       | `html`          | `Renderer.toHtml` | none: an internal conversion for ASCII HTML           |
 | `externalOutput`   | `boundaryToHtmlExternal`         | `toHtmlFresh`   | `toHtml`          | none: an internal conversion for ASCII HTML           |
@@ -226,11 +249,16 @@ measurements, not API.
   the path before) with the exports' own (`len`), so it reports the saving of
   the switch within one build. An addon built before the switch lacks
   `boundaryLenNapiString`, and the column shows `n/a` for it.
-- `bytesInput` borrows the bytes and validates them as UTF-8, and it copies
-  nothing. A caller who reads files as `Buffer` never builds a JavaScript
-  string at all.
+- `bytesInput` has shipped as public API: every export takes UTF-8 bytes,
+  validates them and borrows them where that is sound. A caller who reads
+  files as `Buffer` never builds a JavaScript string at all. Its column pairs
+  the string conversion (`len`) with the exports' own conversion of the bytes,
+  `boundaryLen(Buffer)`, which replaced the `boundaryBytesLen` prototype. On an
+  addon from before, which still has the prototype, the column times that
+  instead. The [bytes lanes](#bytes-input) show the whole calls.
 - `encodeIntoInput` shows the same path for a caller who already holds a
-  string.
+  string: `TextEncoder.encodeInto` into a kept scratch buffer, then the bytes
+  conversion.
 - `latin1Output` uses `napi_create_string_latin1`, a plain copy with no UTF-8
   decoding. It applies to ASCII HTML only, and it checks for ASCII on every
   call.

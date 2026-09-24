@@ -11,12 +11,33 @@ export function lastResult() {
   return sink;
 }
 
+/**
+ * Whether the addon's exports take Markdown as UTF-8 bytes (a `Uint8Array`).
+ * An addon built before they did lacks the public bytes lanes, and its
+ * `bytesInput` and `encodeIntoInput` candidates time its `boundaryBytesLen`
+ * prototype instead, so one script can time a build from before and one from
+ * after.
+ * @param native The loaded addon.
+ */
+export function acceptsBytes(native) {
+  try {
+    return native.boundaryLen(new Uint8Array([0x61])) === 1;
+  } catch {
+    return false;
+  }
+}
+
 /** Per-document state shared by verification and the lanes. */
 export function documentState(native, document) {
   const { markdown } = document;
   const probe = new native.BoundaryProbe(markdown);
+  const accepted = acceptsBytes(native);
   return {
+    acceptsBytes: accepted,
     bytes: Buffer.from(markdown, "utf8"),
+    // The input conversion of UTF-8 bytes: the exports' own, or on an addon
+    // from before they took bytes, its `boundaryBytesLen` prototype.
+    convertBytes: accepted ? native.boundaryLen : native.boundaryBytesLen,
     encoder: new TextEncoder(),
     html: probe.html(),
     markdown,
@@ -30,9 +51,9 @@ export function documentState(native, document) {
   };
 }
 
-function encodeIntoLength({ encoder, native, scratch }, markdown) {
+function encodeIntoLength({ convertBytes, encoder, scratch }, markdown) {
   const { written } = encoder.encodeInto(markdown, scratch);
-  return native.boundaryBytesLen(scratch.subarray(0, written));
+  return convertBytes(scratch.subarray(0, written));
 }
 
 const utf8 = (buffer) => buffer.toString("utf8");
@@ -49,7 +70,8 @@ export function hasKeptDefault(native) {
   return typeof native.boundaryToHtmlFresh === "function";
 }
 
-function outputChecks({ html, markdown, native, outputAscii, probe, renderer }) {
+function outputChecks(state) {
+  const { bytes, html, markdown, native, outputAscii, probe, renderer } = state;
   return {
     "Renderer.toHtml": renderer.toHtml(markdown) === html,
     "Renderer.toHtmlBuffer": utf8(renderer.toHtmlBuffer(markdown)) === html,
@@ -62,6 +84,11 @@ function outputChecks({ html, markdown, native, outputAscii, probe, renderer }) 
     htmlLatin1: !outputAscii || probe.htmlLatin1() === html,
     toHtml: native.toHtml(markdown) === html,
     toHtmlBuffer: utf8(native.toHtmlBuffer(markdown)) === html,
+    ...(state.acceptsBytes && {
+      "Renderer.toHtml(bytes)": renderer.toHtml(bytes) === html,
+      "toHtml(bytes)": native.toHtml(bytes) === html,
+      "toHtmlBuffer(bytes)": utf8(native.toHtmlBuffer(bytes)) === html,
+    }),
   };
 }
 
@@ -90,10 +117,10 @@ function partChecks(state, inputBytes) {
   const { bytes, markdown, native, outputBytes } = state;
   const threeOutputs = (outputBytes * 3) >>> 0;
   return {
-    boundaryBytesLen: native.boundaryBytesLen(bytes) === inputBytes,
     boundaryEcho: native.boundaryEcho(markdown) === markdown,
     boundaryLen: native.boundaryLen(markdown) === inputBytes,
     boundaryMake: native.boundaryMake(outputBytes).length === outputBytes,
+    bytesLen: state.convertBytes(bytes) === inputBytes,
     ...(hasKeptDefault(native) && {
       coreDefault: native.boundaryCoreOnly(markdown, 3, "default") === threeOutputs,
     }),
@@ -128,6 +155,24 @@ function publicLanes({ markdown, native, renderer }) {
     },
     toHtmlBuffer(k) {
       for (let i = 0; i < k; i++) sink = native.toHtmlBuffer(markdown);
+    },
+  };
+}
+
+// The same public exports with the document as UTF-8 bytes, as a caller that
+// read the file into a `Buffer` passes it. Only an addon that takes bytes has
+// these lanes.
+function bytesLanes({ acceptsBytes: accepted, bytes, native, renderer }) {
+  if (!accepted) return {};
+  return {
+    rendererToHtmlBytes(k) {
+      for (let i = 0; i < k; i++) sink = renderer.toHtml(bytes);
+    },
+    toHtmlBufferBytes(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtmlBuffer(bytes);
+    },
+    toHtmlBytes(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtml(bytes);
     },
   };
 }
@@ -179,18 +224,27 @@ function coreLanes({ markdown, native }) {
   };
 }
 
-// Prototypes of the reductions README.md describes.
-function candidateLanes({ bytes, encoder, markdown, native, outputAscii, probe, scratch }) {
-  const lanes = {
+// The input conversion of UTF-8 bytes (`convertBytes`), for a caller that holds
+// bytes and for one that encodes its string into a kept scratch buffer first.
+function bytesInputLanes({ bytes, convertBytes, encoder, markdown, scratch }) {
+  return {
     bytesLen(k) {
-      for (let i = 0; i < k; i++) sink = native.boundaryBytesLen(bytes);
+      for (let i = 0; i < k; i++) sink = convertBytes(bytes);
     },
     encodeIntoLen(k) {
       for (let i = 0; i < k; i++) {
         const { written } = encoder.encodeInto(markdown, scratch);
-        sink = native.boundaryBytesLen(scratch.subarray(0, written));
+        sink = convertBytes(scratch.subarray(0, written));
       }
     },
+  };
+}
+
+// Prototypes of the reductions README.md describes.
+function candidateLanes(state) {
+  const { markdown, native, outputAscii, probe } = state;
+  const lanes = {
+    ...bytesInputLanes(state),
     htmlBufferCopy(k) {
       for (let i = 0; i < k; i++) sink = probe.htmlBufferCopy();
     },
@@ -220,6 +274,7 @@ function candidateLanes({ bytes, encoder, markdown, native, outputAscii, probe, 
 export function documentLanes(state) {
   return {
     ...publicLanes(state),
+    ...bytesLanes(state),
     ...boundaryLanes(state),
     ...coreLanes(state),
     ...candidateLanes(state),

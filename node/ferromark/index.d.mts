@@ -83,18 +83,27 @@ export interface HighlightOptions {
   onHighlightError?: (error: unknown, context: { lang: string }) => void;
 }
 
-export declare function toHtml(markdown: string, options?: Options): string;
+/**
+ * Render Markdown to HTML.
+ *
+ * Every function and `Renderer` method that takes `markdown` accepts a string
+ * or UTF-8 bytes: a `Uint8Array`, which includes a Node.js `Buffer`. Bytes
+ * render exactly like the string `Buffer.from(bytes.buffer, bytes.byteOffset,
+ * bytes.byteLength).toString('utf8')` returns, so invalid UTF-8 becomes
+ * U+FFFD. Other values throw a `TypeError` with code `ERR_INVALID_ARG_TYPE`.
+ */
+export declare function toHtml(markdown: string | Uint8Array, options?: Options): string;
 
 /** Render UTF-8 HTML directly into a Node.js Buffer. */
-export declare function toHtmlBuffer(markdown: string, options?: Options): Buffer;
+export declare function toHtmlBuffer(markdown: string | Uint8Array, options?: Options): Buffer;
 
 /** Reusable Markdown renderer with fixed options. */
 export declare class Renderer {
   constructor(options?: Options);
   /** Render one document while retaining parser scratch allocations. */
-  toHtml(markdown: string): string;
+  toHtml(markdown: string | Uint8Array): string;
   /** Render UTF-8 HTML directly into a Node.js Buffer. */
-  toHtmlBuffer(markdown: string): Buffer;
+  toHtmlBuffer(markdown: string | Uint8Array): Buffer;
 }
 
 /**
@@ -105,7 +114,7 @@ export declare class Renderer {
 // The four arguments are the stable public API shape.
 // eslint-disable-next-line max-params
 export declare function toHtmlWithHighlighter(
-  markdown: string,
+  markdown: string | Uint8Array,
   highlighter: CodeHighlighter,
   highlightOptions: HighlightOptions,
   options?: Options,
@@ -136,7 +145,10 @@ export interface TransformResult {
 }
 
 /** Render Markdown and return HTML together with headings and front matter. */
-export declare function transform(markdown: string, options?: Options): TransformResult;
+export declare function transform(
+  markdown: string | Uint8Array,
+  options?: Options,
+): TransformResult;
 
 /**
  * `transform` with code blocks rendered by a trusted synchronous highlighter.
@@ -146,7 +158,7 @@ export declare function transform(markdown: string, options?: Options): Transfor
 // The four arguments are the stable public API shape.
 // eslint-disable-next-line max-params
 export declare function transformWithHighlighter(
-  markdown: string,
+  markdown: string | Uint8Array,
   highlighter: CodeHighlighter,
   highlightOptions: HighlightOptions,
   options?: Options,

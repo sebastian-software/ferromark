@@ -32,7 +32,7 @@ use napi::bindgen_prelude::{Buffer, FnArgs, Function, Result};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
-use crate::input::Utf8Input;
+use crate::input::{OwnedUtf8Input, Utf8Input};
 use crate::{
     Options, TransformResult, core_options, html_buffer, js_string, render_document,
     render_one_shot,
@@ -111,7 +111,7 @@ fn unpack_present(
 #[napi(catch_unwind, js_name = "toHtmlPacked")]
 pub fn to_html_packed<'env>(
     env: &'env Env,
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
     on: u32,
     heading_offset: Option<f64>,
@@ -125,7 +125,7 @@ pub fn to_html_packed<'env>(
 /// Internal to the `ferromark` facade: `toHtmlBuffer` with packed options.
 #[napi(catch_unwind, js_name = "toHtmlBufferPacked")]
 pub fn to_html_buffer_packed(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
     on: u32,
     heading_offset: Option<f64>,
@@ -139,7 +139,7 @@ pub fn to_html_buffer_packed(
 /// Internal to the `ferromark` facade: `transform` with packed options.
 #[napi(catch_unwind, js_name = "transformPacked")]
 pub fn transform_packed(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
     on: u32,
     heading_offset: Option<f64>,
@@ -155,7 +155,7 @@ pub fn transform_packed(
 #[napi(catch_unwind, js_name = "toHtmlWithRendererPacked")]
 #[allow(clippy::type_complexity)]
 pub fn to_html_with_renderer_packed(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: OwnedUtf8Input,
     set: u32,
     on: u32,
     heading_offset: Option<f64>,
@@ -172,7 +172,7 @@ pub fn to_html_with_renderer_packed(
 #[napi(catch_unwind, js_name = "transformWithRendererPacked")]
 #[allow(clippy::type_complexity)]
 pub fn transform_with_renderer_packed(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: OwnedUtf8Input,
     set: u32,
     on: u32,
     heading_offset: Option<f64>,
