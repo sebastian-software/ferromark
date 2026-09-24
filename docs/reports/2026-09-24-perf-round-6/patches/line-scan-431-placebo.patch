@@ -1,0 +1,243 @@
+From 41f4e99eca276aee7f24250f831f6da4e1bd9dbc Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Thu, 24 Sep 2026 10:28:34 +0200
+Subject: [PATCH] test(parser): placebo control for the x86-64 line-scan probe
+
+Measurement-only control for #431, not for merging. It keeps
+d6e0bad3's x86-64 structure but none of its SSE2: the inline 16-byte
+probe at every `line_end` site runs as two eight-byte word tests, and
+the `#[inline(never)]` continuation runs the word scan main uses. A
+paired run against main isolates what the structure and code placement
+cost on documents that rarely or never scan a line.
+
+The probe is `#[inline(always)]`: as a plain `#[inline]` function, the
+larger word-test probe stayed out of line at one site, where d6e0bad3's
+SSE2 probe is inlined at every site.
+
+x86-64 release build (fat LTO, target-cpu x86-64): the parser grows by
+323 instructions against main and by 912 against d6e0bad3. The word
+test needs four 64-bit constants per site where the SSE2 probe loads
+two, so `skip_line_comments_from` stays out of line and the continuation
+is called from 48 sites instead of 57.
+
+The exactness tests are unchanged apart from the removed SSE2 scan, and
+the continuation is still checked on its own from every start.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/parser/line_scan.rs | 143 ++++++++++------------------------------
+ 1 file changed, 33 insertions(+), 110 deletions(-)
+
+diff --git a/src/parser/line_scan.rs b/src/parser/line_scan.rs
+index 46d80183..9d1df810 100644
+--- a/src/parser/line_scan.rs
++++ b/src/parser/line_scan.rs
+@@ -11,14 +11,16 @@
+ //! the rest: rust-book-style prose (median line ~57 bytes, nearly half of
+ //! lines 64+) pays four to eight SWAR iterations per line, and those documents
+ //! are exactly the ones that cannot bail out of the pre-pass because they
+-//! hold link reference definitions. x86-64 runs the same scan with SSE2,
+-//! which is part of its baseline: one 16-byte probe inline, the rest out of
+-//! line (see `line_end_x86`).
++//! hold link reference definitions.
+ //!
+ //! That advantage is specific to this access pattern. Block parsing walks the
+ //! long prose lines of a paragraph, where `memchr`'s wider SIMD step overtakes
+ //! an eight-byte word test — converting those call sites measured 4-11% slower,
+ //! so they deliberately keep using `memchr`.
++//!
++//! Placebo control for #431, for measurement only: x86-64 keeps #431's
++//! structure (an inline 16-byte probe, then an out-of-line continuation)
++//! but runs the word test in both, so it scans as main does.
+ 
+ const ONES: u64 = 0x0101_0101_0101_0101;
+ const HIGH: u64 = 0x8080_8080_8080_8080;
+@@ -59,30 +61,29 @@ pub(in crate::parser) fn line_end(bytes: &[u8], from: usize) -> usize {
+     }
+ }
+ 
+-/// [`line_end`] on x86-64: one inline 16-byte probe, then an out-of-line
+-/// call for whatever the probe leaves.
++/// [`line_end`] on x86-64, placebo: #431's inline 16-byte probe as two
++/// word tests, then the out-of-line word scan for whatever the probe leaves.
+ ///
+-/// `line_end` is `#[inline]` and reached from dozens of block-parser sites.
+-/// Inlining the whole SSE2 scan into each of them, as aarch64 does with
+-/// NEON, adds 63–70 instructions per site to the x86-64 release build
+-/// (+3,100 in the parser, +874 in `parse_document` alone). Moving all of it
+-/// out of line makes every scan pay a call, however short its line. The
+-/// probe answers every line that ends within the 16 bytes at `from` in
+-/// about 16 inline instructions, fewer than the word scan the sites used to
+-/// inline, so the parser still shrinks. Longer lines, and scans that start
+-/// in a document's last 15 bytes, continue in [`line_end_x86_rest`].
++/// `#[inline(always)]` because the larger word-test probe would otherwise
++/// stay out of line at one site, unlike #431's probe, which is inlined at
++/// every site.
+ #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+-#[allow(unsafe_code)]
+-#[inline]
++#[allow(unsafe_code, clippy::inline_always)]
++#[inline(always)]
+ fn line_end_x86(bytes: &[u8], from: usize) -> usize {
+     // `from <= bytes.len()` holds for every caller, so the sum cannot
+     // overflow; the comparison also keeps an out-of-range `from` away from
+-    // the load.
++    // the loads.
+     let rest = if from + 16 <= bytes.len() {
+         // SAFETY: the 16 bytes at `from` exist, checked just above.
+-        let mask = unsafe { newline_lanes(bytes, from) };
+-        if mask != 0 {
+-            return from + mask.trailing_zeros() as usize;
++        let low = unsafe { newline_word(bytes, from) };
++        if low != 0 {
++            return from + (low.trailing_zeros() / 8) as usize;
++        }
++        // SAFETY: as above; these are the upper 8 of those 16 bytes.
++        let high = unsafe { newline_word(bytes, from + 8) };
++        if high != 0 {
++            return from + 8 + (high.trailing_zeros() / 8) as usize;
+         }
+         from + 16
+     } else {
+@@ -91,16 +92,10 @@ fn line_end_x86(bytes: &[u8], from: usize) -> usize {
+     line_end_x86_rest(bytes, rest)
+ }
+ 
+-/// The scan past [`line_end_x86`]'s probe, out of line: [`line_end_sse2`]
+-/// for any start once the document holds one vector (its overlapping tail
+-/// covers starts in the last 15 bytes), the word scan for shorter
+-/// documents.
++/// The scan past [`line_end_x86`]'s probe, out of line: the word scan.
+ #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+ #[inline(never)]
+ fn line_end_x86_rest(bytes: &[u8], from: usize) -> usize {
+-    if bytes.len() >= 16 {
+-        return line_end_sse2(bytes, from);
+-    }
+     line_end_swar(bytes, from)
+ }
+ 
+@@ -157,83 +152,21 @@ fn line_end_neon(bytes: &[u8], from: usize) -> usize {
+     i
+ }
+ 
+-/// SSE2 sibling of `line_end_neon` for x86-64, where SSE2 is part of the
+-/// baseline, so nothing is detected at run time. Needs `bytes.len() >= 16`
+-/// and answers any `from` up to `bytes.len()`.
+-///
+-/// The steps mirror the NEON scan: 32 bytes per iteration, then at most one
+-/// 16-byte step, then one overlapping load of the last vector for the
+-/// remaining 1–15 bytes. The two halves of a 32-byte step fold into one
+-/// 32-bit mask, so the step takes a single branch.
+-#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+-#[allow(unsafe_code)]
+-#[inline]
+-fn line_end_sse2(bytes: &[u8], from: usize) -> usize {
+-    let end = bytes.len();
+-    debug_assert!(from <= end && end >= 16);
+-    let mut i = from;
+-    // SAFETY: every 16-byte load starts at an offset `at` with
+-    // `at + 16 <= end`: the loop conditions bound the stepped loads, and the
+-    // tail load starts at `end - 16`, which exists because the caller
+-    // guarantees `end >= 16`.
+-    unsafe {
+-        let lanes = |at: usize| newline_lanes(bytes, at);
+-        while i + 32 <= end {
+-            let mask = lanes(i) | (lanes(i + 16) << 16);
+-            if mask != 0 {
+-                return i + mask.trailing_zeros() as usize;
+-            }
+-            i += 32;
+-        }
+-        if i + 16 <= end {
+-            let mask = lanes(i);
+-            if mask != 0 {
+-                return i + mask.trailing_zeros() as usize;
+-            }
+-            i += 16;
+-        }
+-        if i < end {
+-            // Overlapping tail: `end - 16 < i < end` here, so the shift is
+-            // 1..=15 and drops the lanes before `i`, which the steps already
+-            // cleared or which lie before `from`. Each lane's compare is
+-            // exact, so nothing leaks across the mask.
+-            let base = end - 16;
+-            let mask = lanes(base) & (u32::MAX << (i - base));
+-            if mask != 0 {
+-                return base + mask.trailing_zeros() as usize;
+-            }
+-            return end;
+-        }
+-    }
+-    i
+-}
+-
+-/// The line terminators among the 16 bytes at `at`: bit `k` is set iff
+-/// `bytes[at + k]` is `\n` or `\r`, and bits 16 and up are clear.
++/// The word test on the 8 bytes at `at`: the lowest set bit marks the first
++/// `\n` or `\r` (see [`has_zero`] for why only the lowest bit counts).
+ ///
+ /// # Safety
+ ///
+-/// `at + 16 <= bytes.len()`.
++/// `at + 8 <= bytes.len()`.
+ #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+ #[allow(unsafe_code)]
+ #[inline]
+-unsafe fn newline_lanes(bytes: &[u8], at: usize) -> u32 {
+-    use std::arch::x86_64::{
+-        _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_or_si128, _mm_set1_epi8,
+-    };
+-    debug_assert!(at + 16 <= bytes.len());
+-    // SAFETY: the `cfg` above admits only builds with SSE2 enabled, and the
+-    // caller guarantees the 16 bytes at `at`. `_mm_loadu_si128` has no
+-    // alignment requirement.
+-    let mask = unsafe {
+-        let v = _mm_loadu_si128(bytes.as_ptr().add(at).cast());
+-        let nl = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'\n'.cast_signed()));
+-        let cr = _mm_cmpeq_epi8(v, _mm_set1_epi8(b'\r'.cast_signed()));
+-        _mm_movemask_epi8(_mm_or_si128(nl, cr))
+-    };
+-    // `movemask` fills only the low 16 bits, so the value is never negative
+-    // and the conversion is exact.
+-    mask.cast_unsigned()
++unsafe fn newline_word(bytes: &[u8], at: usize) -> u64 {
++    debug_assert!(at + 8 <= bytes.len());
++    // SAFETY: the caller guarantees the 8 bytes at `at`; the read is
++    // unaligned.
++    let word = u64::from_le(unsafe { bytes.as_ptr().add(at).cast::<u64>().read_unaligned() });
++    has_zero(word ^ NEWLINES) | has_zero(word ^ RETURNS)
+ }
+ 
+ /// Portable eight-byte word scan used for short remainders, and for every
+@@ -442,11 +375,8 @@ mod tests {
+     }
+ 
+     /// Checks the scans from `from` against `expected`: `line_end` and
+-    /// `next_line_start` on every target. On x86-64 also the two out-of-line
+-    /// pieces on their own, from any start: the rest that follows the inline
+-    /// probe, and the SSE2 scan for every input of at least one vector,
+-    /// including starts in the last 15 bytes, where the tail's mask must
+-    /// drop the lanes before `from`.
++    /// `next_line_start` on every target. On x86-64 also the out-of-line
++    /// rest that follows the inline probe, on its own from any start.
+     fn check_from(bytes: &[u8], from: usize, expected: usize) {
+         assert_eq!(
+             line_end(bytes, from),
+@@ -465,13 +395,6 @@ mod tests {
+                 expected,
+                 "rest from {from} of {bytes:02x?}"
+             );
+-            if bytes.len() >= 16 {
+-                assert_eq!(
+-                    line_end_sse2(bytes, from),
+-                    expected,
+-                    "SSE2 from {from} of {bytes:02x?}"
+-                );
+-            }
+         }
+     }
+ 
+-- 
+2.55.0
+

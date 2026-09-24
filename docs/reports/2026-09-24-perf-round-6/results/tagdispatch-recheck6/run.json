@@ -1,0 +1,49 @@
+{
+  "schema": 2,
+  "rounds": 3,
+  "pairs_per_round": 7,
+  "window_ms": 40,
+  "warmup_ms": 40,
+  "seed": 20260914,
+  "modes": [
+    "fresh",
+    "reuse",
+    "parse",
+    "render"
+  ],
+  "case_filter": "^(rust-book-ch17-00-async-await|rust-book-ch00-00-introduction|comment-table|typescript-handbook-compiler-options|vue-docs-slots)$",
+  "cases": [
+    "comment-table",
+    "rust-book-ch00-00-introduction",
+    "rust-book-ch17-00-async-await",
+    "vue-docs-slots",
+    "typescript-handbook-compiler-options"
+  ],
+  "corpus_sha256": "31583750d418c1b9932ea391044f57ea579b9a8bbb6255a0b97f1b6b946b78d3",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "bdc2ce24bf0d781c280abcb1b232248b8a33d6344645aef4eb65d1c7559adf40",
+  "host_before": {
+    "time_utc": "2026-09-23T16:07:16Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      6.84130859375,
+      14.92626953125,
+      14.076171875
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  },
+  "host_after": {
+    "time_utc": "2026-09-23T16:07:58Z",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "load_average": [
+      34.5205078125,
+      20.7978515625,
+      16.2578125
+    ],
+    "cpu": "Apple M1 Pro",
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=40173667)\t80%; AC attached; not charging present: true",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+  }
+}

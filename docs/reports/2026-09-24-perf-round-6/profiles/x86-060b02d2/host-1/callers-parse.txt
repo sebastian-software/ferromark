@@ -1,0 +1,157 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 19K of event 'task-clock:ppp'
+# Event count (approx.): 20011010991
+#
+# Overhead  Symbol                                                                                                     IPC   [IPC Coverage]
+# ........  .........................................................................................................  ....................
+#
+    12.17%  [.] ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline                              -      -            
+            |          
+             --10.56%--ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline_block
+                       |          
+                        --8.45%--ferromark::parser::block::<impl ferromark::parser::Parser>::parse_paragraph
+                                  ferromark::parser::Parser::parse_document
+                                  ferromark::parser::Parser::parse
+                                  |          
+                                   --8.00%--ferromark_profile::main
+                                             std::sys::backtrace::__rust_begin_short_backtrace
+                                             std::rt::lang_start_internal
+                                             main
+                                             0x7f4d8e82a1ca
+                                             __libc_start_main
+                                             _start
+
+     7.59%  [.] ferromark::parser::Parser::parse_document                                                              -      -            
+            |          
+             --7.57%--ferromark::parser::Parser::parse
+                       |          
+                        --7.33%--ferromark_profile::main
+                                  std::sys::backtrace::__rust_begin_short_backtrace
+                                  std::rt::lang_start_internal
+                                  main
+                                  0x7f4d8e82a1ca
+                                  __libc_start_main
+                                  _start
+
+     6.41%  [.] ferromark::parser::inline::scan::x86::next_special_avx2_with_tables                                    -      -            
+            |          
+             --6.11%--ferromark::parser::inline::marker_scan::InlineMarkerScan::next
+                       ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline
+                       |          
+                        --5.16%--ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline_block
+                                  |          
+                                   --3.99%--ferromark::parser::block::<impl ferromark::parser::Parser>::parse_paragraph
+                                             ferromark::parser::Parser::parse_document
+                                             ferromark::parser::Parser::parse
+                                             |          
+                                              --3.85%--ferromark_profile::main
+                                                        std::sys::backtrace::__rust_begin_short_backtrace
+                                                        std::rt::lang_start_internal
+                                                        main
+                                                        0x7f4d8e82a1ca
+                                                        __libc_start_main
+                                                        _start
+
+     6.07%  [.] ferromark::parser::block::<impl ferromark::parser::Parser>::parse_paragraph                            -      -            
+            |          
+             --5.98%--ferromark::parser::Parser::parse_document
+                       ferromark::parser::Parser::parse
+                       |          
+                        --5.78%--ferromark_profile::main
+                                  std::sys::backtrace::__rust_begin_short_backtrace
+                                  std::rt::lang_start_internal
+                                  main
+                                  0x7f4d8e82a1ca
+                                  __libc_start_main
+                                  _start
+
+     4.76%  [.] ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline_block                        -      -            
+            |          
+             --2.77%--ferromark::parser::block::<impl ferromark::parser::Parser>::parse_paragraph
+                       ferromark::parser::Parser::parse_document
+                       ferromark::parser::Parser::parse
+                       |          
+                        --2.64%--ferromark_profile::main
+                                  std::sys::backtrace::__rust_begin_short_backtrace
+                                  std::rt::lang_start_internal
+                                  main
+                                  0x7f4d8e82a1ca
+                                  __libc_start_main
+                                  _start
+
+     4.67%  [.] ferromark::parser::inline::link_target::parse_destination                                              -      -            
+            |          
+             --4.57%--ferromark::parser::inline::link_target::<impl ferromark::parser::Parser>::parse_link_target
+                       |          
+                        --4.57%--ferromark::parser::inline_link::<impl ferromark::parser::Parser>::resolve_link
+                                  ferromark::parser::inline_link::<impl ferromark::parser::Parser>::parse_link
+                                  ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline
+                                  ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline_block
+                                  |          
+                                   --4.32%--ferromark::parser::block::<impl ferromark::parser::Parser>::parse_paragraph
+                                             ferromark::parser::Parser::parse_document
+                                             ferromark::parser::Parser::parse
+                                             |          
+                                              --4.28%--ferromark_profile::main
+                                                        std::sys::backtrace::__rust_begin_short_backtrace
+                                                        std::rt::lang_start_internal
+                                                        main
+                                                        0x7f4d8e82a1ca
+                                                        __libc_start_main
+                                                        _start
+
+     4.24%  [.] memchr::arch::x86_64::avx2::packedpair::Finder::find_impl                                              -      -            
+     3.97%  [.] ferromark::parser::inline_link::<impl ferromark::parser::Parser>::parse_link                           -      -            
+            |          
+             --3.95%--ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline
+                       ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline_block
+                       |          
+                        --3.67%--ferromark::parser::block::<impl ferromark::parser::Parser>::parse_paragraph
+                                  ferromark::parser::Parser::parse_document
+                                  ferromark::parser::Parser::parse
+                                  |          
+                                   --3.65%--ferromark_profile::main
+                                             std::sys::backtrace::__rust_begin_short_backtrace
+                                             std::rt::lang_start_internal
+                                             main
+                                             0x7f4d8e82a1ca
+                                             __libc_start_main
+                                             _start
+
+     3.26%  [.] ferromark::parser::inline::marker_scan::InlineMarkerScan::next                                         -      -            
+            |          
+             --2.95%--ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline
+                       |          
+                        --2.52%--ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline_block
+
+     2.86%  [.] ferromark::parser::list::<impl ferromark::parser::Parser>::parse_list                                  -      -            
+            |          
+             --2.86%--ferromark::parser::Parser::parse_document
+                       ferromark::parser::Parser::parse
+                       |          
+                        --2.73%--ferromark_profile::main
+                                  std::sys::backtrace::__rust_begin_short_backtrace
+                                  std::rt::lang_start_internal
+                                  main
+                                  0x7f4d8e82a1ca
+                                  __libc_start_main
+                                  _start
+
+     2.44%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw_avx2                                                 -      -            
+     2.36%  [.] memchr::arch::x86_64::avx2::memchr::Three::find_raw_avx2                                               -      -            
+     2.16%  [.] ferromark::parser::inline_link::<impl ferromark::parser::Parser>::resolve_link                         -      -            
+            |          
+             --2.13%--ferromark::parser::inline_link::<impl ferromark::parser::Parser>::parse_link
+                       ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline
+                       ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline_block
+
+     2.01%  [.] ferromark::parser::delimiters::<impl ferromark::parser::Parser>::scan_balanced_matched                 -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

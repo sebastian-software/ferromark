@@ -1,0 +1,42 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 19K of event 'task-clock:ppp'
+# Event count (approx.): 20008007988
+#
+# Overhead  Symbol                                                                                                                                      IPC   [IPC Coverage]
+# ........  ..........................................................................................................................................  ....................
+#
+    20.33%  [.] ferromark::renderer::html::escape::escape_into                                                                                          -      -            
+    19.24%  [.] ferromark::renderer::html::escape::nibble::first_flagged_ssse3                                                                          -      -            
+    17.05%  [.] ferromark::renderer::html::renderer::HtmlRenderer::render_node                                                                          -      -            
+     5.15%  [.] ferromark::renderer::html::heading::slugify_heading_into                                                                                -      -            
+     4.40%  [.] ferromark::renderer::html::escape::push_run_long                                                                                        -      -            
+     3.91%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_inline_node                 -      -            
+     3.43%  [.] hashbrown::map::HashMap<K,V,S,A>::insert                                                                                                -      -            
+     2.98%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_html_value                  -      -            
+     2.52%  [.] ferromark::renderer::html::renderer::blocks::<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_table_row_with_header      -      -            
+     2.42%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw_avx2                                                                                  -      -            
+     2.25%  [.] ferromark::renderer::html::escape::url::write_url_segment                                                                               -      -            
+     1.90%  [.] ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed                                                                      -      -            
+     1.42%  [.] ferromark_profile::main                                                                                                                 -      -            
+     1.36%  [.] ferromark::renderer::html::renderer::blocks::<impl ferromark::renderer::html::renderer::HtmlRenderer>::render_list_item_with_tightness  -      -            
+     1.29%  [.] hashbrown::map::HashMap<K,V,S,A>::get                                                                                                   -      -            
+     1.05%  [.] memchr::arch::x86_64::memchr::memchr_raw::find_avx2                                                                                     -      -            
+     1.00%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::sanitized_url                     -      -            
+     0.96%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw                                                                                       -      -            
+     0.90%  [.] ferromark::renderer::html::escape::write_url_escaped_into                                                                               -      -            
+     0.51%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_heading_id                  -      -            
+     0.48%  [.] 0x00000000001a14c4                                                                                                                      -      -            
+     0.45%  [.] ferromark::renderer::html::heading::HeadingIdPlanner::plan_into                                                                         -      -            
+     0.42%  [.] 0x00000000001a14e8                                                                                                                      -      -            
+     0.38%  [.] 0x00000000001a14c0                                                                                                                      -      -            
+     0.32%  [.] 0x00000000001a14ee                                                                                                                      -      -            
+     0.31%  [.] 0x00000000001a1599                                                                                                                      -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

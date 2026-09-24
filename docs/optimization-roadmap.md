@@ -100,6 +100,26 @@ Re-screened one on top of the other and measured together against
 rendering. Moving the GFM autolink pre-flight into the inline marker scan
 (#415) measured 0.968× in parsing and was closed.
 
+[Optimization round 6](reports/2026-09-24-perf-round-6/README.md) worked
+through round 5's remaining hot spots on Apple Silicon and made x86-64
+measurable. On the M1 Pro it merged two render changes: the tag filter compares
+a raw HTML tag only with the filtered names that share its initial (#418,
+render 1.29× on the raw-HTML reference page), and heading ids are planned in
+reusable claim storage (#422, broad render 1.035×, reuse 1.012×). It closed the
+second iterations of round 4's table and container revisions (#424, #425) and
+a third design for the autolink pre-flight (#427). Two CI workflows now run the
+paired harness (#419) and a `perf` profile (#423) on GitHub's x86-64 runners;
+the paired workflow's A/A control stays within ±0.5% on three hosts. The first
+x86 profile led to three merged x86 SIMD paths: `ByteClass` with SSSE3 and AVX2
+(#426, parse 1.060–1.069×), the escape classifiers as inlined SSE2 (#430,
+render 1.091–1.093×) and an SSE2 `line_end` (#431, parse 1.062–1.065×). The
+port of round 5's fused root scan (#428) was closed. Against release 2.1.1, the
+code of 2.1.2 measures 1.116–1.148× fresh, 1.125–1.152× with reuse,
+1.135–1.160× in parsing and 1.112–1.126× in rendering on an Intel Xeon 6973P-C
+and two AMD EPYC 7763. The round also found that on x86, code placement moves
+stages a change does not touch by ±2–3%, consistently on all three hosts, and it
+used a placebo build to tell that apart from real cost.
+
 ## Next questions
 
 The [iteration-round report](reports/2026-09-15-arm-iterations/README.md) ranked
@@ -133,54 +153,61 @@ content resolved afterwards remains the larger, unattempted variant.
    across combined fat-LTO binaries. The earlier link-probe losses disappear
    without LTO and change with the expanded worker. A precise instruction/cache
    or memory-placement mechanism remains unproven. The large `render_node`
-   function is a useful next profiling target; retain stage controls.
+   function is a useful next profiling target; retain stage controls. Round 6
+   measured the effect on x86-64: an inlined runtime dispatch that grew its
+   callers cost 4–7% on documents that never run the dispatched code (#426's
+   first commit), and stages a change does not touch move by ±2–3%. The three
+   CI hosts build byte-identical workers, so a layout effect looks consistent
+   across hosts. A placebo build — the candidate's code structure with the old
+   algorithm — is the control that separates layout from cost; see the
+   [round 6 methodology](reports/2026-09-24-perf-round-6/README.md#methodology-what-the-round-learned-about-measuring).
 2. **Tiny-input fresh allocation.** Round 4 lowered the reservation floor from
    16 KB to 2 KB, which gave comment-sized documents 2.2% fresh. The
    retained-arena and fresh-arena cases should remain separate when
    considering a different reservation strategy.
-3. **Tables and container lines, the two revisions round 4 left open.** Tables
-   hold 10% and lists 12% of parse time after round 5. The NEON pipe cursor
-   ([`tables.patch`](reports/2026-09-21-perf-round-4/patches/tables.patch))
-   parses dense and plain rows 1.03–1.43× faster, but the escaped-pipe path
-   loses 7–10%, so the cell decoder's record handling needs a second
-   iteration; it must preserve trimming, code-span semantics, malformed rows,
-   and source mappings. The container line facts
-   ([`lines.patch`](reports/2026-09-21-perf-round-4/patches/lines.patch))
-   gain 5–8% on list-heavy pages but cost a block quote's terminating blank
-   line an extra terminator scan (`comment-quote` 0.95). Both patches predate
-   round 5's trimming change, which touches the same table and list files, and
-   need rebasing onto it before they are measured again.
+3. **Tables and container lines.** Tables hold 10% and lists 12% of parse time
+   after round 5. Round 6 measured the second iterations of both round 4
+   revisions and closed them ([record](reports/2026-09-24-perf-round-6/REJECTED.md)).
+   The NEON pipe cursor (#424) parses the dense table diagnostics 2.3–3.1×
+   faster but loses 2–7% on realistic cells of 5–30 bytes, so the one idea left
+   is a gate on pipe density in front of it. The container line facts (#425)
+   measured a tie, because #414 had already removed the Unicode trims they
+   saved. The structural route for containers — parsing block quotes and list
+   items on the original source instead of copying and reparsing them — is
+   tracked in #432, outside the rounds.
 4. **The GFM autolink pre-flight.** About 10% of parse time after round 5: a
-   second `memchr2` + `memmem` pass over each block's content. Both attempts
-   to avoid the pass lost — round 3's document-level gate and round 5's
-   fusion into the inline marker scan (#415, parse 0.968×; see its
-   [record](reports/2026-09-23-perf-round-5/REJECTED.md)) — and a standalone
-   single-pass NEON pre-flight measured only about 1% in a prototype. A
-   cheaper separate pass is the remaining route; its expected value is small.
-5. **Render: heading ids and the tag filter.** After round 5 heading ids take
-   11.5% of render (`slugify_heading_into` 5.7%, the new id planner 4.4%),
-   and the tag filter still 4.3%: the first-byte gate settles tags such as
-   `<div`, `<a` and `<br`, but common ones such as `<td`, `<span` and `<p`
-   share a first letter with a disallowed name and walk all nine names.
-6. **Other architectures.** Run differential tests and real/diagnostic suites on
-   x86-64 SSSE3/AVX2 and scalar targets. The current evidence is Apple M1 Pro NEON;
-   cross-target speedups are not established. Several paths are NEON-only and
-   have no x86-64 vector code of their own: the link-destination and
-   bracket-body classifiers (`byte_class`), the pre-pass line scan
-   (`line_scan`, SWAR elsewhere), round 5's fused root scan (`root_scan`,
-   separate `memchr`/`memmem` elsewhere), and the renderer's ASCII URL-span
-   scan for autolinks; none of these fallbacks has been timed on x86-64.
-   The way to measure them is the x86-64 CI workflow proposed in #419, which
-   runs the paired harness on GitHub-hosted runners. Its A/A control (57
-   broad documents, 3 rounds × 5 pairs) on three hosts stayed within 0.5% in
-   every stage: fresh 1.0019, reuse 1.0005, parse 1.0015 and render 1.0025
-   on an Intel Xeon 8370C (AVX-512); fresh 0.9992 / 0.9973, reuse
-   0.9985 / 0.9953, parse 0.9988 / 0.9982 and render 1.0022 / 0.9996 on two
-   AMD EPYC 7763 (AVX2). The 5th–95th percentile of per-case ratios spans
-   about 0.975–1.025, and at most 2 of 57 cases fall outside ±3%. Once #419
-   merges, a stage effect of about 1% that shows on all three hosts is
-   resolvable on x86-64; the first candidates are these fallbacks and #413's
-   non-aarch64 follow-up `0610f606`.
+   second `memchr2` + `memmem` pass over each block's content. Every attempt
+   to avoid the pass lost or tied: round 3's document-level gate, round 5's
+   fusion into the inline marker scan (#415, parse 0.968×), a standalone
+   single-pass NEON pre-flight (about 1% in a prototype) and round 6's trigger
+   index in two versions (#427: 1.010× with a 13% loss on raw HTML, then a tie
+   with small-document losses; see its
+   [record](reports/2026-09-24-perf-round-6/REJECTED.md#427-the-autolink-pre-flight-from-recorded-trigger-offsets)).
+   Treat the per-block pre-flight as a floor unless autolinking moves into
+   inline parsing itself.
+5. **Render: heading ids and the tag filter.** Round 6 addressed both: #418
+   compares a tag only with the filtered names sharing its initial, and #422
+   plans heading ids in reusable claim storage. What remains is the slugifier
+   (`slugify_heading_into`, about 5% of render on both architectures); a
+   table-driven or branchless ASCII slug loop is unmeasured.
+6. **Other architectures.** x86-64 is measured since round 6. The
+   `x86-64 paired benchmark` workflow (#419) runs the paired harness on three
+   GitHub-hosted hosts (its A/A control stays within ±0.5% in every stage, with
+   per-case ratios within about 0.975–1.025), and the `x86-64 profile`
+   workflow (#423) samples parse and render with `perf`. The link-destination
+   and bracket-body classifiers (`byte_class`, SSSE3 and AVX2, #426), the line
+   scan (`line_scan`, SSE2, #431) and the escape scanners (inlined SSE2, #430)
+   now have x86-64 SIMD paths. The root scan deliberately stays on separate
+   `memchr`/`memmem` searches on x86-64 (#428): `memchr` runs AVX2 there, so
+   the two passes are cheap and a fused scan gained about 1% while losing on
+   small documents. The renderer's ASCII URL-span scan for autolinks is still
+   NEON-only and has not been timed on x86-64. Targets without a vector path
+   of their own, such as `wasm32`, are neither run in CI nor timed.
+7. **Next measurements.** The six-engine native comparison has only run on
+   Apple Silicon. It should run on Linux x86-64, together with a fresh Apple
+   Silicon run, before new comparison numbers are published. The Node N-API
+   boundary — how much of a Node call is spent crossing into and out of Rust
+   rather than parsing and rendering — has not been measured on its own.
 
 Ferroni's candidate scanner (`src/regset.rs`) and Ferrocat's structural scans
 (`crates/ferrocat-po/src/scan.rs`) remain useful references in those repositories.
@@ -197,7 +224,10 @@ span invariants before timing. Keep one optimization per commit, portable
 fallbacks, and full conformance checks. Broader redesigns are welcome when they
 have a representative feedback loop rather than only favorable synthetic cases.
 
-Report every stage and workload tradeoff. Geometric means summarize the chosen
-cases; overlapping document views are not independent observations or evidence
-that every input wins. Promote based on measured complete processing plus
-correctness, while recording isolated stage losses and allocation behavior.
+When a change moves a stage it does not touch, measure a placebo build — the
+same code structure with the old algorithm — before attributing the movement
+to the change. Report every stage and workload tradeoff. Geometric means
+summarize the chosen cases; overlapping document views are not independent
+observations or evidence that every input wins. Promote based on measured
+complete processing plus correctness, while recording isolated stage losses and
+allocation behavior.

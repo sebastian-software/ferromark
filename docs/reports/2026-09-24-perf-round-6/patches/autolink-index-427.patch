@@ -1,0 +1,3499 @@
+From 4fbf1b8e7098ff4f4a9d6592a1873af851ce8ed9 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 19:46:54 +0200
+Subject: [PATCH 1/2] perf(parser): answer the autolink pre-flight from
+ root-scan trigger offsets
+
+With GFM autolinks on, the aarch64 root scan that already reads the
+whole body for NUL and the first `]:` now also records the offsets of
+the autolink pre-flight's trigger bytes: every `@`, and every `:` or `w`
+that a `.` or `/` follows. That is eight more vector operations per 16
+bytes and one branch per 64 bytes that stays shared with the NUL and
+`]:` test. After the first `]:` the scan keeps going for NUL and
+triggers instead of handing the rest of the body to `memchr`.
+
+`parse_inline_block` then answers `may_contain_autolink` for content
+that is a slice of the root body by visiting only the offsets inside
+its range, with the old per-position rules on the content's own bytes:
+`//` must follow inside the content, the `](scheme` check looks back no
+further than the content start, and a `www.` counts only when all four
+bytes are inside. Content holding an `@` goes to the full pass, which
+also settles `mailto:`/`xmpp:`. A cursor makes source-order lookups
+constant time. Sub-sources the parser copies (block quotes, most list
+items, escaped table cells, comment-stripped lines), NUL-normalized
+documents, profiles without link references or footnotes, and other
+targets keep the separate pass.
+
+The answer equals the full pass flag for flag: test builds assert it
+for every block they parse (on every target, with the portable
+byte-wise collector off aarch64), and a differential test compares AST
+Debug output and HTML with and without the offsets over the spec
+fixtures, two frozen corpora, needles split across block boundaries
+and generated documents.
+
+Experimental: performance is to be measured with the paired harness.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ docs/runtime-feature-costs.md                 |   2 +-
+ src/parser/inline.rs                          |  10 +-
+ src/parser/inline/gfm_autolink.rs             |  49 +-
+ .../gfm_autolink/preflight_equivalence.rs     | 443 ++++++++++++++++
+ src/parser/inline/gfm_autolink/scan.rs        |   2 +-
+ src/parser/inline/gfm_autolink/triggers.rs    | 304 +++++++++++
+ src/parser/mod.rs                             |  27 +-
+ src/parser/root_scan.rs                       |  10 +
+ src/parser/root_scan/triggers.rs              | 471 ++++++++++++++++++
+ src/parser/source_normalization.rs            |  65 ++-
+ 10 files changed, 1364 insertions(+), 19 deletions(-)
+ create mode 100644 src/parser/inline/gfm_autolink/preflight_equivalence.rs
+ create mode 100644 src/parser/inline/gfm_autolink/triggers.rs
+ create mode 100644 src/parser/root_scan/triggers.rs
+
+diff --git a/docs/runtime-feature-costs.md b/docs/runtime-feature-costs.md
+index a185f9a5..23d37da8 100644
+--- a/docs/runtime-feature-costs.md
++++ b/docs/runtime-feature-costs.md
+@@ -41,7 +41,7 @@ scan.
+ | `line_comments` | Block and paragraph dispatch reuse the first non-space/tab byte and check physical eligibility only for slash prefixes. Paragraph joining reuses the first observed comment; absent comments need no second discovery scan. Reference definitions retain a marker preflight. Actual removed comments can require joined text and a source map. | Changes block, table, definition, and nested-source handling; code and raw HTML remain opaque. See [line-comment handling](../src/parser/line_comments.rs) and the [dispatch measurement](reports/2026-09-14-line-comment-dispatch/README.md). |
+ | `front_matter` | Constructor-local leading scan for `---`/`+++`; when an opener is valid it scans to the closing delimiter and removes that range from Markdown parsing. | Root-document only; BOM and source-span normalization interact with the extracted body. See [front matter extraction](../src/parser/front_matter.rs). |
+ | `strikethrough` | Inline hot path for `~` runs; also changes flanking classification for `*`/`_` runs when enabled. | Competes with `subscript` for single tildes. |
+-| `autolinks` | Each block-level inline parse runs a cheap `may_contain_autolink` preflight. The recursive text coalescing/rewrite pass runs only when that preflight finds a possible candidate. | Does not make the renderer’s bare-URL option redundant; parser autolinks create link nodes, while renderer autolinks remaining text. See [inline block path](../src/parser/inline.rs) and [GFM rewrite](../src/parser/inline/gfm_autolink.rs). |
++| `autolinks` | Each block-level inline parse answers a cheap `may_contain_autolink` preflight. On aarch64, with link references or footnotes on, the root scan also records the offsets of the preflight's trigger bytes (`@`, and `:` or `w` before `.` or `/`; eight more vector operations per 16 bytes), and content that is a slice of the root body visits only those offsets; copied sub-sources, NUL-normalized documents and other targets run the separate `memchr` pass. The recursive text coalescing/rewrite pass runs only when that preflight finds a possible candidate. | Does not make the renderer’s bare-URL option redundant; parser autolinks create link nodes, while renderer autolinks remaining text. See [inline block path](../src/parser/inline.rs) and [GFM rewrite](../src/parser/inline/gfm_autolink.rs). |
+ | `superscript` | Adds `^` to the fused inline marker classifier and parses matching spans locally. | Changes the selected classifier; no separate scan is added. Full parsing occurs only for candidates. |
+ | `subscript` | Trigger-local single-tilde branch and matching scan. | Shares `~` with strikethrough; does not add a new base marker because tilde is already scanned. |
+ | `math` | Adds `$` to every inline marker scan; `$` block lines receive a block probe. Candidate inline/display math scans forward for a valid closer. | Math AST nodes are only syntax preservation; mathematical typesetting is external. |
+diff --git a/src/parser/inline.rs b/src/parser/inline.rs
+index f1622a48..ac30eca2 100644
+--- a/src/parser/inline.rs
++++ b/src/parser/inline.rs
+@@ -16,6 +16,7 @@ mod marker_scan;
+ mod scan;
+ mod script_span;
+ 
++pub(in crate::parser) use self::gfm_autolink::{AutolinkTriggers, collects_triggers};
+ pub(in crate::parser) use self::marker_scan::InlineMarkerScan;
+ use self::script_span::same_marker_neighbor;
+ use super::line_scan::{is_line_ending_byte, line_terminator_end};
+@@ -71,12 +72,9 @@ impl<'a> Parser<'a> {
+             return Ok(self.allocator.new_vec());
+         }
+         let mut children = self.parse_inline(content, offset)?;
+-        let scan = self
+-            .options
+-            .autolinks
+-            .then(|| gfm_autolink::may_contain_autolink(content))
+-            .flatten();
+-        if let Some(scan) = scan {
++        if self.options.autolinks
++            && let Some(scan) = self.autolink_preflight(content)
++        {
+             self.apply_gfm_autolinks(&mut children, scan);
+         }
+         Ok(children)
+diff --git a/src/parser/inline/gfm_autolink.rs b/src/parser/inline/gfm_autolink.rs
+index 9a8c738c..bb85c305 100644
+--- a/src/parser/inline/gfm_autolink.rs
++++ b/src/parser/inline/gfm_autolink.rs
+@@ -12,12 +12,59 @@ use crate::ast::{Link, Node, Span, Text};
+ 
+ mod candidate;
+ mod scan;
++mod triggers;
+ 
+ use self::candidate::find_candidate;
+-pub(super) use self::scan::may_contain_autolink;
++use self::scan::may_contain_autolink;
++pub(in crate::parser) use self::triggers::{AutolinkTriggers, collects_triggers};
+ 
+ use crate::parser::Parser;
+ 
++/// Parses and renders inputs with and without the trigger index and compares
++/// the results.
++#[cfg(test)]
++mod preflight_equivalence;
++
++impl Parser<'_> {
++    /// The block-level pre-flight for `content`: from the root scan's trigger
++    /// offsets when `content` is a slice of the root body, otherwise from a
++    /// pass over `content` (see [`AutolinkTriggers`]).
++    #[inline]
++    pub(in crate::parser::inline) fn autolink_preflight(
++        &self,
++        content: &str,
++    ) -> Option<AutolinkScan> {
++        if let Some(triggers) = self.autolink_triggers
++            && let Some(start) = triggers.locate(content)
++        {
++            let scan = triggers.preflight(content, start);
++            // Every block a unit test parses checks the gate value itself,
++            // not only its effect on the output.
++            #[cfg(test)]
++            {
++                assert_same_preflight(content, scan);
++                preflight_equivalence::count_indexed();
++            }
++            return scan;
++        }
++        may_contain_autolink(content)
++    }
++}
++
++/// Test builds check the indexed pre-flight against the full pass for every
++/// block they parse.
++#[cfg(test)]
++#[track_caller]
++fn assert_same_preflight(content: &str, indexed: Option<AutolinkScan>) {
++    let flags =
++        |scan: Option<AutolinkScan>| scan.map(|scan| (scan.may_have_www, scan.may_have_extended));
++    assert_eq!(
++        flags(indexed),
++        flags(may_contain_autolink(content)),
++        "indexed autolink pre-flight differs for {content:?}"
++    );
++}
++
+ pub(super) struct Candidate {
+     pub(super) start: usize,
+     pub(super) end: usize,
+diff --git a/src/parser/inline/gfm_autolink/preflight_equivalence.rs b/src/parser/inline/gfm_autolink/preflight_equivalence.rs
+new file mode 100644
+index 00000000..451eb270
+--- /dev/null
++++ b/src/parser/inline/gfm_autolink/preflight_equivalence.rs
+@@ -0,0 +1,443 @@
++//! The indexed autolink pre-flight must produce exactly the documents the
++//! full pass produces.
++//!
++//! Every input is parsed twice — once with the root scan collecting trigger
++//! offsets and once without — and the AST `Debug` output and the rendered HTML
++//! are compared. On top of that, every block the indexed parse answers from
++//! the offsets asserts that its gate value equals the full pass's
++//! (`assert_same_preflight`), so these inputs check the gate itself and not
++//! only its effect.
++//!
++//! The inputs are the bundled specification fixtures, two frozen measurement
++//! corpora, and generated documents built from the shapes that decide the
++//! gate: the needles and their near misses at block boundaries, destinations,
++//! code, containers that copy their content, line endings, NUL bytes and front
++//! matter.
++
++#![allow(
++    clippy::disallowed_macros,
++    clippy::disallowed_methods,
++    clippy::disallowed_types,
++    clippy::print_stdout
++)]
++
++use std::cell::Cell;
++use std::path::{Path, PathBuf};
++
++use crate::allocator::Allocator;
++use crate::parser::prepass::gzip::gunzip;
++use crate::parser::{Parser, ParserOptions};
++use crate::renderer::{HtmlRenderer, HtmlRendererOptions};
++
++use super::triggers::with_triggers;
++
++thread_local! {
++    /// Blocks the offsets answered on this thread, so a test can show that
++    /// its inputs reach the indexed path and not only the fallback.
++    static INDEXED: Cell<usize> = const { Cell::new(0) };
++}
++
++/// Counts one block answered from the offsets.
++pub(super) fn count_indexed() {
++    INDEXED.with(|count| count.set(count.get() + 1));
++}
++
++fn indexed_so_far() -> usize {
++    INDEXED.with(Cell::get)
++}
++
++/// The AST and the HTML of one parse, or its error.
++fn output(source: &str, options: &ParserOptions, collect: bool) -> String {
++    with_triggers(collect, || {
++        let arena = Allocator::new();
++        match Parser::with_options(&arena, source, options.clone()).parse() {
++            Ok(document) => {
++                // `gfm_spec` renders without the renderer's own URL
++                // autolinking, which could otherwise hide a parser difference.
++                let html =
++                    HtmlRenderer::with_options(HtmlRendererOptions::gfm_spec()).render(&document);
++                format!("{document:?}\n{html}")
++            }
++            Err(error) => format!("error: {error:?}"),
++        }
++    })
++}
++
++/// Asserts identical output and reports whether the parse made a link.
++#[track_caller]
++fn check(source: &str, options: &ParserOptions) -> bool {
++    let full = output(source, options, false);
++    let indexed = output(source, options, true);
++    if full != indexed {
++        let at = full
++            .bytes()
++            .zip(indexed.bytes())
++            .position(|(a, b)| a != b)
++            .unwrap_or_else(|| full.len().min(indexed.len()));
++        let context = |text: &str| {
++            let start = text.floor_char_boundary(at.saturating_sub(80));
++            let end = text.ceil_char_boundary((at + 80).min(text.len()));
++            text[start..end].to_owned()
++        };
++        panic!(
++            "outputs differ at byte {at} for {source:?}\nfull:    {:?}\nindexed: {:?}",
++            context(&full),
++            context(&indexed)
++        );
++    }
++    full.contains("Link(")
++}
++
++/// Profiles with autolinks on. The offsets are collected when link
++/// references or footnotes are on as well; the last profile has neither and
++/// checks that the full pass still answers there.
++fn option_matrix() -> Vec<ParserOptions> {
++    vec![
++        ParserOptions::gfm(),
++        ParserOptions::gfm_spec(),
++        ParserOptions {
++            footnotes: false,
++            ..ParserOptions::gfm()
++        },
++        ParserOptions {
++            allow_link_refs: false,
++            ..ParserOptions::gfm()
++        },
++        ParserOptions {
++            front_matter: true,
++            line_comments: true,
++            ..ParserOptions::gfm()
++        },
++        ParserOptions {
++            highlight: true,
++            inline_footnotes: true,
++            superscript: true,
++            subscript: true,
++            math: true,
++            definition_lists: true,
++            heading_attributes: true,
++            wiki_links: true,
++            table_attributes: true,
++            ..ParserOptions::gfm()
++        },
++        ParserOptions::mdx(),
++        ParserOptions {
++            allow_link_refs: false,
++            footnotes: false,
++            ..ParserOptions::gfm()
++        },
++    ]
++    .into_iter()
++    .map(|options| ParserOptions {
++        autolinks: true,
++        ..options
++    })
++    .collect()
++}
++
++fn repository_path(relative: &str) -> PathBuf {
++    Path::new(env!("CARGO_MANIFEST_DIR")).join(relative)
++}
++
++/// Markdown inputs of every example in a CommonMark-style `spec.txt` fixture.
++fn spec_inputs(text: &str) -> Vec<String> {
++    const FENCE: &str = "````````````````````````````````";
++    let mut inputs = Vec::new();
++    let mut lines = text.lines();
++    while let Some(line) = lines.next() {
++        let is_example = line
++            .strip_prefix(FENCE)
++            .is_some_and(|rest| rest.trim().starts_with("example"));
++        if !is_example {
++            continue;
++        }
++        let mut markdown = String::new();
++        for body in lines.by_ref() {
++            if body.starts_with(FENCE) || body == "." {
++                break;
++            }
++            markdown.push_str(&body.replace('→', "\t"));
++            markdown.push('\n');
++        }
++        inputs.push(markdown);
++    }
++    inputs
++}
++
++#[test]
++fn specification_fixtures_render_the_same() {
++    let matrix = option_matrix();
++    let before = indexed_so_far();
++    let mut examples = 0usize;
++    let mut linked = 0usize;
++    for fixture in [
++        "tests/spec_fixtures/commonmark-0.31.2-spec.txt",
++        "tests/spec_fixtures/gfm-extensions-spec.txt",
++    ] {
++        let path = repository_path(fixture);
++        let text = std::fs::read_to_string(&path)
++            .unwrap_or_else(|error| panic!("read {}: {error}", path.display()));
++        for markdown in spec_inputs(&text) {
++            for options in &matrix {
++                examples += 1;
++                linked += usize::from(check(&markdown, options));
++            }
++            // Line-ending variants move every trigger against the line ends.
++            for ending in ["\r\n", "\r"] {
++                examples += 1;
++                check(&markdown.replace('\n', ending), &matrix[0]);
++            }
++        }
++    }
++    let indexed = indexed_so_far() - before;
++    assert!(
++        examples > 5_000,
++        "expected the full spec suites, got {examples}"
++    );
++    assert!(linked > 800, "expected links in the fixtures, got {linked}");
++    assert!(
++        indexed > 4_000,
++        "expected blocks answered from the offsets, got {indexed}"
++    );
++    println!("spec fixtures: {examples} checks, {linked} with links, {indexed} indexed blocks");
++}
++
++/// Every case of one frozen measurement corpus.
++fn check_corpus(relative: &str, expected_cases: usize) {
++    let path = repository_path(relative);
++    let Ok(raw) = std::fs::read(&path) else {
++        // Published crate archives carry `tests/` but not `docs/`.
++        println!("{relative}: not present, skipped");
++        return;
++    };
++    let json = gunzip(&raw).unwrap_or_else(|error| panic!("{relative}: {error}"));
++    let corpus: serde_json::Value =
++        serde_json::from_slice(&json).unwrap_or_else(|error| panic!("{relative}: {error}"));
++    let cases = corpus["cases"]
++        .as_array()
++        .unwrap_or_else(|| panic!("{relative}: no cases array"));
++    assert_eq!(
++        cases.len(),
++        expected_cases,
++        "{relative}: case count changed"
++    );
++    let matrix = option_matrix();
++    let before = indexed_so_far();
++    for case in cases {
++        let input = case["input"].as_str().expect("case input");
++        // The benchmark's own GFM profile, and the broader ones.
++        check(
++            input,
++            &ParserOptions {
++                footnotes: false,
++                ..ParserOptions::gfm()
++            },
++        );
++        for options in &matrix[..2] {
++            check(input, options);
++        }
++        check(input, &matrix[5]);
++    }
++    println!(
++        "{relative}: {} cases checked, {} indexed blocks",
++        cases.len(),
++        indexed_so_far() - before
++    );
++}
++
++#[test]
++fn frozen_corpora_render_the_same() {
++    // The 57 broad documents with the authored table, autolink and scanner
++    // diagnostics, and the first SIMD round's corpus.
++    check_corpus("docs/reports/2026-09-16-arm-round-3/corpus.json.gz", 207);
++    check_corpus("docs/reports/2026-09-14-simd-round/corpus.json.gz", 72);
++}
++
++/// Deterministic generator for the documents below.
++fn generator(seed: u64) -> impl FnMut() -> usize {
++    let mut state = seed;
++    move || {
++        state = state
++            .wrapping_mul(6_364_136_223_846_793_005)
++            .wrapping_add(1_442_695_040_888_963_407);
++        (state >> 33) as usize
++    }
++}
++
++#[test]
++fn needles_at_block_boundaries_render_the_same() {
++    // Each needle split at every point across the start or end of a block,
++    // behind every block opener, so the pre-flight's content-relative bounds
++    // decide the answer: a `mailto:`/`xmpp:` whose name ends the line before,
++    // a `://` whose colon ends a paragraph, a `www` cut from its `.`, a `](`
++    // left in the block above.
++    let needles = [
++        "mailto:a@b.co",
++        "xmpp:a@b.co/r",
++        "http://x.y",
++        "https://x.y",
++        "ftp://x.y",
++        "www.x.y",
++        "](https://x.y)",
++        "[a](http://x.y) http://z.w",
++        "a@b.co",
++    ];
++    let openers = [
++        "", "> ", "- ", "1. ", "# ", "    ", "  ", "| ", "[^n]: ", "- [ ] ", "> - ",
++    ];
++    let matrix = option_matrix();
++    let before = indexed_so_far();
++    let mut checks = 0usize;
++    for needle in needles {
++        for split in 0..=needle.len() {
++            let (head, tail) = needle.split_at(split);
++            for opener in openers {
++                for separator in ["\n", "\n\n", "\r\n", "\r\n\r\n", "\n```\n", "`\n`"] {
++                    let source = format!("text {head}{separator}{opener}{tail} text\n");
++                    for options in &matrix[..3] {
++                        check(&source, options);
++                        checks += 1;
++                    }
++                    let table = format!("| a | b |\n|---|---|\n| {head}|{tail} |\n");
++                    check(&table, &matrix[0]);
++                    checks += 1;
++                }
++            }
++        }
++    }
++    println!(
++        "block boundaries: {checks} checks, {} indexed blocks",
++        indexed_so_far() - before
++    );
++}
++
++#[test]
++fn generated_documents_render_the_same() {
++    // The needles, their near misses, the escapes and references that decode
++    // into them, and every construct around them: code spans and blocks, link
++    // destinations and titles, autolinks, raw HTML, containers that copy
++    // their content, line comments, NUL bytes, front matter. The long filler
++    // crosses the root scan's 16- and 64-byte steps and its last vector.
++    let tokens = [
++        "www.",
++        "WWW.",
++        "www",
++        "ww",
++        "w",
++        ".",
++        "w.",
++        "w/",
++        "://",
++        ":",
++        ":.",
++        ":/",
++        "//",
++        "/",
++        "http",
++        "https",
++        "HTTP",
++        "ftp",
++        "](",
++        "](http://",
++        "](https://",
++        "](ftp://",
++        "[",
++        "]",
++        "(",
++        ")",
++        "![",
++        "[x](",
++        "[^1]",
++        "[^1]: note\n",
++        "[ref]: http://ref.example\n",
++        "mailto:",
++        "mailto",
++        "xmpp:",
++        "xmpp",
++        "@",
++        "user@example.com",
++        "a@b.c",
++        "example.com",
++        ".org/path?q=1&x=2",
++        "\\",
++        "\\.",
++        "\\:",
++        "\\@",
++        "&#58;",
++        "&#64;",
++        "&amp;",
++        "`",
++        "``",
++        "`www.x.y`",
++        "`a@b.c`",
++        "\n```\nhttp://code.example\n```\n",
++        "\n    www.code.example\n",
++        "*",
++        "**",
++        "_",
++        "~~",
++        "<",
++        ">",
++        "<http://a.b>",
++        "<a@b.c>",
++        "<span title=\"www.x.y\">",
++        "\n",
++        "\r\n",
++        "\r",
++        "  \n",
++        "\\\n",
++        "\n\n",
++        " ",
++        "a",
++        "text ",
++        "$",
++        "^[",
++        "{",
++        "}",
++        "| a | b |\n|---|---|\n| ",
++        " | ",
++        "\n- ",
++        "\n> ",
++        "\n# ",
++        "\n1. ",
++        "\n> - ",
++        "\t",
++        "// note\n",
++        "\0",
++        "é",
++        "中",
++        "🙂",
++        "abcdefghijklmnopqrstuvwxyz0123",
++        "a long run of ordinary prose without any trigger in it ",
++    ];
++    let mut next = generator(0x2545_f491_4f6c_dd1d);
++    let matrix = option_matrix();
++    let before = indexed_so_far();
++    let mut checks = 0usize;
++    let mut linked = 0usize;
++    for round in 0..3_000 {
++        let len = next() % 48;
++        let mut source = String::new();
++        if round % 5 == 0 {
++            source.push_str("---\ntitle: www.front.example a@b.c\n---\n");
++        }
++        for _ in 0..len {
++            let token = tokens[next() % tokens.len()];
++            // A NUL leaves the whole document to the full pass.
++            if token != "\0" || round % 8 == 0 {
++                source.push_str(token);
++            }
++        }
++        linked += usize::from(check(&source, &matrix[0]));
++        check(&source, &matrix[1 + round % (matrix.len() - 1)]);
++        checks += 2;
++    }
++    let indexed = indexed_so_far() - before;
++    assert!(checks > 5_000, "expected a broad sweep, got {checks}");
++    assert!(linked > 500, "expected generated links, got {linked}");
++    assert!(
++        indexed > 5_000,
++        "expected blocks answered from the offsets, got {indexed}"
++    );
++    println!("generated documents: {checks} checks, {linked} with links, {indexed} indexed blocks");
++}
+diff --git a/src/parser/inline/gfm_autolink/scan.rs b/src/parser/inline/gfm_autolink/scan.rs
+index db7ad468..927025e9 100644
+--- a/src/parser/inline/gfm_autolink/scan.rs
++++ b/src/parser/inline/gfm_autolink/scan.rs
+@@ -86,7 +86,7 @@ pub(in crate::parser::inline) fn may_contain_autolink(content: &str) -> Option<A
+ /// True when the `://` at `colon_slash_slash` completes a Markdown link
+ /// destination such as `](http://`, which the inline parser already
+ /// consumed, rather than a bare URL.
+-fn scheme_is_markdown_destination(bytes: &[u8], colon_slash_slash: usize) -> bool {
++pub(super) fn scheme_is_markdown_destination(bytes: &[u8], colon_slash_slash: usize) -> bool {
+     for name in SCHEMES {
+         let Some(start) = colon_slash_slash.checked_sub(name.len()) else {
+             continue;
+diff --git a/src/parser/inline/gfm_autolink/triggers.rs b/src/parser/inline/gfm_autolink/triggers.rs
+new file mode 100644
+index 00000000..0b4d1ced
+--- /dev/null
++++ b/src/parser/inline/gfm_autolink/triggers.rs
+@@ -0,0 +1,304 @@
++//! The block-level autolink pre-flight, answered from the trigger offsets the
++//! root scan collected.
++//!
++//! [`may_contain_autolink`] walks a block's whole content after the inline
++//! parse has read it. With GFM autolinks on, the root parse collects the
++//! offsets of every byte that can decide that answer while it scans the body
++//! for NUL and `]:` anyway (see `root_scan::triggers`). A block whose content
++//! is a slice of that body then only visits the offsets inside its range.
++//!
++//! # Why the answers are equal
++//!
++//! [`may_contain_autolink`] derives its answer from three facts: whether the
++//! content holds an `@`, whether it holds a `://` that does not complete a
++//! `](scheme` destination, and whether it holds a `www.`. With an `@` it also
++//! looks for `mailto:` and `xmpp:` in front of any colon.
++//!
++//! - Every `@` of the body is recorded. An `@` inside the content hands the
++//!   content to [`may_contain_autolink`] itself, which is the only place the
++//!   `mailto:`/`xmpp:` rule matters: without an `@` neither extended scheme
++//!   can make the answer differ.
++//! - Every `:` of the body that a `/` follows is recorded, so every `://` of
++//!   the content is visited at its colon. The same test as the full pass
++//!   decides it, on the content's own bytes: `//` has to follow inside the
++//!   content, and the destination check looks back no further than the
++//!   content's start.
++//! - Every `w` of the body that a `.` follows is recorded, so every `www.` of
++//!   the content is visited at its last `w`, and counts when the two bytes in
++//!   front of it and the `.` behind it are inside the content.
++//!
++//! Content qualifies by address alone: it has to lie inside the body the
++//! offsets were collected from. Both are borrowed from the same immutable
++//! source for the whole parse, so equal addresses hold equal bytes. Content a
++//! sub-parser copied into the arena (block quotes, most list items, escaped
++//! table cells, lines with comments removed) and every document whose body
++//! held a NUL take the full pass, as do targets without the collecting scan.
++
++use std::cell::Cell;
++
++use super::AutolinkScan;
++use super::scan::{may_contain_autolink, scheme_is_markdown_destination};
++
++/// Offsets of the autolink trigger bytes of one root body.
++pub(in crate::parser) struct AutolinkTriggers<'a> {
++    /// The body the offsets index.
++    body: &'a [u8],
++    /// Offset of every trigger byte in `body` (see
++    /// `root_scan::is_autolink_trigger`), in ascending order.
++    offsets: &'a [u32],
++    /// Where the last lookup ended: the index of the first offset at or past
++    /// the end of the content it answered. Blocks are asked for in source
++    /// order, so the next one usually starts here.
++    cursor: Cell<usize>,
++}
++
++impl<'a> AutolinkTriggers<'a> {
++    /// Offsets collected from `body`, which has to be the exact slice the
++    /// root scan read.
++    pub(in crate::parser) fn new(body: &'a [u8], offsets: &'a [u32]) -> Self {
++        debug_assert!(offsets.windows(2).all(|pair| pair[0] < pair[1]));
++        debug_assert!(
++            offsets
++                .last()
++                .is_none_or(|&last| (last as usize) < body.len())
++        );
++        Self {
++            body,
++            offsets,
++            cursor: Cell::new(0),
++        }
++    }
++
++    /// Where `content` starts in the indexed body, or `None` when it does not
++    /// lie inside it and the full pass has to answer for it.
++    #[inline]
++    pub(in crate::parser::inline) fn locate(&self, content: &str) -> Option<usize> {
++        let start = (content.as_ptr() as usize).wrapping_sub(self.body.as_ptr() as usize);
++        (start <= self.body.len() && content.len() <= self.body.len() - start).then_some(start)
++    }
++
++    /// The pre-flight's answer for `content`, which starts at `start` in the
++    /// indexed body (see [`Self::locate`]).
++    #[inline]
++    pub(in crate::parser::inline) fn preflight(
++        &self,
++        content: &str,
++        start: usize,
++    ) -> Option<AutolinkScan> {
++        debug_assert_eq!(self.locate(content), Some(start));
++        let end = start + content.len();
++        let bytes = content.as_bytes();
++        let mut has_www = false;
++        let mut has_bare_scheme = false;
++        let mut index = self.first_at_or_after(start);
++        while let Some(&offset) = self.offsets.get(index) {
++            let offset = offset as usize;
++            if offset >= end {
++                break;
++            }
++            index += 1;
++            let at = offset - start;
++            match bytes[at] {
++                // Rare in prose. The full pass also settles `mailto:` and
++                // `xmpp:`, whose colons are not recorded.
++                b'@' => return may_contain_autolink(content),
++                b':' => {
++                    if bytes[at + 1..].starts_with(b"//") {
++                        has_bare_scheme |= !scheme_is_markdown_destination(bytes, at);
++                    }
++                }
++                // A `w` that a `.` or `/` follows in the body.
++                byte => {
++                    debug_assert_eq!(byte, b'w');
++                    has_www |=
++                        at >= 2 && bytes.get(at + 1) == Some(&b'.') && bytes[at - 2..at] == *b"ww";
++                }
++            }
++        }
++        self.cursor.set(index);
++        // Without an `@` neither extended scheme can apply, and a `www.` is
++        // the only reason for the `www.` search.
++        (has_www || has_bare_scheme).then_some(AutolinkScan {
++            may_have_www: has_www,
++            may_have_extended: false,
++        })
++    }
++
++    /// Index of the first offset at or past `start`.
++    #[inline]
++    fn first_at_or_after(&self, start: usize) -> usize {
++        let offsets = self.offsets;
++        let before = |offset: &u32| (*offset as usize) < start;
++        let hint = self.cursor.get();
++        if hint > 0 && !before(&offsets[hint - 1]) {
++            // Content before the last lookup's: a sub-source, or a block
++            // parsed out of order.
++            offsets[..hint].partition_point(before)
++        } else if offsets.get(hint).is_some_and(before) {
++            // Offsets between the two, in code blocks or other non-inline
++            // content.
++            hint + offsets[hint..].partition_point(before)
++        } else {
++            hint
++        }
++    }
++}
++
++/// Whether a root parse on this target collects the trigger offsets.
++///
++/// Only the NEON root scan collects them (see `root_scan::triggers`); other
++/// targets keep the separate pre-flight pass.
++#[cfg(not(test))]
++#[inline]
++pub(in crate::parser) const fn collects_triggers() -> bool {
++    cfg!(target_arch = "aarch64")
++}
++
++/// Test builds collect them on every target, with the portable byte-wise
++/// scan off aarch64, so every block a unit test parses checks the indexed
++/// answer against the full pass (see `Parser::autolink_preflight`). A test
++/// can switch the index off for a comparison.
++#[cfg(test)]
++pub(in crate::parser) fn collects_triggers() -> bool {
++    COLLECTS_TRIGGERS.with(Cell::get)
++}
++
++#[cfg(test)]
++thread_local! {
++    static COLLECTS_TRIGGERS: Cell<bool> = const { Cell::new(true) };
++}
++
++/// Runs `run` with trigger collection switched on or off on this thread.
++#[cfg(test)]
++pub(super) fn with_triggers<R>(collect: bool, run: impl FnOnce() -> R) -> R {
++    struct Restore(bool);
++    impl Drop for Restore {
++        fn drop(&mut self) {
++            COLLECTS_TRIGGERS.with(|cell| cell.set(self.0));
++        }
++    }
++    let _restore = Restore(COLLECTS_TRIGGERS.with(|cell| cell.replace(collect)));
++    run()
++}
++
++#[cfg(test)]
++mod tests {
++    // Owned buffers keep the test oracle independent of production storage.
++    #![allow(
++        clippy::disallowed_macros,
++        clippy::disallowed_methods,
++        clippy::disallowed_types
++    )]
++
++    use super::{AutolinkScan, AutolinkTriggers, may_contain_autolink};
++    use crate::parser::root_scan::is_autolink_trigger;
++
++    fn flags(scan: Option<AutolinkScan>) -> Option<(bool, bool)> {
++        scan.map(|scan| (scan.may_have_www, scan.may_have_extended))
++    }
++
++    fn offsets(body: &[u8]) -> Vec<u32> {
++        (0..body.len())
++            .filter(|&at| is_autolink_trigger(body[at], body.get(at + 1).copied().unwrap_or(0)))
++            .map(|at| at as u32)
++            .collect()
++    }
++
++    /// Every slice of `body` on character boundaries, asked for in source
++    /// order, in reverse, and nested, must get the full pass's answer.
++    #[track_caller]
++    fn check_every_slice(body: &str) {
++        let offsets = offsets(body.as_bytes());
++        let triggers = AutolinkTriggers::new(body.as_bytes(), &offsets);
++        let bounds: Vec<usize> = (0..=body.len())
++            .filter(|&at| body.is_char_boundary(at))
++            .collect();
++        let ask = |start: usize, end: usize| {
++            let content = &body[start..end];
++            assert_eq!(triggers.locate(content), Some(start), "{content:?}");
++            let indexed = triggers.preflight(content, start);
++            assert_eq!(
++                flags(indexed),
++                flags(may_contain_autolink(content)),
++                "{content:?} at {start}..{end} of {body:?}"
++            );
++        };
++        for &start in &bounds {
++            for &end in bounds.iter().filter(|&&end| end >= start) {
++                ask(start, end);
++            }
++        }
++        for &start in bounds.iter().rev() {
++            for &end in bounds.iter().rev().filter(|&&end| end >= start) {
++                ask(start, end);
++            }
++        }
++    }
++
++    #[test]
++    fn slices_of_shaped_bodies() {
++        for body in [
++            "",
++            "@",
++            "://",
++            "www.",
++            "wwww.x",
++            "see www.example.com today",
++            "[a](https://x.y) and https://bare.example",
++            "[a](HTTPS://x.y)",
++            "a](http://b",
++            "](ftp://x",
++            "mailto:a@b.c",
++            "xmpp:a@b.c/r",
++            "mailto: prose a@b.example",
++            "a@b w/o www/ :. ://",
++            "http://a www. @ mailto:x@y.z",
++            "é@🙂www.中://",
++            "Note: a::b key: value, now.",
++        ] {
++            check_every_slice(body);
++        }
++    }
++
++    #[test]
++    fn slices_of_generated_bodies() {
++        let tokens = [
++            "www.", "ww", "w", ".", "/", "//", ":", "://", "@", "](", "http", "https", "ftp",
++            "HTTP", "mailto", "xmpp", "mailto:", "a", " ", "é", "\n", "[", "]", "(",
++        ];
++        let mut state = 0x9e37_79b9_7f4a_7c15u64;
++        let mut next = move || {
++            state = state
++                .wrapping_mul(6_364_136_223_846_793_005)
++                .wrapping_add(1_442_695_040_888_963_407);
++            (state >> 33) as usize
++        };
++        for _ in 0..400 {
++            let len = next() % 14;
++            let mut body = String::new();
++            for _ in 0..len {
++                body.push_str(tokens[next() % tokens.len()]);
++            }
++            check_every_slice(&body);
++        }
++    }
++
++    #[test]
++    fn content_outside_the_body_is_not_answered() {
++        let body = "text www.example.com text";
++        let offsets = offsets(body.as_bytes());
++        let triggers = AutolinkTriggers::new(body.as_bytes(), &offsets);
++        let copy = body.to_owned();
++        assert_eq!(triggers.locate(&copy), None);
++        assert_eq!(triggers.locate(&copy[5..]), None);
++        assert_eq!(triggers.locate(&body[5..]), Some(5));
++        assert_eq!(triggers.locate(&body[body.len()..]), Some(body.len()));
++        // Slices that start inside an indexed prefix but run past its end.
++        let longer = format!("{body} and more");
++        let prefix = AutolinkTriggers::new(&longer.as_bytes()[..body.len()], &offsets);
++        assert_eq!(prefix.locate(&longer[..body.len()]), Some(0));
++        assert_eq!(prefix.locate(&longer[1..=body.len()]), None);
++        assert_eq!(prefix.locate(&longer[body.len()..]), None);
++        assert_eq!(prefix.locate(&longer), None);
++    }
++}
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index 3e98ca1c..3cb43397 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -227,6 +227,12 @@ pub struct Parser<'a> {
+     /// Parser options.
+     options: ParserOptions,
+ 
++    /// Where the root body's GFM autolink trigger bytes are, collected by the
++    /// root scan (see `root_scan.rs`) so the block-level pre-flight need not
++    /// walk content that is a slice of that body again. Sub-parsers share it:
++    /// the pre-flight checks by address whether content lies in the body.
++    autolink_triggers: Option<&'a inline::AutolinkTriggers<'a>>,
++
+     /// Current position in the source.
+     position: usize,
+ 
+@@ -437,12 +443,26 @@ impl<'a> Parser<'a> {
+         let find_closer = cfg!(target_arch = "aarch64")
+             && phase == ParsePhase::Document
+             && (options.allow_link_refs || options.footnotes);
+-        let (source, source_map, definition_closer) =
+-            source_normalization::normalize(allocator, source, body_start, find_closer);
++        // With GFM autolinks, the same loop also records the autolink
++        // pre-flight's trigger bytes (see `root_scan/triggers.rs`).
++        let collect_triggers = options.autolinks
++            && phase == ParsePhase::Document
++            && (options.allow_link_refs || options.footnotes)
++            && inline::collects_triggers();
++        let (source, source_map, definition_closer, triggers) = source_normalization::normalize(
++            allocator,
++            source,
++            body_start,
++            find_closer,
++            collect_triggers,
++        );
+         let mut parser = Self {
+             allocator,
+             source,
+             source_map,
++            autolink_triggers: triggers.map(|offsets| {
++                &*allocator.alloc(inline::AutolinkTriggers::new(source.as_bytes(), offsets))
++            }),
+             front_matter: front_matter.map(|metadata| allocator.boxed(metadata)),
+             inline_note_seen: (phase == ParsePhase::Document
+                 && options.inline_footnotes
+@@ -533,6 +553,9 @@ impl<'a> Parser<'a> {
+             allocator: self.allocator,
+             source,
+             source_map: None,
++            // Offsets into the root body stay valid for every sub-source: the
++            // pre-flight only uses them for content that lies in that body.
++            autolink_triggers: self.autolink_triggers,
+             front_matter: None,
+             // Line comments are recognized on physical source lines, before
+             // container prefixes are stripped, never on generated sub-sources.
+diff --git a/src/parser/root_scan.rs b/src/parser/root_scan.rs
+index 2592cb30..bf96fd14 100644
+--- a/src/parser/root_scan.rs
++++ b/src/parser/root_scan.rs
+@@ -33,10 +33,20 @@
+ //! source itself. Parsers that never run the pre-pass — sub-parsers, the
+ //! definition pass, and documents with neither link references nor footnotes
+ //! enabled — do not run this scan; normalization keeps its plain `memchr`.
++//!
++//! With GFM autolinks enabled, the root parse runs the variant in
++//! [`triggers`] instead, which also records where the autolink pre-flight's
++//! trigger bytes are, so the pre-flight does not walk every block again.
+ 
+ #[cfg(target_arch = "aarch64")]
+ use memchr::memchr;
+ 
++mod triggers;
++
++#[cfg(test)]
++pub(super) use self::triggers::is_autolink_trigger;
++pub(super) use self::triggers::scan_collecting_triggers;
++
+ #[cfg(any(test, not(target_arch = "aarch64")))]
+ use super::prepass::DEFINITION_CLOSER;
+ 
+diff --git a/src/parser/root_scan/triggers.rs b/src/parser/root_scan/triggers.rs
+new file mode 100644
+index 00000000..0065ec64
+--- /dev/null
++++ b/src/parser/root_scan/triggers.rs
+@@ -0,0 +1,471 @@
++//! The root scan, collecting the GFM autolink pre-flight's trigger offsets on
++//! the way.
++//!
++//! The pre-flight (`gfm_autolink::may_contain_autolink`) asks every block's
++//! inline content for three needles: an `@`, a `://`, and a `www.`. It used to
++//! answer by walking the content once more after the inline parse had read
++//! it. The root scan already reads every byte of the body before block parsing
++//! starts, and in prose the needles are rare, so it can write down where they
++//! are for a few more vector operations per block: the pre-flight then visits
++//! only the recorded offsets that fall inside a block's content (see
++//! `gfm_autolink::AutolinkTriggers`).
++//!
++//! A trigger is any byte that [`is_autolink_trigger`] accepts: every `@`, and
++//! every `:` or `w` that a `.` or `/` follows. That keeps every `:` that starts
++//! a `://` and every `w` that ends a `www.`, and leaves out the colons of
++//! ordinary prose and code (`Note:`, `a::b`, `key: value`), which are most of
++//! them. The pre-flight's `mailto:` and `xmpp:` rule needs every colon, but
++//! only matters when the content also holds an `@`; the pre-flight hands such
++//! content to the full pass.
++//!
++//! The recorded offsets describe the unmodified body, like the rest of the
++//! root scan's answer, and are only kept for a body without NUL.
++
++use crate::allocator::Vec;
++
++use super::RootScan;
++
++/// Whether `byte` is an autolink trigger, given the byte after it (NUL past
++/// the end of the body).
++///
++/// `next | 1 == b'/'` holds for exactly `.` (0x2E) and `/` (0x2F), so the pair
++/// test costs one compare in the vector loop. The two extra pairs it lets in,
++/// `:.` and `w/`, are rare and cost only an entry the pre-flight skips.
++#[inline]
++pub(in crate::parser) const fn is_autolink_trigger(byte: u8, next: u8) -> bool {
++    byte == b'@' || ((byte == b':' || byte == b'w') && next | 1 == b'/')
++}
++
++/// [`super::scan`] over `body`, pushing the offset of every autolink trigger
++/// onto `triggers` in ascending order.
++///
++/// When the answer is [`RootScan::Nul`], `triggers` holds an arbitrary prefix
++/// of the offsets and has to be dropped: normalization rewrites that body.
++/// Offsets are stored as `u32`, so `body` must be shorter than 4 GiB.
++#[inline]
++pub(in crate::parser) fn scan_collecting_triggers(
++    body: &[u8],
++    triggers: &mut Vec<'_, u32>,
++) -> RootScan {
++    debug_assert!(u32::try_from(body.len()).is_ok());
++    #[cfg(target_arch = "aarch64")]
++    {
++        if body.len() >= 16 {
++            return neon::scan(body, triggers);
++        }
++    }
++    scan_bytewise(body, triggers)
++}
++
++/// The collecting scan one byte at a time: the answer for a body shorter than
++/// one vector, the tests' reference for the vector loop, and the whole scan
++/// on other targets, where only the tests ask for it.
++fn scan_bytewise(body: &[u8], triggers: &mut Vec<'_, u32>) -> RootScan {
++    let mut first_closer = None;
++    for (at, &byte) in body.iter().enumerate() {
++        if byte == 0 {
++            return RootScan::Nul(at);
++        }
++        let next = body.get(at + 1).copied().unwrap_or(0);
++        if first_closer.is_none() && byte == b']' && next == b':' {
++            first_closer = Some(at);
++        }
++        if is_autolink_trigger(byte, next) {
++            triggers.push(at as u32);
++        }
++    }
++    RootScan::Clean { first_closer }
++}
++
++/// The NEON loop of the root scan (see the parent module) with the trigger
++/// test added to every block.
++///
++/// The trigger test is eight vector operations per 16 bytes: compares for `@`,
++/// `:` and `w`, one for the byte after each lane (`next | 1 == b'/'`, on the
++/// lookahead vector the loop already loads for its `]:` test), and four to
++/// combine them. Four blocks still share one branch: it is taken for a group
++/// that holds a NUL, a `]:` or a trigger, and only the first two leave the
++/// loop.
++///
++/// The scan runs in two phases. Until the first `]:` it stops at a NUL or at
++/// that `]:`; after it, only at a NUL, where the plain root scan hands the rest
++/// of the body to `memchr`. A phase that stops in a block has recorded the
++/// triggers before that block and none in it, so the next phase starts at that
++/// block and nothing is recorded twice.
++#[cfg(target_arch = "aarch64")]
++#[allow(unsafe_code)]
++mod neon {
++    use std::arch::aarch64::*;
++
++    use crate::allocator::Vec;
++
++    use super::super::RootScan;
++
++    /// Where one phase stopped.
++    enum Stop {
++        /// A NUL at this offset, the first in the body.
++        Nul(usize),
++        /// The first `]:` of the body starts at this offset.
++        Closer(usize),
++        /// The end of the body.
++        End,
++    }
++
++    pub(super) fn scan(body: &[u8], triggers: &mut Vec<'_, u32>) -> RootScan {
++        let mut at = 0;
++        let first_closer = match phase::<true>(body, &mut at, triggers) {
++            Stop::Nul(nul) => return RootScan::Nul(nul),
++            Stop::End => return RootScan::Clean { first_closer: None },
++            Stop::Closer(closer) => closer,
++        };
++        match phase::<false>(body, &mut at, triggers) {
++            Stop::Nul(nul) => RootScan::Nul(nul),
++            Stop::Closer(_) | Stop::End => RootScan::Clean {
++                first_closer: Some(first_closer),
++            },
++        }
++    }
++
++    /// Pushes `from` plus the index of every lane set in `mask`, a lane mask
++    /// with four bits per lane.
++    #[inline]
++    fn record(mask: u64, from: usize, triggers: &mut Vec<'_, u32>) {
++        let mut bits = mask & 0x8888_8888_8888_8888;
++        while bits != 0 {
++            triggers.push((from + (bits.trailing_zeros() / 4) as usize) as u32);
++            bits &= bits - 1;
++        }
++    }
++
++    /// Scans from `*at`, recording triggers, until a NUL, the first `]:`
++    /// (with `CLOSER` only) or the end of the body. On a stop, `*at` is the
++    /// start of the block that holds it, whose triggers are not recorded yet.
++    fn phase<const CLOSER: bool>(body: &[u8], at: &mut usize, triggers: &mut Vec<'_, u32>) -> Stop {
++        let len = body.len();
++        let ptr = body.as_ptr();
++        debug_assert!(len >= 16 && *at < len);
++        // SAFETY: a block at `from` loads `from..from + 16`, and its lookahead
++        // loads `from + 1..from + 17`. The grouped loop runs only while the
++        // lookahead of its fourth block ends in bounds (`at + 65 <= len`), and
++        // the block loop only while its own does (`at + 17 <= len`). The last
++        // vector loads `len - 16..len`, and `len >= 16`.
++        unsafe {
++            let close = vdupq_n_u8(b']');
++            let colon = vdupq_n_u8(b':');
++            let at_sign = vdupq_n_u8(b'@');
++            let letter_w = vdupq_n_u8(b'w');
++            let one = vdupq_n_u8(1);
++            let slash = vdupq_n_u8(b'/');
++            // Four bits per lane, so the lowest set bit names the first lane.
++            let lanes = |mask: uint8x16_t| {
++                vget_lane_u64(
++                    vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(mask), 4)),
++                    0,
++                )
++            };
++            // 0xFF in lane `j` when `here[j]` is a trigger and `next[j]` the
++            // byte after it (see `is_autolink_trigger`).
++            let trigger = |here: uint8x16_t, next: uint8x16_t| {
++                vorrq_u8(
++                    vceqq_u8(here, at_sign),
++                    vandq_u8(
++                        vorrq_u8(vceqq_u8(here, colon), vceqq_u8(here, letter_w)),
++                        vceqq_u8(vorrq_u8(next, one), slash),
++                    ),
++                )
++            };
++            // 0xFF in lane `j` when `here[j]` starts a `]:`.
++            let closer = |here: uint8x16_t, next: uint8x16_t| {
++                vandq_u8(vceqq_u8(here, close), vceqq_u8(next, colon))
++            };
++            // 0xFF in lane `j` when `here[j]` stops this phase.
++            let stops = |here: uint8x16_t, next: uint8x16_t| {
++                let nul = vceqzq_u8(here);
++                if CLOSER {
++                    vorrq_u8(nul, closer(here, next))
++                } else {
++                    nul
++                }
++            };
++            // The offset a stop mask names, as a phase result.
++            let stop_at = |first: usize| {
++                if body[first] == 0 {
++                    Stop::Nul(first)
++                } else {
++                    Stop::Closer(first)
++                }
++            };
++
++            while *at + 65 <= len {
++                let from = *at;
++                let a = vld1q_u8(ptr.add(from));
++                let b = vld1q_u8(ptr.add(from + 16));
++                let c = vld1q_u8(ptr.add(from + 32));
++                let d = vld1q_u8(ptr.add(from + 48));
++                let next_a = vld1q_u8(ptr.add(from + 1));
++                let next_b = vld1q_u8(ptr.add(from + 17));
++                let next_c = vld1q_u8(ptr.add(from + 33));
++                let next_d = vld1q_u8(ptr.add(from + 49));
++                // A NUL anywhere in the group is the minimum of its lane.
++                let nul = vceqzq_u8(vminq_u8(vminq_u8(a, b), vminq_u8(c, d)));
++                let stop = if CLOSER {
++                    vorrq_u8(
++                        nul,
++                        vorrq_u8(
++                            vorrq_u8(closer(a, next_a), closer(b, next_b)),
++                            vorrq_u8(closer(c, next_c), closer(d, next_d)),
++                        ),
++                    )
++                } else {
++                    nul
++                };
++                let hit_a = trigger(a, next_a);
++                let hit_b = trigger(b, next_b);
++                let hit_c = trigger(c, next_c);
++                let hit_d = trigger(d, next_d);
++                let any = vorrq_u8(
++                    stop,
++                    vorrq_u8(vorrq_u8(hit_a, hit_b), vorrq_u8(hit_c, hit_d)),
++                );
++                if lanes(any) != 0 {
++                    if lanes(stop) != 0 {
++                        // The block loop below names the stop and records the
++                        // triggers of the blocks in front of it.
++                        break;
++                    }
++                    record(lanes(hit_a), from, triggers);
++                    record(lanes(hit_b), from + 16, triggers);
++                    record(lanes(hit_c), from + 32, triggers);
++                    record(lanes(hit_d), from + 48, triggers);
++                }
++                *at += 64;
++            }
++            while *at + 17 <= len {
++                let here = vld1q_u8(ptr.add(*at));
++                let next = vld1q_u8(ptr.add(*at + 1));
++                let stop = lanes(stops(here, next));
++                if stop != 0 {
++                    return stop_at(*at + (stop.trailing_zeros() / 4) as usize);
++                }
++                record(lanes(trigger(here, next)), *at, triggers);
++                *at += 16;
++            }
++            // One vector over the last 16 bytes answers for the 1 to 16 bytes
++            // the loops left, as in the plain scan. The lanes in front of `at`
++            // hold no stop, and their triggers are recorded already. Nothing
++            // follows the last lane, so a zero lane stands in for its
++            // lookahead: its byte starts no `]:` and is no trigger.
++            let base = len - 16;
++            let here = vld1q_u8(ptr.add(base));
++            let next = vextq_u8::<1>(here, vdupq_n_u8(0));
++            let stop = lanes(stops(here, next));
++            if stop != 0 {
++                return stop_at(base + (stop.trailing_zeros() / 4) as usize);
++            }
++            let seen = *at - base;
++            record(
++                lanes(trigger(here, next)) & (u64::MAX << (4 * seen)),
++                base,
++                triggers,
++            );
++            *at = len;
++            Stop::End
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    // Owned buffers keep the test oracle independent of production storage.
++    #![allow(
++        clippy::disallowed_macros,
++        clippy::disallowed_methods,
++        clippy::disallowed_types
++    )]
++
++    use crate::allocator::Allocator;
++
++    use super::super::{RootScan, scan};
++    use super::{is_autolink_trigger, scan_bytewise, scan_collecting_triggers};
++
++    /// The collecting scan's definition, one byte at a time: the plain root
++    /// scan's answer, and every trigger offset of a body without NUL.
++    fn oracle(body: &[u8]) -> (RootScan, Option<Vec<u32>>) {
++        let answer = scan(body);
++        let triggers = matches!(answer, RootScan::Clean { .. }).then(|| {
++            (0..body.len())
++                .filter(|&at| is_autolink_trigger(body[at], body.get(at + 1).copied().unwrap_or(0)))
++                .map(|at| at as u32)
++                .collect()
++        });
++        (answer, triggers)
++    }
++
++    #[track_caller]
++    fn check(body: &[u8]) {
++        let (expected, expected_triggers) = oracle(body);
++        let shown = String::from_utf8_lossy(body);
++        let allocator = Allocator::new();
++        for (label, collect) in [
++            (
++                "collecting scan",
++                scan_collecting_triggers
++                    as fn(&[u8], &mut crate::allocator::Vec<'_, u32>) -> RootScan,
++            ),
++            ("bytewise scan", scan_bytewise),
++        ] {
++            let mut triggers = allocator.new_vec();
++            let answer = collect(body, &mut triggers);
++            assert_eq!(answer, expected, "{label} of {shown:?}");
++            if let Some(expected_triggers) = &expected_triggers {
++                assert_eq!(
++                    triggers.as_slice(),
++                    expected_triggers.as_slice(),
++                    "{label} triggers of {shown:?}"
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn the_trigger_bytes() {
++        for byte in 0..=u8::MAX {
++            for next in 0..=u8::MAX {
++                let expected =
++                    byte == b'@' || (matches!(byte, b':' | b'w') && matches!(next, b'.' | b'/'));
++                assert_eq!(
++                    is_autolink_trigger(byte, next),
++                    expected,
++                    "{byte:#x} {next:#x}"
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn every_short_body_over_the_deciding_bytes() {
++        // Exhaustive over the bytes that decide an answer, up to six bytes.
++        let alphabet = [b'x', b']', b':', 0, b'@', b'w', b'.', b'/'];
++        for len in 0..=6u32 {
++            for mut code in 0..alphabet.len().pow(len) {
++                let mut body = Vec::new();
++                for _ in 0..len {
++                    body.push(alphabet[code % alphabet.len()]);
++                    code /= alphabet.len();
++                }
++                check(&body);
++            }
++        }
++    }
++
++    /// Lengths that cover bodies shorter than one vector, one block with and
++    /// without its lookahead byte, several four-block groups, and the last
++    /// vector after every number of bytes the loops leave.
++    const LENGTHS: std::ops::RangeInclusive<usize> = 0..=200;
++
++    #[test]
++    fn a_needle_at_every_offset() {
++        let needles: [&[u8]; 12] = [
++            b"@", b":/", b"://", b"w.", b"www.", b":.", b"w/", b"]:", b"\0", b"]", b":", b"w",
++        ];
++        for len in LENGTHS {
++            for filler in [b'x', b'w', b':', b'.', b'/'] {
++                for needle in needles {
++                    for at in 0..=len.saturating_sub(needle.len()) {
++                        if at + needle.len() > len {
++                            continue;
++                        }
++                        let mut body = vec![filler; len];
++                        body[at..at + needle.len()].copy_from_slice(needle);
++                        check(&body);
++                    }
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn a_closer_or_nul_among_triggers() {
++        // Triggers before, inside and after the block that stops the first
++        // phase, and a NUL before or after the first `]:`.
++        for len in LENGTHS {
++            for stop in 0..len.saturating_sub(1) {
++                for stopper in [&b"]:"[..], b"\0"] {
++                    let mut body: Vec<u8> = (0..len)
++                        .map(|at| if at % 7 == 3 { b'@' } else { b'w' })
++                        .collect();
++                    for at in (0..len).filter(|at| at % 11 == 5) {
++                        body[at] = b'.';
++                    }
++                    body[stop..stop + stopper.len()].copy_from_slice(stopper);
++                    check(&body);
++                    if stop + 9 < len {
++                        body[stop + 7] = 0;
++                        check(&body);
++                    }
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn generated_mixes() {
++        let tokens = [
++            "@",
++            ":",
++            "/",
++            ".",
++            "w",
++            "www.",
++            "://",
++            "http://a.b",
++            "]:",
++            "]",
++            "[",
++            "\0",
++            "\n",
++            " ",
++            "x",
++            "word ",
++            "é",
++            "🙂",
++            "w/o",
++            "a:.b",
++            "user@example.com",
++            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
++        ];
++        let mut state = 0x5851_f42d_4c95_7f2du64;
++        let mut next = move || {
++            state = state
++                .wrapping_mul(6_364_136_223_846_793_005)
++                .wrapping_add(1_442_695_040_888_963_407);
++            (state >> 33) as usize
++        };
++        for _ in 0..6000 {
++            let len = next() % 80;
++            // A NUL ends the collection, so most mixes leave it out.
++            let rare = next() % 4 == 0;
++            let mut body = String::new();
++            for _ in 0..len {
++                let token = tokens[next() % tokens.len()];
++                if rare || !matches!(token, "\0" | "]:") {
++                    body.push_str(token);
++                }
++            }
++            check(body.as_bytes());
++        }
++    }
++
++    #[test]
++    fn long_bodies() {
++        let prose = "Plain prose with [links](https://example.com) and `code: spans`, \
++                     now with www.example.org and a@b.c.\n";
++        let long = prose.repeat(512);
++        check(long.as_bytes());
++        check(format!("{long}]:").as_bytes());
++        check(format!("{long}\0").as_bytes());
++        check(format!("[a]: /url\n{long}").as_bytes());
++        check(format!("{long}[a]: /url\n{long}").as_bytes());
++        check(format!("{long}[a]: /url\n{long}\0{long}").as_bytes());
++    }
++}
+diff --git a/src/parser/source_normalization.rs b/src/parser/source_normalization.rs
+index c409bb49..5b5d696f 100644
+--- a/src/parser/source_normalization.rs
++++ b/src/parser/source_normalization.rs
+@@ -2,8 +2,9 @@
+ //!
+ //! Finding NUL is a pass over the whole body. For the root document that runs
+ //! the definition pre-pass, the same pass also finds the pre-pass's first
+-//! `]:` (see [`root_scan`](super::root_scan)); every other parser keeps the
+-//! plain `memchr`.
++//! `]:` (see [`root_scan`](super::root_scan)), and with GFM autolinks records
++//! where the autolink pre-flight's trigger bytes are; every other parser keeps
++//! the plain `memchr`.
+ use crate::allocator::{Allocator, Vec};
+ use crate::ast::Span;
+ 
+@@ -27,15 +28,23 @@ pub(super) struct NormalizedSourceMap<'a> {
+ /// body without NUL: replacing one moves every later offset, so a body that
+ /// holds one reports [`DefinitionCloser::Unscanned`], as does every call
+ /// without `find_closer`.
++///
++/// With `collect_triggers`, the pass also records the offsets of the GFM
++/// autolink pre-flight's trigger bytes (see
++/// [`scan_collecting_triggers`](root_scan::scan_collecting_triggers)) and
++/// answers the `]:` question too. They are returned only for a body without
++/// NUL, whose normalized source is the body itself, borrowed.
+ pub(super) fn normalize<'a>(
+     allocator: &'a Allocator,
+     source: &'a str,
+     body_start: usize,
+     find_closer: bool,
++    collect_triggers: bool,
+ ) -> (
+     &'a str,
+     Option<&'a NormalizedSourceMap<'a>>,
+     DefinitionCloser,
++    Option<&'a [u32]>,
+ ) {
+     let bytes = source.as_bytes();
+     // Only a BOM at the original document start is an encoding marker.
+@@ -46,16 +55,28 @@ pub(super) fn normalize<'a>(
+         usize::from(bytes.starts_with(b"\xEF\xBB\xBF")) * 3
+     };
+     let body = &bytes[source_start..];
+-    let (first_nul, closer) = if find_closer {
++    let (first_nul, closer, triggers) = if collect_triggers && u32::try_from(body.len()).is_ok() {
++        let mut offsets = allocator.new_vec();
++        match root_scan::scan_collecting_triggers(body, &mut offsets) {
++            // A NUL rewrites the body, which moves the offsets recorded.
++            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned, None),
++            RootScan::Clean { first_closer } => (
++                None,
++                first_closer.map_or(DefinitionCloser::Absent, DefinitionCloser::At),
++                Some(offsets.into_bump_slice()),
++            ),
++        }
++    } else if find_closer {
+         match root_scan::scan(body) {
+-            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned),
++            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned, None),
+             RootScan::Clean { first_closer } => (
+                 None,
+                 first_closer.map_or(DefinitionCloser::Absent, DefinitionCloser::At),
++                None,
+             ),
+         }
+     } else {
+-        (memchr::memchr(0, body), DefinitionCloser::Unscanned)
++        (memchr::memchr(0, body), DefinitionCloser::Unscanned, None)
+     };
+     let (normalized, map) = replace_nul(
+         allocator,
+@@ -63,7 +84,8 @@ pub(super) fn normalize<'a>(
+         source_start,
+         first_nul.map(|offset| source_start + offset),
+     );
+-    (normalized, map, closer)
++    debug_assert!(triggers.is_none() || std::ptr::eq(normalized.as_bytes(), body));
++    (normalized, map, closer, triggers)
+ }
+ 
+ /// The normalized source and its map, given where the body starts and where
+@@ -174,11 +196,38 @@ mod tests {
+     #[track_caller]
+     fn check(source: &str, body_start: usize, label: &str) {
+         let allocator = Allocator::new();
+-        let (plain, plain_map, unscanned) = normalize(&allocator, source, body_start, false);
++        let (plain, plain_map, unscanned, none) =
++            normalize(&allocator, source, body_start, false, false);
+         assert_eq!(unscanned, DefinitionCloser::Unscanned, "{label}");
+-        let (root, root_map, closer) = normalize(&allocator, source, body_start, true);
++        assert_eq!(none, None, "{label}");
++        let (root, root_map, closer, none) = normalize(&allocator, source, body_start, true, false);
+         assert_eq!(root, plain, "{label}");
+         assert_eq!(map_fields(root_map), map_fields(plain_map), "{label}");
++        assert_eq!(none, None, "{label}");
++        // Collecting the autolink triggers answers the same question with the
++        // same pass, whether or not the closer was asked for.
++        for find_closer in [false, true] {
++            let (collected, collected_map, collected_closer, triggers) =
++                normalize(&allocator, source, body_start, find_closer, true);
++            assert_eq!(collected, plain, "{label}");
++            assert_eq!(map_fields(collected_map), map_fields(plain_map), "{label}");
++            assert_eq!(collected_closer, closer, "{label}");
++            if plain_map.is_some_and(|map| !map.replacements.is_empty()) {
++                assert_eq!(triggers, None, "{label}");
++            } else {
++                let bytes = plain.as_bytes();
++                let expected: Vec<u32> = (0..bytes.len())
++                    .filter(|&at| {
++                        crate::parser::root_scan::is_autolink_trigger(
++                            bytes[at],
++                            bytes.get(at + 1).copied().unwrap_or(0),
++                        )
++                    })
++                    .map(|at| at as u32)
++                    .collect();
++                assert_eq!(triggers, Some(expected.as_slice()), "{label}");
++            }
++        }
+         if plain_map.is_some_and(|map| !map.replacements.is_empty()) {
+             // A NUL was replaced, so the pre-pass searches the rewritten body.
+             assert_eq!(closer, DefinitionCloser::Unscanned, "{label}");
+-- 
+2.55.0
+
+
+From cb73e496a462f4460f528c0404f8a90060ce5c12 Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 21:24:06 +0200
+Subject: [PATCH 2/2] perf(parser): record autolink triggers lazily, per block,
+ with a density bound
+
+The paired measurement of the first commit showed a broad win, parse
+1.010, and one clear loser: typescript-handbook-compiler-options, parse
+0.870. That document is 54 KB of raw HTML tables with only 2 trigger
+bytes and 834 bytes of inline content outside containers. The loss was
+the extra vector work in the root scan over every byte of a body whose
+inline blocks never needed it. A density bound alone would not reach it.
+
+The root scan and normalization are back to main. The root parser
+instead records trigger offsets with the same NEON test, now in
+`gfm_autolink/triggers/collect.rs`, only for bytes that blocks ask for:
+
+- A block that starts inside the recorded run, or at most 64 bytes past
+  it, extends the run to its end. It reads ahead to the next 512-byte
+  boundary, so the next blocks of a stretch only look up offsets.
+- A block past a stretch no block asked for (code, raw HTML) starts a
+  new run of exactly its own bytes, which is what the full pass would
+  have read.
+- Content before the current run takes the full pass.
+
+Every byte is recorded at most once. The recorded bytes exceed what the
+full pass reads only by the gaps between blocks and one read-ahead per
+stretch. With the root scan no longer involved, the index also covers
+profiles without link references or footnotes and NUL-normalized
+documents.
+
+The record stops for good once it holds more than 32 offsets plus 16
+per KB recorded. The broad corpus averages about 1 per KB and peaks at
+7.4 per KB. Every later block then takes the full pass.
+
+Exactness is argued as before and checked the same way. New tests cover
+the bound exactly at and one past its limit, a dense prefix before
+sparse content, a sparse prefix before a dense block, isolated blocks
+that record only their own bytes, runs across gaps and read-ahead, and
+parser-level documents around the bound in every container.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ docs/runtime-feature-costs.md                 |   2 +-
+ src/parser/inline/gfm_autolink.rs             |   6 +-
+ .../gfm_autolink/preflight_equivalence.rs     |  95 +++-
+ src/parser/inline/gfm_autolink/triggers.rs    | 508 ++++++++++++++----
+ .../inline/gfm_autolink/triggers/collect.rs   | 312 +++++++++++
+ src/parser/mod.rs                             |  36 +-
+ src/parser/root_scan.rs                       |  10 -
+ src/parser/root_scan/triggers.rs              | 471 ----------------
+ src/parser/source_normalization.rs            |  65 +--
+ 9 files changed, 841 insertions(+), 664 deletions(-)
+ create mode 100644 src/parser/inline/gfm_autolink/triggers/collect.rs
+ delete mode 100644 src/parser/root_scan/triggers.rs
+
+diff --git a/docs/runtime-feature-costs.md b/docs/runtime-feature-costs.md
+index 23d37da8..f867f112 100644
+--- a/docs/runtime-feature-costs.md
++++ b/docs/runtime-feature-costs.md
+@@ -41,7 +41,7 @@ scan.
+ | `line_comments` | Block and paragraph dispatch reuse the first non-space/tab byte and check physical eligibility only for slash prefixes. Paragraph joining reuses the first observed comment; absent comments need no second discovery scan. Reference definitions retain a marker preflight. Actual removed comments can require joined text and a source map. | Changes block, table, definition, and nested-source handling; code and raw HTML remain opaque. See [line-comment handling](../src/parser/line_comments.rs) and the [dispatch measurement](reports/2026-09-14-line-comment-dispatch/README.md). |
+ | `front_matter` | Constructor-local leading scan for `---`/`+++`; when an opener is valid it scans to the closing delimiter and removes that range from Markdown parsing. | Root-document only; BOM and source-span normalization interact with the extracted body. See [front matter extraction](../src/parser/front_matter.rs). |
+ | `strikethrough` | Inline hot path for `~` runs; also changes flanking classification for `*`/`_` runs when enabled. | Competes with `subscript` for single tildes. |
+-| `autolinks` | Each block-level inline parse answers a cheap `may_contain_autolink` preflight. On aarch64, with link references or footnotes on, the root scan also records the offsets of the preflight's trigger bytes (`@`, and `:` or `w` before `.` or `/`; eight more vector operations per 16 bytes), and content that is a slice of the root body visits only those offsets; copied sub-sources, NUL-normalized documents and other targets run the separate `memchr` pass. The recursive text coalescing/rewrite pass runs only when that preflight finds a possible candidate. | Does not make the renderer’s bare-URL option redundant; parser autolinks create link nodes, while renderer autolinks remaining text. See [inline block path](../src/parser/inline.rs) and [GFM rewrite](../src/parser/inline/gfm_autolink.rs). |
++| `autolinks` | Each block-level inline parse answers a cheap `may_contain_autolink` preflight. On aarch64 the root parser records the offsets of the preflight's trigger bytes (`@`, and `:` or `w` before `.` or `/`) with a NEON loop, only for bytes blocks ask for: an isolated block records exactly its own bytes, and a stretch of consecutive blocks reads ahead to the next 512-byte boundary. Content that is a slice of the root source then visits only those offsets. Copied sub-sources, blocks asked for out of order, bodies past a density bound of 32 offsets plus 16 per KB, and other targets run the separate `memchr` pass. The recursive text coalescing/rewrite pass runs only when that preflight finds a possible candidate. | Does not make the renderer’s bare-URL option redundant; parser autolinks create link nodes, while renderer autolinks remaining text. See [inline block path](../src/parser/inline.rs) and [GFM rewrite](../src/parser/inline/gfm_autolink.rs). |
+ | `superscript` | Adds `^` to the fused inline marker classifier and parses matching spans locally. | Changes the selected classifier; no separate scan is added. Full parsing occurs only for candidates. |
+ | `subscript` | Trigger-local single-tilde branch and matching scan. | Shares `~` with strikethrough; does not add a new base marker because tilde is already scanned. |
+ | `math` | Adds `$` to every inline marker scan; `$` block lines receive a block probe. Candidate inline/display math scans forward for a valid closer. | Math AST nodes are only syntax preservation; mathematical typesetting is external. |
+diff --git a/src/parser/inline/gfm_autolink.rs b/src/parser/inline/gfm_autolink.rs
+index bb85c305..8e1db84a 100644
+--- a/src/parser/inline/gfm_autolink.rs
++++ b/src/parser/inline/gfm_autolink.rs
+@@ -26,8 +26,8 @@ use crate::parser::Parser;
+ mod preflight_equivalence;
+ 
+ impl Parser<'_> {
+-    /// The block-level pre-flight for `content`: from the root scan's trigger
+-    /// offsets when `content` is a slice of the root body, otherwise from a
++    /// The block-level pre-flight for `content`: from recorded trigger
++    /// offsets when `content` is a slice of the root source, otherwise from a
+     /// pass over `content` (see [`AutolinkTriggers`]).
+     #[inline]
+     pub(in crate::parser::inline) fn autolink_preflight(
+@@ -35,7 +35,7 @@ impl Parser<'_> {
+         content: &str,
+     ) -> Option<AutolinkScan> {
+         if let Some(triggers) = self.autolink_triggers
+-            && let Some(start) = triggers.locate(content)
++            && let Some(start) = triggers.cover(content)
+         {
+             let scan = triggers.preflight(content, start);
+             // Every block a unit test parses checks the gate value itself,
+diff --git a/src/parser/inline/gfm_autolink/preflight_equivalence.rs b/src/parser/inline/gfm_autolink/preflight_equivalence.rs
+index 451eb270..3dbd588c 100644
+--- a/src/parser/inline/gfm_autolink/preflight_equivalence.rs
++++ b/src/parser/inline/gfm_autolink/preflight_equivalence.rs
+@@ -1,7 +1,7 @@
+ //! The indexed autolink pre-flight must produce exactly the documents the
+ //! full pass produces.
+ //!
+-//! Every input is parsed twice — once with the root scan collecting trigger
++//! Every input is parsed twice — once with the root parser recording trigger
+ //! offsets and once without — and the AST `Debug` output and the rendered HTML
+ //! are compared. On top of that, every block the indexed parse answers from
+ //! the offsets asserts that its gate value equals the full pass's
+@@ -29,7 +29,7 @@ use crate::parser::prepass::gzip::gunzip;
+ use crate::parser::{Parser, ParserOptions};
+ use crate::renderer::{HtmlRenderer, HtmlRendererOptions};
+ 
+-use super::triggers::with_triggers;
++use super::triggers::{BYTES_PER_OFFSET, CHUNK, OFFSET_ALLOWANCE, with_triggers};
+ 
+ thread_local! {
+     /// Blocks the offsets answered on this thread, so a test can show that
+@@ -88,9 +88,9 @@ fn check(source: &str, options: &ParserOptions) -> bool {
+     full.contains("Link(")
+ }
+ 
+-/// Profiles with autolinks on. The offsets are collected when link
+-/// references or footnotes are on as well; the last profile has neither and
+-/// checks that the full pass still answers there.
++/// Profiles with autolinks on: with and without link references and
++/// footnotes, with front matter and line comments, with every optional
++/// inline construct, and MDX.
+ fn option_matrix() -> Vec<ParserOptions> {
+     vec![
+         ParserOptions::gfm(),
+@@ -311,13 +311,96 @@ fn needles_at_block_boundaries_render_the_same() {
+     );
+ }
+ 
++/// Blocks the offsets answered while parsing `source` with the record on.
++fn indexed_blocks(source: &str, options: &ParserOptions) -> usize {
++    let before = indexed_so_far();
++    output(source, options, true);
++    indexed_so_far() - before
++}
++
++#[test]
++fn the_density_bound_renders_the_same_around_it() {
++    // A first paragraph whose chunk holds exactly as many triggers as the
++    // record allows for one chunk, or one more, then filler to the end of
++    // that chunk and sparse paragraphs with a URL each. The first block
++    // records the first chunk, so the record stops right there or never.
++    let bound = OFFSET_ALLOWANCE + CHUNK / BYTES_PER_OFFSET;
++    let options = ParserOptions {
++        footnotes: false,
++        ..ParserOptions::gfm()
++    };
++    for (count, trigger) in ["w. ", "a@b ", "x:/ "]
++        .into_iter()
++        .flat_map(|piece| [(bound, piece), (bound + 1, piece)])
++    {
++        let mut source = trigger.repeat(count);
++        source.push_str("\n\n");
++        while source.len() < CHUNK + 40 {
++            source.push_str("plain filler prose.\n\n");
++        }
++        let sparse = 12;
++        for _ in 0..sparse {
++            source.push_str(
++                "Longer prose that mentions http://example.com once, and then keeps \
++                 going for a while without any other needle in it.\n\n",
++            );
++        }
++        check(&source, &options);
++        let indexed = indexed_blocks(&source, &options);
++        if count > bound {
++            assert_eq!(indexed, 0, "{count} × {trigger:?}: the record must stop");
++        } else {
++            // Every paragraph: the dense one, the filler and the sparse ones.
++            assert!(indexed > sparse, "{count} × {trigger:?}: {indexed} indexed");
++        }
++    }
++}
++
++#[test]
++fn dense_prefixes_render_the_same() {
++    // Dense stretches of every trigger kind in front of sparse prose, in
++    // lists, quotes, tables and code as well as paragraphs, at lengths
++    // around the bound, so the record stops at every kind of block.
++    let bound = OFFSET_ALLOWANCE + CHUNK / BYTES_PER_OFFSET;
++    let dense = [
++        "w. ",
++        "www.a ",
++        "a@b.c ",
++        "http://x ",
++        "[l](https://x) ",
++        ":/ ",
++    ];
++    let wrappers = [
++        ("", "\n\n"),
++        ("- ", "\n"),
++        ("> ", "\n"),
++        ("| a |\n|---|\n| ", " |\n"),
++        ("```\n", "\n```\n"),
++    ];
++    let tail = "Sparse prose with www.example.org, http://example.com and \
++                user@example.com, then a [link](https://example.net).\n\n"
++        .repeat(10);
++    let matrix = option_matrix();
++    for piece in dense {
++        for count in [bound - 1, bound, bound + 1, 2 * bound, 6 * bound] {
++            for (open, close) in wrappers {
++                let source = format!("{open}{}{close}\n{tail}", piece.repeat(count));
++                for options in &matrix[..3] {
++                    check(&source, options);
++                }
++            }
++        }
++    }
++}
++
+ #[test]
+ fn generated_documents_render_the_same() {
+     // The needles, their near misses, the escapes and references that decode
+     // into them, and every construct around them: code spans and blocks, link
+     // destinations and titles, autolinks, raw HTML, containers that copy
+     // their content, line comments, NUL bytes, front matter. The long filler
+-    // crosses the root scan's 16- and 64-byte steps and its last vector.
++    // crosses the recorder's 16- and 64-byte steps, its last vector and the
++    // 512-byte chunks.
+     let tokens = [
+         "www.",
+         "WWW.",
+diff --git a/src/parser/inline/gfm_autolink/triggers.rs b/src/parser/inline/gfm_autolink/triggers.rs
+index 0b4d1ced..e4ed1923 100644
+--- a/src/parser/inline/gfm_autolink/triggers.rs
++++ b/src/parser/inline/gfm_autolink/triggers.rs
+@@ -1,97 +1,208 @@
+-//! The block-level autolink pre-flight, answered from the trigger offsets the
+-//! root scan collected.
++//! The block-level autolink pre-flight, answered from recorded trigger
++//! offsets.
+ //!
+ //! [`may_contain_autolink`] walks a block's whole content after the inline
+-//! parse has read it. With GFM autolinks on, the root parse collects the
+-//! offsets of every byte that can decide that answer while it scans the body
+-//! for NUL and `]:` anyway (see `root_scan::triggers`). A block whose content
+-//! is a slice of that body then only visits the offsets inside its range.
++//! parse has read it, and a block costs that walk's setup however short it
++//! is. With GFM autolinks on, the root parser instead records where the bytes
++//! that can decide the answer are (see [`collect`]), as blocks ask for them,
++//! and a block whose content is a slice of its source only visits the offsets
++//! inside its range.
++//!
++//! # Which bytes are recorded
++//!
++//! Only bytes blocks ask for, each at most once. Blocks are asked for in
++//! source order, so the record is one run that grows forward:
++//!
++//! - A block that starts inside the run, or at most [`GAP`] bytes past it
++//!   (the blank line, list marker or pipe between two blocks), extends the
++//!   run to its end and on to the next multiple of [`CHUNK`], so the blocks
++//!   that follow it are usually covered already and only look up offsets.
++//! - A block that starts further on, past a code block or raw HTML no block
++//!   asked for, starts a new run with exactly its own bytes, and the old run
++//!   is dropped. An isolated block therefore records what the full pass would
++//!   have read, and a body that is mostly code or HTML pays for its few
++//!   inline blocks, not for every byte.
++//! - Content that starts before the run (a block asked for out of order)
++//!   takes the full pass.
++//!
++//! So the bytes recorded never exceed the body, and exceed the bytes the full
++//! pass reads by at most the gaps between blocks and one chunk of read-ahead
++//! per stretch of consecutive blocks.
++//!
++//! The record also stops for good once it holds more offsets than a density
++//! bound allows for the bytes recorded so far ([`OFFSET_ALLOWANCE`] plus one
++//! per [`BYTES_PER_OFFSET`]): a body dense in `@`, `://` or `www.` would pay
++//! for recording and visiting them on top of the full pass that every block
++//! with an `@` takes anyway. Every later block then takes the full pass.
+ //!
+ //! # Why the answers are equal
+ //!
+ //! [`may_contain_autolink`] derives its answer from three facts: whether the
+ //! content holds an `@`, whether it holds a `://` that does not complete a
+ //! `](scheme` destination, and whether it holds a `www.`. With an `@` it also
+-//! looks for `mailto:` and `xmpp:` in front of any colon.
++//! looks for `mailto:` and `xmpp:` in front of any colon. A recorded run holds
++//! every trigger offset in its range, so for content inside it:
+ //!
+-//! - Every `@` of the body is recorded. An `@` inside the content hands the
+-//!   content to [`may_contain_autolink`] itself, which is the only place the
++//! - Every `@` is recorded. An `@` inside the content hands the content to
++//!   [`may_contain_autolink`] itself, which is the only place the
+ //!   `mailto:`/`xmpp:` rule matters: without an `@` neither extended scheme
+ //!   can make the answer differ.
+-//! - Every `:` of the body that a `/` follows is recorded, so every `://` of
+-//!   the content is visited at its colon. The same test as the full pass
+-//!   decides it, on the content's own bytes: `//` has to follow inside the
+-//!   content, and the destination check looks back no further than the
+-//!   content's start.
+-//! - Every `w` of the body that a `.` follows is recorded, so every `www.` of
+-//!   the content is visited at its last `w`, and counts when the two bytes in
+-//!   front of it and the `.` behind it are inside the content.
++//! - Every `:` that a `/` follows is recorded, so every `://` of the content
++//!   is visited at its colon. The same test as the full pass decides it, on
++//!   the content's own bytes: `//` has to follow inside the content, and the
++//!   destination check looks back no further than the content's start.
++//! - Every `w` that a `.` follows is recorded, so every `www.` of the content
++//!   is visited at its last `w`, and counts when the two bytes in front of it
++//!   and the `.` behind it are inside the content.
+ //!
+-//! Content qualifies by address alone: it has to lie inside the body the
+-//! offsets were collected from. Both are borrowed from the same immutable
+-//! source for the whole parse, so equal addresses hold equal bytes. Content a
+-//! sub-parser copied into the arena (block quotes, most list items, escaped
+-//! table cells, lines with comments removed) and every document whose body
+-//! held a NUL take the full pass, as do targets without the collecting scan.
++//! Content qualifies by address alone: it has to lie inside the root source.
++//! Both are borrowed from the same immutable source for the whole parse, so
++//! equal addresses hold equal bytes. Content a sub-parser copied into the
++//! arena (block quotes, most list items, escaped table cells, lines with
++//! comments removed) takes the full pass, as does every block on targets
++//! without the vector recorder.
+ 
+-use std::cell::Cell;
++use std::cell::RefCell;
++
++use crate::allocator::{Allocator, Vec};
+ 
+ use super::AutolinkScan;
+ use super::scan::{may_contain_autolink, scheme_is_markdown_destination};
+ 
+-/// Offsets of the autolink trigger bytes of one root body.
++mod collect;
++
++/// A block that extends the record reads ahead to the next multiple of this,
++/// so the blocks after it in the same stretch are covered already.
++pub(super) const CHUNK: usize = 512;
++
++/// How far past the recorded run a block may start and still extend it
++/// rather than start a new run.
++pub(super) const GAP: usize = 64;
++
++/// Offsets any record may hold, however few bytes it has read.
++///
++/// The broad corpus averages about one trigger per kilobyte (400 in the 40
++/// `gfm` documents' 394 KB); its densest document holds 7.4 per kilobyte, and
++/// its densest real one 4.1.
++pub(super) const OFFSET_ALLOWANCE: usize = 32;
++
++/// Bytes read per offset a record may hold beyond [`OFFSET_ALLOWANCE`]: 16
++/// per kilobyte, twice the densest corpus document.
++pub(super) const BYTES_PER_OFFSET: usize = 64;
++
++/// Trigger offsets of the root source, recorded as blocks ask for them.
+ pub(in crate::parser) struct AutolinkTriggers<'a> {
+-    /// The body the offsets index.
++    /// The root parser's source, which the offsets index.
+     body: &'a [u8],
+-    /// Offset of every trigger byte in `body` (see
+-    /// `root_scan::is_autolink_trigger`), in ascending order.
+-    offsets: &'a [u32],
++    record: RefCell<Record<'a>>,
++}
++
++/// What has been recorded so far.
++struct Record<'a> {
++    /// Offset of every trigger byte in `run_start..covered_end`, ascending.
++    offsets: Vec<'a, u32>,
++    /// Start of the recorded run.
++    run_start: usize,
++    /// End of the recorded run.
++    covered_end: usize,
+     /// Where the last lookup ended: the index of the first offset at or past
+     /// the end of the content it answered. Blocks are asked for in source
+     /// order, so the next one usually starts here.
+-    cursor: Cell<usize>,
++    cursor: usize,
++    /// Bytes recorded over the whole parse, dropped runs included.
++    scanned: usize,
++    /// Offsets recorded over the whole parse, dropped runs included.
++    recorded: usize,
++    /// The density bound was passed: nothing is recorded any more.
++    exhausted: bool,
+ }
+ 
+ impl<'a> AutolinkTriggers<'a> {
+-    /// Offsets collected from `body`, which has to be the exact slice the
+-    /// root scan read.
+-    pub(in crate::parser) fn new(body: &'a [u8], offsets: &'a [u32]) -> Self {
+-        debug_assert!(offsets.windows(2).all(|pair| pair[0] < pair[1]));
+-        debug_assert!(
+-            offsets
+-                .last()
+-                .is_none_or(|&last| (last as usize) < body.len())
+-        );
++    /// An empty record over `body`, the root parser's source.
++    pub(in crate::parser) fn new(allocator: &'a Allocator, body: &'a [u8]) -> Self {
+         Self {
+             body,
+-            offsets,
+-            cursor: Cell::new(0),
++            record: RefCell::new(Record {
++                offsets: allocator.new_vec(),
++                run_start: 0,
++                covered_end: 0,
++                cursor: 0,
++                scanned: 0,
++                recorded: 0,
++                // Offsets are stored as `u32`.
++                exhausted: u32::try_from(body.len()).is_err(),
++            }),
+         }
+     }
+ 
+-    /// Where `content` starts in the indexed body, or `None` when it does not
+-    /// lie inside it and the full pass has to answer for it.
++    /// Where `content` starts in the body, once the record covers it; `None`
++    /// when the full pass has to answer: `content` lies outside the body,
++    /// starts before the recorded run, or the record is exhausted.
+     #[inline]
+-    pub(in crate::parser::inline) fn locate(&self, content: &str) -> Option<usize> {
++    pub(in crate::parser::inline) fn cover(&self, content: &str) -> Option<usize> {
++        let len = self.body.len();
+         let start = (content.as_ptr() as usize).wrapping_sub(self.body.as_ptr() as usize);
+-        (start <= self.body.len() && content.len() <= self.body.len() - start).then_some(start)
++        if start > len || content.len() > len - start {
++            return None;
++        }
++        let end = start + content.len();
++        let mut record = self.record.borrow_mut();
++        if record.exhausted {
++            return None;
++        }
++        if start == end {
++            // Nothing to visit.
++            return Some(start);
++        }
++        if start < record.run_start {
++            return None;
++        }
++        if end <= record.covered_end {
++            return Some(start);
++        }
++        let (scan_from, to) = if start <= record.covered_end.saturating_add(GAP) {
++            // The next block of a stretch: extend the run and read ahead.
++            let ahead = end.div_ceil(CHUNK).saturating_mul(CHUNK).min(len);
++            (record.covered_end, ahead)
++        } else {
++            // Past bytes no block asked for: a new run of exactly this block.
++            record.offsets.clear();
++            record.cursor = 0;
++            record.run_start = start;
++            (start, end)
++        };
++        let before = record.offsets.len();
++        collect::record(self.body, scan_from, to, &mut record.offsets);
++        record.covered_end = to;
++        record.scanned += to - scan_from;
++        record.recorded += record.offsets.len() - before;
++        if record.recorded > OFFSET_ALLOWANCE + record.scanned / BYTES_PER_OFFSET {
++            record.exhausted = true;
++            record.offsets.clear();
++            return None;
++        }
++        Some(start)
+     }
+ 
+     /// The pre-flight's answer for `content`, which starts at `start` in the
+-    /// indexed body (see [`Self::locate`]).
++    /// body and which [`Self::cover`] has just covered.
+     #[inline]
+     pub(in crate::parser::inline) fn preflight(
+         &self,
+         content: &str,
+         start: usize,
+     ) -> Option<AutolinkScan> {
+-        debug_assert_eq!(self.locate(content), Some(start));
++        let mut record = self.record.borrow_mut();
+         let end = start + content.len();
++        debug_assert!(
++            start == end
++                || (!record.exhausted && start >= record.run_start && end <= record.covered_end)
++        );
+         let bytes = content.as_bytes();
+         let mut has_www = false;
+         let mut has_bare_scheme = false;
+-        let mut index = self.first_at_or_after(start);
+-        while let Some(&offset) = self.offsets.get(index) {
++        let mut index = record.first_at_or_after(start);
++        while let Some(&offset) = record.offsets.get(index) {
+             let offset = offset as usize;
+             if offset >= end {
+                 break;
+@@ -115,7 +226,7 @@ impl<'a> AutolinkTriggers<'a> {
+                 }
+             }
+         }
+-        self.cursor.set(index);
++        record.cursor = index;
+         // Without an `@` neither extended scheme can apply, and a `www.` is
+         // the only reason for the `www.` search.
+         (has_www || has_bare_scheme).then_some(AutolinkScan {
+@@ -124,12 +235,26 @@ impl<'a> AutolinkTriggers<'a> {
+         })
+     }
+ 
++    /// Whether the density bound stopped the record.
++    #[cfg(test)]
++    fn is_exhausted(&self) -> bool {
++        self.record.borrow().exhausted
++    }
++
++    /// Bytes recorded so far.
++    #[cfg(test)]
++    fn scanned(&self) -> usize {
++        self.record.borrow().scanned
++    }
++}
++
++impl Record<'_> {
+     /// Index of the first offset at or past `start`.
+     #[inline]
+     fn first_at_or_after(&self, start: usize) -> usize {
+-        let offsets = self.offsets;
++        let offsets = self.offsets.as_slice();
+         let before = |offset: &u32| (*offset as usize) < start;
+-        let hint = self.cursor.get();
++        let hint = self.cursor;
+         if hint > 0 && !before(&offsets[hint - 1]) {
+             // Content before the last lookup's: a sub-source, or a block
+             // parsed out of order.
+@@ -144,31 +269,31 @@ impl<'a> AutolinkTriggers<'a> {
+     }
+ }
+ 
+-/// Whether a root parse on this target collects the trigger offsets.
++/// Whether a root parse on this target records trigger offsets.
+ ///
+-/// Only the NEON root scan collects them (see `root_scan::triggers`); other
+-/// targets keep the separate pre-flight pass.
++/// Only aarch64 has the vector recorder (see [`collect`]); other targets keep
++/// the separate pre-flight pass.
+ #[cfg(not(test))]
+ #[inline]
+ pub(in crate::parser) const fn collects_triggers() -> bool {
+     cfg!(target_arch = "aarch64")
+ }
+ 
+-/// Test builds collect them on every target, with the portable byte-wise
+-/// scan off aarch64, so every block a unit test parses checks the indexed
++/// Test builds record them on every target, with the portable byte-wise
++/// recorder off aarch64, so every block a unit test parses checks the indexed
+ /// answer against the full pass (see `Parser::autolink_preflight`). A test
+-/// can switch the index off for a comparison.
++/// can switch the record off for a comparison.
+ #[cfg(test)]
+ pub(in crate::parser) fn collects_triggers() -> bool {
+-    COLLECTS_TRIGGERS.with(Cell::get)
++    COLLECTS_TRIGGERS.with(std::cell::Cell::get)
+ }
+ 
+ #[cfg(test)]
+ thread_local! {
+-    static COLLECTS_TRIGGERS: Cell<bool> = const { Cell::new(true) };
++    static COLLECTS_TRIGGERS: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+ }
+ 
+-/// Runs `run` with trigger collection switched on or off on this thread.
++/// Runs `run` with trigger recording switched on or off on this thread.
+ #[cfg(test)]
+ pub(super) fn with_triggers<R>(collect: bool, run: impl FnOnce() -> R) -> R {
+     struct Restore(bool);
+@@ -190,47 +315,97 @@ mod tests {
+         clippy::disallowed_types
+     )]
+ 
+-    use super::{AutolinkScan, AutolinkTriggers, may_contain_autolink};
+-    use crate::parser::root_scan::is_autolink_trigger;
++    use crate::allocator::Allocator;
++
++    use super::{
++        AutolinkScan, AutolinkTriggers, BYTES_PER_OFFSET, CHUNK, GAP, OFFSET_ALLOWANCE,
++        may_contain_autolink,
++    };
++
++    #[test]
++    fn isolated_blocks_record_only_their_own_bytes() {
++        // Short blocks between long stretches no block asks for, like
++        // headings between raw HTML tables: each starts a new run of exactly
++        // its bytes, however long the body.
++        let html = "<tr><td><code>--flag</code></td><td>text</td></tr>\n".repeat(40);
++        let mut body = String::new();
++        let mut blocks = Vec::new();
++        for heading in ["Options", "www.example.com", "More http://x.y"] {
++            body.push_str(&html);
++            let start = body.len();
++            body.push_str(heading);
++            blocks.push((start, body.len()));
++            body.push('\n');
++        }
++        body.push_str(&html);
++        let allocator = Allocator::new();
++        let triggers = AutolinkTriggers::new(&allocator, body.as_bytes());
++        let mut expected = 0;
++        for &(start, end) in &blocks {
++            assert!(ask(&triggers, &body, start, end));
++            expected += end - start;
++            assert_eq!(triggers.scanned(), expected, "{start}..{end}");
++        }
++        // A block right after one of them extends the run over the gap and
++        // reads ahead to the next chunk boundary.
++        let (_, last_end) = blocks[blocks.len() - 1];
++        let next = last_end + GAP;
++        assert!(ask(&triggers, &body, next, next + 10));
++        let ahead = (next + 10).div_ceil(CHUNK) * CHUNK;
++        assert_eq!(triggers.scanned(), expected + ahead - last_end);
++    }
+ 
+     fn flags(scan: Option<AutolinkScan>) -> Option<(bool, bool)> {
+         scan.map(|scan| (scan.may_have_www, scan.may_have_extended))
+     }
+ 
+-    fn offsets(body: &[u8]) -> Vec<u32> {
+-        (0..body.len())
+-            .filter(|&at| is_autolink_trigger(body[at], body.get(at + 1).copied().unwrap_or(0)))
+-            .map(|at| at as u32)
+-            .collect()
++    /// Asks the record for `body[start..end]`, and checks any answer it gives
++    /// against the full pass. Reports whether it answered.
++    #[track_caller]
++    fn ask(triggers: &AutolinkTriggers<'_>, body: &str, start: usize, end: usize) -> bool {
++        let content = &body[start..end];
++        let Some(located) = triggers.cover(content) else {
++            return false;
++        };
++        assert_eq!(located, start, "{content:?}");
++        assert_eq!(
++            flags(triggers.preflight(content, start)),
++            flags(may_contain_autolink(content)),
++            "{content:?} at {start}..{end} of {body:?}"
++        );
++        true
+     }
+ 
+     /// Every slice of `body` on character boundaries, asked for in source
+-    /// order, in reverse, and nested, must get the full pass's answer.
++    /// order, then in reverse, then nested, on fresh records. Forward order
++    /// must be answered throughout while the record stays under its bound.
+     #[track_caller]
+     fn check_every_slice(body: &str) {
+-        let offsets = offsets(body.as_bytes());
+-        let triggers = AutolinkTriggers::new(body.as_bytes(), &offsets);
++        let allocator = Allocator::new();
+         let bounds: Vec<usize> = (0..=body.len())
+             .filter(|&at| body.is_char_boundary(at))
+             .collect();
+-        let ask = |start: usize, end: usize| {
+-            let content = &body[start..end];
+-            assert_eq!(triggers.locate(content), Some(start), "{content:?}");
+-            let indexed = triggers.preflight(content, start);
+-            assert_eq!(
+-                flags(indexed),
+-                flags(may_contain_autolink(content)),
+-                "{content:?} at {start}..{end} of {body:?}"
+-            );
+-        };
++        let forward = AutolinkTriggers::new(&allocator, body.as_bytes());
+         for &start in &bounds {
+             for &end in bounds.iter().filter(|&&end| end >= start) {
+-                ask(start, end);
++                let answered = ask(&forward, body, start, end);
++                assert!(
++                    answered || forward.is_exhausted(),
++                    "{start}..{end} of {body:?}"
++                );
+             }
+         }
++        let reverse = AutolinkTriggers::new(&allocator, body.as_bytes());
+         for &start in bounds.iter().rev() {
+             for &end in bounds.iter().rev().filter(|&&end| end >= start) {
+-                ask(start, end);
++                ask(&reverse, body, start, end);
++            }
++        }
++        let nested = AutolinkTriggers::new(&allocator, body.as_bytes());
++        for (index, &start) in bounds.iter().enumerate() {
++            let end = bounds[bounds.len() - 1 - index];
++            if end >= start {
++                ask(&nested, body, start, end);
+             }
+         }
+     }
+@@ -273,7 +448,7 @@ mod tests {
+                 .wrapping_add(1_442_695_040_888_963_407);
+             (state >> 33) as usize
+         };
+-        for _ in 0..400 {
++        for _ in 0..300 {
+             let len = next() % 14;
+             let mut body = String::new();
+             for _ in 0..len {
+@@ -283,22 +458,165 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn blocks_across_chunks_and_gaps() {
++        // Blocks in source order over a body several chunks long, with the
++        // needles on and across chunk boundaries, and gaps of whole chunks
++        // no block asks for, which start a new run.
++        let mut next = {
++            let mut state = 0x2545_f491_4f6c_dd1du64;
++            move || {
++                state = state
++                    .wrapping_mul(6_364_136_223_846_793_005)
++                    .wrapping_add(1_442_695_040_888_963_407);
++                (state >> 33) as usize
++            }
++        };
++        let needles = [
++            "www.a.b ",
++            "http://c.d ",
++            "[x](https://e.f) ",
++            "g@h.i ",
++            "w",
++            ".",
++            ":",
++            "//",
++            "mailto:",
++            "ww",
++        ];
++        for round in 0..40 {
++            let mut body = String::new();
++            let mut blocks = Vec::new();
++            while body.len() < 12 * CHUNK {
++                if next() % 5 == 0 {
++                    // A stretch no block asks for, like a fenced code block,
++                    // with a needle in it now and then.
++                    for _ in 0..next() % 80 {
++                        body.push_str(if next() % 8 == 0 {
++                            "see http://z.w\n"
++                        } else {
++                            "let value = compute(input);\n"
++                        });
++                    }
++                }
++                let start = body.len();
++                for _ in 0..next() % 40 {
++                    body.push_str(if next() % 12 == 0 {
++                        needles[next() % needles.len()]
++                    } else {
++                        "ordinary prose "
++                    });
++                }
++                blocks.push((start, body.len()));
++                body.push('\n');
++            }
++            let allocator = Allocator::new();
++            let triggers = AutolinkTriggers::new(&allocator, body.as_bytes());
++            for &(start, end) in &blocks {
++                assert!(
++                    ask(&triggers, &body, start, end),
++                    "round {round}: {start}..{end}"
++                );
++            }
++            assert!(!triggers.is_exhausted(), "round {round}");
++            // Asked again out of order: answered from the current run or by
++            // the full pass, and never wrongly.
++            for &(start, end) in blocks.iter().rev() {
++                ask(&triggers, &body, start, end);
++            }
++        }
++    }
++
++    /// Bytes of a one-chunk body holding exactly `count` triggers, all `w.`
++    /// pairs so none of them sends a block to the full pass.
++    fn body_with_triggers(len: usize, count: usize) -> String {
++        let mut body = "x".repeat(len);
++        for index in 0..count {
++            let at = index * 3;
++            body.replace_range(at..at + 2, "w.");
++        }
++        body
++    }
++
++    #[test]
++    fn the_record_stops_just_past_its_bound() {
++        // One block covering one whole chunk: its bound is the allowance plus
++        // one offset per `BYTES_PER_OFFSET` bytes read.
++        let bound = OFFSET_ALLOWANCE + CHUNK / BYTES_PER_OFFSET;
++        let allocator = Allocator::new();
++        for (count, exhausted) in [(bound - 1, false), (bound, false), (bound + 1, true)] {
++            let body = body_with_triggers(CHUNK, count);
++            let triggers = AutolinkTriggers::new(&allocator, body.as_bytes());
++            let answered = ask(&triggers, &body, 0, body.len());
++            assert_eq!(answered, !exhausted, "{count} triggers");
++            assert_eq!(triggers.is_exhausted(), exhausted, "{count} triggers");
++            // Once stopped, every later block takes the full pass.
++            assert_eq!(ask(&triggers, &body, 1, 10), !exhausted, "{count} triggers");
++        }
++    }
++
++    #[test]
++    fn a_dense_prefix_stops_the_record_for_the_sparse_rest() {
++        // The first block's chunk holds more triggers than its own bound
++        // allows, although the body as a whole would not: the bound is
++        // checked on what is read, so the record stops at the first block.
++        let bound = OFFSET_ALLOWANCE + CHUNK / BYTES_PER_OFFSET;
++        let mut body = body_with_triggers(CHUNK, bound + 1);
++        for line in 0..60 {
++            body.push_str(if line % 10 == 0 {
++                "see www.example.com today.\n"
++            } else {
++                "sparse prose without needles.\n"
++            });
++        }
++        assert!(bound + 1 + 6 <= OFFSET_ALLOWANCE + body.len() / BYTES_PER_OFFSET);
++        let allocator = Allocator::new();
++        let triggers = AutolinkTriggers::new(&allocator, body.as_bytes());
++        assert!(!ask(&triggers, &body, 0, 100));
++        assert!(triggers.is_exhausted());
++        for start in (CHUNK..body.len()).step_by(37) {
++            assert!(!ask(&triggers, &body, start, body.len().min(start + 36)));
++        }
++        // Read as one block, the same body stays under its bound.
++        let whole = AutolinkTriggers::new(&allocator, body.as_bytes());
++        assert!(ask(&whole, &body, 0, body.len()));
++        assert!(!whole.is_exhausted());
++    }
++
++    #[test]
++    fn a_sparse_prefix_leaves_room_for_a_dense_block() {
++        // The bound counts every byte read so far: a dense block after a long
++        // sparse stretch is still answered while the total stays under it.
++        let sparse = "sparse prose without needles.\n".repeat(40);
++        let bound = OFFSET_ALLOWANCE + (sparse.len() + CHUNK) / BYTES_PER_OFFSET;
++        let dense_count = OFFSET_ALLOWANCE + CHUNK / BYTES_PER_OFFSET + 4;
++        assert!(dense_count <= bound);
++        let body = format!("{sparse}{}", body_with_triggers(CHUNK, dense_count));
++        let allocator = Allocator::new();
++        let triggers = AutolinkTriggers::new(&allocator, body.as_bytes());
++        for start in (0..sparse.len()).step_by(30) {
++            assert!(ask(&triggers, &body, start, start + 29));
++        }
++        assert!(ask(&triggers, &body, sparse.len(), body.len()));
++        assert!(!triggers.is_exhausted());
++    }
++
+     #[test]
+     fn content_outside_the_body_is_not_answered() {
+         let body = "text www.example.com text";
+-        let offsets = offsets(body.as_bytes());
+-        let triggers = AutolinkTriggers::new(body.as_bytes(), &offsets);
++        let allocator = Allocator::new();
++        let triggers = AutolinkTriggers::new(&allocator, body.as_bytes());
+         let copy = body.to_owned();
+-        assert_eq!(triggers.locate(&copy), None);
+-        assert_eq!(triggers.locate(&copy[5..]), None);
+-        assert_eq!(triggers.locate(&body[5..]), Some(5));
+-        assert_eq!(triggers.locate(&body[body.len()..]), Some(body.len()));
++        assert_eq!(triggers.cover(&copy), None);
++        assert_eq!(triggers.cover(&copy[5..]), None);
++        assert_eq!(triggers.cover(&body[5..]), Some(5));
++        assert_eq!(triggers.cover(&body[body.len()..]), Some(body.len()));
+         // Slices that start inside an indexed prefix but run past its end.
+         let longer = format!("{body} and more");
+-        let prefix = AutolinkTriggers::new(&longer.as_bytes()[..body.len()], &offsets);
+-        assert_eq!(prefix.locate(&longer[..body.len()]), Some(0));
+-        assert_eq!(prefix.locate(&longer[1..=body.len()]), None);
+-        assert_eq!(prefix.locate(&longer[body.len()..]), None);
+-        assert_eq!(prefix.locate(&longer), None);
++        let prefix = AutolinkTriggers::new(&allocator, &longer.as_bytes()[..body.len()]);
++        assert_eq!(prefix.cover(&longer[..body.len()]), Some(0));
++        assert_eq!(prefix.cover(&longer[1..=body.len()]), None);
++        assert_eq!(prefix.cover(&longer[body.len()..]), None);
++        assert_eq!(prefix.cover(&longer), None);
+     }
+ }
+diff --git a/src/parser/inline/gfm_autolink/triggers/collect.rs b/src/parser/inline/gfm_autolink/triggers/collect.rs
+new file mode 100644
+index 00000000..30f6dd2d
+--- /dev/null
++++ b/src/parser/inline/gfm_autolink/triggers/collect.rs
+@@ -0,0 +1,312 @@
++//! Recording where the autolink trigger bytes of a byte range are.
++//!
++//! A trigger is any byte that [`is_autolink_trigger`] accepts: every `@`, and
++//! every `:` or `w` that a `.` or `/` follows. That keeps every `:` that starts
++//! a `://` and every `w` that ends a `www.`, and leaves out the colons of
++//! ordinary prose and code (`Note:`, `a::b`, `key: value`), which are most of
++//! them.
++
++use crate::allocator::Vec;
++
++/// Whether `byte` is an autolink trigger, given the byte after it (NUL past
++/// the end of the body).
++///
++/// `next | 1 == b'/'` holds for exactly `.` (0x2E) and `/` (0x2F), so the pair
++/// test costs one compare in the vector loop. The two extra pairs it lets in,
++/// `:.` and `w/`, are rare and cost only an entry the pre-flight skips.
++#[inline]
++pub(super) const fn is_autolink_trigger(byte: u8, next: u8) -> bool {
++    byte == b'@' || ((byte == b':' || byte == b'w') && next | 1 == b'/')
++}
++
++/// Pushes the offset of every trigger byte in `body[from..to]` onto `offsets`,
++/// in ascending order. The byte after `to - 1` is read from `body` when it
++/// has one, so a trigger's pair can straddle `to`.
++///
++/// `body` must be shorter than 4 GiB: offsets are stored as `u32`.
++#[inline]
++pub(super) fn record(body: &[u8], from: usize, to: usize, offsets: &mut Vec<'_, u32>) {
++    debug_assert!(from <= to && to <= body.len());
++    debug_assert!(u32::try_from(body.len()).is_ok());
++    #[cfg(target_arch = "aarch64")]
++    {
++        if to >= 16 {
++            neon::record(body, from, to, offsets);
++            return;
++        }
++    }
++    record_bytewise(body, from, to, offsets);
++}
++
++/// [`record`] one byte at a time: the answer for a range that ends before the
++/// body's 16th byte, the tests' reference for the vector loop, and the whole
++/// recorder on other targets, where only the tests ask for it.
++fn record_bytewise(body: &[u8], from: usize, to: usize, offsets: &mut Vec<'_, u32>) {
++    for at in from..to {
++        if is_autolink_trigger(body[at], body.get(at + 1).copied().unwrap_or(0)) {
++            offsets.push(at as u32);
++        }
++    }
++}
++
++/// The NEON recorder: eight vector operations per 16 bytes (compares for `@`,
++/// `:` and `w`, one for the byte after each lane, `next | 1 == b'/'`, and four
++/// to combine them), and one branch per 64 bytes, taken only for a group that
++/// holds a trigger.
++#[cfg(target_arch = "aarch64")]
++#[allow(unsafe_code)]
++mod neon {
++    use std::arch::aarch64::*;
++
++    use crate::allocator::Vec;
++
++    /// Pushes `from` plus the index of every lane set in `mask`, a lane mask
++    /// with four bits per lane.
++    #[inline]
++    fn push_lanes(mask: u64, from: usize, offsets: &mut Vec<'_, u32>) {
++        let mut bits = mask & 0x8888_8888_8888_8888;
++        while bits != 0 {
++            offsets.push((from + (bits.trailing_zeros() / 4) as usize) as u32);
++            bits &= bits - 1;
++        }
++    }
++
++    pub(super) fn record(body: &[u8], from: usize, to: usize, offsets: &mut Vec<'_, u32>) {
++        let len = body.len();
++        let ptr = body.as_ptr();
++        debug_assert!(from <= to && to <= len && to >= 16);
++        let mut at = from;
++        // SAFETY: a block at `at` loads `at..at + 16`, and its lookahead loads
++        // `at + 1..at + 17`. The grouped loop runs only while the lookahead of
++        // its fourth block ends in bounds (`at + 65 <= len`), and the block
++        // loop only while its own does (`at + 17 <= len`). The last vector
++        // loads `to - 16..to`, with `to >= 16`, and its lookahead
++        // `to - 15..to + 1` only when `to < len`.
++        unsafe {
++            let at_sign = vdupq_n_u8(b'@');
++            let colon = vdupq_n_u8(b':');
++            let letter_w = vdupq_n_u8(b'w');
++            let one = vdupq_n_u8(1);
++            let slash = vdupq_n_u8(b'/');
++            // Four bits per lane, so the lowest set bit names the first lane.
++            let lanes = |mask: uint8x16_t| {
++                vget_lane_u64(
++                    vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(mask), 4)),
++                    0,
++                )
++            };
++            // 0xFF in lane `j` when `here[j]` is a trigger and `next[j]` the
++            // byte after it (see `is_autolink_trigger`).
++            let trigger = |here: uint8x16_t, next: uint8x16_t| {
++                vorrq_u8(
++                    vceqq_u8(here, at_sign),
++                    vandq_u8(
++                        vorrq_u8(vceqq_u8(here, colon), vceqq_u8(here, letter_w)),
++                        vceqq_u8(vorrq_u8(next, one), slash),
++                    ),
++                )
++            };
++            while at + 64 <= to && at + 65 <= len {
++                let hit_a = trigger(vld1q_u8(ptr.add(at)), vld1q_u8(ptr.add(at + 1)));
++                let hit_b = trigger(vld1q_u8(ptr.add(at + 16)), vld1q_u8(ptr.add(at + 17)));
++                let hit_c = trigger(vld1q_u8(ptr.add(at + 32)), vld1q_u8(ptr.add(at + 33)));
++                let hit_d = trigger(vld1q_u8(ptr.add(at + 48)), vld1q_u8(ptr.add(at + 49)));
++                if lanes(vorrq_u8(vorrq_u8(hit_a, hit_b), vorrq_u8(hit_c, hit_d))) != 0 {
++                    push_lanes(lanes(hit_a), at, offsets);
++                    push_lanes(lanes(hit_b), at + 16, offsets);
++                    push_lanes(lanes(hit_c), at + 32, offsets);
++                    push_lanes(lanes(hit_d), at + 48, offsets);
++                }
++                at += 64;
++            }
++            while at + 16 <= to && at + 17 <= len {
++                let hit = trigger(vld1q_u8(ptr.add(at)), vld1q_u8(ptr.add(at + 1)));
++                push_lanes(lanes(hit), at, offsets);
++                at += 16;
++            }
++            if at < to {
++                // One vector over the last 16 bytes of the range answers for
++                // the 1 to 16 bytes the loops left; its lanes in front of `at`
++                // are recorded already, or lie before `from`. At the end of
++                // the body a zero lane stands in for the byte after the last.
++                let base = to - 16;
++                let here = vld1q_u8(ptr.add(base));
++                let next = if to < len {
++                    vld1q_u8(ptr.add(base + 1))
++                } else {
++                    vextq_u8::<1>(here, vdupq_n_u8(0))
++                };
++                let seen = at - base;
++                push_lanes(
++                    lanes(trigger(here, next)) & (u64::MAX << (4 * seen)),
++                    base,
++                    offsets,
++                );
++            }
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    // Owned buffers keep the test oracle independent of production storage.
++    #![allow(
++        clippy::disallowed_macros,
++        clippy::disallowed_methods,
++        clippy::disallowed_types
++    )]
++
++    use crate::allocator::Allocator;
++
++    use super::{is_autolink_trigger, record, record_bytewise};
++
++    /// Every trigger offset in `body[from..to]`, from the definition.
++    fn oracle(body: &[u8], from: usize, to: usize) -> Vec<u32> {
++        (from..to)
++            .filter(|&at| is_autolink_trigger(body[at], body.get(at + 1).copied().unwrap_or(0)))
++            .map(|at| at as u32)
++            .collect()
++    }
++
++    #[track_caller]
++    fn check(body: &[u8], from: usize, to: usize) {
++        let expected = oracle(body, from, to);
++        let allocator = Allocator::new();
++        let mut offsets = allocator.new_vec();
++        record(body, from, to, &mut offsets);
++        let shown = String::from_utf8_lossy(body);
++        assert_eq!(
++            offsets.as_slice(),
++            expected.as_slice(),
++            "{from}..{to} of {shown:?}"
++        );
++        let mut offsets = allocator.new_vec();
++        record_bytewise(body, from, to, &mut offsets);
++        assert_eq!(
++            offsets.as_slice(),
++            expected.as_slice(),
++            "bytewise {from}..{to}"
++        );
++    }
++
++    /// Every range of `body`, when it is short, or every range between the
++    /// points where the vector loops change step: the body's ends, one
++    /// vector in from each, its middle, and `extra`.
++    fn check_ranges(body: &[u8], extra: &[usize]) {
++        let len = body.len();
++        if len <= 40 {
++            for from in 0..=len {
++                for to in from..=len {
++                    check(body, from, to);
++                }
++            }
++            return;
++        }
++        let mut points = vec![0, 1, 15, 16, 17, len / 2, len - 17, len - 16, len - 1, len];
++        points.extend(extra.iter().flat_map(|&at| {
++            [
++                at.saturating_sub(16),
++                at.saturating_sub(1),
++                at,
++                at + 1,
++                at + 16,
++            ]
++        }));
++        points.retain(|&at| at <= len);
++        points.sort_unstable();
++        points.dedup();
++        for &from in &points {
++            for &to in points.iter().filter(|&&to| to >= from) {
++                check(body, from, to);
++            }
++        }
++    }
++
++    #[test]
++    fn the_trigger_bytes() {
++        for byte in 0..=u8::MAX {
++            for next in 0..=u8::MAX {
++                let expected =
++                    byte == b'@' || (matches!(byte, b':' | b'w') && matches!(next, b'.' | b'/'));
++                assert_eq!(
++                    is_autolink_trigger(byte, next),
++                    expected,
++                    "{byte:#x} {next:#x}"
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn every_range_of_short_bodies_over_the_deciding_bytes() {
++        let alphabet = [b'x', b'@', b':', b'w', b'.', b'/'];
++        for len in 0..=5u32 {
++            for mut code in 0..alphabet.len().pow(len) {
++                let mut body = Vec::new();
++                for _ in 0..len {
++                    body.push(alphabet[code % alphabet.len()]);
++                    code /= alphabet.len();
++                }
++                check_ranges(&body, &[]);
++            }
++        }
++    }
++
++    #[test]
++    fn a_needle_at_every_offset() {
++        let needles: [&[u8]; 9] = [
++            b"@", b":/", b"://", b"w.", b"www.", b":.", b"w/", b":", b"w",
++        ];
++        for len in [15, 16, 17, 31, 33, 63, 64, 65, 66, 80, 127, 128, 129, 150] {
++            for filler in [b'x', b'w', b':', b'.'] {
++                for needle in needles {
++                    for at in 0..=len - needle.len() {
++                        let mut body = vec![filler; len];
++                        body[at..at + needle.len()].copy_from_slice(needle);
++                        check_ranges(&body, &[at, at + needle.len()]);
++                    }
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn generated_mixes() {
++        let tokens = [
++            "@",
++            ":",
++            "/",
++            ".",
++            "w",
++            "www.",
++            "://",
++            "http://a.b",
++            "\n",
++            " ",
++            "x",
++            "word ",
++            "é",
++            "🙂",
++            "w/o",
++            "a:.b",
++            "user@example.com",
++            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
++        ];
++        let mut state = 0x5851_f42d_4c95_7f2du64;
++        let mut next = move || {
++            state = state
++                .wrapping_mul(6_364_136_223_846_793_005)
++                .wrapping_add(1_442_695_040_888_963_407);
++            (state >> 33) as usize
++        };
++        for _ in 0..3000 {
++            let len = next() % 40;
++            let mut body = String::new();
++            for _ in 0..len {
++                body.push_str(tokens[next() % tokens.len()]);
++            }
++            let points = [next() % (body.len() + 1), next() % (body.len() + 1)];
++            check_ranges(body.as_bytes(), &points);
++        }
++    }
++}
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index 3cb43397..d04217ff 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -227,10 +227,10 @@ pub struct Parser<'a> {
+     /// Parser options.
+     options: ParserOptions,
+ 
+-    /// Where the root body's GFM autolink trigger bytes are, collected by the
+-    /// root scan (see `root_scan.rs`) so the block-level pre-flight need not
+-    /// walk content that is a slice of that body again. Sub-parsers share it:
+-    /// the pre-flight checks by address whether content lies in the body.
++    /// Where the root source's GFM autolink trigger bytes are, recorded chunk
++    /// by chunk as blocks ask for them, so the block-level pre-flight need not
++    /// walk every block's content again. Sub-parsers share it: the pre-flight
++    /// checks by address whether content lies in the root source.
+     autolink_triggers: Option<&'a inline::AutolinkTriggers<'a>>,
+ 
+     /// Current position in the source.
+@@ -443,25 +443,19 @@ impl<'a> Parser<'a> {
+         let find_closer = cfg!(target_arch = "aarch64")
+             && phase == ParsePhase::Document
+             && (options.allow_link_refs || options.footnotes);
+-        // With GFM autolinks, the same loop also records the autolink
+-        // pre-flight's trigger bytes (see `root_scan/triggers.rs`).
+-        let collect_triggers = options.autolinks
+-            && phase == ParsePhase::Document
+-            && (options.allow_link_refs || options.footnotes)
+-            && inline::collects_triggers();
+-        let (source, source_map, definition_closer, triggers) = source_normalization::normalize(
+-            allocator,
+-            source,
+-            body_start,
+-            find_closer,
+-            collect_triggers,
+-        );
++        let (source, source_map, definition_closer) =
++            source_normalization::normalize(allocator, source, body_start, find_closer);
+         let mut parser = Self {
+             allocator,
+             source,
+             source_map,
+-            autolink_triggers: triggers.map(|offsets| {
+-                &*allocator.alloc(inline::AutolinkTriggers::new(source.as_bytes(), offsets))
++            // Filled lazily by the autolink pre-flight, over the chunks of the
++            // source its blocks lie in (see `gfm_autolink/triggers.rs`).
++            autolink_triggers: (options.autolinks
++                && phase == ParsePhase::Document
++                && inline::collects_triggers())
++            .then(|| {
++                &*allocator.alloc(inline::AutolinkTriggers::new(allocator, source.as_bytes()))
+             }),
+             front_matter: front_matter.map(|metadata| allocator.boxed(metadata)),
+             inline_note_seen: (phase == ParsePhase::Document
+@@ -553,8 +547,8 @@ impl<'a> Parser<'a> {
+             allocator: self.allocator,
+             source,
+             source_map: None,
+-            // Offsets into the root body stay valid for every sub-source: the
+-            // pre-flight only uses them for content that lies in that body.
++            // Offsets into the root source stay valid for every sub-source: the
++            // pre-flight only uses them for content that lies in that source.
+             autolink_triggers: self.autolink_triggers,
+             front_matter: None,
+             // Line comments are recognized on physical source lines, before
+diff --git a/src/parser/root_scan.rs b/src/parser/root_scan.rs
+index bf96fd14..2592cb30 100644
+--- a/src/parser/root_scan.rs
++++ b/src/parser/root_scan.rs
+@@ -33,20 +33,10 @@
+ //! source itself. Parsers that never run the pre-pass — sub-parsers, the
+ //! definition pass, and documents with neither link references nor footnotes
+ //! enabled — do not run this scan; normalization keeps its plain `memchr`.
+-//!
+-//! With GFM autolinks enabled, the root parse runs the variant in
+-//! [`triggers`] instead, which also records where the autolink pre-flight's
+-//! trigger bytes are, so the pre-flight does not walk every block again.
+ 
+ #[cfg(target_arch = "aarch64")]
+ use memchr::memchr;
+ 
+-mod triggers;
+-
+-#[cfg(test)]
+-pub(super) use self::triggers::is_autolink_trigger;
+-pub(super) use self::triggers::scan_collecting_triggers;
+-
+ #[cfg(any(test, not(target_arch = "aarch64")))]
+ use super::prepass::DEFINITION_CLOSER;
+ 
+diff --git a/src/parser/root_scan/triggers.rs b/src/parser/root_scan/triggers.rs
+deleted file mode 100644
+index 0065ec64..00000000
+--- a/src/parser/root_scan/triggers.rs
++++ /dev/null
+@@ -1,471 +0,0 @@
+-//! The root scan, collecting the GFM autolink pre-flight's trigger offsets on
+-//! the way.
+-//!
+-//! The pre-flight (`gfm_autolink::may_contain_autolink`) asks every block's
+-//! inline content for three needles: an `@`, a `://`, and a `www.`. It used to
+-//! answer by walking the content once more after the inline parse had read
+-//! it. The root scan already reads every byte of the body before block parsing
+-//! starts, and in prose the needles are rare, so it can write down where they
+-//! are for a few more vector operations per block: the pre-flight then visits
+-//! only the recorded offsets that fall inside a block's content (see
+-//! `gfm_autolink::AutolinkTriggers`).
+-//!
+-//! A trigger is any byte that [`is_autolink_trigger`] accepts: every `@`, and
+-//! every `:` or `w` that a `.` or `/` follows. That keeps every `:` that starts
+-//! a `://` and every `w` that ends a `www.`, and leaves out the colons of
+-//! ordinary prose and code (`Note:`, `a::b`, `key: value`), which are most of
+-//! them. The pre-flight's `mailto:` and `xmpp:` rule needs every colon, but
+-//! only matters when the content also holds an `@`; the pre-flight hands such
+-//! content to the full pass.
+-//!
+-//! The recorded offsets describe the unmodified body, like the rest of the
+-//! root scan's answer, and are only kept for a body without NUL.
+-
+-use crate::allocator::Vec;
+-
+-use super::RootScan;
+-
+-/// Whether `byte` is an autolink trigger, given the byte after it (NUL past
+-/// the end of the body).
+-///
+-/// `next | 1 == b'/'` holds for exactly `.` (0x2E) and `/` (0x2F), so the pair
+-/// test costs one compare in the vector loop. The two extra pairs it lets in,
+-/// `:.` and `w/`, are rare and cost only an entry the pre-flight skips.
+-#[inline]
+-pub(in crate::parser) const fn is_autolink_trigger(byte: u8, next: u8) -> bool {
+-    byte == b'@' || ((byte == b':' || byte == b'w') && next | 1 == b'/')
+-}
+-
+-/// [`super::scan`] over `body`, pushing the offset of every autolink trigger
+-/// onto `triggers` in ascending order.
+-///
+-/// When the answer is [`RootScan::Nul`], `triggers` holds an arbitrary prefix
+-/// of the offsets and has to be dropped: normalization rewrites that body.
+-/// Offsets are stored as `u32`, so `body` must be shorter than 4 GiB.
+-#[inline]
+-pub(in crate::parser) fn scan_collecting_triggers(
+-    body: &[u8],
+-    triggers: &mut Vec<'_, u32>,
+-) -> RootScan {
+-    debug_assert!(u32::try_from(body.len()).is_ok());
+-    #[cfg(target_arch = "aarch64")]
+-    {
+-        if body.len() >= 16 {
+-            return neon::scan(body, triggers);
+-        }
+-    }
+-    scan_bytewise(body, triggers)
+-}
+-
+-/// The collecting scan one byte at a time: the answer for a body shorter than
+-/// one vector, the tests' reference for the vector loop, and the whole scan
+-/// on other targets, where only the tests ask for it.
+-fn scan_bytewise(body: &[u8], triggers: &mut Vec<'_, u32>) -> RootScan {
+-    let mut first_closer = None;
+-    for (at, &byte) in body.iter().enumerate() {
+-        if byte == 0 {
+-            return RootScan::Nul(at);
+-        }
+-        let next = body.get(at + 1).copied().unwrap_or(0);
+-        if first_closer.is_none() && byte == b']' && next == b':' {
+-            first_closer = Some(at);
+-        }
+-        if is_autolink_trigger(byte, next) {
+-            triggers.push(at as u32);
+-        }
+-    }
+-    RootScan::Clean { first_closer }
+-}
+-
+-/// The NEON loop of the root scan (see the parent module) with the trigger
+-/// test added to every block.
+-///
+-/// The trigger test is eight vector operations per 16 bytes: compares for `@`,
+-/// `:` and `w`, one for the byte after each lane (`next | 1 == b'/'`, on the
+-/// lookahead vector the loop already loads for its `]:` test), and four to
+-/// combine them. Four blocks still share one branch: it is taken for a group
+-/// that holds a NUL, a `]:` or a trigger, and only the first two leave the
+-/// loop.
+-///
+-/// The scan runs in two phases. Until the first `]:` it stops at a NUL or at
+-/// that `]:`; after it, only at a NUL, where the plain root scan hands the rest
+-/// of the body to `memchr`. A phase that stops in a block has recorded the
+-/// triggers before that block and none in it, so the next phase starts at that
+-/// block and nothing is recorded twice.
+-#[cfg(target_arch = "aarch64")]
+-#[allow(unsafe_code)]
+-mod neon {
+-    use std::arch::aarch64::*;
+-
+-    use crate::allocator::Vec;
+-
+-    use super::super::RootScan;
+-
+-    /// Where one phase stopped.
+-    enum Stop {
+-        /// A NUL at this offset, the first in the body.
+-        Nul(usize),
+-        /// The first `]:` of the body starts at this offset.
+-        Closer(usize),
+-        /// The end of the body.
+-        End,
+-    }
+-
+-    pub(super) fn scan(body: &[u8], triggers: &mut Vec<'_, u32>) -> RootScan {
+-        let mut at = 0;
+-        let first_closer = match phase::<true>(body, &mut at, triggers) {
+-            Stop::Nul(nul) => return RootScan::Nul(nul),
+-            Stop::End => return RootScan::Clean { first_closer: None },
+-            Stop::Closer(closer) => closer,
+-        };
+-        match phase::<false>(body, &mut at, triggers) {
+-            Stop::Nul(nul) => RootScan::Nul(nul),
+-            Stop::Closer(_) | Stop::End => RootScan::Clean {
+-                first_closer: Some(first_closer),
+-            },
+-        }
+-    }
+-
+-    /// Pushes `from` plus the index of every lane set in `mask`, a lane mask
+-    /// with four bits per lane.
+-    #[inline]
+-    fn record(mask: u64, from: usize, triggers: &mut Vec<'_, u32>) {
+-        let mut bits = mask & 0x8888_8888_8888_8888;
+-        while bits != 0 {
+-            triggers.push((from + (bits.trailing_zeros() / 4) as usize) as u32);
+-            bits &= bits - 1;
+-        }
+-    }
+-
+-    /// Scans from `*at`, recording triggers, until a NUL, the first `]:`
+-    /// (with `CLOSER` only) or the end of the body. On a stop, `*at` is the
+-    /// start of the block that holds it, whose triggers are not recorded yet.
+-    fn phase<const CLOSER: bool>(body: &[u8], at: &mut usize, triggers: &mut Vec<'_, u32>) -> Stop {
+-        let len = body.len();
+-        let ptr = body.as_ptr();
+-        debug_assert!(len >= 16 && *at < len);
+-        // SAFETY: a block at `from` loads `from..from + 16`, and its lookahead
+-        // loads `from + 1..from + 17`. The grouped loop runs only while the
+-        // lookahead of its fourth block ends in bounds (`at + 65 <= len`), and
+-        // the block loop only while its own does (`at + 17 <= len`). The last
+-        // vector loads `len - 16..len`, and `len >= 16`.
+-        unsafe {
+-            let close = vdupq_n_u8(b']');
+-            let colon = vdupq_n_u8(b':');
+-            let at_sign = vdupq_n_u8(b'@');
+-            let letter_w = vdupq_n_u8(b'w');
+-            let one = vdupq_n_u8(1);
+-            let slash = vdupq_n_u8(b'/');
+-            // Four bits per lane, so the lowest set bit names the first lane.
+-            let lanes = |mask: uint8x16_t| {
+-                vget_lane_u64(
+-                    vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(mask), 4)),
+-                    0,
+-                )
+-            };
+-            // 0xFF in lane `j` when `here[j]` is a trigger and `next[j]` the
+-            // byte after it (see `is_autolink_trigger`).
+-            let trigger = |here: uint8x16_t, next: uint8x16_t| {
+-                vorrq_u8(
+-                    vceqq_u8(here, at_sign),
+-                    vandq_u8(
+-                        vorrq_u8(vceqq_u8(here, colon), vceqq_u8(here, letter_w)),
+-                        vceqq_u8(vorrq_u8(next, one), slash),
+-                    ),
+-                )
+-            };
+-            // 0xFF in lane `j` when `here[j]` starts a `]:`.
+-            let closer = |here: uint8x16_t, next: uint8x16_t| {
+-                vandq_u8(vceqq_u8(here, close), vceqq_u8(next, colon))
+-            };
+-            // 0xFF in lane `j` when `here[j]` stops this phase.
+-            let stops = |here: uint8x16_t, next: uint8x16_t| {
+-                let nul = vceqzq_u8(here);
+-                if CLOSER {
+-                    vorrq_u8(nul, closer(here, next))
+-                } else {
+-                    nul
+-                }
+-            };
+-            // The offset a stop mask names, as a phase result.
+-            let stop_at = |first: usize| {
+-                if body[first] == 0 {
+-                    Stop::Nul(first)
+-                } else {
+-                    Stop::Closer(first)
+-                }
+-            };
+-
+-            while *at + 65 <= len {
+-                let from = *at;
+-                let a = vld1q_u8(ptr.add(from));
+-                let b = vld1q_u8(ptr.add(from + 16));
+-                let c = vld1q_u8(ptr.add(from + 32));
+-                let d = vld1q_u8(ptr.add(from + 48));
+-                let next_a = vld1q_u8(ptr.add(from + 1));
+-                let next_b = vld1q_u8(ptr.add(from + 17));
+-                let next_c = vld1q_u8(ptr.add(from + 33));
+-                let next_d = vld1q_u8(ptr.add(from + 49));
+-                // A NUL anywhere in the group is the minimum of its lane.
+-                let nul = vceqzq_u8(vminq_u8(vminq_u8(a, b), vminq_u8(c, d)));
+-                let stop = if CLOSER {
+-                    vorrq_u8(
+-                        nul,
+-                        vorrq_u8(
+-                            vorrq_u8(closer(a, next_a), closer(b, next_b)),
+-                            vorrq_u8(closer(c, next_c), closer(d, next_d)),
+-                        ),
+-                    )
+-                } else {
+-                    nul
+-                };
+-                let hit_a = trigger(a, next_a);
+-                let hit_b = trigger(b, next_b);
+-                let hit_c = trigger(c, next_c);
+-                let hit_d = trigger(d, next_d);
+-                let any = vorrq_u8(
+-                    stop,
+-                    vorrq_u8(vorrq_u8(hit_a, hit_b), vorrq_u8(hit_c, hit_d)),
+-                );
+-                if lanes(any) != 0 {
+-                    if lanes(stop) != 0 {
+-                        // The block loop below names the stop and records the
+-                        // triggers of the blocks in front of it.
+-                        break;
+-                    }
+-                    record(lanes(hit_a), from, triggers);
+-                    record(lanes(hit_b), from + 16, triggers);
+-                    record(lanes(hit_c), from + 32, triggers);
+-                    record(lanes(hit_d), from + 48, triggers);
+-                }
+-                *at += 64;
+-            }
+-            while *at + 17 <= len {
+-                let here = vld1q_u8(ptr.add(*at));
+-                let next = vld1q_u8(ptr.add(*at + 1));
+-                let stop = lanes(stops(here, next));
+-                if stop != 0 {
+-                    return stop_at(*at + (stop.trailing_zeros() / 4) as usize);
+-                }
+-                record(lanes(trigger(here, next)), *at, triggers);
+-                *at += 16;
+-            }
+-            // One vector over the last 16 bytes answers for the 1 to 16 bytes
+-            // the loops left, as in the plain scan. The lanes in front of `at`
+-            // hold no stop, and their triggers are recorded already. Nothing
+-            // follows the last lane, so a zero lane stands in for its
+-            // lookahead: its byte starts no `]:` and is no trigger.
+-            let base = len - 16;
+-            let here = vld1q_u8(ptr.add(base));
+-            let next = vextq_u8::<1>(here, vdupq_n_u8(0));
+-            let stop = lanes(stops(here, next));
+-            if stop != 0 {
+-                return stop_at(base + (stop.trailing_zeros() / 4) as usize);
+-            }
+-            let seen = *at - base;
+-            record(
+-                lanes(trigger(here, next)) & (u64::MAX << (4 * seen)),
+-                base,
+-                triggers,
+-            );
+-            *at = len;
+-            Stop::End
+-        }
+-    }
+-}
+-
+-#[cfg(test)]
+-mod tests {
+-    // Owned buffers keep the test oracle independent of production storage.
+-    #![allow(
+-        clippy::disallowed_macros,
+-        clippy::disallowed_methods,
+-        clippy::disallowed_types
+-    )]
+-
+-    use crate::allocator::Allocator;
+-
+-    use super::super::{RootScan, scan};
+-    use super::{is_autolink_trigger, scan_bytewise, scan_collecting_triggers};
+-
+-    /// The collecting scan's definition, one byte at a time: the plain root
+-    /// scan's answer, and every trigger offset of a body without NUL.
+-    fn oracle(body: &[u8]) -> (RootScan, Option<Vec<u32>>) {
+-        let answer = scan(body);
+-        let triggers = matches!(answer, RootScan::Clean { .. }).then(|| {
+-            (0..body.len())
+-                .filter(|&at| is_autolink_trigger(body[at], body.get(at + 1).copied().unwrap_or(0)))
+-                .map(|at| at as u32)
+-                .collect()
+-        });
+-        (answer, triggers)
+-    }
+-
+-    #[track_caller]
+-    fn check(body: &[u8]) {
+-        let (expected, expected_triggers) = oracle(body);
+-        let shown = String::from_utf8_lossy(body);
+-        let allocator = Allocator::new();
+-        for (label, collect) in [
+-            (
+-                "collecting scan",
+-                scan_collecting_triggers
+-                    as fn(&[u8], &mut crate::allocator::Vec<'_, u32>) -> RootScan,
+-            ),
+-            ("bytewise scan", scan_bytewise),
+-        ] {
+-            let mut triggers = allocator.new_vec();
+-            let answer = collect(body, &mut triggers);
+-            assert_eq!(answer, expected, "{label} of {shown:?}");
+-            if let Some(expected_triggers) = &expected_triggers {
+-                assert_eq!(
+-                    triggers.as_slice(),
+-                    expected_triggers.as_slice(),
+-                    "{label} triggers of {shown:?}"
+-                );
+-            }
+-        }
+-    }
+-
+-    #[test]
+-    fn the_trigger_bytes() {
+-        for byte in 0..=u8::MAX {
+-            for next in 0..=u8::MAX {
+-                let expected =
+-                    byte == b'@' || (matches!(byte, b':' | b'w') && matches!(next, b'.' | b'/'));
+-                assert_eq!(
+-                    is_autolink_trigger(byte, next),
+-                    expected,
+-                    "{byte:#x} {next:#x}"
+-                );
+-            }
+-        }
+-    }
+-
+-    #[test]
+-    fn every_short_body_over_the_deciding_bytes() {
+-        // Exhaustive over the bytes that decide an answer, up to six bytes.
+-        let alphabet = [b'x', b']', b':', 0, b'@', b'w', b'.', b'/'];
+-        for len in 0..=6u32 {
+-            for mut code in 0..alphabet.len().pow(len) {
+-                let mut body = Vec::new();
+-                for _ in 0..len {
+-                    body.push(alphabet[code % alphabet.len()]);
+-                    code /= alphabet.len();
+-                }
+-                check(&body);
+-            }
+-        }
+-    }
+-
+-    /// Lengths that cover bodies shorter than one vector, one block with and
+-    /// without its lookahead byte, several four-block groups, and the last
+-    /// vector after every number of bytes the loops leave.
+-    const LENGTHS: std::ops::RangeInclusive<usize> = 0..=200;
+-
+-    #[test]
+-    fn a_needle_at_every_offset() {
+-        let needles: [&[u8]; 12] = [
+-            b"@", b":/", b"://", b"w.", b"www.", b":.", b"w/", b"]:", b"\0", b"]", b":", b"w",
+-        ];
+-        for len in LENGTHS {
+-            for filler in [b'x', b'w', b':', b'.', b'/'] {
+-                for needle in needles {
+-                    for at in 0..=len.saturating_sub(needle.len()) {
+-                        if at + needle.len() > len {
+-                            continue;
+-                        }
+-                        let mut body = vec![filler; len];
+-                        body[at..at + needle.len()].copy_from_slice(needle);
+-                        check(&body);
+-                    }
+-                }
+-            }
+-        }
+-    }
+-
+-    #[test]
+-    fn a_closer_or_nul_among_triggers() {
+-        // Triggers before, inside and after the block that stops the first
+-        // phase, and a NUL before or after the first `]:`.
+-        for len in LENGTHS {
+-            for stop in 0..len.saturating_sub(1) {
+-                for stopper in [&b"]:"[..], b"\0"] {
+-                    let mut body: Vec<u8> = (0..len)
+-                        .map(|at| if at % 7 == 3 { b'@' } else { b'w' })
+-                        .collect();
+-                    for at in (0..len).filter(|at| at % 11 == 5) {
+-                        body[at] = b'.';
+-                    }
+-                    body[stop..stop + stopper.len()].copy_from_slice(stopper);
+-                    check(&body);
+-                    if stop + 9 < len {
+-                        body[stop + 7] = 0;
+-                        check(&body);
+-                    }
+-                }
+-            }
+-        }
+-    }
+-
+-    #[test]
+-    fn generated_mixes() {
+-        let tokens = [
+-            "@",
+-            ":",
+-            "/",
+-            ".",
+-            "w",
+-            "www.",
+-            "://",
+-            "http://a.b",
+-            "]:",
+-            "]",
+-            "[",
+-            "\0",
+-            "\n",
+-            " ",
+-            "x",
+-            "word ",
+-            "é",
+-            "🙂",
+-            "w/o",
+-            "a:.b",
+-            "user@example.com",
+-            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+-        ];
+-        let mut state = 0x5851_f42d_4c95_7f2du64;
+-        let mut next = move || {
+-            state = state
+-                .wrapping_mul(6_364_136_223_846_793_005)
+-                .wrapping_add(1_442_695_040_888_963_407);
+-            (state >> 33) as usize
+-        };
+-        for _ in 0..6000 {
+-            let len = next() % 80;
+-            // A NUL ends the collection, so most mixes leave it out.
+-            let rare = next() % 4 == 0;
+-            let mut body = String::new();
+-            for _ in 0..len {
+-                let token = tokens[next() % tokens.len()];
+-                if rare || !matches!(token, "\0" | "]:") {
+-                    body.push_str(token);
+-                }
+-            }
+-            check(body.as_bytes());
+-        }
+-    }
+-
+-    #[test]
+-    fn long_bodies() {
+-        let prose = "Plain prose with [links](https://example.com) and `code: spans`, \
+-                     now with www.example.org and a@b.c.\n";
+-        let long = prose.repeat(512);
+-        check(long.as_bytes());
+-        check(format!("{long}]:").as_bytes());
+-        check(format!("{long}\0").as_bytes());
+-        check(format!("[a]: /url\n{long}").as_bytes());
+-        check(format!("{long}[a]: /url\n{long}").as_bytes());
+-        check(format!("{long}[a]: /url\n{long}\0{long}").as_bytes());
+-    }
+-}
+diff --git a/src/parser/source_normalization.rs b/src/parser/source_normalization.rs
+index 5b5d696f..c409bb49 100644
+--- a/src/parser/source_normalization.rs
++++ b/src/parser/source_normalization.rs
+@@ -2,9 +2,8 @@
+ //!
+ //! Finding NUL is a pass over the whole body. For the root document that runs
+ //! the definition pre-pass, the same pass also finds the pre-pass's first
+-//! `]:` (see [`root_scan`](super::root_scan)), and with GFM autolinks records
+-//! where the autolink pre-flight's trigger bytes are; every other parser keeps
+-//! the plain `memchr`.
++//! `]:` (see [`root_scan`](super::root_scan)); every other parser keeps the
++//! plain `memchr`.
+ use crate::allocator::{Allocator, Vec};
+ use crate::ast::Span;
+ 
+@@ -28,23 +27,15 @@ pub(super) struct NormalizedSourceMap<'a> {
+ /// body without NUL: replacing one moves every later offset, so a body that
+ /// holds one reports [`DefinitionCloser::Unscanned`], as does every call
+ /// without `find_closer`.
+-///
+-/// With `collect_triggers`, the pass also records the offsets of the GFM
+-/// autolink pre-flight's trigger bytes (see
+-/// [`scan_collecting_triggers`](root_scan::scan_collecting_triggers)) and
+-/// answers the `]:` question too. They are returned only for a body without
+-/// NUL, whose normalized source is the body itself, borrowed.
+ pub(super) fn normalize<'a>(
+     allocator: &'a Allocator,
+     source: &'a str,
+     body_start: usize,
+     find_closer: bool,
+-    collect_triggers: bool,
+ ) -> (
+     &'a str,
+     Option<&'a NormalizedSourceMap<'a>>,
+     DefinitionCloser,
+-    Option<&'a [u32]>,
+ ) {
+     let bytes = source.as_bytes();
+     // Only a BOM at the original document start is an encoding marker.
+@@ -55,28 +46,16 @@ pub(super) fn normalize<'a>(
+         usize::from(bytes.starts_with(b"\xEF\xBB\xBF")) * 3
+     };
+     let body = &bytes[source_start..];
+-    let (first_nul, closer, triggers) = if collect_triggers && u32::try_from(body.len()).is_ok() {
+-        let mut offsets = allocator.new_vec();
+-        match root_scan::scan_collecting_triggers(body, &mut offsets) {
+-            // A NUL rewrites the body, which moves the offsets recorded.
+-            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned, None),
+-            RootScan::Clean { first_closer } => (
+-                None,
+-                first_closer.map_or(DefinitionCloser::Absent, DefinitionCloser::At),
+-                Some(offsets.into_bump_slice()),
+-            ),
+-        }
+-    } else if find_closer {
++    let (first_nul, closer) = if find_closer {
+         match root_scan::scan(body) {
+-            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned, None),
++            RootScan::Nul(offset) => (Some(offset), DefinitionCloser::Unscanned),
+             RootScan::Clean { first_closer } => (
+                 None,
+                 first_closer.map_or(DefinitionCloser::Absent, DefinitionCloser::At),
+-                None,
+             ),
+         }
+     } else {
+-        (memchr::memchr(0, body), DefinitionCloser::Unscanned, None)
++        (memchr::memchr(0, body), DefinitionCloser::Unscanned)
+     };
+     let (normalized, map) = replace_nul(
+         allocator,
+@@ -84,8 +63,7 @@ pub(super) fn normalize<'a>(
+         source_start,
+         first_nul.map(|offset| source_start + offset),
+     );
+-    debug_assert!(triggers.is_none() || std::ptr::eq(normalized.as_bytes(), body));
+-    (normalized, map, closer, triggers)
++    (normalized, map, closer)
+ }
+ 
+ /// The normalized source and its map, given where the body starts and where
+@@ -196,38 +174,11 @@ mod tests {
+     #[track_caller]
+     fn check(source: &str, body_start: usize, label: &str) {
+         let allocator = Allocator::new();
+-        let (plain, plain_map, unscanned, none) =
+-            normalize(&allocator, source, body_start, false, false);
++        let (plain, plain_map, unscanned) = normalize(&allocator, source, body_start, false);
+         assert_eq!(unscanned, DefinitionCloser::Unscanned, "{label}");
+-        assert_eq!(none, None, "{label}");
+-        let (root, root_map, closer, none) = normalize(&allocator, source, body_start, true, false);
++        let (root, root_map, closer) = normalize(&allocator, source, body_start, true);
+         assert_eq!(root, plain, "{label}");
+         assert_eq!(map_fields(root_map), map_fields(plain_map), "{label}");
+-        assert_eq!(none, None, "{label}");
+-        // Collecting the autolink triggers answers the same question with the
+-        // same pass, whether or not the closer was asked for.
+-        for find_closer in [false, true] {
+-            let (collected, collected_map, collected_closer, triggers) =
+-                normalize(&allocator, source, body_start, find_closer, true);
+-            assert_eq!(collected, plain, "{label}");
+-            assert_eq!(map_fields(collected_map), map_fields(plain_map), "{label}");
+-            assert_eq!(collected_closer, closer, "{label}");
+-            if plain_map.is_some_and(|map| !map.replacements.is_empty()) {
+-                assert_eq!(triggers, None, "{label}");
+-            } else {
+-                let bytes = plain.as_bytes();
+-                let expected: Vec<u32> = (0..bytes.len())
+-                    .filter(|&at| {
+-                        crate::parser::root_scan::is_autolink_trigger(
+-                            bytes[at],
+-                            bytes.get(at + 1).copied().unwrap_or(0),
+-                        )
+-                    })
+-                    .map(|at| at as u32)
+-                    .collect();
+-                assert_eq!(triggers, Some(expected.as_slice()), "{label}");
+-            }
+-        }
+         if plain_map.is_some_and(|map| !map.replacements.is_empty()) {
+             // A NUL was replaced, so the pre-pass searches the rewritten body.
+             assert_eq!(closer, DefinitionCloser::Unscanned, "{label}");
+-- 
+2.55.0
+

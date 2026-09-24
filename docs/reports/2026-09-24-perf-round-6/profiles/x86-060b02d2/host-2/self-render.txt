@@ -1,0 +1,38 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 19K of event 'task-clock:ppp'
+# Event count (approx.): 20007006987
+#
+# Overhead  Symbol                                                                                                                                      IPC   [IPC Coverage]
+# ........  ..........................................................................................................................................  ....................
+#
+    23.39%  [.] ferromark::renderer::html::escape::nibble::first_flagged_ssse3                                                                          -      -            
+    22.79%  [.] ferromark::renderer::html::escape::escape_into                                                                                          -      -            
+    14.91%  [.] ferromark::renderer::html::renderer::HtmlRenderer::render_node                                                                          -      -            
+     5.18%  [.] ferromark::renderer::html::heading::slugify_heading_into                                                                                -      -            
+     4.07%  [.] ferromark::renderer::html::escape::push_run_long                                                                                        -      -            
+     3.25%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_inline_node                 -      -            
+     2.92%  [.] hashbrown::map::HashMap<K,V,S,A>::insert                                                                                                -      -            
+     2.75%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_html_value                  -      -            
+     2.59%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw_avx2                                                                                  -      -            
+     2.52%  [.] ferromark::renderer::html::renderer::blocks::<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_table_row_with_header      -      -            
+     2.32%  [.] ferromark::renderer::html::escape::url::write_url_segment                                                                               -      -            
+     1.89%  [.] ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed                                                                      -      -            
+     1.33%  [.] hashbrown::map::HashMap<K,V,S,A>::get                                                                                                   -      -            
+     1.23%  [.] ferromark::renderer::html::escape::write_url_escaped_into                                                                               -      -            
+     1.19%  [.] ferromark::renderer::html::renderer::blocks::<impl ferromark::renderer::html::renderer::HtmlRenderer>::render_list_item_with_tightness  -      -            
+     1.00%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw                                                                                       -      -            
+     0.95%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::sanitized_url                     -      -            
+     0.70%  [.] memchr::arch::x86_64::memchr::memchr_raw::find_avx2                                                                                     -      -            
+     0.60%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_heading_id                  -      -            
+     0.54%  [.] ferromark_profile::main                                                                                                                 -      -            
+     0.52%  [.] ferromark::renderer::html::heading::HeadingIdPlanner::plan_into                                                                         -      -            
+     0.39%  [.] 0x00000000001a1640                                                                                                                      -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

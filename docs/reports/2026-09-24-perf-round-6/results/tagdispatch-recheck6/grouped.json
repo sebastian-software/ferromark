@@ -1,0 +1,2508 @@
+{
+  "all": {
+    "fresh": {
+      "cases": 5,
+      "geometric_mean": 1.0374888694778865,
+      "round_geometric_means": [
+        1.042895201779403,
+        1.0014248783311037,
+        1.0558371183826645
+      ],
+      "measured_above_1": 4,
+      "measured_below_1": 1,
+      "within_one_percent_ratio": 2,
+      "worst": [
+        {
+          "case": "rust-book-ch17-00-async-await",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "fresh",
+          "baseline_ns_per_document": 10425.803125,
+          "candidate_ns_per_document": 14550.993095930233,
+          "baseline_over_candidate_median": 0.9912647554015145,
+          "baseline_over_candidate_min": 0.3352956455322947,
+          "baseline_over_candidate_max": 1.5401546456382034,
+          "pairs": 21,
+          "round_medians": [
+            0.8888508905409461,
+            0.9564531221084965,
+            1.0078725971910265
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "fresh",
+          "baseline_ns_per_document": 19864.397321428572,
+          "candidate_ns_per_document": 19697.85595703125,
+          "baseline_over_candidate_median": 1.00034935045571,
+          "baseline_over_candidate_min": 0.5877632955666893,
+          "baseline_over_candidate_max": 1.9420994447466517,
+          "pairs": 21,
+          "round_medians": [
+            1.00034935045571,
+            0.9810428554655395,
+            1.0016548197212285
+          ]
+        },
+        {
+          "case": "vue-docs-slots",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "fresh",
+          "baseline_ns_per_document": 33359.47779605263,
+          "candidate_ns_per_document": 31525.78125,
+          "baseline_over_candidate_median": 1.0177364247693592,
+          "baseline_over_candidate_min": 0.26193831741212686,
+          "baseline_over_candidate_max": 1.998917787000667,
+          "pairs": 21,
+          "round_medians": [
+            0.9814695951121225,
+            1.2087172797730097,
+            1.0878083115757502
+          ]
+        },
+        {
+          "case": "comment-table",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "fresh",
+          "baseline_ns_per_document": 1811.5961050724638,
+          "candidate_ns_per_document": 2008.5049761146497,
+          "baseline_over_candidate_median": 1.0209602627934893,
+          "baseline_over_candidate_min": 0.29580853352347575,
+          "baseline_over_candidate_max": 2.5786175627389354,
+          "pairs": 21,
+          "round_medians": [
+            1.211753202382878,
+            0.892201935426626,
+            0.9935041606354583
+          ]
+        },
+        {
+          "case": "typescript-handbook-compiler-options",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "fresh",
+          "baseline_ns_per_document": 90796.6875,
+          "candidate_ns_per_document": 83494.09791666667,
+          "baseline_over_candidate_median": 1.1666261689844726,
+          "baseline_over_candidate_min": 0.6232424305623994,
+          "baseline_over_candidate_max": 1.5133496956684347,
+          "pairs": 21,
+          "round_medians": [
+            1.1666261689844726,
+            0.9952961437973401,
+            1.2026488577924976
+          ]
+        }
+      ],
+      "best": [
+        {
+          "case": "typescript-handbook-compiler-options",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "fresh",
+          "baseline_ns_per_document": 90796.6875,
+          "candidate_ns_per_document": 83494.09791666667,
+          "baseline_over_candidate_median": 1.1666261689844726,
+          "baseline_over_candidate_min": 0.6232424305623994,
+          "baseline_over_candidate_max": 1.5133496956684347,
+          "pairs": 21,
+          "round_medians": [
+            1.1666261689844726,
+            0.9952961437973401,
+            1.2026488577924976
+          ]
+        },
+        {
+          "case": "comment-table",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "fresh",
+          "baseline_ns_per_document": 1811.5961050724638,
+          "candidate_ns_per_document": 2008.5049761146497,
+          "baseline_over_candidate_median": 1.0209602627934893,
+          "baseline_over_candidate_min": 0.29580853352347575,
+          "baseline_over_candidate_max": 2.5786175627389354,
+          "pairs": 21,
+          "round_medians": [
+            1.211753202382878,
+            0.892201935426626,
+            0.9935041606354583
+          ]
+        },
+        {
+          "case": "vue-docs-slots",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "fresh",
+          "baseline_ns_per_document": 33359.47779605263,
+          "candidate_ns_per_document": 31525.78125,
+          "baseline_over_candidate_median": 1.0177364247693592,
+          "baseline_over_candidate_min": 0.26193831741212686,
+          "baseline_over_candidate_max": 1.998917787000667,
+          "pairs": 21,
+          "round_medians": [
+            0.9814695951121225,
+            1.2087172797730097,
+            1.0878083115757502
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "fresh",
+          "baseline_ns_per_document": 19864.397321428572,
+          "candidate_ns_per_document": 19697.85595703125,
+          "baseline_over_candidate_median": 1.00034935045571,
+          "baseline_over_candidate_min": 0.5877632955666893,
+          "baseline_over_candidate_max": 1.9420994447466517,
+          "pairs": 21,
+          "round_medians": [
+            1.00034935045571,
+            0.9810428554655395,
+            1.0016548197212285
+          ]
+        },
+        {
+          "case": "rust-book-ch17-00-async-await",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "fresh",
+          "baseline_ns_per_document": 10425.803125,
+          "candidate_ns_per_document": 14550.993095930233,
+          "baseline_over_candidate_median": 0.9912647554015145,
+          "baseline_over_candidate_min": 0.3352956455322947,
+          "baseline_over_candidate_max": 1.5401546456382034,
+          "pairs": 21,
+          "round_medians": [
+            0.8888508905409461,
+            0.9564531221084965,
+            1.0078725971910265
+          ]
+        }
+      ]
+    },
+    "reuse": {
+      "cases": 5,
+      "geometric_mean": 1.0277347193684658,
+      "round_geometric_means": [
+        1.080021016427958,
+        1.0524689009648063,
+        0.9315861391610448
+      ],
+      "measured_above_1": 3,
+      "measured_below_1": 2,
+      "within_one_percent_ratio": 1,
+      "worst": [
+        {
+          "case": "vue-docs-slots",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "reuse",
+          "baseline_ns_per_document": 48237.68028846154,
+          "candidate_ns_per_document": 46163.323958333334,
+          "baseline_over_candidate_median": 0.9033909992445505,
+          "baseline_over_candidate_min": 0.6067851652379264,
+          "baseline_over_candidate_max": 1.6781449721844706,
+          "pairs": 21,
+          "round_medians": [
+            1.00313203887053,
+            0.899706468207728,
+            0.7026693473827289
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "reuse",
+          "baseline_ns_per_document": 20828.818044354837,
+          "candidate_ns_per_document": 18410.63511029412,
+          "baseline_over_candidate_median": 0.9757198203659496,
+          "baseline_over_candidate_min": 0.5873843928777357,
+          "baseline_over_candidate_max": 1.4476377625317092,
+          "pairs": 21,
+          "round_medians": [
+            0.9757198203659496,
+            0.95629896139752,
+            0.9795434760882739
+          ]
+        },
+        {
+          "case": "comment-table",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "reuse",
+          "baseline_ns_per_document": 1024.132806101556,
+          "candidate_ns_per_document": 962.1885096153846,
+          "baseline_over_candidate_median": 1.0091632852517984,
+          "baseline_over_candidate_min": 0.6392864570618081,
+          "baseline_over_candidate_max": 1.6085403567606278,
+          "pairs": 21,
+          "round_medians": [
+            0.996765460241981,
+            1.0542793737911236,
+            1.051977198264431
+          ]
+        },
+        {
+          "case": "rust-book-ch17-00-async-await",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "reuse",
+          "baseline_ns_per_document": 15865.396875,
+          "candidate_ns_per_document": 13922.930902777778,
+          "baseline_over_candidate_median": 1.0474153944560933,
+          "baseline_over_candidate_min": 0.2885242378639285,
+          "baseline_over_candidate_max": 2.9243110803280663,
+          "pairs": 21,
+          "round_medians": [
+            1.0474153944560933,
+            1.1339768749440506,
+            0.8533509329666412
+          ]
+        },
+        {
+          "case": "typescript-handbook-compiler-options",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "reuse",
+          "baseline_ns_per_document": 134503.90625,
+          "candidate_ns_per_document": 100459.53365384616,
+          "baseline_over_candidate_median": 1.2306196926720214,
+          "baseline_over_candidate_min": 0.6158299575036718,
+          "baseline_over_candidate_max": 2.213653760823712,
+          "pairs": 21,
+          "round_medians": [
+            1.4380231292510046,
+            1.2554283293412736,
+            1.1355502870487895
+          ]
+        }
+      ],
+      "best": [
+        {
+          "case": "typescript-handbook-compiler-options",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "reuse",
+          "baseline_ns_per_document": 134503.90625,
+          "candidate_ns_per_document": 100459.53365384616,
+          "baseline_over_candidate_median": 1.2306196926720214,
+          "baseline_over_candidate_min": 0.6158299575036718,
+          "baseline_over_candidate_max": 2.213653760823712,
+          "pairs": 21,
+          "round_medians": [
+            1.4380231292510046,
+            1.2554283293412736,
+            1.1355502870487895
+          ]
+        },
+        {
+          "case": "rust-book-ch17-00-async-await",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "reuse",
+          "baseline_ns_per_document": 15865.396875,
+          "candidate_ns_per_document": 13922.930902777778,
+          "baseline_over_candidate_median": 1.0474153944560933,
+          "baseline_over_candidate_min": 0.2885242378639285,
+          "baseline_over_candidate_max": 2.9243110803280663,
+          "pairs": 21,
+          "round_medians": [
+            1.0474153944560933,
+            1.1339768749440506,
+            0.8533509329666412
+          ]
+        },
+        {
+          "case": "comment-table",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "reuse",
+          "baseline_ns_per_document": 1024.132806101556,
+          "candidate_ns_per_document": 962.1885096153846,
+          "baseline_over_candidate_median": 1.0091632852517984,
+          "baseline_over_candidate_min": 0.6392864570618081,
+          "baseline_over_candidate_max": 1.6085403567606278,
+          "pairs": 21,
+          "round_medians": [
+            0.996765460241981,
+            1.0542793737911236,
+            1.051977198264431
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "reuse",
+          "baseline_ns_per_document": 20828.818044354837,
+          "candidate_ns_per_document": 18410.63511029412,
+          "baseline_over_candidate_median": 0.9757198203659496,
+          "baseline_over_candidate_min": 0.5873843928777357,
+          "baseline_over_candidate_max": 1.4476377625317092,
+          "pairs": 21,
+          "round_medians": [
+            0.9757198203659496,
+            0.95629896139752,
+            0.9795434760882739
+          ]
+        },
+        {
+          "case": "vue-docs-slots",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "reuse",
+          "baseline_ns_per_document": 48237.68028846154,
+          "candidate_ns_per_document": 46163.323958333334,
+          "baseline_over_candidate_median": 0.9033909992445505,
+          "baseline_over_candidate_min": 0.6067851652379264,
+          "baseline_over_candidate_max": 1.6781449721844706,
+          "pairs": 21,
+          "round_medians": [
+            1.00313203887053,
+            0.899706468207728,
+            0.7026693473827289
+          ]
+        }
+      ]
+    },
+    "parse": {
+      "cases": 5,
+      "geometric_mean": 0.9980363051846382,
+      "round_geometric_means": [
+        1.0163461157437634,
+        1.0256194005359194,
+        0.9229154629847707
+      ],
+      "measured_above_1": 3,
+      "measured_below_1": 2,
+      "within_one_percent_ratio": 2,
+      "worst": [
+        {
+          "case": "comment-table",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "parse",
+          "baseline_ns_per_document": 803.9405948553054,
+          "candidate_ns_per_document": 794.7716346153846,
+          "baseline_over_candidate_median": 0.9711208912615411,
+          "baseline_over_candidate_min": 0.7015634577144212,
+          "baseline_over_candidate_max": 1.0756733065101083,
+          "pairs": 21,
+          "round_medians": [
+            0.9935882825705488,
+            1.0045654756674594,
+            0.8264726585746294
+          ]
+        },
+        {
+          "case": "rust-book-ch17-00-async-await",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "parse",
+          "baseline_ns_per_document": 12259.484681372549,
+          "candidate_ns_per_document": 12302.58118872549,
+          "baseline_over_candidate_median": 0.9832432185833079,
+          "baseline_over_candidate_min": 0.5819426993190328,
+          "baseline_over_candidate_max": 1.7736121976155648,
+          "pairs": 21,
+          "round_medians": [
+            1.0322730514690706,
+            0.9317391732044149,
+            0.9822493014756019
+          ]
+        },
+        {
+          "case": "vue-docs-slots",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "parse",
+          "baseline_ns_per_document": 16465.152138157893,
+          "candidate_ns_per_document": 17739.289612676057,
+          "baseline_over_candidate_median": 1.0066155673047634,
+          "baseline_over_candidate_min": 0.5002028755370383,
+          "baseline_over_candidate_max": 2.398364265550772,
+          "pairs": 21,
+          "round_medians": [
+            1.0066315628434488,
+            0.9805207355248544,
+            0.8863064774704952
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "parse",
+          "baseline_ns_per_document": 14940.952034883721,
+          "candidate_ns_per_document": 14834.926470588236,
+          "baseline_over_candidate_median": 1.00679819934921,
+          "baseline_over_candidate_min": 0.5438385835132935,
+          "baseline_over_candidate_max": 1.4760629600343167,
+          "pairs": 21,
+          "round_medians": [
+            0.9926613958729448,
+            1.0272352241112837,
+            1.0708214307469979
+          ]
+        },
+        {
+          "case": "typescript-handbook-compiler-options",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "parse",
+          "baseline_ns_per_document": 30902.248475609755,
+          "candidate_ns_per_document": 30000.558035714286,
+          "baseline_over_candidate_median": 1.0232726566923982,
+          "baseline_over_candidate_min": 0.550049048842468,
+          "baseline_over_candidate_max": 2.3479615021887255,
+          "pairs": 21,
+          "round_medians": [
+            1.0581212380195766,
+            1.2037376595152018,
+            0.8690773173918642
+          ]
+        }
+      ],
+      "best": [
+        {
+          "case": "typescript-handbook-compiler-options",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "parse",
+          "baseline_ns_per_document": 30902.248475609755,
+          "candidate_ns_per_document": 30000.558035714286,
+          "baseline_over_candidate_median": 1.0232726566923982,
+          "baseline_over_candidate_min": 0.550049048842468,
+          "baseline_over_candidate_max": 2.3479615021887255,
+          "pairs": 21,
+          "round_medians": [
+            1.0581212380195766,
+            1.2037376595152018,
+            0.8690773173918642
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "parse",
+          "baseline_ns_per_document": 14940.952034883721,
+          "candidate_ns_per_document": 14834.926470588236,
+          "baseline_over_candidate_median": 1.00679819934921,
+          "baseline_over_candidate_min": 0.5438385835132935,
+          "baseline_over_candidate_max": 1.4760629600343167,
+          "pairs": 21,
+          "round_medians": [
+            0.9926613958729448,
+            1.0272352241112837,
+            1.0708214307469979
+          ]
+        },
+        {
+          "case": "vue-docs-slots",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "parse",
+          "baseline_ns_per_document": 16465.152138157893,
+          "candidate_ns_per_document": 17739.289612676057,
+          "baseline_over_candidate_median": 1.0066155673047634,
+          "baseline_over_candidate_min": 0.5002028755370383,
+          "baseline_over_candidate_max": 2.398364265550772,
+          "pairs": 21,
+          "round_medians": [
+            1.0066315628434488,
+            0.9805207355248544,
+            0.8863064774704952
+          ]
+        },
+        {
+          "case": "rust-book-ch17-00-async-await",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "parse",
+          "baseline_ns_per_document": 12259.484681372549,
+          "candidate_ns_per_document": 12302.58118872549,
+          "baseline_over_candidate_median": 0.9832432185833079,
+          "baseline_over_candidate_min": 0.5819426993190328,
+          "baseline_over_candidate_max": 1.7736121976155648,
+          "pairs": 21,
+          "round_medians": [
+            1.0322730514690706,
+            0.9317391732044149,
+            0.9822493014756019
+          ]
+        },
+        {
+          "case": "comment-table",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "parse",
+          "baseline_ns_per_document": 803.9405948553054,
+          "candidate_ns_per_document": 794.7716346153846,
+          "baseline_over_candidate_median": 0.9711208912615411,
+          "baseline_over_candidate_min": 0.7015634577144212,
+          "baseline_over_candidate_max": 1.0756733065101083,
+          "pairs": 21,
+          "round_medians": [
+            0.9935882825705488,
+            1.0045654756674594,
+            0.8264726585746294
+          ]
+        }
+      ]
+    },
+    "render": {
+      "cases": 5,
+      "geometric_mean": 1.0381010559371737,
+      "round_geometric_means": [
+        1.0569494715339303,
+        0.9294149797789177,
+        1.0624911639475598
+      ],
+      "measured_above_1": 2,
+      "measured_below_1": 3,
+      "within_one_percent_ratio": 3,
+      "worst": [
+        {
+          "case": "rust-book-ch17-00-async-await",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 2297.6234234234234,
+          "candidate_ns_per_document": 2521.3111139112902,
+          "baseline_over_candidate_median": 0.9372863433004242,
+          "baseline_over_candidate_min": 0.5991921376093272,
+          "baseline_over_candidate_max": 2.454918236347097,
+          "pairs": 21,
+          "round_medians": [
+            0.9574741675205143,
+            0.8040626649734204,
+            1.0017733646067917
+          ]
+        },
+        {
+          "case": "vue-docs-slots",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 10667.273569915254,
+          "candidate_ns_per_document": 10264.162909836066,
+          "baseline_over_candidate_median": 0.9950089382649308,
+          "baseline_over_candidate_min": 0.7449477069311111,
+          "baseline_over_candidate_max": 1.5868956785833628,
+          "pairs": 21,
+          "round_medians": [
+            1.0024658071626718,
+            0.9350937799729007,
+            1.0250844308961673
+          ]
+        },
+        {
+          "case": "comment-table",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "render",
+          "baseline_ns_per_document": 185.39172104404568,
+          "candidate_ns_per_document": 186.38429066646788,
+          "baseline_over_candidate_median": 0.9997153013897556,
+          "baseline_over_candidate_min": 0.48959561774787347,
+          "baseline_over_candidate_max": 1.7593005429894617,
+          "pairs": 21,
+          "round_medians": [
+            0.9907564727725279,
+            0.8343227783475948,
+            1.0033634237870082
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 2444.0841674804688,
+          "candidate_ns_per_document": 2463.0521038385828,
+          "baseline_over_candidate_median": 1.001590404649436,
+          "baseline_over_candidate_min": 0.5720602799441181,
+          "baseline_over_candidate_max": 1.3764117139840355,
+          "pairs": 21,
+          "round_medians": [
+            1.0044089698770438,
+            0.8702256465014186,
+            1.0083369571345546
+          ]
+        },
+        {
+          "case": "typescript-handbook-compiler-options",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "render",
+          "baseline_ns_per_document": 64615.49375,
+          "candidate_ns_per_document": 48929.43629807692,
+          "baseline_over_candidate_median": 1.2910182990910395,
+          "baseline_over_candidate_min": 0.5995656424150712,
+          "baseline_over_candidate_max": 1.4694630853618145,
+          "pairs": 21,
+          "round_medians": [
+            1.3810105456742303,
+            1.27039066959175,
+            1.3032675042958284
+          ]
+        }
+      ],
+      "best": [
+        {
+          "case": "typescript-handbook-compiler-options",
+          "profile": "gfm",
+          "category": "reference",
+          "mode": "render",
+          "baseline_ns_per_document": 64615.49375,
+          "candidate_ns_per_document": 48929.43629807692,
+          "baseline_over_candidate_median": 1.2910182990910395,
+          "baseline_over_candidate_min": 0.5995656424150712,
+          "baseline_over_candidate_max": 1.4694630853618145,
+          "pairs": 21,
+          "round_medians": [
+            1.3810105456742303,
+            1.27039066959175,
+            1.3032675042958284
+          ]
+        },
+        {
+          "case": "rust-book-ch00-00-introduction",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 2444.0841674804688,
+          "candidate_ns_per_document": 2463.0521038385828,
+          "baseline_over_candidate_median": 1.001590404649436,
+          "baseline_over_candidate_min": 0.5720602799441181,
+          "baseline_over_candidate_max": 1.3764117139840355,
+          "pairs": 21,
+          "round_medians": [
+            1.0044089698770438,
+            0.8702256465014186,
+            1.0083369571345546
+          ]
+        },
+        {
+          "case": "comment-table",
+          "profile": "gfm",
+          "category": "comments",
+          "mode": "render",
+          "baseline_ns_per_document": 185.39172104404568,
+          "candidate_ns_per_document": 186.38429066646788,
+          "baseline_over_candidate_median": 0.9997153013897556,
+          "baseline_over_candidate_min": 0.48959561774787347,
+          "baseline_over_candidate_max": 1.7593005429894617,
+          "pairs": 21,
+          "round_medians": [
+            0.9907564727725279,
+            0.8343227783475948,
+            1.0033634237870082
+          ]
+        },
+        {
+          "case": "vue-docs-slots",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 10667.273569915254,
+          "candidate_ns_per_document": 10264.162909836066,
+          "baseline_over_candidate_median": 0.9950089382649308,
+          "baseline_over_candidate_min": 0.7449477069311111,
+          "baseline_over_candidate_max": 1.5868956785833628,
+          "pairs": 21,
+          "round_medians": [
+            1.0024658071626718,
+            0.9350937799729007,
+            1.0250844308961673
+          ]
+        },
+        {
+          "case": "rust-book-ch17-00-async-await",
+          "profile": "gfm",
+          "category": "technical-docs",
+          "mode": "render",
+          "baseline_ns_per_document": 2297.6234234234234,
+          "candidate_ns_per_document": 2521.3111139112902,
+          "baseline_over_candidate_median": 0.9372863433004242,
+          "baseline_over_candidate_min": 0.5991921376093272,
+          "baseline_over_candidate_max": 2.454918236347097,
+          "pairs": 21,
+          "round_medians": [
+            0.9574741675205143,
+            0.8040626649734204,
+            1.0017733646067917
+          ]
+        }
+      ]
+    }
+  },
+  "categories": {
+    "comments": {
+      "fresh": {
+        "cases": 1,
+        "geometric_mean": 1.0209602627934893,
+        "round_geometric_means": [
+          1.211753202382878,
+          0.892201935426626,
+          0.9935041606354583
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1811.5961050724638,
+            "candidate_ns_per_document": 2008.5049761146497,
+            "baseline_over_candidate_median": 1.0209602627934893,
+            "baseline_over_candidate_min": 0.29580853352347575,
+            "baseline_over_candidate_max": 2.5786175627389354,
+            "pairs": 21,
+            "round_medians": [
+              1.211753202382878,
+              0.892201935426626,
+              0.9935041606354583
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1811.5961050724638,
+            "candidate_ns_per_document": 2008.5049761146497,
+            "baseline_over_candidate_median": 1.0209602627934893,
+            "baseline_over_candidate_min": 0.29580853352347575,
+            "baseline_over_candidate_max": 2.5786175627389354,
+            "pairs": 21,
+            "round_medians": [
+              1.211753202382878,
+              0.892201935426626,
+              0.9935041606354583
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 1,
+        "geometric_mean": 1.0091632852517984,
+        "round_geometric_means": [
+          0.996765460241981,
+          1.0542793737911236,
+          1.051977198264431
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1024.132806101556,
+            "candidate_ns_per_document": 962.1885096153846,
+            "baseline_over_candidate_median": 1.0091632852517984,
+            "baseline_over_candidate_min": 0.6392864570618081,
+            "baseline_over_candidate_max": 1.6085403567606278,
+            "pairs": 21,
+            "round_medians": [
+              0.996765460241981,
+              1.0542793737911236,
+              1.051977198264431
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1024.132806101556,
+            "candidate_ns_per_document": 962.1885096153846,
+            "baseline_over_candidate_median": 1.0091632852517984,
+            "baseline_over_candidate_min": 0.6392864570618081,
+            "baseline_over_candidate_max": 1.6085403567606278,
+            "pairs": 21,
+            "round_medians": [
+              0.996765460241981,
+              1.0542793737911236,
+              1.051977198264431
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 1,
+        "geometric_mean": 0.9711208912615411,
+        "round_geometric_means": [
+          0.9935882825705488,
+          1.0045654756674594,
+          0.8264726585746294
+        ],
+        "measured_above_1": 0,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 803.9405948553054,
+            "candidate_ns_per_document": 794.7716346153846,
+            "baseline_over_candidate_median": 0.9711208912615411,
+            "baseline_over_candidate_min": 0.7015634577144212,
+            "baseline_over_candidate_max": 1.0756733065101083,
+            "pairs": 21,
+            "round_medians": [
+              0.9935882825705488,
+              1.0045654756674594,
+              0.8264726585746294
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 803.9405948553054,
+            "candidate_ns_per_document": 794.7716346153846,
+            "baseline_over_candidate_median": 0.9711208912615411,
+            "baseline_over_candidate_min": 0.7015634577144212,
+            "baseline_over_candidate_max": 1.0756733065101083,
+            "pairs": 21,
+            "round_medians": [
+              0.9935882825705488,
+              1.0045654756674594,
+              0.8264726585746294
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 1,
+        "geometric_mean": 0.9997153013897556,
+        "round_geometric_means": [
+          0.9907564727725279,
+          0.8343227783475948,
+          1.0033634237870082
+        ],
+        "measured_above_1": 0,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 185.39172104404568,
+            "candidate_ns_per_document": 186.38429066646788,
+            "baseline_over_candidate_median": 0.9997153013897556,
+            "baseline_over_candidate_min": 0.48959561774787347,
+            "baseline_over_candidate_max": 1.7593005429894617,
+            "pairs": 21,
+            "round_medians": [
+              0.9907564727725279,
+              0.8343227783475948,
+              1.0033634237870082
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 185.39172104404568,
+            "candidate_ns_per_document": 186.38429066646788,
+            "baseline_over_candidate_median": 0.9997153013897556,
+            "baseline_over_candidate_min": 0.48959561774787347,
+            "baseline_over_candidate_max": 1.7593005429894617,
+            "pairs": 21,
+            "round_medians": [
+              0.9907564727725279,
+              0.8343227783475948,
+              1.0033634237870082
+            ]
+          }
+        ]
+      }
+    },
+    "reference": {
+      "fresh": {
+        "cases": 1,
+        "geometric_mean": 1.1666261689844726,
+        "round_geometric_means": [
+          1.1666261689844726,
+          0.9952961437973401,
+          1.2026488577924976
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 90796.6875,
+            "candidate_ns_per_document": 83494.09791666667,
+            "baseline_over_candidate_median": 1.1666261689844726,
+            "baseline_over_candidate_min": 0.6232424305623994,
+            "baseline_over_candidate_max": 1.5133496956684347,
+            "pairs": 21,
+            "round_medians": [
+              1.1666261689844726,
+              0.9952961437973401,
+              1.2026488577924976
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 90796.6875,
+            "candidate_ns_per_document": 83494.09791666667,
+            "baseline_over_candidate_median": 1.1666261689844726,
+            "baseline_over_candidate_min": 0.6232424305623994,
+            "baseline_over_candidate_max": 1.5133496956684347,
+            "pairs": 21,
+            "round_medians": [
+              1.1666261689844726,
+              0.9952961437973401,
+              1.2026488577924976
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 1,
+        "geometric_mean": 1.2306196926720214,
+        "round_geometric_means": [
+          1.4380231292510046,
+          1.2554283293412736,
+          1.1355502870487895
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 134503.90625,
+            "candidate_ns_per_document": 100459.53365384616,
+            "baseline_over_candidate_median": 1.2306196926720214,
+            "baseline_over_candidate_min": 0.6158299575036718,
+            "baseline_over_candidate_max": 2.213653760823712,
+            "pairs": 21,
+            "round_medians": [
+              1.4380231292510046,
+              1.2554283293412736,
+              1.1355502870487895
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 134503.90625,
+            "candidate_ns_per_document": 100459.53365384616,
+            "baseline_over_candidate_median": 1.2306196926720214,
+            "baseline_over_candidate_min": 0.6158299575036718,
+            "baseline_over_candidate_max": 2.213653760823712,
+            "pairs": 21,
+            "round_medians": [
+              1.4380231292510046,
+              1.2554283293412736,
+              1.1355502870487895
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 1,
+        "geometric_mean": 1.0232726566923982,
+        "round_geometric_means": [
+          1.0581212380195766,
+          1.2037376595152018,
+          0.8690773173918642
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 30902.248475609755,
+            "candidate_ns_per_document": 30000.558035714286,
+            "baseline_over_candidate_median": 1.0232726566923982,
+            "baseline_over_candidate_min": 0.550049048842468,
+            "baseline_over_candidate_max": 2.3479615021887255,
+            "pairs": 21,
+            "round_medians": [
+              1.0581212380195766,
+              1.2037376595152018,
+              0.8690773173918642
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 30902.248475609755,
+            "candidate_ns_per_document": 30000.558035714286,
+            "baseline_over_candidate_median": 1.0232726566923982,
+            "baseline_over_candidate_min": 0.550049048842468,
+            "baseline_over_candidate_max": 2.3479615021887255,
+            "pairs": 21,
+            "round_medians": [
+              1.0581212380195766,
+              1.2037376595152018,
+              0.8690773173918642
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 1,
+        "geometric_mean": 1.2910182990910395,
+        "round_geometric_means": [
+          1.3810105456742303,
+          1.27039066959175,
+          1.3032675042958284
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 64615.49375,
+            "candidate_ns_per_document": 48929.43629807692,
+            "baseline_over_candidate_median": 1.2910182990910395,
+            "baseline_over_candidate_min": 0.5995656424150712,
+            "baseline_over_candidate_max": 1.4694630853618145,
+            "pairs": 21,
+            "round_medians": [
+              1.3810105456742303,
+              1.27039066959175,
+              1.3032675042958284
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 64615.49375,
+            "candidate_ns_per_document": 48929.43629807692,
+            "baseline_over_candidate_median": 1.2910182990910395,
+            "baseline_over_candidate_min": 0.5995656424150712,
+            "baseline_over_candidate_max": 1.4694630853618145,
+            "pairs": 21,
+            "round_medians": [
+              1.3810105456742303,
+              1.27039066959175,
+              1.3032675042958284
+            ]
+          }
+        ]
+      }
+    },
+    "technical-docs": {
+      "fresh": {
+        "cases": 3,
+        "geometric_mean": 1.0030568756757055,
+        "round_geometric_means": [
+          0.955621294700563,
+          1.0428586948539649,
+          1.031712514365346
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 10425.803125,
+            "candidate_ns_per_document": 14550.993095930233,
+            "baseline_over_candidate_median": 0.9912647554015145,
+            "baseline_over_candidate_min": 0.3352956455322947,
+            "baseline_over_candidate_max": 1.5401546456382034,
+            "pairs": 21,
+            "round_medians": [
+              0.8888508905409461,
+              0.9564531221084965,
+              1.0078725971910265
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 19864.397321428572,
+            "candidate_ns_per_document": 19697.85595703125,
+            "baseline_over_candidate_median": 1.00034935045571,
+            "baseline_over_candidate_min": 0.5877632955666893,
+            "baseline_over_candidate_max": 1.9420994447466517,
+            "pairs": 21,
+            "round_medians": [
+              1.00034935045571,
+              0.9810428554655395,
+              1.0016548197212285
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 33359.47779605263,
+            "candidate_ns_per_document": 31525.78125,
+            "baseline_over_candidate_median": 1.0177364247693592,
+            "baseline_over_candidate_min": 0.26193831741212686,
+            "baseline_over_candidate_max": 1.998917787000667,
+            "pairs": 21,
+            "round_medians": [
+              0.9814695951121225,
+              1.2087172797730097,
+              1.0878083115757502
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 33359.47779605263,
+            "candidate_ns_per_document": 31525.78125,
+            "baseline_over_candidate_median": 1.0177364247693592,
+            "baseline_over_candidate_min": 0.26193831741212686,
+            "baseline_over_candidate_max": 1.998917787000667,
+            "pairs": 21,
+            "round_medians": [
+              0.9814695951121225,
+              1.2087172797730097,
+              1.0878083115757502
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 19864.397321428572,
+            "candidate_ns_per_document": 19697.85595703125,
+            "baseline_over_candidate_median": 1.00034935045571,
+            "baseline_over_candidate_min": 0.5877632955666893,
+            "baseline_over_candidate_max": 1.9420994447466517,
+            "pairs": 21,
+            "round_medians": [
+              1.00034935045571,
+              0.9810428554655395,
+              1.0016548197212285
+            ]
+          },
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 10425.803125,
+            "candidate_ns_per_document": 14550.993095930233,
+            "baseline_over_candidate_median": 0.9912647554015145,
+            "baseline_over_candidate_min": 0.3352956455322947,
+            "baseline_over_candidate_max": 1.5401546456382034,
+            "pairs": 21,
+            "round_medians": [
+              0.8888508905409461,
+              0.9564531221084965,
+              1.0078725971910265
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 3,
+        "geometric_mean": 0.9737331295501098,
+        "round_geometric_means": [
+          1.0083254459348554,
+          0.9918201067773282,
+          0.8374665398949619
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 2,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 48237.68028846154,
+            "candidate_ns_per_document": 46163.323958333334,
+            "baseline_over_candidate_median": 0.9033909992445505,
+            "baseline_over_candidate_min": 0.6067851652379264,
+            "baseline_over_candidate_max": 1.6781449721844706,
+            "pairs": 21,
+            "round_medians": [
+              1.00313203887053,
+              0.899706468207728,
+              0.7026693473827289
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 20828.818044354837,
+            "candidate_ns_per_document": 18410.63511029412,
+            "baseline_over_candidate_median": 0.9757198203659496,
+            "baseline_over_candidate_min": 0.5873843928777357,
+            "baseline_over_candidate_max": 1.4476377625317092,
+            "pairs": 21,
+            "round_medians": [
+              0.9757198203659496,
+              0.95629896139752,
+              0.9795434760882739
+            ]
+          },
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 15865.396875,
+            "candidate_ns_per_document": 13922.930902777778,
+            "baseline_over_candidate_median": 1.0474153944560933,
+            "baseline_over_candidate_min": 0.2885242378639285,
+            "baseline_over_candidate_max": 2.9243110803280663,
+            "pairs": 21,
+            "round_medians": [
+              1.0474153944560933,
+              1.1339768749440506,
+              0.8533509329666412
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 15865.396875,
+            "candidate_ns_per_document": 13922.930902777778,
+            "baseline_over_candidate_median": 1.0474153944560933,
+            "baseline_over_candidate_min": 0.2885242378639285,
+            "baseline_over_candidate_max": 2.9243110803280663,
+            "pairs": 21,
+            "round_medians": [
+              1.0474153944560933,
+              1.1339768749440506,
+              0.8533509329666412
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 20828.818044354837,
+            "candidate_ns_per_document": 18410.63511029412,
+            "baseline_over_candidate_median": 0.9757198203659496,
+            "baseline_over_candidate_min": 0.5873843928777357,
+            "baseline_over_candidate_max": 1.4476377625317092,
+            "pairs": 21,
+            "round_medians": [
+              0.9757198203659496,
+              0.95629896139752,
+              0.9795434760882739
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 48237.68028846154,
+            "candidate_ns_per_document": 46163.323958333334,
+            "baseline_over_candidate_median": 0.9033909992445505,
+            "baseline_over_candidate_min": 0.6067851652379264,
+            "baseline_over_candidate_max": 1.6781449721844706,
+            "pairs": 21,
+            "round_medians": [
+              1.00313203887053,
+              0.899706468207728,
+              0.7026693473827289
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 3,
+        "geometric_mean": 0.9988240957940461,
+        "round_geometric_means": [
+          1.0103893394162209,
+          0.979054828114968,
+          0.9768792888617095
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 12259.484681372549,
+            "candidate_ns_per_document": 12302.58118872549,
+            "baseline_over_candidate_median": 0.9832432185833079,
+            "baseline_over_candidate_min": 0.5819426993190328,
+            "baseline_over_candidate_max": 1.7736121976155648,
+            "pairs": 21,
+            "round_medians": [
+              1.0322730514690706,
+              0.9317391732044149,
+              0.9822493014756019
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 16465.152138157893,
+            "candidate_ns_per_document": 17739.289612676057,
+            "baseline_over_candidate_median": 1.0066155673047634,
+            "baseline_over_candidate_min": 0.5002028755370383,
+            "baseline_over_candidate_max": 2.398364265550772,
+            "pairs": 21,
+            "round_medians": [
+              1.0066315628434488,
+              0.9805207355248544,
+              0.8863064774704952
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 14940.952034883721,
+            "candidate_ns_per_document": 14834.926470588236,
+            "baseline_over_candidate_median": 1.00679819934921,
+            "baseline_over_candidate_min": 0.5438385835132935,
+            "baseline_over_candidate_max": 1.4760629600343167,
+            "pairs": 21,
+            "round_medians": [
+              0.9926613958729448,
+              1.0272352241112837,
+              1.0708214307469979
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 14940.952034883721,
+            "candidate_ns_per_document": 14834.926470588236,
+            "baseline_over_candidate_median": 1.00679819934921,
+            "baseline_over_candidate_min": 0.5438385835132935,
+            "baseline_over_candidate_max": 1.4760629600343167,
+            "pairs": 21,
+            "round_medians": [
+              0.9926613958729448,
+              1.0272352241112837,
+              1.0708214307469979
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 16465.152138157893,
+            "candidate_ns_per_document": 17739.289612676057,
+            "baseline_over_candidate_median": 1.0066155673047634,
+            "baseline_over_candidate_min": 0.5002028755370383,
+            "baseline_over_candidate_max": 2.398364265550772,
+            "pairs": 21,
+            "round_medians": [
+              1.0066315628434488,
+              0.9805207355248544,
+              0.8863064774704952
+            ]
+          },
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 12259.484681372549,
+            "candidate_ns_per_document": 12302.58118872549,
+            "baseline_over_candidate_median": 0.9832432185833079,
+            "baseline_over_candidate_min": 0.5819426993190328,
+            "baseline_over_candidate_max": 1.7736121976155648,
+            "pairs": 21,
+            "round_medians": [
+              1.0322730514690706,
+              0.9317391732044149,
+              0.9822493014756019
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 3,
+        "geometric_mean": 0.9775293568477967,
+        "round_geometric_means": [
+          0.9878759338325106,
+          0.8681450923011962,
+          1.0116841227839752
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 2,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2297.6234234234234,
+            "candidate_ns_per_document": 2521.3111139112902,
+            "baseline_over_candidate_median": 0.9372863433004242,
+            "baseline_over_candidate_min": 0.5991921376093272,
+            "baseline_over_candidate_max": 2.454918236347097,
+            "pairs": 21,
+            "round_medians": [
+              0.9574741675205143,
+              0.8040626649734204,
+              1.0017733646067917
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 10667.273569915254,
+            "candidate_ns_per_document": 10264.162909836066,
+            "baseline_over_candidate_median": 0.9950089382649308,
+            "baseline_over_candidate_min": 0.7449477069311111,
+            "baseline_over_candidate_max": 1.5868956785833628,
+            "pairs": 21,
+            "round_medians": [
+              1.0024658071626718,
+              0.9350937799729007,
+              1.0250844308961673
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2444.0841674804688,
+            "candidate_ns_per_document": 2463.0521038385828,
+            "baseline_over_candidate_median": 1.001590404649436,
+            "baseline_over_candidate_min": 0.5720602799441181,
+            "baseline_over_candidate_max": 1.3764117139840355,
+            "pairs": 21,
+            "round_medians": [
+              1.0044089698770438,
+              0.8702256465014186,
+              1.0083369571345546
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2444.0841674804688,
+            "candidate_ns_per_document": 2463.0521038385828,
+            "baseline_over_candidate_median": 1.001590404649436,
+            "baseline_over_candidate_min": 0.5720602799441181,
+            "baseline_over_candidate_max": 1.3764117139840355,
+            "pairs": 21,
+            "round_medians": [
+              1.0044089698770438,
+              0.8702256465014186,
+              1.0083369571345546
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 10667.273569915254,
+            "candidate_ns_per_document": 10264.162909836066,
+            "baseline_over_candidate_median": 0.9950089382649308,
+            "baseline_over_candidate_min": 0.7449477069311111,
+            "baseline_over_candidate_max": 1.5868956785833628,
+            "pairs": 21,
+            "round_medians": [
+              1.0024658071626718,
+              0.9350937799729007,
+              1.0250844308961673
+            ]
+          },
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2297.6234234234234,
+            "candidate_ns_per_document": 2521.3111139112902,
+            "baseline_over_candidate_median": 0.9372863433004242,
+            "baseline_over_candidate_min": 0.5991921376093272,
+            "baseline_over_candidate_max": 2.454918236347097,
+            "pairs": 21,
+            "round_medians": [
+              0.9574741675205143,
+              0.8040626649734204,
+              1.0017733646067917
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "sizes": {
+    "0..512": {
+      "fresh": {
+        "cases": 1,
+        "geometric_mean": 1.0209602627934893,
+        "round_geometric_means": [
+          1.211753202382878,
+          0.892201935426626,
+          0.9935041606354583
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1811.5961050724638,
+            "candidate_ns_per_document": 2008.5049761146497,
+            "baseline_over_candidate_median": 1.0209602627934893,
+            "baseline_over_candidate_min": 0.29580853352347575,
+            "baseline_over_candidate_max": 2.5786175627389354,
+            "pairs": 21,
+            "round_medians": [
+              1.211753202382878,
+              0.892201935426626,
+              0.9935041606354583
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "fresh",
+            "baseline_ns_per_document": 1811.5961050724638,
+            "candidate_ns_per_document": 2008.5049761146497,
+            "baseline_over_candidate_median": 1.0209602627934893,
+            "baseline_over_candidate_min": 0.29580853352347575,
+            "baseline_over_candidate_max": 2.5786175627389354,
+            "pairs": 21,
+            "round_medians": [
+              1.211753202382878,
+              0.892201935426626,
+              0.9935041606354583
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 1,
+        "geometric_mean": 1.0091632852517984,
+        "round_geometric_means": [
+          0.996765460241981,
+          1.0542793737911236,
+          1.051977198264431
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1024.132806101556,
+            "candidate_ns_per_document": 962.1885096153846,
+            "baseline_over_candidate_median": 1.0091632852517984,
+            "baseline_over_candidate_min": 0.6392864570618081,
+            "baseline_over_candidate_max": 1.6085403567606278,
+            "pairs": 21,
+            "round_medians": [
+              0.996765460241981,
+              1.0542793737911236,
+              1.051977198264431
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "reuse",
+            "baseline_ns_per_document": 1024.132806101556,
+            "candidate_ns_per_document": 962.1885096153846,
+            "baseline_over_candidate_median": 1.0091632852517984,
+            "baseline_over_candidate_min": 0.6392864570618081,
+            "baseline_over_candidate_max": 1.6085403567606278,
+            "pairs": 21,
+            "round_medians": [
+              0.996765460241981,
+              1.0542793737911236,
+              1.051977198264431
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 1,
+        "geometric_mean": 0.9711208912615411,
+        "round_geometric_means": [
+          0.9935882825705488,
+          1.0045654756674594,
+          0.8264726585746294
+        ],
+        "measured_above_1": 0,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 803.9405948553054,
+            "candidate_ns_per_document": 794.7716346153846,
+            "baseline_over_candidate_median": 0.9711208912615411,
+            "baseline_over_candidate_min": 0.7015634577144212,
+            "baseline_over_candidate_max": 1.0756733065101083,
+            "pairs": 21,
+            "round_medians": [
+              0.9935882825705488,
+              1.0045654756674594,
+              0.8264726585746294
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "parse",
+            "baseline_ns_per_document": 803.9405948553054,
+            "candidate_ns_per_document": 794.7716346153846,
+            "baseline_over_candidate_median": 0.9711208912615411,
+            "baseline_over_candidate_min": 0.7015634577144212,
+            "baseline_over_candidate_max": 1.0756733065101083,
+            "pairs": 21,
+            "round_medians": [
+              0.9935882825705488,
+              1.0045654756674594,
+              0.8264726585746294
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 1,
+        "geometric_mean": 0.9997153013897556,
+        "round_geometric_means": [
+          0.9907564727725279,
+          0.8343227783475948,
+          1.0033634237870082
+        ],
+        "measured_above_1": 0,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 185.39172104404568,
+            "candidate_ns_per_document": 186.38429066646788,
+            "baseline_over_candidate_median": 0.9997153013897556,
+            "baseline_over_candidate_min": 0.48959561774787347,
+            "baseline_over_candidate_max": 1.7593005429894617,
+            "pairs": 21,
+            "round_medians": [
+              0.9907564727725279,
+              0.8343227783475948,
+              1.0033634237870082
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "comment-table",
+            "profile": "gfm",
+            "category": "comments",
+            "mode": "render",
+            "baseline_ns_per_document": 185.39172104404568,
+            "candidate_ns_per_document": 186.38429066646788,
+            "baseline_over_candidate_median": 0.9997153013897556,
+            "baseline_over_candidate_min": 0.48959561774787347,
+            "baseline_over_candidate_max": 1.7593005429894617,
+            "pairs": 21,
+            "round_medians": [
+              0.9907564727725279,
+              0.8343227783475948,
+              1.0033634237870082
+            ]
+          }
+        ]
+      }
+    },
+    "2049..16384": {
+      "fresh": {
+        "cases": 2,
+        "geometric_mean": 0.99579669320376,
+        "round_geometric_means": [
+          0.9429535571832871,
+          0.9686699654847619,
+          1.0047588987619587
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 2,
+        "worst": [
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 10425.803125,
+            "candidate_ns_per_document": 14550.993095930233,
+            "baseline_over_candidate_median": 0.9912647554015145,
+            "baseline_over_candidate_min": 0.3352956455322947,
+            "baseline_over_candidate_max": 1.5401546456382034,
+            "pairs": 21,
+            "round_medians": [
+              0.8888508905409461,
+              0.9564531221084965,
+              1.0078725971910265
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 19864.397321428572,
+            "candidate_ns_per_document": 19697.85595703125,
+            "baseline_over_candidate_median": 1.00034935045571,
+            "baseline_over_candidate_min": 0.5877632955666893,
+            "baseline_over_candidate_max": 1.9420994447466517,
+            "pairs": 21,
+            "round_medians": [
+              1.00034935045571,
+              0.9810428554655395,
+              1.0016548197212285
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 19864.397321428572,
+            "candidate_ns_per_document": 19697.85595703125,
+            "baseline_over_candidate_median": 1.00034935045571,
+            "baseline_over_candidate_min": 0.5877632955666893,
+            "baseline_over_candidate_max": 1.9420994447466517,
+            "pairs": 21,
+            "round_medians": [
+              1.00034935045571,
+              0.9810428554655395,
+              1.0016548197212285
+            ]
+          },
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 10425.803125,
+            "candidate_ns_per_document": 14550.993095930233,
+            "baseline_over_candidate_median": 0.9912647554015145,
+            "baseline_over_candidate_min": 0.3352956455322947,
+            "baseline_over_candidate_max": 1.5401546456382034,
+            "pairs": 21,
+            "round_medians": [
+              0.8888508905409461,
+              0.9564531221084965,
+              1.0078725971910265
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 2,
+        "geometric_mean": 1.0109322235081981,
+        "round_geometric_means": [
+          1.0109322235081981,
+          1.041355322528195,
+          0.9142725737991463
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 20828.818044354837,
+            "candidate_ns_per_document": 18410.63511029412,
+            "baseline_over_candidate_median": 0.9757198203659496,
+            "baseline_over_candidate_min": 0.5873843928777357,
+            "baseline_over_candidate_max": 1.4476377625317092,
+            "pairs": 21,
+            "round_medians": [
+              0.9757198203659496,
+              0.95629896139752,
+              0.9795434760882739
+            ]
+          },
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 15865.396875,
+            "candidate_ns_per_document": 13922.930902777778,
+            "baseline_over_candidate_median": 1.0474153944560933,
+            "baseline_over_candidate_min": 0.2885242378639285,
+            "baseline_over_candidate_max": 2.9243110803280663,
+            "pairs": 21,
+            "round_medians": [
+              1.0474153944560933,
+              1.1339768749440506,
+              0.8533509329666412
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 15865.396875,
+            "candidate_ns_per_document": 13922.930902777778,
+            "baseline_over_candidate_median": 1.0474153944560933,
+            "baseline_over_candidate_min": 0.2885242378639285,
+            "baseline_over_candidate_max": 2.9243110803280663,
+            "pairs": 21,
+            "round_medians": [
+              1.0474153944560933,
+              1.1339768749440506,
+              0.8533509329666412
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 20828.818044354837,
+            "candidate_ns_per_document": 18410.63511029412,
+            "baseline_over_candidate_median": 0.9757198203659496,
+            "baseline_over_candidate_min": 0.5873843928777357,
+            "baseline_over_candidate_max": 1.4476377625317092,
+            "pairs": 21,
+            "round_medians": [
+              0.9757198203659496,
+              0.95629896139752,
+              0.9795434760882739
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 2,
+        "geometric_mean": 0.9949510048198335,
+        "round_geometric_means": [
+          1.0122734848810926,
+          0.9783226964554688,
+          1.0255796421323617
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 12259.484681372549,
+            "candidate_ns_per_document": 12302.58118872549,
+            "baseline_over_candidate_median": 0.9832432185833079,
+            "baseline_over_candidate_min": 0.5819426993190328,
+            "baseline_over_candidate_max": 1.7736121976155648,
+            "pairs": 21,
+            "round_medians": [
+              1.0322730514690706,
+              0.9317391732044149,
+              0.9822493014756019
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 14940.952034883721,
+            "candidate_ns_per_document": 14834.926470588236,
+            "baseline_over_candidate_median": 1.00679819934921,
+            "baseline_over_candidate_min": 0.5438385835132935,
+            "baseline_over_candidate_max": 1.4760629600343167,
+            "pairs": 21,
+            "round_medians": [
+              0.9926613958729448,
+              1.0272352241112837,
+              1.0708214307469979
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 14940.952034883721,
+            "candidate_ns_per_document": 14834.926470588236,
+            "baseline_over_candidate_median": 1.00679819934921,
+            "baseline_over_candidate_min": 0.5438385835132935,
+            "baseline_over_candidate_max": 1.4760629600343167,
+            "pairs": 21,
+            "round_medians": [
+              0.9926613958729448,
+              1.0272352241112837,
+              1.0708214307469979
+            ]
+          },
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 12259.484681372549,
+            "candidate_ns_per_document": 12302.58118872549,
+            "baseline_over_candidate_median": 0.9832432185833079,
+            "baseline_over_candidate_min": 0.5819426993190328,
+            "baseline_over_candidate_max": 1.7736121976155648,
+            "pairs": 21,
+            "round_medians": [
+              1.0322730514690706,
+              0.9317391732044149,
+              0.9822493014756019
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 2,
+        "geometric_mean": 0.9689050561632249,
+        "round_geometric_means": [
+          0.9806608191842681,
+          0.8364902584335028,
+          1.0050498028486234
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2297.6234234234234,
+            "candidate_ns_per_document": 2521.3111139112902,
+            "baseline_over_candidate_median": 0.9372863433004242,
+            "baseline_over_candidate_min": 0.5991921376093272,
+            "baseline_over_candidate_max": 2.454918236347097,
+            "pairs": 21,
+            "round_medians": [
+              0.9574741675205143,
+              0.8040626649734204,
+              1.0017733646067917
+            ]
+          },
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2444.0841674804688,
+            "candidate_ns_per_document": 2463.0521038385828,
+            "baseline_over_candidate_median": 1.001590404649436,
+            "baseline_over_candidate_min": 0.5720602799441181,
+            "baseline_over_candidate_max": 1.3764117139840355,
+            "pairs": 21,
+            "round_medians": [
+              1.0044089698770438,
+              0.8702256465014186,
+              1.0083369571345546
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "rust-book-ch00-00-introduction",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2444.0841674804688,
+            "candidate_ns_per_document": 2463.0521038385828,
+            "baseline_over_candidate_median": 1.001590404649436,
+            "baseline_over_candidate_min": 0.5720602799441181,
+            "baseline_over_candidate_max": 1.3764117139840355,
+            "pairs": 21,
+            "round_medians": [
+              1.0044089698770438,
+              0.8702256465014186,
+              1.0083369571345546
+            ]
+          },
+          {
+            "case": "rust-book-ch17-00-async-await",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 2297.6234234234234,
+            "candidate_ns_per_document": 2521.3111139112902,
+            "baseline_over_candidate_median": 0.9372863433004242,
+            "baseline_over_candidate_min": 0.5991921376093272,
+            "baseline_over_candidate_max": 2.454918236347097,
+            "pairs": 21,
+            "round_medians": [
+              0.9574741675205143,
+              0.8040626649734204,
+              1.0017733646067917
+            ]
+          }
+        ]
+      }
+    },
+    "16385..65536": {
+      "fresh": {
+        "cases": 2,
+        "geometric_mean": 1.0896412007007772,
+        "round_geometric_means": [
+          1.0700505192374783,
+          1.096827993579343,
+          1.1437881899258102
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 33359.47779605263,
+            "candidate_ns_per_document": 31525.78125,
+            "baseline_over_candidate_median": 1.0177364247693592,
+            "baseline_over_candidate_min": 0.26193831741212686,
+            "baseline_over_candidate_max": 1.998917787000667,
+            "pairs": 21,
+            "round_medians": [
+              0.9814695951121225,
+              1.2087172797730097,
+              1.0878083115757502
+            ]
+          },
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 90796.6875,
+            "candidate_ns_per_document": 83494.09791666667,
+            "baseline_over_candidate_median": 1.1666261689844726,
+            "baseline_over_candidate_min": 0.6232424305623994,
+            "baseline_over_candidate_max": 1.5133496956684347,
+            "pairs": 21,
+            "round_medians": [
+              1.1666261689844726,
+              0.9952961437973401,
+              1.2026488577924976
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "fresh",
+            "baseline_ns_per_document": 90796.6875,
+            "candidate_ns_per_document": 83494.09791666667,
+            "baseline_over_candidate_median": 1.1666261689844726,
+            "baseline_over_candidate_min": 0.6232424305623994,
+            "baseline_over_candidate_max": 1.5133496956684347,
+            "pairs": 21,
+            "round_medians": [
+              1.1666261689844726,
+              0.9952961437973401,
+              1.2026488577924976
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "fresh",
+            "baseline_ns_per_document": 33359.47779605263,
+            "candidate_ns_per_document": 31525.78125,
+            "baseline_over_candidate_median": 1.0177364247693592,
+            "baseline_over_candidate_min": 0.26193831741212686,
+            "baseline_over_candidate_max": 1.998917787000667,
+            "pairs": 21,
+            "round_medians": [
+              0.9814695951121225,
+              1.2087172797730097,
+              1.0878083115757502
+            ]
+          }
+        ]
+      },
+      "reuse": {
+        "cases": 2,
+        "geometric_mean": 1.054386434782333,
+        "round_geometric_means": [
+          1.2010524857759297,
+          1.0627873673880235,
+          0.8932616521047142
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 0,
+        "worst": [
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 48237.68028846154,
+            "candidate_ns_per_document": 46163.323958333334,
+            "baseline_over_candidate_median": 0.9033909992445505,
+            "baseline_over_candidate_min": 0.6067851652379264,
+            "baseline_over_candidate_max": 1.6781449721844706,
+            "pairs": 21,
+            "round_medians": [
+              1.00313203887053,
+              0.899706468207728,
+              0.7026693473827289
+            ]
+          },
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 134503.90625,
+            "candidate_ns_per_document": 100459.53365384616,
+            "baseline_over_candidate_median": 1.2306196926720214,
+            "baseline_over_candidate_min": 0.6158299575036718,
+            "baseline_over_candidate_max": 2.213653760823712,
+            "pairs": 21,
+            "round_medians": [
+              1.4380231292510046,
+              1.2554283293412736,
+              1.1355502870487895
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "reuse",
+            "baseline_ns_per_document": 134503.90625,
+            "candidate_ns_per_document": 100459.53365384616,
+            "baseline_over_candidate_median": 1.2306196926720214,
+            "baseline_over_candidate_min": 0.6158299575036718,
+            "baseline_over_candidate_max": 2.213653760823712,
+            "pairs": 21,
+            "round_medians": [
+              1.4380231292510046,
+              1.2554283293412736,
+              1.1355502870487895
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "reuse",
+            "baseline_ns_per_document": 48237.68028846154,
+            "candidate_ns_per_document": 46163.323958333334,
+            "baseline_over_candidate_median": 0.9033909992445505,
+            "baseline_over_candidate_min": 0.6067851652379264,
+            "baseline_over_candidate_max": 1.6781449721844706,
+            "pairs": 21,
+            "round_medians": [
+              1.00313203887053,
+              0.899706468207728,
+              0.7026693473827289
+            ]
+          }
+        ]
+      },
+      "parse": {
+        "cases": 2,
+        "geometric_mean": 1.0149099397601105,
+        "round_geometric_means": [
+          1.0320553451755827,
+          1.0864114024101608,
+          0.8776496201942383
+        ],
+        "measured_above_1": 2,
+        "measured_below_1": 0,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 16465.152138157893,
+            "candidate_ns_per_document": 17739.289612676057,
+            "baseline_over_candidate_median": 1.0066155673047634,
+            "baseline_over_candidate_min": 0.5002028755370383,
+            "baseline_over_candidate_max": 2.398364265550772,
+            "pairs": 21,
+            "round_medians": [
+              1.0066315628434488,
+              0.9805207355248544,
+              0.8863064774704952
+            ]
+          },
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 30902.248475609755,
+            "candidate_ns_per_document": 30000.558035714286,
+            "baseline_over_candidate_median": 1.0232726566923982,
+            "baseline_over_candidate_min": 0.550049048842468,
+            "baseline_over_candidate_max": 2.3479615021887255,
+            "pairs": 21,
+            "round_medians": [
+              1.0581212380195766,
+              1.2037376595152018,
+              0.8690773173918642
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "parse",
+            "baseline_ns_per_document": 30902.248475609755,
+            "candidate_ns_per_document": 30000.558035714286,
+            "baseline_over_candidate_median": 1.0232726566923982,
+            "baseline_over_candidate_min": 0.550049048842468,
+            "baseline_over_candidate_max": 2.3479615021887255,
+            "pairs": 21,
+            "round_medians": [
+              1.0581212380195766,
+              1.2037376595152018,
+              0.8690773173918642
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "parse",
+            "baseline_ns_per_document": 16465.152138157893,
+            "candidate_ns_per_document": 17739.289612676057,
+            "baseline_over_candidate_median": 1.0066155673047634,
+            "baseline_over_candidate_min": 0.5002028755370383,
+            "baseline_over_candidate_max": 2.398364265550772,
+            "pairs": 21,
+            "round_medians": [
+              1.0066315628434488,
+              0.9805207355248544,
+              0.8863064774704952
+            ]
+          }
+        ]
+      },
+      "render": {
+        "cases": 2,
+        "geometric_mean": 1.133390818323129,
+        "round_geometric_means": [
+          1.1766120224481302,
+          1.0899240401380519,
+          1.155837024820782
+        ],
+        "measured_above_1": 1,
+        "measured_below_1": 1,
+        "within_one_percent_ratio": 1,
+        "worst": [
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 10667.273569915254,
+            "candidate_ns_per_document": 10264.162909836066,
+            "baseline_over_candidate_median": 0.9950089382649308,
+            "baseline_over_candidate_min": 0.7449477069311111,
+            "baseline_over_candidate_max": 1.5868956785833628,
+            "pairs": 21,
+            "round_medians": [
+              1.0024658071626718,
+              0.9350937799729007,
+              1.0250844308961673
+            ]
+          },
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 64615.49375,
+            "candidate_ns_per_document": 48929.43629807692,
+            "baseline_over_candidate_median": 1.2910182990910395,
+            "baseline_over_candidate_min": 0.5995656424150712,
+            "baseline_over_candidate_max": 1.4694630853618145,
+            "pairs": 21,
+            "round_medians": [
+              1.3810105456742303,
+              1.27039066959175,
+              1.3032675042958284
+            ]
+          }
+        ],
+        "best": [
+          {
+            "case": "typescript-handbook-compiler-options",
+            "profile": "gfm",
+            "category": "reference",
+            "mode": "render",
+            "baseline_ns_per_document": 64615.49375,
+            "candidate_ns_per_document": 48929.43629807692,
+            "baseline_over_candidate_median": 1.2910182990910395,
+            "baseline_over_candidate_min": 0.5995656424150712,
+            "baseline_over_candidate_max": 1.4694630853618145,
+            "pairs": 21,
+            "round_medians": [
+              1.3810105456742303,
+              1.27039066959175,
+              1.3032675042958284
+            ]
+          },
+          {
+            "case": "vue-docs-slots",
+            "profile": "gfm",
+            "category": "technical-docs",
+            "mode": "render",
+            "baseline_ns_per_document": 10667.273569915254,
+            "candidate_ns_per_document": 10264.162909836066,
+            "baseline_over_candidate_median": 0.9950089382649308,
+            "baseline_over_candidate_min": 0.7449477069311111,
+            "baseline_over_candidate_max": 1.5868956785833628,
+            "pairs": 21,
+            "round_medians": [
+              1.0024658071626718,
+              0.9350937799729007,
+              1.0250844308961673
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
