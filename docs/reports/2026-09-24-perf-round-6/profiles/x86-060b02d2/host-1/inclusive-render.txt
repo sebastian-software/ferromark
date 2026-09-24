@@ -1,0 +1,42 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 19K of event 'task-clock:ppp'
+# Event count (approx.): 20008007988
+#
+# Children      Self  Symbol                                                                                                                                      IPC   [IPC Coverage]
+# ........  ........  ..........................................................................................................................................  ....................
+#
+   100.00%     0.00%  [.] __libc_start_main                                                                                                                       -      -            
+   100.00%     0.00%  [.] _start                                                                                                                                  -      -            
+   100.00%     0.00%  [.] main                                                                                                                                    -      -            
+   100.00%     0.00%  [.] std::rt::lang_start_internal                                                                                                            -      -            
+   100.00%     0.00%  [.] std::sys::backtrace::__rust_begin_short_backtrace                                                                                       -      -            
+   100.00%     0.00%  [.] 0x00007f253ea2a1ca                                                                                                                      -      -            
+    99.94%     1.42%  [.] ferromark_profile::main                                                                                                                 -      -            
+    98.33%     1.90%  [.] ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed                                                                      -      -            
+    92.64%    17.05%  [.] ferromark::renderer::html::renderer::HtmlRenderer::render_node                                                                          -      -            
+    36.10%    20.33%  [.] ferromark::renderer::html::escape::escape_into                                                                                          -      -            
+    19.24%    19.24%  [.] ferromark::renderer::html::escape::nibble::first_flagged_ssse3                                                                          -      -            
+    11.48%     0.51%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_heading_id                  -      -            
+     5.92%     1.36%  [.] ferromark::renderer::html::renderer::blocks::<impl ferromark::renderer::html::renderer::HtmlRenderer>::render_list_item_with_tightness  -      -            
+     5.84%     2.52%  [.] ferromark::renderer::html::renderer::blocks::<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_table_row_with_header      -      -            
+     5.38%     2.25%  [.] ferromark::renderer::html::escape::url::write_url_segment                                                                               -      -            
+     5.38%     0.45%  [.] ferromark::renderer::html::heading::HeadingIdPlanner::plan_into                                                                         -      -            
+     5.15%     5.15%  [.] ferromark::renderer::html::heading::slugify_heading_into                                                                                -      -            
+     4.40%     4.40%  [.] ferromark::renderer::html::escape::push_run_long                                                                                        -      -            
+     4.29%     1.05%  [.] memchr::arch::x86_64::memchr::memchr_raw::find_avx2                                                                                     -      -            
+     4.20%     0.90%  [.] ferromark::renderer::html::escape::write_url_escaped_into                                                                               -      -            
+     3.91%     3.91%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_inline_node                 -      -            
+     3.90%     2.98%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_html_value                  -      -            
+     3.43%     3.43%  [.] hashbrown::map::HashMap<K,V,S,A>::insert                                                                                                -      -            
+     2.42%     2.42%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw_avx2                                                                                  -      -            
+     1.81%     0.96%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw                                                                                       -      -            
+     1.29%     1.29%  [.] hashbrown::map::HashMap<K,V,S,A>::get                                                                                                   -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

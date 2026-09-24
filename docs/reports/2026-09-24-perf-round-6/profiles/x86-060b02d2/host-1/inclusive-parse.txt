@@ -1,0 +1,59 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 19K of event 'task-clock:ppp'
+# Event count (approx.): 20011010991
+#
+# Children      Self  Symbol                                                                                                     IPC   [IPC Coverage]
+# ........  ........  .........................................................................................................  ....................
+#
+   100.00%     0.00%  [.] __libc_start_main                                                                                      -      -            
+   100.00%     0.00%  [.] _start                                                                                                 -      -            
+   100.00%     0.00%  [.] main                                                                                                   -      -            
+   100.00%     0.00%  [.] std::rt::lang_start_internal                                                                           -      -            
+   100.00%     0.00%  [.] std::sys::backtrace::__rust_begin_short_backtrace                                                      -      -            
+   100.00%     0.00%  [.] 0x00007f4d8e82a1ca                                                                                     -      -            
+    99.95%     0.69%  [.] ferromark_profile::main                                                                                -      -            
+    92.01%     1.23%  [.] ferromark::parser::Parser::parse                                                                       -      -            
+    89.76%     7.59%  [.] ferromark::parser::Parser::parse_document                                                              -      -            
+    52.05%     4.76%  [.] ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline_block                        -      -            
+    51.33%     6.07%  [.] ferromark::parser::block::<impl ferromark::parser::Parser>::parse_paragraph                            -      -            
+    41.55%    12.17%  [.] ferromark::parser::inline::<impl ferromark::parser::Parser>::parse_inline                              -      -            
+    18.81%     3.97%  [.] ferromark::parser::inline_link::<impl ferromark::parser::Parser>::parse_link                           -      -            
+    10.50%     2.86%  [.] ferromark::parser::list::<impl ferromark::parser::Parser>::parse_list                                  -      -            
+    10.48%     0.59%  [.] ferromark::parser::table::<impl ferromark::parser::Parser>::parse_table                                -      -            
+     9.37%     3.26%  [.] ferromark::parser::inline::marker_scan::InlineMarkerScan::next                                         -      -            
+     8.62%     1.43%  [.] ferromark::parser::table::<impl ferromark::parser::Parser>::parse_table_row                            -      -            
+     7.97%     2.16%  [.] ferromark::parser::inline_link::<impl ferromark::parser::Parser>::resolve_link                         -      -            
+     6.41%     6.41%  [.] ferromark::parser::inline::scan::x86::next_special_avx2_with_tables                                    -      -            
+     5.90%     1.88%  [.] ferromark::parser::Parser::with_phase                                                                  -      -            
+     5.70%     0.86%  [.] ferromark::parser::table::<impl ferromark::parser::Parser>::parse_table_cell                           -      -            
+     5.66%     0.77%  [.] ferromark::parser::inline::link_target::<impl ferromark::parser::Parser>::parse_link_target            -      -            
+     4.67%     4.67%  [.] ferromark::parser::inline::link_target::parse_destination                                              -      -            
+     4.26%     4.24%  [.] memchr::arch::x86_64::avx2::packedpair::Finder::find_impl                                              -      -            
+     3.88%     0.96%  [.] memchr::arch::x86_64::memchr::memchr_raw::find_avx2                                                    -      -            
+     3.47%     0.83%  [.] memchr::arch::x86_64::memchr::memchr3_raw::find_avx2                                                   -      -            
+     2.59%     0.89%  [.] memchr::arch::x86_64::memchr::memchr2_raw::find_avx2                                                   -      -            
+     2.44%     2.44%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw_avx2                                                 -      -            
+     2.36%     2.36%  [.] memchr::arch::x86_64::avx2::memchr::Three::find_raw_avx2                                               -      -            
+     2.24%     0.94%  [.] ferromark::parser::cursor::<impl ferromark::parser::Parser>::probe_line_inner                          -      -            
+     2.23%     2.01%  [.] ferromark::parser::delimiters::<impl ferromark::parser::Parser>::scan_balanced_matched                 -      -            
+     2.15%     1.55%  [.] ferromark::parser::table::<impl ferromark::parser::Parser>::table_row_cells_with_offsets::{{closure}}  -      -            
+     1.92%     0.95%  [.] ferromark::parser::delimiters::<impl ferromark::parser::Parser>::has_closer_from                       -      -            
+     1.73%     0.65%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw                                                      -      -            
+     1.50%     1.07%  [.] ferromark::parser::inline::emphasis::<impl ferromark::parser::Parser>::push_delimiter_run              -      -            
+     1.40%     0.46%  [.] ferromark::parser::fenced_code::fenced_close_bounds                                                    -      -            
+     1.36%     0.61%  [.] memchr::arch::x86_64::avx2::memchr::Two::find_raw                                                      -      -            
+     1.31%     1.31%  [.] ferromark::parser::cursor::<impl ferromark::parser::Parser>::line_at                                   -      -            
+     1.31%     0.22%  [.] ferromark::parser::table::<impl ferromark::parser::Parser>::try_parse_table                            -      -            
+     1.30%     1.30%  [.] memchr::memmem::searcher::searcher_kind_avx2                                                           -      -            
+     1.20%     0.43%  [.] memchr::arch::x86_64::avx2::memchr::Three::find_raw                                                    -      -            
+     1.15%     1.15%  [.] memchr::arch::x86_64::avx2::memchr::Two::find_raw_avx2                                                 -      -            
+     1.11%     0.16%  [.] ferromark::parser::prepass::next_fence_run_line                                                        -      -            
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

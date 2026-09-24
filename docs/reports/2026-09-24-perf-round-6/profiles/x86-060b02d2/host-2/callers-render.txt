@@ -1,0 +1,175 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 19K of event 'task-clock:ppp'
+# Event count (approx.): 20007006987
+#
+# Overhead  Symbol                                                                                                                                      IPC   [IPC Coverage]
+# ........  ..........................................................................................................................................  ....................
+#
+    23.39%  [.] ferromark::renderer::html::escape::nibble::first_flagged_ssse3                                                                          -      -            
+            |          
+            |--18.20%--ferromark::renderer::html::escape::escape_into
+            |          |          
+            |           --16.95%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+            |                     |          
+            |                      --14.89%--ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+            |                                ferromark_profile::main
+            |                                std::sys::backtrace::__rust_begin_short_backtrace
+            |                                std::rt::lang_start_internal
+            |                                main
+            |                                0x7fe07f82a1ca
+            |                                __libc_start_main
+            |                                _start
+            |          
+            |--2.82%--ferromark::renderer::html::escape::url::write_url_segment
+            |          ferromark::renderer::html::renderer::HtmlRenderer::render_node
+            |          |          
+            |           --2.71%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+            |                     |          
+            |                      --2.63%--ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+            |                                ferromark_profile::main
+            |                                std::sys::backtrace::__rust_begin_short_backtrace
+            |                                std::rt::lang_start_internal
+            |                                main
+            |                                0x7fe07f82a1ca
+            |                                __libc_start_main
+            |                                _start
+            |          
+             --2.20%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+
+    22.79%  [.] ferromark::renderer::html::escape::escape_into                                                                                          -      -            
+            |          
+             --20.61%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+                       |          
+                       |--11.36%--ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                       |          ferromark_profile::main
+                       |          std::sys::backtrace::__rust_begin_short_backtrace
+                       |          std::rt::lang_start_internal
+                       |          main
+                       |          0x7fe07f82a1ca
+                       |          __libc_start_main
+                       |          _start
+                       |          
+                        --7.82%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+                                  |          
+                                   --7.38%--ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                                             ferromark_profile::main
+                                             std::sys::backtrace::__rust_begin_short_backtrace
+                                             std::rt::lang_start_internal
+                                             main
+                                             0x7fe07f82a1ca
+                                             __libc_start_main
+                                             _start
+
+    14.91%  [.] ferromark::renderer::html::renderer::HtmlRenderer::render_node                                                                          -      -            
+            |          
+            |--7.50%--ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+            |          ferromark_profile::main
+            |          std::sys::backtrace::__rust_begin_short_backtrace
+            |          std::rt::lang_start_internal
+            |          main
+            |          0x7fe07f82a1ca
+            |          __libc_start_main
+            |          _start
+            |          
+             --6.07%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+                       |          
+                        --5.79%--ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                                  ferromark_profile::main
+                                  std::sys::backtrace::__rust_begin_short_backtrace
+                                  std::rt::lang_start_internal
+                                  main
+                                  0x7fe07f82a1ca
+                                  __libc_start_main
+                                  _start
+
+     5.18%  [.] ferromark::renderer::html::heading::slugify_heading_into                                                                                -      -            
+            |          
+             --5.13%--ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_heading_id
+                       ferromark::renderer::html::renderer::HtmlRenderer::render_node
+                       ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                       ferromark_profile::main
+                       std::sys::backtrace::__rust_begin_short_backtrace
+                       std::rt::lang_start_internal
+                       main
+                       0x7fe07f82a1ca
+                       __libc_start_main
+                       _start
+
+     4.07%  [.] ferromark::renderer::html::escape::push_run_long                                                                                        -      -            
+            |          
+             --3.26%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+
+     3.25%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_inline_node                 -      -            
+            |          
+             --2.41%--ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                       ferromark_profile::main
+                       std::sys::backtrace::__rust_begin_short_backtrace
+                       std::rt::lang_start_internal
+                       main
+                       0x7fe07f82a1ca
+                       __libc_start_main
+                       _start
+
+     2.92%  [.] hashbrown::map::HashMap<K,V,S,A>::insert                                                                                                -      -            
+            |          
+             --2.86%--ferromark::renderer::html::heading::HeadingIdPlanner::plan_into
+                       ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_heading_id
+                       ferromark::renderer::html::renderer::HtmlRenderer::render_node
+                       ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                       ferromark_profile::main
+                       std::sys::backtrace::__rust_begin_short_backtrace
+                       std::rt::lang_start_internal
+                       main
+                       0x7fe07f82a1ca
+                       __libc_start_main
+                       _start
+
+     2.75%  [.] ferromark::renderer::html::renderer::write::<impl ferromark::renderer::html::renderer::HtmlRenderer>::write_html_value                  -      -            
+            |          
+             --2.66%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+                       ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                       ferromark_profile::main
+                       std::sys::backtrace::__rust_begin_short_backtrace
+                       std::rt::lang_start_internal
+                       main
+                       0x7fe07f82a1ca
+                       __libc_start_main
+                       _start
+
+     2.59%  [.] memchr::arch::x86_64::avx2::memchr::One::find_raw_avx2                                                                                  -      -            
+     2.52%  [.] ferromark::renderer::html::renderer::blocks::<impl ferromark::renderer::html::renderer::HtmlRenderer>::visit_table_row_with_header      -      -            
+            |          
+             --2.47%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+                       ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                       ferromark_profile::main
+                       std::sys::backtrace::__rust_begin_short_backtrace
+                       std::rt::lang_start_internal
+                       main
+                       0x7fe07f82a1ca
+                       __libc_start_main
+                       _start
+
+     2.32%  [.] ferromark::renderer::html::escape::url::write_url_segment                                                                               -      -            
+            |
+            ---ferromark::renderer::html::renderer::HtmlRenderer::render_node
+               |          
+                --2.14%--ferromark::renderer::html::renderer::HtmlRenderer::render_node
+                          |          
+                           --2.04%--ferromark::renderer::html::renderer::HtmlRenderer::render_borrowed
+                                     ferromark_profile::main
+                                     std::sys::backtrace::__rust_begin_short_backtrace
+                                     std::rt::lang_start_internal
+                                     main
+                                     0x7fe07f82a1ca
+                                     __libc_start_main
+                                     _start
+
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

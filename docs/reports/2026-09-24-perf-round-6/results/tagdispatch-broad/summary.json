@@ -1,0 +1,3878 @@
+[
+  {
+    "case": "comment-ack",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 186.73750280101584,
+    "candidate_ns_per_document": 198.66704247457088,
+    "baseline_over_candidate_median": 0.9461905589679908,
+    "baseline_over_candidate_min": 0.6267237514695336,
+    "baseline_over_candidate_max": 1.7488676942632924,
+    "pairs": 15,
+    "round_medians": [
+      0.9310334125118278,
+      0.8810908455816912,
+      1.0051160551300036
+    ]
+  },
+  {
+    "case": "comment-ack",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 65.67475964064306,
+    "candidate_ns_per_document": 65.42501864597509,
+    "baseline_over_candidate_median": 1.0013407352530364,
+    "baseline_over_candidate_min": 0.5307714126907768,
+    "baseline_over_candidate_max": 1.2309001929681478,
+    "pairs": 15,
+    "round_medians": [
+      1.0508126698579467,
+      1.0020183206110909,
+      0.9984320362178397
+    ]
+  },
+  {
+    "case": "comment-ack",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 58.14615458414736,
+    "candidate_ns_per_document": 54.83068553162558,
+    "baseline_over_candidate_median": 1.0073664169156071,
+    "baseline_over_candidate_min": 0.7855387411632321,
+    "baseline_over_candidate_max": 1.0887047830164467,
+    "pairs": 15,
+    "round_medians": [
+      0.9846146580378115,
+      0.9749182827902886,
+      1.050225961010844
+    ]
+  },
+  {
+    "case": "comment-ack",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 16.46143627528445,
+    "candidate_ns_per_document": 16.759661505818944,
+    "baseline_over_candidate_median": 0.9848802962944075,
+    "baseline_over_candidate_min": 0.2062776593141081,
+    "baseline_over_candidate_max": 2.7127860375222737,
+    "pairs": 15,
+    "round_medians": [
+      0.9848802962944075,
+      0.9818321193459623,
+      1.0946122238068363
+    ]
+  },
+  {
+    "case": "comment-question",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 168.5968771072151,
+    "candidate_ns_per_document": 186.12307828320428,
+    "baseline_over_candidate_median": 0.9937683845798321,
+    "baseline_over_candidate_min": 0.4640539787111097,
+    "baseline_over_candidate_max": 3.227428718149362,
+    "pairs": 15,
+    "round_medians": [
+      0.9937683845798321,
+      1.0059731096338376,
+      0.9658522173843641
+    ]
+  },
+  {
+    "case": "comment-question",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 88.19889711070346,
+    "candidate_ns_per_document": 87.11264155052265,
+    "baseline_over_candidate_median": 1.0019040468460345,
+    "baseline_over_candidate_min": 0.6956921844605931,
+    "baseline_over_candidate_max": 1.922350652655977,
+    "pairs": 15,
+    "round_medians": [
+      1.0008520807179428,
+      1.012160604335589,
+      0.7787148943768546
+    ]
+  },
+  {
+    "case": "comment-question",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 67.60453285559763,
+    "candidate_ns_per_document": 67.58843775344688,
+    "baseline_over_candidate_median": 0.9985740878259679,
+    "baseline_over_candidate_min": 0.8164276004686175,
+    "baseline_over_candidate_max": 1.2164038763044251,
+    "pairs": 15,
+    "round_medians": [
+      0.924787701647416,
+      1.0038774850499208,
+      0.9985740878259679
+    ]
+  },
+  {
+    "case": "comment-question",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 20.997616262955436,
+    "candidate_ns_per_document": 20.95647328912956,
+    "baseline_over_candidate_median": 1.0007004835262585,
+    "baseline_over_candidate_min": 0.8238990780153984,
+    "baseline_over_candidate_max": 1.2570352236739704,
+    "pairs": 15,
+    "round_medians": [
+      1.0007004835262585,
+      0.9992296364055367,
+      1.0674926927174568
+    ]
+  },
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 226.0463777124774,
+    "candidate_ns_per_document": 223.32729881207575,
+    "baseline_over_candidate_median": 1.0021156986600923,
+    "baseline_over_candidate_min": 0.9445999833802519,
+    "baseline_over_candidate_max": 1.2557137506503677,
+    "pairs": 15,
+    "round_medians": [
+      0.9955530123990485,
+      1.0104184074510367,
+      1.0007663115105947
+    ]
+  },
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 145.906279178338,
+    "candidate_ns_per_document": 146.86545577352285,
+    "baseline_over_candidate_median": 0.9951246605434009,
+    "baseline_over_candidate_min": 0.4523360166096546,
+    "baseline_over_candidate_max": 2.056810846487714,
+    "pairs": 15,
+    "round_medians": [
+      0.9871231851465052,
+      0.986343182012012,
+      0.9976719860529822
+    ]
+  },
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 110.46112319961121,
+    "candidate_ns_per_document": 111.9179621049333,
+    "baseline_over_candidate_median": 0.9942512586416821,
+    "baseline_over_candidate_min": 0.7333715009005451,
+    "baseline_over_candidate_max": 1.1598977249671318,
+    "pairs": 15,
+    "round_medians": [
+      0.9942512586416821,
+      0.8948690783486656,
+      0.9984446291661042
+    ]
+  },
+  {
+    "case": "comment-review",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 36.19157600828049,
+    "candidate_ns_per_document": 36.38946009577596,
+    "baseline_over_candidate_median": 0.9942319297378104,
+    "baseline_over_candidate_min": 0.9746495737376659,
+    "baseline_over_candidate_max": 1.0070165180160096,
+    "pairs": 15,
+    "round_medians": [
+      0.9916816051146686,
+      0.9997953671617147,
+      0.9926534850412468
+    ]
+  },
+  {
+    "case": "comment-links",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 412.78406652360513,
+    "candidate_ns_per_document": 412.86017998678994,
+    "baseline_over_candidate_median": 0.9998183173303958,
+    "baseline_over_candidate_min": 0.9697613611079765,
+    "baseline_over_candidate_max": 1.0809855385025604,
+    "pairs": 15,
+    "round_medians": [
+      1.0000812321451746,
+      1.0038783471553558,
+      0.9940802484080357
+    ]
+  },
+  {
+    "case": "comment-links",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 343.8793156808803,
+    "candidate_ns_per_document": 339.8862323273518,
+    "baseline_over_candidate_median": 0.9912749524269928,
+    "baseline_over_candidate_min": 0.9096587028303253,
+    "baseline_over_candidate_max": 1.3686280438229832,
+    "pairs": 15,
+    "round_medians": [
+      1.002438637536106,
+      0.9910759083919436,
+      0.9912749524269928
+    ]
+  },
+  {
+    "case": "comment-links",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 248.63524885640413,
+    "candidate_ns_per_document": 249.26989656031904,
+    "baseline_over_candidate_median": 0.9960398652880805,
+    "baseline_over_candidate_min": 0.9238285110269406,
+    "baseline_over_candidate_max": 1.0910005317050833,
+    "pairs": 15,
+    "round_medians": [
+      0.993447588817372,
+      0.99567967645503,
+      0.9961921506262144
+    ]
+  },
+  {
+    "case": "comment-links",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 128.10308849149416,
+    "candidate_ns_per_document": 104.78646220570012,
+    "baseline_over_candidate_median": 1.0027443680345014,
+    "baseline_over_candidate_min": 0.5801539047689831,
+    "baseline_over_candidate_max": 1.773371028879328,
+    "pairs": 15,
+    "round_medians": [
+      0.9766029679176185,
+      1.1575466605066518,
+      1.0019366117685127
+    ]
+  },
+  {
+    "case": "comment-checklist",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 515.8307291666666,
+    "candidate_ns_per_document": 516.4306717265592,
+    "baseline_over_candidate_median": 1.0000301909110263,
+    "baseline_over_candidate_min": 0.9775489894869788,
+    "baseline_over_candidate_max": 1.023929270294577,
+    "pairs": 15,
+    "round_medians": [
+      1.007673152517556,
+      0.993632212319561,
+      1.0000301909110263
+    ]
+  },
+  {
+    "case": "comment-checklist",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 432.06806107463717,
+    "candidate_ns_per_document": 435.4124107453849,
+    "baseline_over_candidate_median": 0.9955038174747148,
+    "baseline_over_candidate_min": 0.9665649579852577,
+    "baseline_over_candidate_max": 1.0167299679415114,
+    "pairs": 15,
+    "round_medians": [
+      0.9968898639475349,
+      0.990737616361881,
+      0.9955038174747148
+    ]
+  },
+  {
+    "case": "comment-checklist",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 610.677729604299,
+    "candidate_ns_per_document": 477.88350535168195,
+    "baseline_over_candidate_median": 1.0043382038891235,
+    "baseline_over_candidate_min": 0.781955604259782,
+    "baseline_over_candidate_max": 1.813272420014937,
+    "pairs": 15,
+    "round_medians": [
+      1.049905144974347,
+      1.355384611872897,
+      0.9979426175508468
+    ]
+  },
+  {
+    "case": "comment-checklist",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 76.28984398840403,
+    "candidate_ns_per_document": 76.57612449460916,
+    "baseline_over_candidate_median": 1.0023537116667676,
+    "baseline_over_candidate_min": 0.8566577600202582,
+    "baseline_over_candidate_max": 1.2438823942165382,
+    "pairs": 15,
+    "round_medians": [
+      1.1305628316835639,
+      1.0059532316927287,
+      1.0016538899038683
+    ]
+  },
+  {
+    "case": "comment-quote",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 294.58224110508957,
+    "candidate_ns_per_document": 288.79089425964423,
+    "baseline_over_candidate_median": 0.9968936812104523,
+    "baseline_over_candidate_min": 0.7052008951061086,
+    "baseline_over_candidate_max": 1.3132592662295692,
+    "pairs": 15,
+    "round_medians": [
+      1.068596094284063,
+      1.0235829403061372,
+      0.9941810429520351
+    ]
+  },
+  {
+    "case": "comment-quote",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 200.05429868779004,
+    "candidate_ns_per_document": 199.79913996324117,
+    "baseline_over_candidate_median": 1.0008432483593985,
+    "baseline_over_candidate_min": 0.9904268380383754,
+    "baseline_over_candidate_max": 1.0138159391753256,
+    "pairs": 15,
+    "round_medians": [
+      1.0008432483593985,
+      1.0076765275416368,
+      1.0004373243978402
+    ]
+  },
+  {
+    "case": "comment-quote",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 164.3625961412043,
+    "candidate_ns_per_document": 164.7065093873518,
+    "baseline_over_candidate_median": 0.9984391491583381,
+    "baseline_over_candidate_min": 0.66764428064053,
+    "baseline_over_candidate_max": 2.3904663318254973,
+    "pairs": 15,
+    "round_medians": [
+      0.7080615783385407,
+      0.9968992837086244,
+      1.0057880297159778
+    ]
+  },
+  {
+    "case": "comment-quote",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 41.101572518330975,
+    "candidate_ns_per_document": 41.1039765627569,
+    "baseline_over_candidate_median": 0.9959014161375407,
+    "baseline_over_candidate_min": 0.42890679347891303,
+    "baseline_over_candidate_max": 1.7363656552881404,
+    "pairs": 15,
+    "round_medians": [
+      0.8208436949870024,
+      0.9959014161375407,
+      0.9992185021946759
+    ]
+  },
+  {
+    "case": "comment-unicode",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 811.5576361867704,
+    "candidate_ns_per_document": 763.7548354065534,
+    "baseline_over_candidate_median": 1.005358622955882,
+    "baseline_over_candidate_min": 0.7727829536852436,
+    "baseline_over_candidate_max": 1.685050902339507,
+    "pairs": 15,
+    "round_medians": [
+      1.4502237034057437,
+      1.0042089500546205,
+      0.8323033348663108
+    ]
+  },
+  {
+    "case": "comment-unicode",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 387.0251257739938,
+    "candidate_ns_per_document": 387.67078488372096,
+    "baseline_over_candidate_median": 0.9988032319965233,
+    "baseline_over_candidate_min": 0.8156016462407925,
+    "baseline_over_candidate_max": 1.1032049976584903,
+    "pairs": 15,
+    "round_medians": [
+      0.9988032319965233,
+      0.9994643010892402,
+      0.9797977690539101
+    ]
+  },
+  {
+    "case": "comment-unicode",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 280.1837040564769,
+    "candidate_ns_per_document": 280.44532301480484,
+    "baseline_over_candidate_median": 1.0013273628739743,
+    "baseline_over_candidate_min": 0.9158577128006029,
+    "baseline_over_candidate_max": 1.01716377330417,
+    "pairs": 15,
+    "round_medians": [
+      0.9898393899527851,
+      1.004796143900553,
+      1.0035189359398278
+    ]
+  },
+  {
+    "case": "comment-unicode",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 110.5936864163128,
+    "candidate_ns_per_document": 108.7268445029138,
+    "baseline_over_candidate_median": 0.9943108882629803,
+    "baseline_over_candidate_min": 0.8066867067131672,
+    "baseline_over_candidate_max": 1.8875229620260576,
+    "pairs": 15,
+    "round_medians": [
+      1.1193564269181777,
+      0.9384720996559296,
+      0.9943108882629803
+    ]
+  },
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 296.6305914807784,
+    "candidate_ns_per_document": 292.39505378858746,
+    "baseline_over_candidate_median": 1.0091365191051822,
+    "baseline_over_candidate_min": 0.7081760415783436,
+    "baseline_over_candidate_max": 1.0412318624115124,
+    "pairs": 15,
+    "round_medians": [
+      1.0184659223261692,
+      1.0301123609368839,
+      0.9998082587066727
+    ]
+  },
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 284.17383922482384,
+    "candidate_ns_per_document": 306.22594622733953,
+    "baseline_over_candidate_median": 1.0052905913981538,
+    "baseline_over_candidate_min": 0.22467512263429623,
+    "baseline_over_candidate_max": 1.8762219963909958,
+    "pairs": 15,
+    "round_medians": [
+      0.9141722958858213,
+      1.0052905913981538,
+      1.0813764278448441
+    ]
+  },
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 136.5418179956308,
+    "candidate_ns_per_document": 136.27786370325956,
+    "baseline_over_candidate_median": 0.9988385495990205,
+    "baseline_over_candidate_min": 0.28684428901098175,
+    "baseline_over_candidate_max": 1.0581415243884642,
+    "pairs": 15,
+    "round_medians": [
+      1.007882074528233,
+      0.9920409943305715,
+      0.9960286415355285
+    ]
+  },
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 77.77163177378212,
+    "candidate_ns_per_document": 77.61645451723068,
+    "baseline_over_candidate_median": 0.9920551876226946,
+    "baseline_over_candidate_min": 0.6602372724110585,
+    "baseline_over_candidate_max": 1.1694478895739189,
+    "pairs": 15,
+    "round_medians": [
+      0.9991559853025822,
+      0.8840722697883282,
+      0.9968193092891585
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 307.4975790088539,
+    "candidate_ns_per_document": 304.7852724280839,
+    "baseline_over_candidate_median": 0.9849701364164886,
+    "baseline_over_candidate_min": 0.5657333056851402,
+    "baseline_over_candidate_max": 2.8046217957172384,
+    "pairs": 15,
+    "round_medians": [
+      0.9163366486214277,
+      0.9849701364164886,
+      1.0074538005330058
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 281.39684493175207,
+    "candidate_ns_per_document": 273.53693243982497,
+    "baseline_over_candidate_median": 1.0019444509062212,
+    "baseline_over_candidate_min": 0.550789946557826,
+    "baseline_over_candidate_max": 1.7957432936129816,
+    "pairs": 15,
+    "round_medians": [
+      1.0073384383947814,
+      1.0019444509062212,
+      0.9359019243106749
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 168.0352617959403,
+    "candidate_ns_per_document": 165.9833811910769,
+    "baseline_over_candidate_median": 1.0001314578677534,
+    "baseline_over_candidate_min": 0.6088577947516867,
+    "baseline_over_candidate_max": 1.406630388518984,
+    "pairs": 15,
+    "round_medians": [
+      1.0001314578677534,
+      1.0011944711134662,
+      0.9978601679106157
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 58.069033945742554,
+    "candidate_ns_per_document": 58.00352071829614,
+    "baseline_over_candidate_median": 0.9990369054480915,
+    "baseline_over_candidate_min": 0.7575230925136918,
+    "baseline_over_candidate_max": 1.302432776112379,
+    "pairs": 15,
+    "round_medians": [
+      1.004995046203517,
+      0.9990369054480915,
+      0.9137318809715163
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1438.6986838319908,
+    "candidate_ns_per_document": 1052.9211671560402,
+    "baseline_over_candidate_median": 1.1901286926531705,
+    "baseline_over_candidate_min": 0.9513925516668242,
+    "baseline_over_candidate_max": 1.774450962732199,
+    "pairs": 15,
+    "round_medians": [
+      0.9905662895290545,
+      1.4104874284258322,
+      1.24027894454203
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 869.5363351877608,
+    "candidate_ns_per_document": 867.7034611380985,
+    "baseline_over_candidate_median": 0.996424521160031,
+    "baseline_over_candidate_min": 0.9550299872667244,
+    "baseline_over_candidate_max": 1.025192649195232,
+    "pairs": 15,
+    "round_medians": [
+      0.996424521160031,
+      1.0047325951353505,
+      0.9960852343207612
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 682.1474529459902,
+    "candidate_ns_per_document": 682.1346665302782,
+    "baseline_over_candidate_median": 1.002198896538224,
+    "baseline_over_candidate_min": 0.7673303946164579,
+    "baseline_over_candidate_max": 2.452602445418425,
+    "pairs": 15,
+    "round_medians": [
+      1.0590297823635932,
+      1.0044265970046025,
+      0.998223636765723
+    ]
+  },
+  {
+    "case": "comment-table",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 227.19200972373682,
+    "candidate_ns_per_document": 323.856460492228,
+    "baseline_over_candidate_median": 0.8881582175886494,
+    "baseline_over_candidate_min": 0.5195952694578913,
+    "baseline_over_candidate_max": 2.153139408921632,
+    "pairs": 15,
+    "round_medians": [
+      1.0016960565688837,
+      0.8473705097789807,
+      0.8802253105194593
+    ]
+  },
+  {
+    "case": "comment-review-long",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 670.4995978552279,
+    "candidate_ns_per_document": 663.024158271474,
+    "baseline_over_candidate_median": 0.9996897528587664,
+    "baseline_over_candidate_min": 0.827238026402635,
+    "baseline_over_candidate_max": 2.741689717430991,
+    "pairs": 15,
+    "round_medians": [
+      1.0107999502853022,
+      0.9996897528587664,
+      0.8856759363079479
+    ]
+  },
+  {
+    "case": "comment-review-long",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1419.1525964812713,
+    "candidate_ns_per_document": 1252.7059431362725,
+    "baseline_over_candidate_median": 0.9801822723165221,
+    "baseline_over_candidate_min": 0.6274731438881755,
+    "baseline_over_candidate_max": 2.044723512948582,
+    "pairs": 15,
+    "round_medians": [
+      0.9609362602136324,
+      0.7905659795986519,
+      1.0036390353936362
+    ]
+  },
+  {
+    "case": "comment-review-long",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 463.06038194444443,
+    "candidate_ns_per_document": 461.09215925857615,
+    "baseline_over_candidate_median": 1.002089698693591,
+    "baseline_over_candidate_min": 0.5355257498996024,
+    "baseline_over_candidate_max": 1.7073258979713226,
+    "pairs": 15,
+    "round_medians": [
+      0.9851118186249452,
+      1.002089698693591,
+      1.0029704929972487
+    ]
+  },
+  {
+    "case": "comment-review-long",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 130.20616342047703,
+    "candidate_ns_per_document": 131.1102599905601,
+    "baseline_over_candidate_median": 0.9980001893205305,
+    "baseline_over_candidate_min": 0.9872680064629779,
+    "baseline_over_candidate_max": 1.018664933700395,
+    "pairs": 15,
+    "round_medians": [
+      0.9914226288124651,
+      0.9995202573286684,
+      1.0000666490969048
+    ]
+  },
+  {
+    "case": "comment-incident",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1812.871739130435,
+    "candidate_ns_per_document": 1510.2515474033817,
+    "baseline_over_candidate_median": 0.9999968773679699,
+    "baseline_over_candidate_min": 0.6904677678725691,
+    "baseline_over_candidate_max": 1.7384824322460117,
+    "pairs": 15,
+    "round_medians": [
+      1.0629933390829982,
+      1.011365367906017,
+      0.9912977629473254
+    ]
+  },
+  {
+    "case": "comment-incident",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1209.0158667794972,
+    "candidate_ns_per_document": 1188.945639258555,
+    "baseline_over_candidate_median": 1.0179747003781026,
+    "baseline_over_candidate_min": 0.5737671587159191,
+    "baseline_over_candidate_max": 1.6188601254886545,
+    "pairs": 15,
+    "round_medians": [
+      1.0071029720681368,
+      1.0153372565664527,
+      1.1165194202996778
+    ]
+  },
+  {
+    "case": "comment-incident",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 911.9208378920496,
+    "candidate_ns_per_document": 911.2856004008746,
+    "baseline_over_candidate_median": 0.9978628739242672,
+    "baseline_over_candidate_min": 0.9373430086685005,
+    "baseline_over_candidate_max": 1.0235362453206407,
+    "pairs": 15,
+    "round_medians": [
+      0.9983764604741688,
+      0.9932131609881599,
+      1.0021364260987862
+    ]
+  },
+  {
+    "case": "comment-incident",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "render",
+    "baseline_ns_per_document": 273.3569183249508,
+    "candidate_ns_per_document": 268.7220684651763,
+    "baseline_over_candidate_median": 0.9952800928351538,
+    "baseline_over_candidate_min": 0.563255912258813,
+    "baseline_over_candidate_max": 1.3600687747809872,
+    "pairs": 15,
+    "round_medians": [
+      1.0176186060148988,
+      1.040722377800604,
+      0.9941385434224063
+    ]
+  },
+  {
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "fresh",
+    "baseline_ns_per_document": 325.8339711438249,
+    "candidate_ns_per_document": 324.59772211413747,
+    "baseline_over_candidate_median": 0.9929499415909024,
+    "baseline_over_candidate_min": 0.2551315976147704,
+    "baseline_over_candidate_max": 2.499407076399736,
+    "pairs": 15,
+    "round_medians": [
+      0.985872845901296,
+      1.007436073696354,
+      0.9325316393918792
+    ]
+  },
+  {
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "reuse",
+    "baseline_ns_per_document": 218.50988965457083,
+    "candidate_ns_per_document": 195.29561787220746,
+    "baseline_over_candidate_median": 1.014073197253209,
+    "baseline_over_candidate_min": 0.46350474492002064,
+    "baseline_over_candidate_max": 2.3466103799608153,
+    "pairs": 15,
+    "round_medians": [
+      0.8551484090953019,
+      1.0154225931810432,
+      1.1461435107413525
+    ]
+  },
+  {
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "parse",
+    "baseline_ns_per_document": 118.80538989735791,
+    "candidate_ns_per_document": 117.99364911742495,
+    "baseline_over_candidate_median": 1.0052823477673392,
+    "baseline_over_candidate_min": 0.7684059624135012,
+    "baseline_over_candidate_max": 1.0191328168177591,
+    "pairs": 15,
+    "round_medians": [
+      0.8635713656762135,
+      1.0066824877931548,
+      1.0052823477673392
+    ]
+  },
+  {
+    "case": "guard-angle-link",
+    "profile": "commonmark",
+    "category": "syntax-guard",
+    "mode": "render",
+    "baseline_ns_per_document": 29.05026624485812,
+    "candidate_ns_per_document": 29.275681091620218,
+    "baseline_over_candidate_median": 0.9934936379989785,
+    "baseline_over_candidate_min": 0.6563367362418099,
+    "baseline_over_candidate_max": 2.615448709179432,
+    "pairs": 15,
+    "round_medians": [
+      0.8873561198917946,
+      0.9946158091276207,
+      0.9934936379989785
+    ]
+  },
+  {
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 10602.599576271186,
+    "candidate_ns_per_document": 10496.788020833334,
+    "baseline_over_candidate_median": 1.0079742160344036,
+    "baseline_over_candidate_min": 0.9858450658576741,
+    "baseline_over_candidate_max": 1.0316377382900936,
+    "pairs": 15,
+    "round_medians": [
+      1.0079742160344036,
+      1.0125466746488059,
+      1.0041274040629247
+    ]
+  },
+  {
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 13809.065934065935,
+    "candidate_ns_per_document": 13677.69191576087,
+    "baseline_over_candidate_median": 1.0088480207512396,
+    "baseline_over_candidate_min": 0.3804790769532591,
+    "baseline_over_candidate_max": 2.497031349516474,
+    "pairs": 15,
+    "round_medians": [
+      0.9835382968934697,
+      1.0088480207512396,
+      1.0667545571641073
+    ]
+  },
+  {
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 7288.381177325581,
+    "candidate_ns_per_document": 7303.635356104651,
+    "baseline_over_candidate_median": 1.0095191921646722,
+    "baseline_over_candidate_min": 0.9445809743755296,
+    "baseline_over_candidate_max": 1.2716235337004782,
+    "pairs": 15,
+    "round_medians": [
+      1.2181720466216994,
+      1.0091434645565276,
+      1.0082419157687914
+    ]
+  },
+  {
+    "case": "legacy-contributing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 2631.42837447479,
+    "candidate_ns_per_document": 2646.8793604651164,
+    "baseline_over_candidate_median": 0.9999073140952089,
+    "baseline_over_candidate_min": 0.960532348659228,
+    "baseline_over_candidate_max": 1.0081128948623785,
+    "pairs": 15,
+    "round_medians": [
+      0.9947289961775064,
+      1.0021669619957012,
+      1.0025386197132489
+    ]
+  },
+  {
+    "case": "legacy-node-ferromark-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "fresh",
+    "baseline_ns_per_document": 10167.527721774193,
+    "candidate_ns_per_document": 10169.493140243903,
+    "baseline_over_candidate_median": 1.0031193530030045,
+    "baseline_over_candidate_min": 0.9852803986329369,
+    "baseline_over_candidate_max": 1.062365279544515,
+    "pairs": 15,
+    "round_medians": [
+      1.0058522273069832,
+      1.024276138020438,
+      0.9985371324295761
+    ]
+  },
+  {
+    "case": "legacy-node-ferromark-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "reuse",
+    "baseline_ns_per_document": 12187.057342233009,
+    "candidate_ns_per_document": 14962.673363095239,
+    "baseline_over_candidate_median": 1.0081959878919373,
+    "baseline_over_candidate_min": 0.7558472898488251,
+    "baseline_over_candidate_max": 1.22796722810944,
+    "pairs": 15,
+    "round_medians": [
+      1.203401669447625,
+      1.0171914144174081,
+      0.9855510348740721
+    ]
+  },
+  {
+    "case": "legacy-node-ferromark-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "parse",
+    "baseline_ns_per_document": 6477.216968911917,
+    "candidate_ns_per_document": 6317.964804292929,
+    "baseline_over_candidate_median": 0.9802650097850887,
+    "baseline_over_candidate_min": 0.6223986565576538,
+    "baseline_over_candidate_max": 1.34195679076314,
+    "pairs": 15,
+    "round_medians": [
+      0.994253782792916,
+      0.7865538204321058,
+      1.037843478260169
+    ]
+  },
+  {
+    "case": "legacy-node-ferromark-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "render",
+    "baseline_ns_per_document": 3590.8816964285716,
+    "candidate_ns_per_document": 3611.1686779538904,
+    "baseline_over_candidate_median": 0.9928560158710089,
+    "baseline_over_candidate_min": 0.9340372077920265,
+    "baseline_over_candidate_max": 1.0288036700800531,
+    "pairs": 15,
+    "round_medians": [
+      0.9975717484323995,
+      0.999942740975989,
+      0.9920562745662924
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-2",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 3301.908063984169,
+    "candidate_ns_per_document": 3224.7996794871797,
+    "baseline_over_candidate_median": 1.020780429250557,
+    "baseline_over_candidate_min": 0.2613052047223665,
+    "baseline_over_candidate_max": 1.5887231446305556,
+    "pairs": 15,
+    "round_medians": [
+      1.053949284673012,
+      1.0037713401872705,
+      1.055837411710368
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-2",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 2232.4288504464284,
+    "candidate_ns_per_document": 2251.0515400179856,
+    "baseline_over_candidate_median": 0.9961994284267351,
+    "baseline_over_candidate_min": 0.9585018752589183,
+    "baseline_over_candidate_max": 1.0213180063017966,
+    "pairs": 15,
+    "round_medians": [
+      0.9985045412766346,
+      0.9938013204934595,
+      0.9961994284267351
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-2",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 1766.0669267180926,
+    "candidate_ns_per_document": 1728.3501812845304,
+    "baseline_over_candidate_median": 1.0104389779863763,
+    "baseline_over_candidate_min": 0.5410932644936908,
+    "baseline_over_candidate_max": 1.3594893905522731,
+    "pairs": 15,
+    "round_medians": [
+      0.8739674965470439,
+      1.0868289803986801,
+      1.0104389779863763
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-2",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 917.4242250550257,
+    "candidate_ns_per_document": 892.8100017844397,
+    "baseline_over_candidate_median": 1.0161229875802233,
+    "baseline_over_candidate_min": 0.8867449493186855,
+    "baseline_over_candidate_max": 1.128884792224288,
+    "pairs": 15,
+    "round_medians": [
+      1.0041544428106752,
+      1.0161229875802233,
+      1.057299366691307
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-3",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 2998.982014388489,
+    "candidate_ns_per_document": 3003.331684652278,
+    "baseline_over_candidate_median": 0.9978752825038748,
+    "baseline_over_candidate_min": 0.8319518867542809,
+    "baseline_over_candidate_max": 1.5601358156991474,
+    "pairs": 15,
+    "round_medians": [
+      1.013078307715005,
+      0.9910228810893645,
+      0.9841019694664999
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-3",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 2785.046005011136,
+    "candidate_ns_per_document": 2764.098716887417,
+    "baseline_over_candidate_median": 1.0008390083313248,
+    "baseline_over_candidate_min": 0.989656862010303,
+    "baseline_over_candidate_max": 1.0218077871095277,
+    "pairs": 15,
+    "round_medians": [
+      1.0095461050613026,
+      1.0040697748579093,
+      0.9949935268216253
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-3",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 1719.7726960110042,
+    "candidate_ns_per_document": 1703.449633855586,
+    "baseline_over_candidate_median": 0.9966300111387406,
+    "baseline_over_candidate_min": 0.5449314601852112,
+    "baseline_over_candidate_max": 1.1554128578395917,
+    "pairs": 15,
+    "round_medians": [
+      0.9857677747348825,
+      0.9998417928326981,
+      0.9966300111387406
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-3",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 1044.9485171261488,
+    "candidate_ns_per_document": 1035.985837821044,
+    "baseline_over_candidate_median": 1.0035464107926642,
+    "baseline_over_candidate_min": 0.571654375759523,
+    "baseline_over_candidate_max": 1.9535327076000366,
+    "pairs": 15,
+    "round_medians": [
+      1.0020054737680677,
+      0.9984361886358327,
+      1.0096013654588822
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-4",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 7786.798136645963,
+    "candidate_ns_per_document": 7873.4048828125,
+    "baseline_over_candidate_median": 1.0018723204649302,
+    "baseline_over_candidate_min": 0.19012627816730177,
+    "baseline_over_candidate_max": 1.8439752084010752,
+    "pairs": 15,
+    "round_medians": [
+      0.9699476045571666,
+      1.0063056825952832,
+      1.009616413018176
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-4",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 6885.810267857143,
+    "candidate_ns_per_document": 6866.867315573771,
+    "baseline_over_candidate_median": 0.9969184254609849,
+    "baseline_over_candidate_min": 0.9857162853042395,
+    "baseline_over_candidate_max": 1.0218783473378594,
+    "pairs": 15,
+    "round_medians": [
+      0.9961331240071007,
+      0.9969184254609849,
+      0.9984678624813154
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-4",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 8362.317708333334,
+    "candidate_ns_per_document": 7379.005116959064,
+    "baseline_over_candidate_median": 1.1332581527981782,
+    "baseline_over_candidate_min": 0.6667802113797148,
+    "baseline_over_candidate_max": 2.694901060477843,
+    "pairs": 15,
+    "round_medians": [
+      1.552738803999158,
+      1.0335203454424908,
+      1.1332581527981782
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-4",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 2505.432740480962,
+    "candidate_ns_per_document": 2520.9252142137098,
+    "baseline_over_candidate_median": 0.9955135098051584,
+    "baseline_over_candidate_min": 0.4318347583644756,
+    "baseline_over_candidate_max": 4.07333168919036,
+    "pairs": 15,
+    "round_medians": [
+      0.8577439946354907,
+      0.9955135098051584,
+      1.0021209503242112
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-8",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 2967.657731042654,
+    "candidate_ns_per_document": 2985.5651849642004,
+    "baseline_over_candidate_median": 0.9940019886312544,
+    "baseline_over_candidate_min": 0.8823618579116953,
+    "baseline_over_candidate_max": 1.239321791003634,
+    "pairs": 15,
+    "round_medians": [
+      1.0545838240947225,
+      0.980867722361995,
+      1.0031222443473926
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-8",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 2795.849051339286,
+    "candidate_ns_per_document": 2891.7977771362584,
+    "baseline_over_candidate_median": 0.9916345972870775,
+    "baseline_over_candidate_min": 0.7283533814037091,
+    "baseline_over_candidate_max": 1.4879863407050289,
+    "pairs": 15,
+    "round_medians": [
+      1.2501802449689472,
+      0.9846447084986457,
+      0.9978779059859032
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-8",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 1580.8888669405815,
+    "candidate_ns_per_document": 1595.540377869898,
+    "baseline_over_candidate_median": 0.9908172108130057,
+    "baseline_over_candidate_min": 0.6591687999997479,
+    "baseline_over_candidate_max": 1.4299416596357235,
+    "pairs": 15,
+    "round_medians": [
+      0.9868571889894776,
+      0.9950454545891385,
+      0.8995285681708528
+    ]
+  },
+  {
+    "case": "legacy-docs-migration-0-8",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 1152.941388248848,
+    "candidate_ns_per_document": 1157.2112049028676,
+    "baseline_over_candidate_median": 0.9973636696558089,
+    "baseline_over_candidate_min": 0.7416919368438961,
+    "baseline_over_candidate_max": 1.8554333558792606,
+    "pairs": 15,
+    "round_medians": [
+      1.0155443963698114,
+      0.9973636696558089,
+      0.9956690728055433
+    ]
+  },
+  {
+    "case": "legacy-docs-releasing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 5268.956801470588,
+    "candidate_ns_per_document": 5309.349576271186,
+    "baseline_over_candidate_median": 0.999873288977497,
+    "baseline_over_candidate_min": 0.9320084639716508,
+    "baseline_over_candidate_max": 1.019143273224445,
+    "pairs": 15,
+    "round_medians": [
+      1.008706452265577,
+      0.999873288977497,
+      0.9920548732733776
+    ]
+  },
+  {
+    "case": "legacy-docs-releasing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 5095.787728658536,
+    "candidate_ns_per_document": 5084.9265752032525,
+    "baseline_over_candidate_median": 0.9969791603760153,
+    "baseline_over_candidate_min": 0.6732140277211455,
+    "baseline_over_candidate_max": 1.1302801833984446,
+    "pairs": 15,
+    "round_medians": [
+      1.0021359508922407,
+      0.9969791603760153,
+      0.7998027900906863
+    ]
+  },
+  {
+    "case": "legacy-docs-releasing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 3362.238239247312,
+    "candidate_ns_per_document": 3380.5496621621623,
+    "baseline_over_candidate_median": 0.9977970355285224,
+    "baseline_over_candidate_min": 0.9316299620088578,
+    "baseline_over_candidate_max": 1.1220515516161214,
+    "pairs": 15,
+    "round_medians": [
+      0.9951522338650952,
+      0.9823360327784371,
+      1.0117737132277782
+    ]
+  },
+  {
+    "case": "legacy-docs-releasing",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 1556.397699004975,
+    "candidate_ns_per_document": 1559.1928382169576,
+    "baseline_over_candidate_median": 0.9959243900045982,
+    "baseline_over_candidate_min": 0.9740324989461807,
+    "baseline_over_candidate_max": 1.0191361127082914,
+    "pairs": 15,
+    "round_medians": [
+      0.9959243900045982,
+      1.006965453869249,
+      0.9958741769983519
+    ]
+  },
+  {
+    "case": "legacy-docs-readme-theme",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 2412.301300578035,
+    "candidate_ns_per_document": 2398.3502155172414,
+    "baseline_over_candidate_median": 1.0023704696045428,
+    "baseline_over_candidate_min": 0.9211965565195295,
+    "baseline_over_candidate_max": 1.0194711947382853,
+    "pairs": 15,
+    "round_medians": [
+      1.0023704696045428,
+      0.9967510372656214,
+      1.0072678423227257
+    ]
+  },
+  {
+    "case": "legacy-docs-readme-theme",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 2272.2961093466424,
+    "candidate_ns_per_document": 2257.6032829422384,
+    "baseline_over_candidate_median": 0.9967662391719286,
+    "baseline_over_candidate_min": 0.9751321648972953,
+    "baseline_over_candidate_max": 1.025998640301039,
+    "pairs": 15,
+    "round_medians": [
+      0.9942768490223464,
+      0.9992610017460923,
+      0.9967662391719286
+    ]
+  },
+  {
+    "case": "legacy-docs-readme-theme",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 2357.2383106203006,
+    "candidate_ns_per_document": 2047.8617021276596,
+    "baseline_over_candidate_median": 0.9547737419518656,
+    "baseline_over_candidate_min": 0.6149846521584005,
+    "baseline_over_candidate_max": 2.695815225966381,
+    "pairs": 15,
+    "round_medians": [
+      1.1510729988119848,
+      0.8981832735800273,
+      0.949686706164408
+    ]
+  },
+  {
+    "case": "legacy-docs-readme-theme",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 801.6526442307693,
+    "candidate_ns_per_document": 849.2652640964674,
+    "baseline_over_candidate_median": 0.9894184833457806,
+    "baseline_over_candidate_min": 0.6178700972392489,
+    "baseline_over_candidate_max": 1.110928238867739,
+    "pairs": 15,
+    "round_medians": [
+      0.9894184833457806,
+      0.9890844769221283,
+      1.0521844189005156
+    ]
+  },
+  {
+    "case": "legacy-docs-markdown-extensions",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 3807.571875,
+    "candidate_ns_per_document": 3819.2684832317073,
+    "baseline_over_candidate_median": 0.9949197539072377,
+    "baseline_over_candidate_min": 0.9760126258902773,
+    "baseline_over_candidate_max": 1.010494189930817,
+    "pairs": 15,
+    "round_medians": [
+      0.9949197539072377,
+      0.9956137571517372,
+      0.9880476575138666
+    ]
+  },
+  {
+    "case": "legacy-docs-markdown-extensions",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 3725.756417410714,
+    "candidate_ns_per_document": 3706.364829881657,
+    "baseline_over_candidate_median": 0.9996399346962369,
+    "baseline_over_candidate_min": 0.8539847933024594,
+    "baseline_over_candidate_max": 2.3762484628787943,
+    "pairs": 15,
+    "round_medians": [
+      1.0052319694415177,
+      0.9971529002601444,
+      1.0071579502014152
+    ]
+  },
+  {
+    "case": "legacy-docs-markdown-extensions",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 4985.930307539683,
+    "candidate_ns_per_document": 4408.505721830986,
+    "baseline_over_candidate_median": 0.9940616926769729,
+    "baseline_over_candidate_min": 0.9167919602610848,
+    "baseline_over_candidate_max": 3.5853699514945223,
+    "pairs": 15,
+    "round_medians": [
+      1.1309796611693803,
+      1.4427113291757747,
+      0.9918381049071846
+    ]
+  },
+  {
+    "case": "legacy-docs-markdown-extensions",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 1729.6186894882435,
+    "candidate_ns_per_document": 1696.418461668928,
+    "baseline_over_candidate_median": 0.9987095652003054,
+    "baseline_over_candidate_min": 0.7915064243071191,
+    "baseline_over_candidate_max": 1.9099667272955256,
+    "pairs": 15,
+    "round_medians": [
+      1.322687862664201,
+      0.8895474837195144,
+      0.9987095652003054
+    ]
+  },
+  {
+    "case": "legacy-docs-mdx",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 7650.803544207317,
+    "candidate_ns_per_document": 7628.3266006097565,
+    "baseline_over_candidate_median": 1.007387789555959,
+    "baseline_over_candidate_min": 0.7546085662926281,
+    "baseline_over_candidate_max": 1.3372257931689042,
+    "pairs": 15,
+    "round_medians": [
+      1.0123048680908873,
+      1.0066817146451192,
+      1.007387789555959
+    ]
+  },
+  {
+    "case": "legacy-docs-mdx",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 7866.794418238994,
+    "candidate_ns_per_document": 9821.858642578125,
+    "baseline_over_candidate_median": 1.0019093115428221,
+    "baseline_over_candidate_min": 0.6291564918061726,
+    "baseline_over_candidate_max": 1.4681971851927265,
+    "pairs": 15,
+    "round_medians": [
+      0.7771380014519357,
+      1.0043421208117056,
+      0.9023915792404518
+    ]
+  },
+  {
+    "case": "legacy-docs-mdx",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 6877.690075549451,
+    "candidate_ns_per_document": 6296.927292713568,
+    "baseline_over_candidate_median": 1.0086871986691923,
+    "baseline_over_candidate_min": 0.6754812542123861,
+    "baseline_over_candidate_max": 1.3703880726251496,
+    "pairs": 15,
+    "round_medians": [
+      1.1828221069652691,
+      1.0062032421590104,
+      1.058591228916332
+    ]
+  },
+  {
+    "case": "legacy-docs-mdx",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 2419.5075556092843,
+    "candidate_ns_per_document": 2414.1982384169883,
+    "baseline_over_candidate_median": 1.0024837577807741,
+    "baseline_over_candidate_min": 0.9819724448617874,
+    "baseline_over_candidate_max": 1.0097339360390805,
+    "pairs": 15,
+    "round_medians": [
+      1.0057105491592433,
+      1.0010140772882001,
+      0.9954362818224667
+    ]
+  },
+  {
+    "case": "legacy-docs-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "fresh",
+    "baseline_ns_per_document": 4154.139015780731,
+    "candidate_ns_per_document": 4143.487893211921,
+    "baseline_over_candidate_median": 1.0063513097658952,
+    "baseline_over_candidate_min": 0.9413151996165275,
+    "baseline_over_candidate_max": 1.0267371749063756,
+    "pairs": 15,
+    "round_medians": [
+      1.009551053161503,
+      0.9968184818099445,
+      1.009210993251394
+    ]
+  },
+  {
+    "case": "legacy-docs-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "reuse",
+    "baseline_ns_per_document": 3991.7272093949045,
+    "candidate_ns_per_document": 4017.849358974359,
+    "baseline_over_candidate_median": 0.9956768785909458,
+    "baseline_over_candidate_min": 0.9183422528128373,
+    "baseline_over_candidate_max": 1.6857096002750076,
+    "pairs": 15,
+    "round_medians": [
+      1.003205826682041,
+      0.9935458859919825,
+      0.9956768785909458
+    ]
+  },
+  {
+    "case": "legacy-docs-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "parse",
+    "baseline_ns_per_document": 2911.552180232558,
+    "candidate_ns_per_document": 2904.700188515081,
+    "baseline_over_candidate_median": 1.002477169419557,
+    "baseline_over_candidate_min": 0.5169917486399845,
+    "baseline_over_candidate_max": 1.4280173373095755,
+    "pairs": 15,
+    "round_medians": [
+      0.9998458789423703,
+      1.002477169419557,
+      1.0135997744357452
+    ]
+  },
+  {
+    "case": "legacy-docs-readme",
+    "profile": "gfm",
+    "category": "readme",
+    "mode": "render",
+    "baseline_ns_per_document": 1071.6168059125964,
+    "candidate_ns_per_document": 1079.8352493523316,
+    "baseline_over_candidate_median": 0.990896601837393,
+    "baseline_over_candidate_min": 0.8595706759132495,
+    "baseline_over_candidate_max": 1.140355687210647,
+    "pairs": 15,
+    "round_medians": [
+      0.9269616159583562,
+      0.9907900512664122,
+      1.0001916494483374
+    ]
+  },
+  {
+    "case": "legacy-docs-adr-readme-theme-composition",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1655.6687913907285,
+    "candidate_ns_per_document": 1637.9748036649214,
+    "baseline_over_candidate_median": 1.00683957360784,
+    "baseline_over_candidate_min": 0.8732021129025367,
+    "baseline_over_candidate_max": 1.6032503152841509,
+    "pairs": 15,
+    "round_medians": [
+      1.0420813031679361,
+      1.0136161511415682,
+      1.004054382027654
+    ]
+  },
+  {
+    "case": "legacy-docs-adr-readme-theme-composition",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1395.4627859933037,
+    "candidate_ns_per_document": 1398.1014315642458,
+    "baseline_over_candidate_median": 1.006874207098746,
+    "baseline_over_candidate_min": 0.98741471598335,
+    "baseline_over_candidate_max": 1.1205561455315363,
+    "pairs": 15,
+    "round_medians": [
+      1.0048814941681738,
+      1.0078291464886393,
+      0.9995471311539411
+    ]
+  },
+  {
+    "case": "legacy-docs-adr-readme-theme-composition",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 891.9865370898716,
+    "candidate_ns_per_document": 890.3217370014245,
+    "baseline_over_candidate_median": 1.0043205738574115,
+    "baseline_over_candidate_min": 0.8913533868070456,
+    "baseline_over_candidate_max": 1.502321039657736,
+    "pairs": 15,
+    "round_medians": [
+      1.005187114166846,
+      1.0027169397941016,
+      1.0992534046194087
+    ]
+  },
+  {
+    "case": "legacy-docs-adr-readme-theme-composition",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 492.32750344623867,
+    "candidate_ns_per_document": 496.06378968253966,
+    "baseline_over_candidate_median": 1.0012089980794587,
+    "baseline_over_candidate_min": 0.5740378663941278,
+    "baseline_over_candidate_max": 1.5895630303827653,
+    "pairs": 15,
+    "round_medians": [
+      1.0012089980794587,
+      1.2485905619945032,
+      0.9970268904323025
+    ]
+  },
+  {
+    "case": "rust-book-ch03-04-comments",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 623.1955228065802,
+    "candidate_ns_per_document": 621.0329421261798,
+    "baseline_over_candidate_median": 1.007303215484067,
+    "baseline_over_candidate_min": 0.9906621199055924,
+    "baseline_over_candidate_max": 1.0135443263982107,
+    "pairs": 15,
+    "round_medians": [
+      1.0098486693525803,
+      1.007303215484067,
+      0.9975499843681025
+    ]
+  },
+  {
+    "case": "rust-book-ch03-04-comments",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 471.1520346646571,
+    "candidate_ns_per_document": 478.0523064053537,
+    "baseline_over_candidate_median": 0.9899759950217107,
+    "baseline_over_candidate_min": 0.8477841445843823,
+    "baseline_over_candidate_max": 1.109442789925543,
+    "pairs": 15,
+    "round_medians": [
+      0.9757737132675299,
+      0.9986822565000093,
+      0.9677375299160053
+    ]
+  },
+  {
+    "case": "rust-book-ch03-04-comments",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 396.12749524714826,
+    "candidate_ns_per_document": 379.4590857359636,
+    "baseline_over_candidate_median": 0.996760821764535,
+    "baseline_over_candidate_min": 0.5245769329411273,
+    "baseline_over_candidate_max": 1.474117001747884,
+    "pairs": 15,
+    "round_medians": [
+      0.6248229727703285,
+      0.9976734245902057,
+      1.3486624996931766
+    ]
+  },
+  {
+    "case": "rust-book-ch03-04-comments",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 149.59156620198635,
+    "candidate_ns_per_document": 151.05189327573706,
+    "baseline_over_candidate_median": 0.990119018803054,
+    "baseline_over_candidate_min": 0.7777794436236716,
+    "baseline_over_candidate_max": 1.3631694932753198,
+    "pairs": 15,
+    "round_medians": [
+      1.0078783760185817,
+      0.980131830563138,
+      0.9927276936194228
+    ]
+  },
+  {
+    "case": "rust-book-appendix-02-operators",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "fresh",
+    "baseline_ns_per_document": 45349.19084821428,
+    "candidate_ns_per_document": 45459.44977678572,
+    "baseline_over_candidate_median": 1.00751455011707,
+    "baseline_over_candidate_min": 0.37096866048290883,
+    "baseline_over_candidate_max": 1.4908506599918325,
+    "pairs": 15,
+    "round_medians": [
+      0.9705685369468559,
+      1.00751455011707,
+      1.0127824894296593
+    ]
+  },
+  {
+    "case": "rust-book-appendix-02-operators",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "reuse",
+    "baseline_ns_per_document": 45716.37834821428,
+    "candidate_ns_per_document": 44395.24892241379,
+    "baseline_over_candidate_median": 1.0063492930166011,
+    "baseline_over_candidate_min": 0.8623894855300482,
+    "baseline_over_candidate_max": 1.2725661442542555,
+    "pairs": 15,
+    "round_medians": [
+      1.1437363476097941,
+      1.0295230809891938,
+      0.9979429311619749
+    ]
+  },
+  {
+    "case": "rust-book-appendix-02-operators",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "parse",
+    "baseline_ns_per_document": 34552.01351351351,
+    "candidate_ns_per_document": 34876.265625,
+    "baseline_over_candidate_median": 0.9934821406777707,
+    "baseline_over_candidate_min": 0.804915363722384,
+    "baseline_over_candidate_max": 1.0088583386553736,
+    "pairs": 15,
+    "round_medians": [
+      0.9934821406777707,
+      0.9967027691472581,
+      0.9908329273674886
+    ]
+  },
+  {
+    "case": "rust-book-appendix-02-operators",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "render",
+    "baseline_ns_per_document": 7709.244056748466,
+    "candidate_ns_per_document": 7590.719696969697,
+    "baseline_over_candidate_median": 1.015655744249255,
+    "baseline_over_candidate_min": 0.9751893056084163,
+    "baseline_over_candidate_max": 1.091701952635855,
+    "pairs": 15,
+    "round_medians": [
+      1.015655744249255,
+      1.0105853368005986,
+      1.0183357895322214
+    ]
+  },
+  {
+    "case": "rust-book-ch00-00-introduction",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 14295.957386363636,
+    "candidate_ns_per_document": 14245.427911931818,
+    "baseline_over_candidate_median": 0.9990627845923068,
+    "baseline_over_candidate_min": 0.6579416465832688,
+    "baseline_over_candidate_max": 1.30958204867868,
+    "pairs": 15,
+    "round_medians": [
+      0.9973980465993574,
+      1.0060306036583682,
+      0.933961965585469
+    ]
+  },
+  {
+    "case": "rust-book-ch00-00-introduction",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 14012.948611111111,
+    "candidate_ns_per_document": 14249.970525568182,
+    "baseline_over_candidate_median": 1.0004231666972851,
+    "baseline_over_candidate_min": 0.5378159794500039,
+    "baseline_over_candidate_max": 1.3032483418991734,
+    "pairs": 15,
+    "round_medians": [
+      1.0053922983523436,
+      0.9964843999889196,
+      1.0028701158145776
+    ]
+  },
+  {
+    "case": "rust-book-ch00-00-introduction",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 11459.363352272727,
+    "candidate_ns_per_document": 11403.302556818182,
+    "baseline_over_candidate_median": 1.0032544535900423,
+    "baseline_over_candidate_min": 0.7706878428426408,
+    "baseline_over_candidate_max": 1.5880213834395027,
+    "pairs": 15,
+    "round_medians": [
+      0.9986931118564261,
+      1.007083322339203,
+      1.2055237477634893
+    ]
+  },
+  {
+    "case": "rust-book-ch00-00-introduction",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 4452.833073843416,
+    "candidate_ns_per_document": 5463.103848253275,
+    "baseline_over_candidate_median": 0.8421741094685946,
+    "baseline_over_candidate_min": 0.6127020036805291,
+    "baseline_over_candidate_max": 1.7069724509445305,
+    "pairs": 15,
+    "round_medians": [
+      0.8260780681599132,
+      1.1650806751152185,
+      0.8421741094685946
+    ]
+  },
+  {
+    "case": "rust-book-ch17-00-async-await",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 12631.357230392157,
+    "candidate_ns_per_document": 13611.54502688172,
+    "baseline_over_candidate_median": 1.0074306003401239,
+    "baseline_over_candidate_min": 0.5880018616110668,
+    "baseline_over_candidate_max": 1.2830357840096014,
+    "pairs": 15,
+    "round_medians": [
+      1.0139753161392897,
+      0.9771841597855725,
+      1.2389358699286583
+    ]
+  },
+  {
+    "case": "rust-book-ch17-00-async-await",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 7949.968552215189,
+    "candidate_ns_per_document": 7979.315883757962,
+    "baseline_over_candidate_median": 1.0023188686772575,
+    "baseline_over_candidate_min": 0.22716073604148374,
+    "baseline_over_candidate_max": 1.898101998051055,
+    "pairs": 15,
+    "round_medians": [
+      1.173204443341754,
+      1.00133587710668,
+      1.0018774467893259
+    ]
+  },
+  {
+    "case": "rust-book-ch17-00-async-await",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 6469.240012886598,
+    "candidate_ns_per_document": 6527.41845703125,
+    "baseline_over_candidate_median": 0.9982592486792735,
+    "baseline_over_candidate_min": 0.599646955775792,
+    "baseline_over_candidate_max": 1.0234962241465608,
+    "pairs": 15,
+    "round_medians": [
+      1.0006457536926485,
+      1.0028286354694205,
+      0.9795592621361069
+    ]
+  },
+  {
+    "case": "rust-book-ch17-00-async-await",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 1570.0856829573934,
+    "candidate_ns_per_document": 1955.6822766570606,
+    "baseline_over_candidate_median": 0.809789822367571,
+    "baseline_over_candidate_min": 0.7192198776476357,
+    "baseline_over_candidate_max": 1.0561885705416054,
+    "pairs": 15,
+    "round_medians": [
+      0.9956030475953941,
+      0.8722562057564905,
+      0.7811928582645151
+    ]
+  },
+  {
+    "case": "vue-docs-ways-of-using-vue",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 5467.828875545852,
+    "candidate_ns_per_document": 5447.718478260869,
+    "baseline_over_candidate_median": 1.0066395546229852,
+    "baseline_over_candidate_min": 0.9839323350452193,
+    "baseline_over_candidate_max": 1.0243178730575573,
+    "pairs": 15,
+    "round_medians": [
+      1.0029033332419648,
+      1.0131273551265485,
+      1.0066395546229852
+    ]
+  },
+  {
+    "case": "vue-docs-ways-of-using-vue",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 5301.901350635593,
+    "candidate_ns_per_document": 5316.510990466101,
+    "baseline_over_candidate_median": 1.0075686187000428,
+    "baseline_over_candidate_min": 0.8006074419911806,
+    "baseline_over_candidate_max": 2.3871145725949416,
+    "pairs": 15,
+    "round_medians": [
+      0.9991771180953328,
+      1.0075686187000428,
+      1.315393629384934
+    ]
+  },
+  {
+    "case": "vue-docs-ways-of-using-vue",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 3944.433458201893,
+    "candidate_ns_per_document": 3794.6851325757575,
+    "baseline_over_candidate_median": 1.010572555256764,
+    "baseline_over_candidate_min": 0.3943441149973785,
+    "baseline_over_candidate_max": 3.738389397482222,
+    "pairs": 15,
+    "round_medians": [
+      1.2221484310914,
+      1.0073698860998008,
+      0.984442460576028
+    ]
+  },
+  {
+    "case": "vue-docs-ways-of-using-vue",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 1864.767697466468,
+    "candidate_ns_per_document": 1866.334328358209,
+    "baseline_over_candidate_median": 0.9905330619241742,
+    "baseline_over_candidate_min": 0.7213500483968623,
+    "baseline_over_candidate_max": 1.108459233640064,
+    "pairs": 15,
+    "round_medians": [
+      0.8312773838459226,
+      0.9959986572230642,
+      0.9961210002077243
+    ]
+  },
+  {
+    "case": "vue-docs-suspense",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 9752.725290697674,
+    "candidate_ns_per_document": 9706.466085271319,
+    "baseline_over_candidate_median": 1.004816760502843,
+    "baseline_over_candidate_min": 0.2699772395621863,
+    "baseline_over_candidate_max": 1.1496431617423097,
+    "pairs": 15,
+    "round_medians": [
+      1.0097202928933584,
+      1.007487304392931,
+      0.9948370334184539
+    ]
+  },
+  {
+    "case": "vue-docs-suspense",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 9036.542491007194,
+    "candidate_ns_per_document": 9053.02945143885,
+    "baseline_over_candidate_median": 0.9974192714190128,
+    "baseline_over_candidate_min": 0.6230925749945196,
+    "baseline_over_candidate_max": 1.2974615918096988,
+    "pairs": 15,
+    "round_medians": [
+      1.0027697944994234,
+      0.9974192714190128,
+      0.7397085737211425
+    ]
+  },
+  {
+    "case": "vue-docs-suspense",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 9470.586520522387,
+    "candidate_ns_per_document": 8944.88785460993,
+    "baseline_over_candidate_median": 0.9829404338820356,
+    "baseline_over_candidate_min": 0.8027835989613767,
+    "baseline_over_candidate_max": 2.0138177397554466,
+    "pairs": 15,
+    "round_medians": [
+      0.8471947016783357,
+      1.0233294282777792,
+      1.011264560685236
+    ]
+  },
+  {
+    "case": "vue-docs-suspense",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 4168.1640625,
+    "candidate_ns_per_document": 4139.581643211921,
+    "baseline_over_candidate_median": 0.9962754767525944,
+    "baseline_over_candidate_min": 0.7564453440139749,
+    "baseline_over_candidate_max": 1.0529245658741804,
+    "pairs": 15,
+    "round_medians": [
+      0.9962754767525944,
+      1.0007258138983517,
+      0.838237273741149
+    ]
+  },
+  {
+    "case": "vue-docs-slots",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 23824.096108490565,
+    "candidate_ns_per_document": 23475.308449074073,
+    "baseline_over_candidate_median": 1.0105077822545634,
+    "baseline_over_candidate_min": 0.5096916803793733,
+    "baseline_over_candidate_max": 2.2057044344968593,
+    "pairs": 15,
+    "round_medians": [
+      1.0130443898490262,
+      1.1110962821263777,
+      1.0081490057416278
+    ]
+  },
+  {
+    "case": "vue-docs-slots",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 30151.692708333332,
+    "candidate_ns_per_document": 28255.121527777777,
+    "baseline_over_candidate_median": 0.9880131605221777,
+    "baseline_over_candidate_min": 0.6501217539131336,
+    "baseline_over_candidate_max": 1.387869973542927,
+    "pairs": 15,
+    "round_medians": [
+      0.9945858282659455,
+      0.9907116774938872,
+      0.8970745144077619
+    ]
+  },
+  {
+    "case": "vue-docs-slots",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 12479.424504950495,
+    "candidate_ns_per_document": 12442.308787128713,
+    "baseline_over_candidate_median": 1.0043283048767224,
+    "baseline_over_candidate_min": 0.2445413266996242,
+    "baseline_over_candidate_max": 1.7757768899815611,
+    "pairs": 15,
+    "round_medians": [
+      0.9959610519861055,
+      1.0068551092803022,
+      1.0051665454025733
+    ]
+  },
+  {
+    "case": "vue-docs-slots",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 9125.247262773722,
+    "candidate_ns_per_document": 9122.952445652174,
+    "baseline_over_candidate_median": 1.0006498667670913,
+    "baseline_over_candidate_min": 0.9844565596023015,
+    "baseline_over_candidate_max": 1.0248535552651932,
+    "pairs": 15,
+    "round_medians": [
+      1.0006498667670913,
+      1.0002977978943959,
+      1.0016795006429273
+    ]
+  },
+  {
+    "case": "vue-docs-reactivity-in-depth",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 23215.15740740741,
+    "candidate_ns_per_document": 22601.678571428572,
+    "baseline_over_candidate_median": 1.0156969559039715,
+    "baseline_over_candidate_min": 0.7430723169298333,
+    "baseline_over_candidate_max": 1.6998905116350398,
+    "pairs": 15,
+    "round_medians": [
+      1.1043251152940983,
+      1.027143065239161,
+      1.0006435297385698
+    ]
+  },
+  {
+    "case": "vue-docs-reactivity-in-depth",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 21507.28283898305,
+    "candidate_ns_per_document": 21192.4655720339,
+    "baseline_over_candidate_median": 1.0025809028273045,
+    "baseline_over_candidate_min": 0.5579536504814953,
+    "baseline_over_candidate_max": 2.907876725797885,
+    "pairs": 15,
+    "round_medians": [
+      0.8753708926432754,
+      1.0148551505665575,
+      1.0030743418526167
+    ]
+  },
+  {
+    "case": "vue-docs-reactivity-in-depth",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 13150.946614583334,
+    "candidate_ns_per_document": 13259.306578947368,
+    "baseline_over_candidate_median": 0.9972654526563819,
+    "baseline_over_candidate_min": 0.9555206893980925,
+    "baseline_over_candidate_max": 1.0215373067301627,
+    "pairs": 15,
+    "round_medians": [
+      1.0042897792487022,
+      0.9978079744766912,
+      0.994805854093408
+    ]
+  },
+  {
+    "case": "vue-docs-reactivity-in-depth",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 7213.915948275862,
+    "candidate_ns_per_document": 7166.822857142857,
+    "baseline_over_candidate_median": 1.0152461978492469,
+    "baseline_over_candidate_min": 0.6783087731418288,
+    "baseline_over_candidate_max": 1.4557782367038257,
+    "pairs": 15,
+    "round_medians": [
+      0.9191745960910245,
+      1.0132514545441622,
+      1.015787352641729
+    ]
+  },
+  {
+    "case": "vite-docs-philosophy",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 3349.383104946524,
+    "candidate_ns_per_document": 3382.1930743243242,
+    "baseline_over_candidate_median": 0.9968618571315413,
+    "baseline_over_candidate_min": 0.7194923681811837,
+    "baseline_over_candidate_max": 1.0257595290911028,
+    "pairs": 15,
+    "round_medians": [
+      0.7964274178264172,
+      1.001114488444684,
+      0.9991703363080658
+    ]
+  },
+  {
+    "case": "vite-docs-philosophy",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 3562.659544159544,
+    "candidate_ns_per_document": 3749.536115269461,
+    "baseline_over_candidate_median": 0.9979327321910034,
+    "baseline_over_candidate_min": 0.4721670809459646,
+    "baseline_over_candidate_max": 1.6313398353264263,
+    "pairs": 15,
+    "round_medians": [
+      0.9979327321910034,
+      1.0582473825247507,
+      0.9145647199161757
+    ]
+  },
+  {
+    "case": "vite-docs-philosophy",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 1869.645693198804,
+    "candidate_ns_per_document": 1875.361131934033,
+    "baseline_over_candidate_median": 0.9940884156698158,
+    "baseline_over_candidate_min": 0.8690424674748162,
+    "baseline_over_candidate_max": 1.0113875520431868,
+    "pairs": 15,
+    "round_medians": [
+      1.0042029408511968,
+      0.9821860718064703,
+      0.9940884156698158
+    ]
+  },
+  {
+    "case": "vite-docs-philosophy",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 1185.8473933649288,
+    "candidate_ns_per_document": 1192.7145197807436,
+    "baseline_over_candidate_median": 0.997798181830376,
+    "baseline_over_candidate_min": 0.7930366881946472,
+    "baseline_over_candidate_max": 1.622122822959213,
+    "pairs": 15,
+    "round_medians": [
+      1.312325952662764,
+      0.98933428509129,
+      0.9982288262991755
+    ]
+  },
+  {
+    "case": "vite-docs-performance",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 8486.3984375,
+    "candidate_ns_per_document": 8518.237964527027,
+    "baseline_over_candidate_median": 0.9995139656565705,
+    "baseline_over_candidate_min": 0.7236889126090528,
+    "baseline_over_candidate_max": 1.0560676095884167,
+    "pairs": 15,
+    "round_medians": [
+      0.9998911295465079,
+      0.8476408351498734,
+      1.0061612519887195
+    ]
+  },
+  {
+    "case": "vite-docs-performance",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 8381.501875,
+    "candidate_ns_per_document": 8243.395353618422,
+    "baseline_over_candidate_median": 1.0114044879534998,
+    "baseline_over_candidate_min": 0.9886443354454563,
+    "baseline_over_candidate_max": 2.7896046820382887,
+    "pairs": 15,
+    "round_medians": [
+      1.0018043173081412,
+      1.660877306644668,
+      1.0046957357398236
+    ]
+  },
+  {
+    "case": "vite-docs-performance",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 5461.89847161572,
+    "candidate_ns_per_document": 5403.584186422414,
+    "baseline_over_candidate_median": 1.0057692405614544,
+    "baseline_over_candidate_min": 0.5863887638216309,
+    "baseline_over_candidate_max": 1.7336680744961506,
+    "pairs": 15,
+    "round_medians": [
+      0.7644040548855213,
+      1.0164493213660797,
+      1.0066375040788662
+    ]
+  },
+  {
+    "case": "vite-docs-performance",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 4102.727971311476,
+    "candidate_ns_per_document": 3239.4551489637306,
+    "baseline_over_candidate_median": 0.9986216598368618,
+    "baseline_over_candidate_min": 0.7703475168744742,
+    "baseline_over_candidate_max": 1.9014823688670743,
+    "pairs": 15,
+    "round_medians": [
+      1.1592249741336444,
+      0.9974686294791095,
+      0.9791123466777266
+    ]
+  },
+  {
+    "case": "vite-docs-api-plugin",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "fresh",
+    "baseline_ns_per_document": 63726.3671875,
+    "candidate_ns_per_document": 63399.2828125,
+    "baseline_over_candidate_median": 0.9949206032636067,
+    "baseline_over_candidate_min": 0.8491367261917163,
+    "baseline_over_candidate_max": 1.0554288153413396,
+    "pairs": 15,
+    "round_medians": [
+      0.958797538273662,
+      1.0182239638003479,
+      0.9949206032636067
+    ]
+  },
+  {
+    "case": "vite-docs-api-plugin",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "reuse",
+    "baseline_ns_per_document": 65266.9921875,
+    "candidate_ns_per_document": 64272.265625,
+    "baseline_over_candidate_median": 0.9973564298577237,
+    "baseline_over_candidate_min": 0.7081869386768715,
+    "baseline_over_candidate_max": 1.1012148964097892,
+    "pairs": 15,
+    "round_medians": [
+      1.000538650509227,
+      1.0287101234341285,
+      0.8193732282046586
+    ]
+  },
+  {
+    "case": "vite-docs-api-plugin",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "parse",
+    "baseline_ns_per_document": 48388.77163461538,
+    "candidate_ns_per_document": 47982.398148148146,
+    "baseline_over_candidate_median": 1.0187216868333953,
+    "baseline_over_candidate_min": 0.7888657005172385,
+    "baseline_over_candidate_max": 1.9565358194603635,
+    "pairs": 15,
+    "round_medians": [
+      1.0194952136164737,
+      1.005736321564561,
+      1.0187216868333953
+    ]
+  },
+  {
+    "case": "vite-docs-api-plugin",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "render",
+    "baseline_ns_per_document": 12067.93359375,
+    "candidate_ns_per_document": 12204.186893203883,
+    "baseline_over_candidate_median": 0.9893595894928333,
+    "baseline_over_candidate_min": 0.8839041864641402,
+    "baseline_over_candidate_max": 1.0227154410767696,
+    "pairs": 15,
+    "round_medians": [
+      1.0116125618070122,
+      0.975159826787634,
+      0.9931842584978726
+    ]
+  },
+  {
+    "case": "vite-docs-features",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 59655.06676136364,
+    "candidate_ns_per_document": 59619.73153409091,
+    "baseline_over_candidate_median": 0.9926165084171983,
+    "baseline_over_candidate_min": 0.9443843519021243,
+    "baseline_over_candidate_max": 1.0974847477563228,
+    "pairs": 15,
+    "round_medians": [
+      1.0137107098037372,
+      1.0223174651091962,
+      0.9842267128091722
+    ]
+  },
+  {
+    "case": "vite-docs-features",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 57767.46022727273,
+    "candidate_ns_per_document": 59074.15909090909,
+    "baseline_over_candidate_median": 1.0133761106053358,
+    "baseline_over_candidate_min": 0.9431580265157741,
+    "baseline_over_candidate_max": 1.0858855073741371,
+    "pairs": 15,
+    "round_medians": [
+      1.0200106933269213,
+      1.0470180887803082,
+      0.9747945349407576
+    ]
+  },
+  {
+    "case": "vite-docs-features",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 35303.458333333336,
+    "candidate_ns_per_document": 35216.796875,
+    "baseline_over_candidate_median": 1.0071434116805809,
+    "baseline_over_candidate_min": 0.6447241393721567,
+    "baseline_over_candidate_max": 1.0927474563831148,
+    "pairs": 15,
+    "round_medians": [
+      0.9860420341399111,
+      1.0257424634016628,
+      1.0071434116805809
+    ]
+  },
+  {
+    "case": "vite-docs-features",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 23327.642939814814,
+    "candidate_ns_per_document": 18987.373579545456,
+    "baseline_over_candidate_median": 1.009296781523715,
+    "baseline_over_candidate_min": 0.49942697301750744,
+    "baseline_over_candidate_max": 2.1164042417243354,
+    "pairs": 15,
+    "round_medians": [
+      1.009296781523715,
+      1.4276308502014134,
+      0.9952472412741784
+    ]
+  },
+  {
+    "case": "typescript-handbook-the-handbook",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 5261.002100840336,
+    "candidate_ns_per_document": 5238.798770920502,
+    "baseline_over_candidate_median": 1.0043070728295789,
+    "baseline_over_candidate_min": 0.9797694956644772,
+    "baseline_over_candidate_max": 1.245064818899823,
+    "pairs": 15,
+    "round_medians": [
+      1.0015097975491711,
+      1.0063073038685915,
+      1.0071665915284622
+    ]
+  },
+  {
+    "case": "typescript-handbook-the-handbook",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 4797.4287595785445,
+    "candidate_ns_per_document": 4740.678267045455,
+    "baseline_over_candidate_median": 1.0072044337024242,
+    "baseline_over_candidate_min": 0.6607563503365633,
+    "baseline_over_candidate_max": 2.061458430215608,
+    "pairs": 15,
+    "round_medians": [
+      1.0072044337024242,
+      1.5648579736244979,
+      1.0024938402772154
+    ]
+  },
+  {
+    "case": "typescript-handbook-the-handbook",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 3526.349735915493,
+    "candidate_ns_per_document": 3513.2658883426966,
+    "baseline_over_candidate_median": 1.0039687390883651,
+    "baseline_over_candidate_min": 0.9894600029054005,
+    "baseline_over_candidate_max": 1.0196612917621954,
+    "pairs": 15,
+    "round_medians": [
+      1.0035248803043857,
+      1.0130273049343703,
+      1.0039687390883651
+    ]
+  },
+  {
+    "case": "typescript-handbook-the-handbook",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 1156.995605920444,
+    "candidate_ns_per_document": 1159.0037940222428,
+    "baseline_over_candidate_median": 0.9982673153339476,
+    "baseline_over_candidate_min": 0.983081820701117,
+    "baseline_over_candidate_max": 1.0275951839943058,
+    "pairs": 15,
+    "round_medians": [
+      0.9914233303546737,
+      0.9991966601263739,
+      1.0019999811709153
+    ]
+  },
+  {
+    "case": "typescript-handbook-advanced-types",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "fresh",
+    "baseline_ns_per_document": 50838.59375,
+    "candidate_ns_per_document": 50257.13625,
+    "baseline_over_candidate_median": 1.0094352447294541,
+    "baseline_over_candidate_min": 0.9423632793814892,
+    "baseline_over_candidate_max": 1.0933851776113788,
+    "pairs": 15,
+    "round_medians": [
+      0.9844907442958846,
+      1.0213145938241215,
+      1.0094352447294541
+    ]
+  },
+  {
+    "case": "typescript-handbook-advanced-types",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "reuse",
+    "baseline_ns_per_document": 49091.847355769234,
+    "candidate_ns_per_document": 47626.68865740741,
+    "baseline_over_candidate_median": 1.0576131999074767,
+    "baseline_over_candidate_min": 0.9669638564643969,
+    "baseline_over_candidate_max": 1.3113051546351628,
+    "pairs": 15,
+    "round_medians": [
+      1.0186412894464465,
+      1.0470762831148421,
+      1.1565640997805702
+    ]
+  },
+  {
+    "case": "typescript-handbook-advanced-types",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "parse",
+    "baseline_ns_per_document": 30156.746279761905,
+    "candidate_ns_per_document": 29420.632994186046,
+    "baseline_over_candidate_median": 1.0138381896408988,
+    "baseline_over_candidate_min": 0.9312309461354569,
+    "baseline_over_candidate_max": 1.1502374222538243,
+    "pairs": 15,
+    "round_medians": [
+      1.0115994770008452,
+      1.0082107820005726,
+      1.0318133799345264
+    ]
+  },
+  {
+    "case": "typescript-handbook-advanced-types",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "render",
+    "baseline_ns_per_document": 21706.873922413793,
+    "candidate_ns_per_document": 20365.0877016129,
+    "baseline_over_candidate_median": 1.0079750964963448,
+    "baseline_over_candidate_min": 0.34008937581092336,
+    "baseline_over_candidate_max": 1.3443367609574137,
+    "pairs": 15,
+    "round_medians": [
+      1.1598253368842641,
+      1.116162272622042,
+      1.0036965286988617
+    ]
+  },
+  {
+    "case": "typescript-handbook-compiler-options",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "fresh",
+    "baseline_ns_per_document": 71825.73784722222,
+    "candidate_ns_per_document": 60485.056547619046,
+    "baseline_over_candidate_median": 1.1946032042513715,
+    "baseline_over_candidate_min": 1.17757209983461,
+    "baseline_over_candidate_max": 1.8152134606324857,
+    "pairs": 15,
+    "round_medians": [
+      1.4075772405357456,
+      1.1921110927728817,
+      1.1939980693361885
+    ]
+  },
+  {
+    "case": "typescript-handbook-compiler-options",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "reuse",
+    "baseline_ns_per_document": 71614.65625,
+    "candidate_ns_per_document": 60172.37202380953,
+    "baseline_over_candidate_median": 1.1916159595903322,
+    "baseline_over_candidate_min": 0.5956222348094327,
+    "baseline_over_candidate_max": 1.4134360511018331,
+    "pairs": 15,
+    "round_medians": [
+      1.1953614770674748,
+      1.1802239131619083,
+      1.1916159595903322
+    ]
+  },
+  {
+    "case": "typescript-handbook-compiler-options",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "parse",
+    "baseline_ns_per_document": 19377.964423076923,
+    "candidate_ns_per_document": 19639.2412109375,
+    "baseline_over_candidate_median": 0.986963435734692,
+    "baseline_over_candidate_min": 0.9278773909431999,
+    "baseline_over_candidate_max": 1.0350242337201943,
+    "pairs": 15,
+    "round_medians": [
+      0.9834883412159712,
+      0.986963435734692,
+      0.9945937508988717
+    ]
+  },
+  {
+    "case": "typescript-handbook-compiler-options",
+    "profile": "gfm",
+    "category": "reference",
+    "mode": "render",
+    "baseline_ns_per_document": 60302.79403409091,
+    "candidate_ns_per_document": 46353.58796296296,
+    "baseline_over_candidate_median": 1.287698314639344,
+    "baseline_over_candidate_min": 1.0483024669573078,
+    "baseline_over_candidate_max": 1.6775755235919183,
+    "pairs": 15,
+    "round_medians": [
+      1.457971337104464,
+      1.284884204764911,
+      1.1304200699241735
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "fresh",
+    "baseline_ns_per_document": 58590.90909090909,
+    "candidate_ns_per_document": 57906.25,
+    "baseline_over_candidate_median": 1.0034965235173825,
+    "baseline_over_candidate_min": 0.9467592758042692,
+    "baseline_over_candidate_max": 1.0812756648885136,
+    "pairs": 15,
+    "round_medians": [
+      1.0034965235173825,
+      1.0254325296603843,
+      0.997043178017891
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "reuse",
+    "baseline_ns_per_document": 60374.13244047619,
+    "candidate_ns_per_document": 57466.796875,
+    "baseline_over_candidate_median": 1.0316582724221472,
+    "baseline_over_candidate_min": 0.5587869279548957,
+    "baseline_over_candidate_max": 1.5750742736404861,
+    "pairs": 15,
+    "round_medians": [
+      1.0865028010351168,
+      1.0516623034421744,
+      0.9851683871242782
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "parse",
+    "baseline_ns_per_document": 32650.27323717949,
+    "candidate_ns_per_document": 32457.29887820513,
+    "baseline_over_candidate_median": 1.002549972647741,
+    "baseline_over_candidate_min": 0.938809029920715,
+    "baseline_over_candidate_max": 1.049291532517054,
+    "pairs": 15,
+    "round_medians": [
+      0.9896894386701494,
+      1.0105633048889153,
+      1.002549972647741
+    ]
+  },
+  {
+    "case": "typescript-handbook-typescript-5-0",
+    "profile": "gfm",
+    "category": "technical-docs",
+    "mode": "render",
+    "baseline_ns_per_document": 36181.84553571429,
+    "candidate_ns_per_document": 30701.00581395349,
+    "baseline_over_candidate_median": 1.0211693733965699,
+    "baseline_over_candidate_min": 0.6670205991834901,
+    "baseline_over_candidate_max": 1.6074268350902945,
+    "pairs": 15,
+    "round_medians": [
+      1.0211693733965699,
+      0.9466726156384347,
+      1.1961785760118582
+    ]
+  },
+  {
+    "case": "wiki-rainbow-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1023.699621522095,
+    "candidate_ns_per_document": 1031.6743760313532,
+    "baseline_over_candidate_median": 0.9992339122109486,
+    "baseline_over_candidate_min": 0.977309380380449,
+    "baseline_over_candidate_max": 1.0578166592538647,
+    "pairs": 15,
+    "round_medians": [
+      0.9957593315346297,
+      0.9992339122109486,
+      1.0092677388658573
+    ]
+  },
+  {
+    "case": "wiki-rainbow-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 877.7394078947368,
+    "candidate_ns_per_document": 881.1626365398167,
+    "baseline_over_candidate_median": 0.9961151000926204,
+    "baseline_over_candidate_min": 0.6473236405033004,
+    "baseline_over_candidate_max": 1.5707680495900724,
+    "pairs": 15,
+    "round_medians": [
+      1.0459685164503485,
+      0.993565818970789,
+      0.9930674116843954
+    ]
+  },
+  {
+    "case": "wiki-rainbow-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 770.486752926679,
+    "candidate_ns_per_document": 665.3451802820649,
+    "baseline_over_candidate_median": 1.0309128813403177,
+    "baseline_over_candidate_min": 0.7381903341343065,
+    "baseline_over_candidate_max": 1.661899769727308,
+    "pairs": 15,
+    "round_medians": [
+      1.1363841274907434,
+      0.9971675443425265,
+      1.032176345592419
+    ]
+  },
+  {
+    "case": "wiki-rainbow-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 328.93139141015524,
+    "candidate_ns_per_document": 330.0985856218643,
+    "baseline_over_candidate_median": 0.9955392804912653,
+    "baseline_over_candidate_min": 0.976157862358752,
+    "baseline_over_candidate_max": 1.0160092199310229,
+    "pairs": 15,
+    "round_medians": [
+      0.987260389113812,
+      0.9955392804912653,
+      1.0032730424899832
+    ]
+  },
+  {
+    "case": "wiki-rainbow-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1573.794536163522,
+    "candidate_ns_per_document": 1571.2007302135678,
+    "baseline_over_candidate_median": 0.9992231120078355,
+    "baseline_over_candidate_min": 0.5979464266267569,
+    "baseline_over_candidate_max": 1.027209926007318,
+    "pairs": 15,
+    "round_medians": [
+      0.9896785118011059,
+      0.9992231120078355,
+      1.0035920570095316
+    ]
+  },
+  {
+    "case": "wiki-rainbow-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1878.1906906906906,
+    "candidate_ns_per_document": 1623.9278814935064,
+    "baseline_over_candidate_median": 1.0117243916542704,
+    "baseline_over_candidate_min": 0.5466255169746087,
+    "baseline_over_candidate_max": 1.6442969643031529,
+    "pairs": 15,
+    "round_medians": [
+      1.0113234850119983,
+      1.1565727222832962,
+      0.6377319229352215
+    ]
+  },
+  {
+    "case": "wiki-rainbow-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 912.7860629562044,
+    "candidate_ns_per_document": 912.6254562043796,
+    "baseline_over_candidate_median": 0.9977729948086124,
+    "baseline_over_candidate_min": 0.669161092985566,
+    "baseline_over_candidate_max": 1.6148680306250047,
+    "pairs": 15,
+    "round_medians": [
+      0.9938874637095702,
+      1.0101344152367437,
+      0.9652042408419922
+    ]
+  },
+  {
+    "case": "wiki-rainbow-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 530.3655467755622,
+    "candidate_ns_per_document": 542.125718235039,
+    "baseline_over_candidate_median": 0.991236553320509,
+    "baseline_over_candidate_min": 0.5592890682672313,
+    "baseline_over_candidate_max": 1.5096262476779054,
+    "pairs": 15,
+    "round_medians": [
+      0.768704098479871,
+      0.990210865767166,
+      0.9964250041461277
+    ]
+  },
+  {
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 33688.35690789474,
+    "candidate_ns_per_document": 33821.75506756757,
+    "baseline_over_candidate_median": 1.0077207622248143,
+    "baseline_over_candidate_min": 0.8508039305799605,
+    "baseline_over_candidate_max": 1.266858473056696,
+    "pairs": 15,
+    "round_medians": [
+      1.035085850587131,
+      1.0077207622248143,
+      0.9753194035721446
+    ]
+  },
+  {
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 42112.021875,
+    "candidate_ns_per_document": 48033.179398148146,
+    "baseline_over_candidate_median": 1.0106898895925165,
+    "baseline_over_candidate_min": 0.2809507752404626,
+    "baseline_over_candidate_max": 2.622469800057387,
+    "pairs": 15,
+    "round_medians": [
+      1.0106898895925165,
+      1.0560773858350054,
+      0.8443592539845229
+    ]
+  },
+  {
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 27400.46010638298,
+    "candidate_ns_per_document": 31368.29453125,
+    "baseline_over_candidate_median": 0.9754467974804581,
+    "baseline_over_candidate_min": 0.5517392314151466,
+    "baseline_over_candidate_max": 1.2270079923840584,
+    "pairs": 15,
+    "round_medians": [
+      0.9276879267701101,
+      0.7914849839792816,
+      0.9811791599411274
+    ]
+  },
+  {
+    "case": "wiki-rainbow-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 11912.004166666668,
+    "candidate_ns_per_document": 12057.466947115385,
+    "baseline_over_candidate_median": 0.9843046698045449,
+    "baseline_over_candidate_min": 0.5988734408364168,
+    "baseline_over_candidate_max": 1.0381824118229557,
+    "pairs": 15,
+    "round_medians": [
+      0.9903456814539732,
+      0.9843046698045449,
+      0.9163698221013321
+    ]
+  },
+  {
+    "case": "wiki-rainbow-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "fresh",
+    "baseline_ns_per_document": 9282.513425925927,
+    "candidate_ns_per_document": 9224.87752757353,
+    "baseline_over_candidate_median": 1.0092547878895801,
+    "baseline_over_candidate_min": 0.8907768020216856,
+    "baseline_over_candidate_max": 1.5644246087158147,
+    "pairs": 15,
+    "round_medians": [
+      1.14290362780662,
+      1.0023294041718966,
+      1.014976287019791
+    ]
+  },
+  {
+    "case": "wiki-rainbow-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "reuse",
+    "baseline_ns_per_document": 8917.21165780142,
+    "candidate_ns_per_document": 8892.250221631206,
+    "baseline_over_candidate_median": 1.0081264532958725,
+    "baseline_over_candidate_min": 0.7024762238674143,
+    "baseline_over_candidate_max": 1.1888104693840404,
+    "pairs": 15,
+    "round_medians": [
+      1.0048019895992133,
+      1.103742977971359,
+      1.0081264532958725
+    ]
+  },
+  {
+    "case": "wiki-rainbow-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "parse",
+    "baseline_ns_per_document": 5756.588016055046,
+    "candidate_ns_per_document": 5708.024257990867,
+    "baseline_over_candidate_median": 1.0023768261853507,
+    "baseline_over_candidate_min": 0.7983516973056954,
+    "baseline_over_candidate_max": 1.7190022622223877,
+    "pairs": 15,
+    "round_medians": [
+      0.948033189002057,
+      1.0023768261853507,
+      1.0125875326783753
+    ]
+  },
+  {
+    "case": "wiki-rainbow-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "render",
+    "baseline_ns_per_document": 3068.056142769608,
+    "candidate_ns_per_document": 3096.0931311881186,
+    "baseline_over_candidate_median": 1.003843902756647,
+    "baseline_over_candidate_min": 0.9564453566586063,
+    "baseline_over_candidate_max": 5.037444887368922,
+    "pairs": 15,
+    "round_medians": [
+      1.0020193233028651,
+      0.9895245420035291,
+      1.9159947170906486
+    ]
+  },
+  {
+    "case": "wiki-tea-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1715.8814729080932,
+    "candidate_ns_per_document": 1717.7752403846155,
+    "baseline_over_candidate_median": 0.9964657177327889,
+    "baseline_over_candidate_min": 0.985312490508684,
+    "baseline_over_candidate_max": 1.0562129153489843,
+    "pairs": 15,
+    "round_medians": [
+      0.9970112851951132,
+      0.995404205706284,
+      0.9958480400616561
+    ]
+  },
+  {
+    "case": "wiki-tea-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1580.1899068813132,
+    "candidate_ns_per_document": 1582.1859987357775,
+    "baseline_over_candidate_median": 0.9956574991277349,
+    "baseline_over_candidate_min": 0.8953197812696547,
+    "baseline_over_candidate_max": 1.0494534963124227,
+    "pairs": 15,
+    "round_medians": [
+      1.0188905317925114,
+      0.9956574991277349,
+      0.9927973934184412
+    ]
+  },
+  {
+    "case": "wiki-tea-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 1023.3543882978723,
+    "candidate_ns_per_document": 1021.0193367346939,
+    "baseline_over_candidate_median": 0.9988077371160046,
+    "baseline_over_candidate_min": 0.9533284327517447,
+    "baseline_over_candidate_max": 1.0477405118287548,
+    "pairs": 15,
+    "round_medians": [
+      1.0063317783213952,
+      0.9956595393856021,
+      1.0074559472109286
+    ]
+  },
+  {
+    "case": "wiki-tea-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 570.9011130136986,
+    "candidate_ns_per_document": 573.5880160550458,
+    "baseline_over_candidate_median": 0.9970544179286172,
+    "baseline_over_candidate_min": 0.9836304700835374,
+    "baseline_over_candidate_max": 1.013257028678146,
+    "pairs": 15,
+    "round_medians": [
+      0.9950715020658414,
+      0.9994902200326318,
+      0.9928752407976759
+    ]
+  },
+  {
+    "case": "wiki-tea-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 7817.276953125,
+    "candidate_ns_per_document": 7833.8052734375,
+    "baseline_over_candidate_median": 0.9974569600606427,
+    "baseline_over_candidate_min": 0.6399364794242,
+    "baseline_over_candidate_max": 1.4294294937930352,
+    "pairs": 15,
+    "round_medians": [
+      0.9410019878551116,
+      0.9974569600606427,
+      0.999529609962573
+    ]
+  },
+  {
+    "case": "wiki-tea-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 12188.536407766991,
+    "candidate_ns_per_document": 11703.477803738318,
+    "baseline_over_candidate_median": 1.0053199597880769,
+    "baseline_over_candidate_min": 0.31964461671353295,
+    "baseline_over_candidate_max": 2.1808623296611738,
+    "pairs": 15,
+    "round_medians": [
+      0.755693761013985,
+      1.0053199597880769,
+      1.0882842242301651
+    ]
+  },
+  {
+    "case": "wiki-tea-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 4723.221344339622,
+    "candidate_ns_per_document": 4740.160392992424,
+    "baseline_over_candidate_median": 1.0002858586173562,
+    "baseline_over_candidate_min": 0.982890619302108,
+    "baseline_over_candidate_max": 1.0681368145979468,
+    "pairs": 15,
+    "round_medians": [
+      0.9977226445432112,
+      1.0121725411782538,
+      1.0002858586173562
+    ]
+  },
+  {
+    "case": "wiki-tea-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 2687.743092811159,
+    "candidate_ns_per_document": 2727.169526143791,
+    "baseline_over_candidate_median": 0.9881920833424604,
+    "baseline_over_candidate_min": 0.9711642766104588,
+    "baseline_over_candidate_max": 1.0394665408204666,
+    "pairs": 15,
+    "round_medians": [
+      0.9846132824039242,
+      1.0053129846941624,
+      0.9890924884241954
+    ]
+  },
+  {
+    "case": "wiki-tea-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 71567.78125,
+    "candidate_ns_per_document": 75803.76838235294,
+    "baseline_over_candidate_median": 0.977661556860702,
+    "baseline_over_candidate_min": 0.7135796068755779,
+    "baseline_over_candidate_max": 1.523906663427757,
+    "pairs": 15,
+    "round_medians": [
+      0.9114552717428723,
+      1.0545718876036658,
+      0.9991249307399903
+    ]
+  },
+  {
+    "case": "wiki-tea-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 76107.46139705883,
+    "candidate_ns_per_document": 80403.888671875,
+    "baseline_over_candidate_median": 0.9689719467915945,
+    "baseline_over_candidate_min": 0.4909217735459265,
+    "baseline_over_candidate_max": 1.251777602182183,
+    "pairs": 15,
+    "round_medians": [
+      1.0533359947169196,
+      1.0331231834904029,
+      0.8591738898923331
+    ]
+  },
+  {
+    "case": "wiki-tea-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 34618.27871621621,
+    "candidate_ns_per_document": 36297.24732142857,
+    "baseline_over_candidate_median": 0.9954673197495691,
+    "baseline_over_candidate_min": 0.43137990303119333,
+    "baseline_over_candidate_max": 1.1276837611364043,
+    "pairs": 15,
+    "round_medians": [
+      0.9810676214908834,
+      0.9954673197495691,
+      0.9978603032808123
+    ]
+  },
+  {
+    "case": "wiki-tea-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 20335.706653225807,
+    "candidate_ns_per_document": 22932.267613636363,
+    "baseline_over_candidate_median": 1.0120501480105006,
+    "baseline_over_candidate_min": 0.6105270830824675,
+    "baseline_over_candidate_max": 2.7327794885488514,
+    "pairs": 15,
+    "round_medians": [
+      1.001116969787361,
+      1.0125875216047437,
+      1.0027894154706594
+    ]
+  },
+  {
+    "case": "wiki-tea-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "fresh",
+    "baseline_ns_per_document": 11426.301988636364,
+    "candidate_ns_per_document": 11321.380067567568,
+    "baseline_over_candidate_median": 1.020858168556613,
+    "baseline_over_candidate_min": 0.4815384866990031,
+    "baseline_over_candidate_max": 3.2171207681276885,
+    "pairs": 15,
+    "round_medians": [
+      1.20233254415566,
+      1.0202098318486392,
+      0.9917444914805368
+    ]
+  },
+  {
+    "case": "wiki-tea-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "reuse",
+    "baseline_ns_per_document": 10738.225694444445,
+    "candidate_ns_per_document": 10620.332362288136,
+    "baseline_over_candidate_median": 1.009651762795205,
+    "baseline_over_candidate_min": 0.9741681617979461,
+    "baseline_over_candidate_max": 1.0759103917540938,
+    "pairs": 15,
+    "round_medians": [
+      1.0163190815238916,
+      1.0116818309448585,
+      0.9972456601029597
+    ]
+  },
+  {
+    "case": "wiki-tea-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "parse",
+    "baseline_ns_per_document": 6955.099826388889,
+    "candidate_ns_per_document": 6927.93939917127,
+    "baseline_over_candidate_median": 1.0033289925269426,
+    "baseline_over_candidate_min": 0.724719367314455,
+    "baseline_over_candidate_max": 1.1359030851761505,
+    "pairs": 15,
+    "round_medians": [
+      1.015570792410765,
+      0.9968692856675587,
+      1.0150559541262032
+    ]
+  },
+  {
+    "case": "wiki-tea-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "render",
+    "baseline_ns_per_document": 3451.252582644628,
+    "candidate_ns_per_document": 3474.461111111111,
+    "baseline_over_candidate_median": 0.9920227110274246,
+    "baseline_over_candidate_min": 0.9285297867936378,
+    "baseline_over_candidate_max": 1.1745898354006807,
+    "pairs": 15,
+    "round_medians": [
+      0.9729746646246609,
+      1.0007758167222536,
+      1.0204032788578241
+    ]
+  },
+  {
+    "case": "wiki-chess-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 1429.1651785714287,
+    "candidate_ns_per_document": 1435.584995694604,
+    "baseline_over_candidate_median": 1.0019623705615046,
+    "baseline_over_candidate_min": 0.8075575065979833,
+    "baseline_over_candidate_max": 1.5545982620605996,
+    "pairs": 15,
+    "round_medians": [
+      1.0015826709376958,
+      0.9992777425010445,
+      1.1619376007144484
+    ]
+  },
+  {
+    "case": "wiki-chess-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 1229.6724127335299,
+    "candidate_ns_per_document": 1244.9484141791045,
+    "baseline_over_candidate_median": 0.9904672412590246,
+    "baseline_over_candidate_min": 0.7621182895339377,
+    "baseline_over_candidate_max": 1.2340461775867864,
+    "pairs": 15,
+    "round_medians": [
+      0.908873669199171,
+      0.9904672412590246,
+      0.9988866881360161
+    ]
+  },
+  {
+    "case": "wiki-chess-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 765.2616279069767,
+    "candidate_ns_per_document": 768.4068454210203,
+    "baseline_over_candidate_median": 0.9988472334991666,
+    "baseline_over_candidate_min": 0.9855815938536668,
+    "baseline_over_candidate_max": 1.0340938105348427,
+    "pairs": 15,
+    "round_medians": [
+      0.9953474190766669,
+      1.010400989928507,
+      0.9997085424785472
+    ]
+  },
+  {
+    "case": "wiki-chess-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 516.4634706732755,
+    "candidate_ns_per_document": 522.5888508570234,
+    "baseline_over_candidate_median": 0.9876163776506365,
+    "baseline_over_candidate_min": 0.6811488026772221,
+    "baseline_over_candidate_max": 1.6589819941114254,
+    "pairs": 15,
+    "round_medians": [
+      0.9597457351400579,
+      1.0938687067476995,
+      0.993413487415229
+    ]
+  },
+  {
+    "case": "wiki-chess-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 4035.740120967742,
+    "candidate_ns_per_document": 4069.893973214286,
+    "baseline_over_candidate_median": 1.00145913387306,
+    "baseline_over_candidate_min": 0.9778046214842445,
+    "baseline_over_candidate_max": 1.6997835891479671,
+    "pairs": 15,
+    "round_medians": [
+      1.4081655224758376,
+      0.9958720027776852,
+      1.00145913387306
+    ]
+  },
+  {
+    "case": "wiki-chess-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 3695.132005899705,
+    "candidate_ns_per_document": 3718.703635014837,
+    "baseline_over_candidate_median": 0.993661331628263,
+    "baseline_over_candidate_min": 0.8229073396452814,
+    "baseline_over_candidate_max": 2.054338255506721,
+    "pairs": 15,
+    "round_medians": [
+      0.9962217021339002,
+      1.000135144011949,
+      0.8862625900971703
+    ]
+  },
+  {
+    "case": "wiki-chess-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 2423.280523255814,
+    "candidate_ns_per_document": 2416.3348817567567,
+    "baseline_over_candidate_median": 1.0011419246021582,
+    "baseline_over_candidate_min": 0.5429619395231506,
+    "baseline_over_candidate_max": 1.4325725422613333,
+    "pairs": 15,
+    "round_medians": [
+      1.0011419246021582,
+      1.002874453185896,
+      0.9322818735526099
+    ]
+  },
+  {
+    "case": "wiki-chess-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 1417.2999929138323,
+    "candidate_ns_per_document": 1422.4527161547212,
+    "baseline_over_candidate_median": 0.988503815054287,
+    "baseline_over_candidate_min": 0.6029906402818567,
+    "baseline_over_candidate_max": 1.276938476460035,
+    "pairs": 15,
+    "round_medians": [
+      1.0068836956406353,
+      0.992693405831156,
+      0.9868910823968075
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 131086.065625,
+    "candidate_ns_per_document": 128270.36079545454,
+    "baseline_over_candidate_median": 1.019024384051075,
+    "baseline_over_candidate_min": 0.7196621046786419,
+    "baseline_over_candidate_max": 2.0878695710482287,
+    "pairs": 15,
+    "round_medians": [
+      1.4195095751906086,
+      0.999844866750847,
+      1.0423439895641609
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 119584.39772727272,
+    "candidate_ns_per_document": 118799.00568181818,
+    "baseline_over_candidate_median": 0.9997222416084504,
+    "baseline_over_candidate_min": 0.7335904957808816,
+    "baseline_over_candidate_max": 1.0821533335642919,
+    "pairs": 15,
+    "round_medians": [
+      0.9891214343876058,
+      1.0068318454580798,
+      1.0006707730608262
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 98927.08173076923,
+    "candidate_ns_per_document": 88056.33541666667,
+    "baseline_over_candidate_median": 1.0094230307795375,
+    "baseline_over_candidate_min": 0.7722131464000194,
+    "baseline_over_candidate_max": 1.4325971326473501,
+    "pairs": 15,
+    "round_medians": [
+      1.1957686128712552,
+      1.0094230307795375,
+      0.9424033373779808
+    ]
+  },
+  {
+    "case": "wiki-chess-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 37581.992647058825,
+    "candidate_ns_per_document": 37635.53125,
+    "baseline_over_candidate_median": 0.9974054821428027,
+    "baseline_over_candidate_min": 0.6164557675154023,
+    "baseline_over_candidate_max": 1.9606035294210795,
+    "pairs": 15,
+    "round_medians": [
+      1.0601698931127863,
+      1.0145827875703255,
+      0.990796068812306
+    ]
+  },
+  {
+    "case": "wiki-chess-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "fresh",
+    "baseline_ns_per_document": 24554.6875,
+    "candidate_ns_per_document": 26970.91090425532,
+    "baseline_over_candidate_median": 1.0066158731702004,
+    "baseline_over_candidate_min": 0.529427017646607,
+    "baseline_over_candidate_max": 5.598142506001737,
+    "pairs": 15,
+    "round_medians": [
+      1.0057641344642574,
+      1.0066158731702004,
+      1.1004361284064015
+    ]
+  },
+  {
+    "case": "wiki-chess-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "reuse",
+    "baseline_ns_per_document": 24855.95343137255,
+    "candidate_ns_per_document": 24343.649639423078,
+    "baseline_over_candidate_median": 0.9886827230277709,
+    "baseline_over_candidate_min": 0.6179803507124813,
+    "baseline_over_candidate_max": 1.1418151664209304,
+    "pairs": 15,
+    "round_medians": [
+      0.8006532757573335,
+      0.9988204102828817,
+      0.9710267293881801
+    ]
+  },
+  {
+    "case": "wiki-chess-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "parse",
+    "baseline_ns_per_document": 15569.782021604939,
+    "candidate_ns_per_document": 15533.773919753086,
+    "baseline_over_candidate_median": 1.0039455962331076,
+    "baseline_over_candidate_min": 0.5961045188545872,
+    "baseline_over_candidate_max": 1.0510955353082585,
+    "pairs": 15,
+    "round_medians": [
+      1.010549125527963,
+      0.9952015216400999,
+      1.0042135944570483
+    ]
+  },
+  {
+    "case": "wiki-chess-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "render",
+    "baseline_ns_per_document": 8464.157516891892,
+    "candidate_ns_per_document": 8727.493706597223,
+    "baseline_over_candidate_median": 1.0230083496363742,
+    "baseline_over_candidate_min": 0.6973344157721582,
+    "baseline_over_candidate_max": 1.3728922871420313,
+    "pairs": 15,
+    "round_medians": [
+      0.8567406006032097,
+      0.9821709868336227,
+      1.0260917676985302
+    ]
+  },
+  {
+    "case": "wiki-volcano-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 3769.0135542168673,
+    "candidate_ns_per_document": 3735.1912313432836,
+    "baseline_over_candidate_median": 0.9940949348739803,
+    "baseline_over_candidate_min": 0.46480047517787276,
+    "baseline_over_candidate_max": 1.2310135692663111,
+    "pairs": 15,
+    "round_medians": [
+      0.889131113424062,
+      0.9983579718055378,
+      0.8901398196963857
+    ]
+  },
+  {
+    "case": "wiki-volcano-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 2203.2786091549297,
+    "candidate_ns_per_document": 2187.754916958042,
+    "baseline_over_candidate_median": 0.996376785844907,
+    "baseline_over_candidate_min": 0.8249160613263586,
+    "baseline_over_candidate_max": 1.0152019086800657,
+    "pairs": 15,
+    "round_medians": [
+      1.0057012806772339,
+      0.9898486331403349,
+      0.8483992686502227
+    ]
+  },
+  {
+    "case": "wiki-volcano-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 1322.1004558668076,
+    "candidate_ns_per_document": 1331.141954787234,
+    "baseline_over_candidate_median": 0.9926865172689785,
+    "baseline_over_candidate_min": 0.9745375716030735,
+    "baseline_over_candidate_max": 1.0231557381475034,
+    "pairs": 15,
+    "round_medians": [
+      0.9989173424388892,
+      0.9926484657703442,
+      0.9897805178716892
+    ]
+  },
+  {
+    "case": "wiki-volcano-first-paragraph",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 1080.569360414866,
+    "candidate_ns_per_document": 1114.290886809269,
+    "baseline_over_candidate_median": 0.9967542441892859,
+    "baseline_over_candidate_min": 0.6730112249957032,
+    "baseline_over_candidate_max": 1.3800431000007833,
+    "pairs": 15,
+    "round_medians": [
+      1.0481295892009541,
+      0.9967542441892859,
+      0.9815732282942642
+    ]
+  },
+  {
+    "case": "wiki-volcano-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 3151.8419395465994,
+    "candidate_ns_per_document": 3158.1570391414143,
+    "baseline_over_candidate_median": 0.9993429934469996,
+    "baseline_over_candidate_min": 0.9771560971059338,
+    "baseline_over_candidate_max": 1.0842225102380978,
+    "pairs": 15,
+    "round_medians": [
+      0.9835029176806434,
+      1.0091927491404935,
+      1.0016267025613155
+    ]
+  },
+  {
+    "case": "wiki-volcano-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 3261.4237467447915,
+    "candidate_ns_per_document": 3243.2298413212434,
+    "baseline_over_candidate_median": 0.9886188896308307,
+    "baseline_over_candidate_min": 0.7137799758143831,
+    "baseline_over_candidate_max": 1.080951980523697,
+    "pairs": 15,
+    "round_medians": [
+      1.0056098106867863,
+      0.9886188896308307,
+      0.883759585263218
+    ]
+  },
+  {
+    "case": "wiki-volcano-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 1781.4800124643875,
+    "candidate_ns_per_document": 1771.5802939093485,
+    "baseline_over_candidate_median": 1.0070873342647204,
+    "baseline_over_candidate_min": 0.9823671727145531,
+    "baseline_over_candidate_max": 1.260037412750668,
+    "pairs": 15,
+    "round_medians": [
+      1.0020867331643253,
+      1.0576134521536362,
+      0.9985106874548547
+    ]
+  },
+  {
+    "case": "wiki-volcano-lead",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 1151.8701657458564,
+    "candidate_ns_per_document": 1166.445604011194,
+    "baseline_over_candidate_median": 0.9928377898588638,
+    "baseline_over_candidate_min": 0.9127296541325545,
+    "baseline_over_candidate_max": 1.143908305137248,
+    "pairs": 15,
+    "round_medians": [
+      0.944573697247545,
+      0.9883192638590133,
+      0.9967595712902859
+    ]
+  },
+  {
+    "case": "wiki-volcano-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 64153.6453125,
+    "candidate_ns_per_document": 63302.278125,
+    "baseline_over_candidate_median": 1.0071304751401615,
+    "baseline_over_candidate_min": 0.955338454865091,
+    "baseline_over_candidate_max": 1.077799420823841,
+    "pairs": 15,
+    "round_medians": [
+      0.9970945950849222,
+      1.0210445117495541,
+      1.0128351622061937
+    ]
+  },
+  {
+    "case": "wiki-volcano-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "reuse",
+    "baseline_ns_per_document": 62675.0,
+    "candidate_ns_per_document": 62588.0203125,
+    "baseline_over_candidate_median": 1.0070418920102306,
+    "baseline_over_candidate_min": 0.8207412988636256,
+    "baseline_over_candidate_max": 1.8083169127016783,
+    "pairs": 15,
+    "round_medians": [
+      1.0070418920102306,
+      1.0907021655424562,
+      0.9901428823088568
+    ]
+  },
+  {
+    "case": "wiki-volcano-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 36228.27410714285,
+    "candidate_ns_per_document": 35645.471354166664,
+    "baseline_over_candidate_median": 1.0072489939215399,
+    "baseline_over_candidate_min": 0.8207751465550945,
+    "baseline_over_candidate_max": 1.3637801830109189,
+    "pairs": 15,
+    "round_medians": [
+      0.9024619187910669,
+      1.0146362532465811,
+      1.0242569048229304
+    ]
+  },
+  {
+    "case": "wiki-volcano-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "render",
+    "baseline_ns_per_document": 25547.061224489797,
+    "candidate_ns_per_document": 26867.13456632653,
+    "baseline_over_candidate_median": 0.9856902194766696,
+    "baseline_over_candidate_min": 0.7334175946822564,
+    "baseline_over_candidate_max": 1.3633548775672855,
+    "pairs": 15,
+    "round_medians": [
+      1.0043981647814444,
+      0.9130436658123964,
+      1.0190655153559671
+    ]
+  },
+  {
+    "case": "wiki-volcano-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "fresh",
+    "baseline_ns_per_document": 14254.823508522728,
+    "candidate_ns_per_document": 14271.321732954546,
+    "baseline_over_candidate_median": 1.0013365329841015,
+    "baseline_over_candidate_min": 0.4933039701667939,
+    "baseline_over_candidate_max": 3.8048853187997396,
+    "pairs": 15,
+    "round_medians": [
+      1.0006169230602795,
+      1.0013365329841015,
+      1.1283453593031005
+    ]
+  },
+  {
+    "case": "wiki-volcano-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "reuse",
+    "baseline_ns_per_document": 13066.0537109375,
+    "candidate_ns_per_document": 13162.061184210526,
+    "baseline_over_candidate_median": 0.9959961523185383,
+    "baseline_over_candidate_min": 0.982758057513063,
+    "baseline_over_candidate_max": 1.0148022523361693,
+    "pairs": 15,
+    "round_medians": [
+      0.9921994338794883,
+      0.9939638512748799,
+      1.009016207400811
+    ]
+  },
+  {
+    "case": "wiki-volcano-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "parse",
+    "baseline_ns_per_document": 9065.189085144928,
+    "candidate_ns_per_document": 9011.053732014389,
+    "baseline_over_candidate_median": 1.0018435451626018,
+    "baseline_over_candidate_min": 0.6600458328682194,
+    "baseline_over_candidate_max": 1.4455896538026811,
+    "pairs": 15,
+    "round_medians": [
+      1.0353127917287759,
+      0.9981027997513146,
+      1.0018435451626018
+    ]
+  },
+  {
+    "case": "wiki-volcano-plain-prose",
+    "profile": "commonmark",
+    "category": "plain-prose",
+    "mode": "render",
+    "baseline_ns_per_document": 4032.413508064516,
+    "candidate_ns_per_document": 4017.4070512820513,
+    "baseline_over_candidate_median": 0.9991081293806212,
+    "baseline_over_candidate_min": 0.8843877190550157,
+    "baseline_over_candidate_max": 1.926186292816488,
+    "pairs": 15,
+    "round_medians": [
+      0.9939770399287061,
+      1.003085005819009,
+      0.9991081293806212
+    ]
+  }
+]

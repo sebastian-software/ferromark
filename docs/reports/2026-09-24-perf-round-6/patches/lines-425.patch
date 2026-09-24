@@ -1,0 +1,1515 @@
+From fdfd9822d3de7acc416fb7138943751b487f0d0b Mon Sep 17 00:00:00 2001
+From: Sebastian Werner <swernerx@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 19:03:25 +0200
+Subject: [PATCH] perf(parser): measure each container line's indentation and
+ end once
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The list item collector and the block quote walk asked the same
+questions of every line they consumed — where it ends, where the next
+one starts, how deeply it is indented, whether it is blank, and what
+follows that indentation — and every answer came from its own scan over
+the same bytes. An indented list continuation line was walked by the
+blank test, by `calc_indentation` and by `push_line_without_indent`, and
+walked again by `trim_start` or `first_non_whitespace_in_line` once it
+turned out to carry a marker or to continue a paragraph lazily; a quote
+line walked its prefix for the blank test and again for the marker's
+column arithmetic.
+
+`LineFacts` now answers all of that from one walk of the leading
+space/tab run followed by one terminator search that starts where the
+run ends. `push_measured_line_without_indent` dedents a tab-free run by
+slicing, and `line_starts_block` takes the first content byte its
+callers have already located.
+
+This is the round-4 `lines` candidate ported onto the byte-level
+whitespace helpers, with the block quote regression it measured fixed:
+the facts used to search for the terminator before anything else, so the
+blank line that closes a quote paid a search the old walk never made. The
+quote now measures the run, stops on a blank line from the byte after
+it, and only then looks for the line's end. The list walk needs every
+line's end, blank ones included, so it had no such early exit to lose.
+
+The result is unchanged because every fact is defined as the helper it
+replaces: `trimmed` and `is_blank` are `whitespace::trim_start` and
+`whitespace::is_blank` of the line, so a no-break-space line stays
+content, and the two column counts stay apart because
+`calc_indentation`, which list continuation depth is compared against,
+charges a tab a flat four columns. The walks they replaced are kept
+verbatim under `cfg(test)`, and a differential test parses generated
+container soup, the specification fixtures and the frozen corpus through
+both, in LF, CRLF and CR, and requires the same AST, source spans
+included, and the same HTML.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/parser/block_quote.rs           |  62 ++---
+ src/parser/block_quote/per_line.rs  | 145 +++++++++++
+ src/parser/container_equivalence.rs | 373 ++++++++++++++++++++++++++++
+ src/parser/cursor.rs                | 262 ++++++++++++++++++-
+ src/parser/list.rs                  |  78 ++++--
+ src/parser/list/per_line.rs         | 228 +++++++++++++++++
+ src/parser/list_item.rs             |  41 ++-
+ src/parser/mod.rs                   |   4 +
+ 8 files changed, 1131 insertions(+), 62 deletions(-)
+ create mode 100644 src/parser/block_quote/per_line.rs
+ create mode 100644 src/parser/container_equivalence.rs
+ create mode 100644 src/parser/list/per_line.rs
+
+diff --git a/src/parser/block_quote.rs b/src/parser/block_quote.rs
+index 2ec5e0ef..06846502 100644
+--- a/src/parser/block_quote.rs
++++ b/src/parser/block_quote.rs
+@@ -1,14 +1,18 @@
+ use crate::ast::{BlockQuote, Node, Span};
+ 
+ use super::Parser;
++use super::cursor::LineIndent;
+ use super::lazy_paragraph::OpenParagraph;
+-use super::line_scan::{
+-    line_end as scan_line_end, line_terminator_end, next_line_start as scan_next_line_start,
+-};
++use super::line_scan::{is_line_ending_byte, next_line_start as scan_next_line_start};
+ use super::spans::SourceMap;
+ use super::whitespace;
+ use crate::parser::error::ParseResult;
+ 
++/// The walk as it read each line before the line facts, kept for the
++/// container equivalence tests.
++#[cfg(test)]
++mod per_line;
++
+ impl<'a> Parser<'a> {
+     /// Parses a block quote by stripping quote markers into arena storage.
+     ///
+@@ -17,6 +21,11 @@ impl<'a> Parser<'a> {
+     /// old two-step path of filling a system `String` and then copying it into
+     /// arena storage before recursive parsing.
+     pub(super) fn parse_block_quote(&mut self, start: usize) -> ParseResult<Option<Node<'a>>> {
++        #[cfg(test)]
++        if super::container_equivalence::per_line_walk() {
++            return self.parse_block_quote_per_line(start);
++        }
++
+         // Collect lines belonging to this block quote and strip the `>` prefix.
+         // Write straight into a bump-allocated `String` so we don't pay for
+         // `String::new` (system allocator) followed by `alloc_str` (copy to
+@@ -56,20 +65,24 @@ impl<'a> Parser<'a> {
+                 self.position = next;
+                 continue;
+             }
+-            let mut ws_cursor = line_start;
+-            while ws_cursor < bytes.len() && matches!(bytes[ws_cursor], b' ' | b'\t') {
+-                ws_cursor += 1;
+-            }
+-
+-            // Blank line ends the block quote
+-            if ws_cursor >= bytes.len() || matches!(bytes[ws_cursor], b'\n' | b'\r') {
++            // The space/tab run stops at the line's terminator by itself, so
++            // the byte after it tells a blank line apart. Testing that first
++            // lets a blank line, which is what usually closes a quote, end
++            // the walk before it pays for a terminator search.
++            let indent = LineIndent::at(bytes, line_start);
++            let run_end = line_start + indent.bytes;
++            if run_end >= bytes.len() || is_line_ending_byte(bytes[run_end]) {
+                 break;
+             }
+ 
+-            let line_end = scan_line_end(bytes, line_start);
+-            let line = &self.source[line_start..line_end];
+-            let trimmed_offset = ws_cursor - line_start;
+-            let trimmed = &line[trimmed_offset..];
++            // Every other line needs its end. The search starts past the
++            // measured run, and the run's columns are the ones the marker's
++            // own arithmetic continues from.
++            let facts = self.line_facts_with_indent(line_start, indent);
++            let line = facts.line;
++            let line_next = facts.next;
++            let line_end = line_start + line.len();
++            let trimmed = facts.after_indent();
+ 
+             if let Some(after_gt) = trimmed.strip_prefix('>') {
+                 // The marker consumes `>` plus one column of following
+@@ -77,15 +90,7 @@ impl<'a> Parser<'a> {
+                 // spaces (with original column arithmetic) keeps tab stops
+                 // aligned through the re-parse: `>\t\tfoo` becomes six
+                 // spaces + foo, i.e. indented code with two extra columns.
+-                let mut column = 0usize;
+-                for &byte in &line.as_bytes()[..trimmed_offset] {
+-                    column = if byte == b'\t' {
+-                        (column / 4 + 1) * 4
+-                    } else {
+-                        column + 1
+-                    };
+-                }
+-                let after_marker_column = column + 1;
++                let after_marker_column = indent.columns + 1;
+                 let ws_bytes = after_gt.as_bytes();
+                 let mut ws_len = 0usize;
+                 let mut ws_end_column = after_marker_column;
+@@ -109,11 +114,7 @@ impl<'a> Parser<'a> {
+                 let stripped_trimmed = &after_gt[ws_len..];
+                 inner.push_str(stripped_trimmed);
+                 inner.push('\n');
+-                let content_start =
+-                    line_start + trimmed_offset + 1 + Self::quote_marker_space_bytes(after_gt);
+-                // The line's terminator is already located, so stepping
+-                // over it is a two-byte test rather than a second search.
+-                let line_next = line_terminator_end(bytes, line_end);
++                let content_start = run_end + 1 + Self::quote_marker_space_bytes(after_gt);
+                 let source_len =
+                     line_end.saturating_sub(content_start) + line_next.saturating_sub(line_end);
+                 source_map.push_line(
+@@ -126,7 +127,9 @@ impl<'a> Parser<'a> {
+                 // Advance past this line (and the trailing newline if any).
+                 self.position = line_next;
+             } else if !Self::quote_lazy_blocked(trimmed)
+-                && !self.line_starts_block()
++                // The line is not blank, so its first non-space, non-tab
++                // byte is exactly where its space/tab run ended.
++                && !self.line_starts_block(line_start, run_end)
+                 && open_paragraph.catch_up(&inner, &self.options)
+             {
+                 // Lazy continuation: the line joins the quote's open
+@@ -138,7 +141,6 @@ impl<'a> Parser<'a> {
+                 lazy_lines.insert(inner.len() as u32);
+                 inner.push_str(line);
+                 inner.push('\n');
+-                let line_next = line_terminator_end(bytes, line_end);
+                 source_map.push_line(
+                     generated_start,
+                     line.len() + 1,
+diff --git a/src/parser/block_quote/per_line.rs b/src/parser/block_quote/per_line.rs
+new file mode 100644
+index 00000000..5bb76f81
+--- /dev/null
++++ b/src/parser/block_quote/per_line.rs
+@@ -0,0 +1,145 @@
++//! The block quote walk as it read each line before the line facts: a
++//! space/tab walk for the blank test, a terminator search, and a second
++//! column walk for the marker. Tests only; the container equivalence tests
++//! parse every input through this and through the production walk and
++//! compare the results.
++
++use crate::ast::{BlockQuote, Node, Span};
++
++use super::super::Parser;
++use super::super::lazy_paragraph::OpenParagraph;
++use super::super::line_scan::{
++    line_end as scan_line_end, line_terminator_end, next_line_start as scan_next_line_start,
++};
++use super::super::spans::SourceMap;
++use crate::parser::error::ParseResult;
++
++impl<'a> Parser<'a> {
++    pub(super) fn parse_block_quote_per_line(
++        &mut self,
++        start: usize,
++    ) -> ParseResult<Option<Node<'a>>> {
++        let bytes = self.source.as_bytes();
++        let mut inner = crate::allocator::String::with_capacity_in(128, self.allocator.bump());
++        let mut open_paragraph = OpenParagraph::default();
++        let mut lazy_lines = rustc_hash::FxHashSet::default();
++        let mut source_map = SourceMap::default();
++
++        loop {
++            if self.position >= bytes.len() {
++                break;
++            }
++
++            let line_start = self.position;
++            if self.is_line_comment_at(line_start) {
++                let next = scan_next_line_start(bytes, line_start);
++                source_map.push_line(
++                    inner.len(),
++                    next - line_start,
++                    line_start,
++                    next - line_start,
++                );
++                open_paragraph.catch_up(&inner, &self.options);
++                inner.push_str(&self.source[line_start..next]);
++                open_paragraph.skip_to(inner.len());
++                self.position = next;
++                continue;
++            }
++            let mut ws_cursor = line_start;
++            while ws_cursor < bytes.len() && matches!(bytes[ws_cursor], b' ' | b'\t') {
++                ws_cursor += 1;
++            }
++
++            // Blank line ends the block quote
++            if ws_cursor >= bytes.len() || matches!(bytes[ws_cursor], b'\n' | b'\r') {
++                break;
++            }
++
++            let line_end = scan_line_end(bytes, line_start);
++            let line = &self.source[line_start..line_end];
++            let trimmed_offset = ws_cursor - line_start;
++            let trimmed = &line[trimmed_offset..];
++
++            if let Some(after_gt) = trimmed.strip_prefix('>') {
++                let mut column = 0usize;
++                for &byte in &line.as_bytes()[..trimmed_offset] {
++                    column = if byte == b'\t' {
++                        (column / 4 + 1) * 4
++                    } else {
++                        column + 1
++                    };
++                }
++                let after_marker_column = column + 1;
++                let ws_bytes = after_gt.as_bytes();
++                let mut ws_len = 0usize;
++                let mut ws_end_column = after_marker_column;
++                while ws_len < ws_bytes.len() && matches!(ws_bytes[ws_len], b' ' | b'\t') {
++                    ws_end_column = if ws_bytes[ws_len] == b'\t' {
++                        (ws_end_column / 4 + 1) * 4
++                    } else {
++                        ws_end_column + 1
++                    };
++                    ws_len += 1;
++                }
++                let indent_columns = if ws_len > 0 {
++                    ws_end_column.saturating_sub(after_marker_column + 1)
++                } else {
++                    0
++                };
++                let generated_start = inner.len();
++                for _ in 0..indent_columns {
++                    inner.push(' ');
++                }
++                let stripped_trimmed = &after_gt[ws_len..];
++                inner.push_str(stripped_trimmed);
++                inner.push('\n');
++                let content_start =
++                    line_start + trimmed_offset + 1 + Self::quote_marker_space_bytes(after_gt);
++                let line_next = line_terminator_end(bytes, line_end);
++                let source_len =
++                    line_end.saturating_sub(content_start) + line_next.saturating_sub(line_end);
++                source_map.push_line(
++                    generated_start,
++                    indent_columns + stripped_trimmed.len() + 1,
++                    content_start,
++                    source_len,
++                );
++
++                self.position = line_next;
++            } else if !Self::quote_lazy_blocked(trimmed)
++                && !self.line_starts_block_per_line()
++                && open_paragraph.catch_up(&inner, &self.options)
++            {
++                let generated_start = inner.len();
++                lazy_lines.insert(inner.len() as u32);
++                inner.push_str(line);
++                inner.push('\n');
++                let line_next = line_terminator_end(bytes, line_end);
++                source_map.push_line(
++                    generated_start,
++                    line.len() + 1,
++                    line_start,
++                    line.len() + line_next.saturating_sub(line_end),
++                );
++                self.position = line_next;
++            } else {
++                break;
++            }
++        }
++
++        let inner_str = inner.into_bump_str();
++        let sub_parser = self.sub_parser_with_source_map(inner_str, lazy_lines, &source_map);
++        let sub_doc = sub_parser
++            .parse()
++            .map_err(|error| error.remapped(&source_map))?;
++        let mut children = sub_doc.children;
++        for child in &mut children {
++            source_map.remap_node_spans(child);
++        }
++
++        let span = Span::new(start as u32, self.position as u32);
++        Ok(Some(Node::BlockQuote(
++            self.allocator.boxed(BlockQuote { children, span }),
++        )))
++    }
++}
+diff --git a/src/parser/container_equivalence.rs b/src/parser/container_equivalence.rs
+new file mode 100644
+index 00000000..cc02aa06
+--- /dev/null
++++ b/src/parser/container_equivalence.rs
+@@ -0,0 +1,373 @@
++//! The container line facts must not change what the list and block quote
++//! walks produce.
++//!
++//! Every input here is parsed twice: once through the production walks,
++//! which measure each line once through [`LineFacts`](super::cursor::LineFacts),
++//! and once through the per-line walks they replaced, kept verbatim in
++//! `list/per_line.rs` and `block_quote/per_line.rs`. The two documents have to
++//! agree in their full AST, source spans included, and in their HTML. The
++//! inputs are generated container soup (nested lists and quotes, blank lines,
++//! tabs, mixed LF/CRLF/CR endings, lazy continuation, no-break-space and
++//! form-feed lines, line comments), the bundled specification fixtures in all
++//! three line endings, and the frozen measurement corpus.
++
++#![allow(
++    clippy::disallowed_macros,
++    clippy::disallowed_methods,
++    clippy::disallowed_types,
++    clippy::print_stdout
++)]
++
++use std::cell::Cell;
++use std::path::Path;
++
++use crate::allocator::Allocator;
++use crate::parser::{Parser, ParserOptions};
++use crate::renderer::HtmlRenderer;
++
++thread_local! {
++    /// Whether the container walks on this thread take the per-line path.
++    static PER_LINE_WALK: Cell<bool> = const { Cell::new(false) };
++    /// How many container walks took the per-line path, so a sweep can
++    /// prove it really compared two different walks.
++    static PER_LINE_WALKS: Cell<usize> = const { Cell::new(0) };
++}
++
++/// Whether the list and block quote walks should run their per-line
++/// reference versions. Asked once per walk.
++pub(super) fn per_line_walk() -> bool {
++    let per_line = PER_LINE_WALK.with(Cell::get);
++    if per_line {
++        PER_LINE_WALKS.with(|walks| walks.set(walks.get() + 1));
++    }
++    per_line
++}
++
++impl Parser<'_> {
++    /// `line_starts_block` as the per-line walks called it: for the line at
++    /// the current position, walking its indentation once more to find the
++    /// first content byte.
++    pub(super) fn line_starts_block_per_line(&self) -> bool {
++        let line_start = self.position;
++        let Some(trimmed_start) = self.first_non_whitespace_in_line(line_start) else {
++            return false;
++        };
++        self.probe_line(line_start, trimmed_start).starts_block
++    }
++}
++
++/// Resets the walk selection even when a parse panics.
++struct PerLineWalk;
++
++impl PerLineWalk {
++    fn select(per_line: bool) -> Self {
++        PER_LINE_WALK.with(|flag| flag.set(per_line));
++        Self
++    }
++}
++
++impl Drop for PerLineWalk {
++    fn drop(&mut self) {
++        PER_LINE_WALK.with(|flag| flag.set(false));
++    }
++}
++
++/// The full AST (source spans included) and the HTML of one parse, or the
++/// error it reported.
++fn output(source: &str, options: &ParserOptions, per_line: bool) -> String {
++    let _walk = PerLineWalk::select(per_line);
++    let allocator = Allocator::new();
++    match Parser::with_options(&allocator, source, options.clone()).parse() {
++        Ok(document) => {
++            let html = HtmlRenderer::new().render(&document);
++            format!(
++                "{:?}\n{:?}\n{:?}\n{html}",
++                document.span, document.front_matter, document.children
++            )
++        }
++        Err(error) => format!("error: {error:?}"),
++    }
++}
++
++#[track_caller]
++fn check(source: &str, options: &ParserOptions, label: &str) {
++    let measured = output(source, options, false);
++    let per_line = output(source, options, true);
++    assert!(
++        measured == per_line,
++        "line facts changed the output for {label} {source:?}\n\
++         --- per-line walk ---\n{per_line}\n--- line facts ---\n{measured}"
++    );
++}
++
++fn option_matrix() -> Vec<(&'static str, ParserOptions)> {
++    vec![
++        ("commonmark", ParserOptions::commonmark()),
++        ("gfm", ParserOptions::gfm()),
++        ("gfm_spec", ParserOptions::gfm_spec()),
++        ("mdx", ParserOptions::mdx()),
++        (
++            "line_comments",
++            ParserOptions {
++                line_comments: true,
++                ..ParserOptions::gfm()
++            },
++        ),
++        (
++            "extensions",
++            ParserOptions {
++                footnotes: true,
++                superscript: true,
++                subscript: true,
++                math: true,
++                definition_lists: true,
++                heading_attributes: true,
++                wiki_links: true,
++                cjk_emphasis: true,
++                line_comments: true,
++                ..ParserOptions::gfm()
++            },
++        ),
++    ]
++}
++
++/// `source` as written and with every LF turned into CRLF and into CR.
++fn line_ending_variants(source: &str) -> [String; 3] {
++    [
++        source.to_string(),
++        source.replace('\n', "\r\n"),
++        source.replace('\n', "\r"),
++    ]
++}
++
++#[test]
++fn container_edge_cases_parse_the_same() {
++    let cases = [
++        // The blank line that closes a quote, in every shape the quote's
++        // own test and the list's test disagree on.
++        "> quote\n\nafter\n",
++        "> quote\n   \nafter\n",
++        "> quote\n\t \nafter\n",
++        "> quote\n\u{c}\nafter\n",
++        "> quote\n \u{b} \nafter\n",
++        "> quote\n\u{a0}\nafter\n",
++        "> quote",
++        "> quote\n",
++        "> quote\n  ",
++        // Lazy continuation and what interrupts it.
++        "> a\nlazy\n> b\n    lazy code?\n- item\n",
++        "> a\n  - x\n> b\n-\n",
++        "- a\nlazy\n  more\n\n  para\n- b\n",
++        "- a\n\u{a0}\n- b\n",
++        "- a\n\u{a0}\u{a0}\n\n- b\n",
++        "- a\n \u{c} \n- b\n",
++        "- a\n\u{c}- b\n",
++        "- a\n\n\u{a0}- b\n",
++        "* a\n*\n\n* c\n",
++        // Tabs in the indentation, after markers and in the dedent.
++        "-\tfoo\n\n\tbar\n",
++        "- foo\n\n\t\tbar\n",
++        "  - foo\n \t  bar\n\t- baz\n",
++        ">\t\tfoo\n>  \tbar\n \t> baz\n",
++        // A tab before the marker puts the true and the flat column count
++        // apart; the tabs after it expand from the true one.
++        "> a\n \t>\t\tb\n  \t> \tc\n",
++        "1.\ta\n\n   \tb\n  \t2. c\n",
++        // Nested containers with blank lines between and inside.
++        "- a\n  > b\n  >\n  > c\n\n  d\n- e\n",
++        "> - a\n>\n>   b\n> - c\n",
++        "1. a\n\n   1. b\n\n      c\n\n2. d\n",
++        "- a\n\n\n\n- b\n",
++        "- a\n  ```\n  code\n\n  ```\n- b\n",
++        "- [ ] task\n- [x] done\n\n  text\n",
++        // Line comments inside and around containers.
++        "- a\n// note\n  b\n",
++        "- a\n\n// note\n\n  b\n",
++        "> a\n// note\n> b\n",
++    ];
++    for case in cases {
++        for source in line_ending_variants(case) {
++            for (label, options) in option_matrix() {
++                check(&source, &options, label);
++            }
++        }
++    }
++}
++
++#[test]
++fn generated_container_soup_parses_the_same() {
++    const PREFIXES: &[&str] = &[
++        "", "", "", "> ", ">", "- ", "* ", "+ ", "1. ", "2) ", "10. ", "-\t", ">\t", "-   ",
++        "-      ", " ", "  ", "   ", "    ", "\t", " \t", "  \t", "  > ", "   - ", "> - ", "- > ",
++        ">> ", "> > ", "\u{a0}",
++    ];
++    const CONTENTS: &[&str] = &[
++        "text",
++        "lazy line",
++        "more *emphasis*",
++        "",
++        "\u{a0}",
++        "\u{a0}\u{a0} ",
++        "\u{c}",
++        " \u{b} ",
++        "\u{c}- x",
++        "```",
++        "~~~ js",
++        "# heading",
++        "---",
++        "***",
++        "- ",
++        "-",
++        "1.",
++        "2. two",
++        "[ ] task",
++        "[x] done",
++        "<div>",
++        "</div>",
++        "| a | b |",
++        "| - | - |",
++        "// note",
++        "    code",
++        "\tcode",
++        "===",
++        "$$",
++        ": definition",
++        "term",
++        "[^1]: note",
++        "[ref]: /url",
++        "> nested",
++        "<!-- c -->",
++        "{expr}",
++        "  two  spaces",
++        "é中🙂",
++    ];
++    const BLANKS: &[&str] = &["", "", " ", "  ", "\t", " \t ", "\u{c}", "\u{b} "];
++    const ENDINGS: &[&str] = &["\n", "\n", "\n", "\n", "\r\n", "\r"];
++
++    let mut state = 0x2545_f491_4f6c_dd1du64;
++    let mut next = move || {
++        state = state
++            .wrapping_mul(6_364_136_223_846_793_005)
++            .wrapping_add(1_442_695_040_888_963_407);
++        (state >> 33) as usize
++    };
++    let matrix = option_matrix();
++    PER_LINE_WALKS.with(|walks| walks.set(0));
++    let mut documents = 0usize;
++    for _ in 0..2_500 {
++        let lines = 1 + next() % 16;
++        let mut source = String::new();
++        for line in 0..lines {
++            if next() % 5 == 0 {
++                source.push_str(BLANKS[next() % BLANKS.len()]);
++            } else {
++                for _ in 0..next() % 3 {
++                    source.push_str(PREFIXES[next() % PREFIXES.len()]);
++                }
++                source.push_str(PREFIXES[next() % PREFIXES.len()]);
++                source.push_str(CONTENTS[next() % CONTENTS.len()]);
++            }
++            // The last line is unterminated now and then.
++            if line + 1 < lines || next() % 4 != 0 {
++                source.push_str(ENDINGS[next() % ENDINGS.len()]);
++            }
++        }
++        for (label, options) in &matrix {
++            check(&source, options, label);
++        }
++        documents += 1;
++    }
++    let walks = PER_LINE_WALKS.with(Cell::get);
++    assert!(
++        walks > 10 * documents,
++        "expected the soup to exercise the container walks, got {walks} walks over {documents} documents"
++    );
++}
++
++/// Markdown inputs of every example in a CommonMark-style `spec.txt` fixture.
++fn spec_inputs(text: &str) -> Vec<String> {
++    const FENCE: &str = "````````````````````````````````";
++    let mut inputs = Vec::new();
++    let mut lines = text.lines();
++    while let Some(line) = lines.next() {
++        let is_example = line
++            .strip_prefix(FENCE)
++            .is_some_and(|rest| rest.trim().starts_with("example"));
++        if !is_example {
++            continue;
++        }
++        let mut markdown = String::new();
++        for body in lines.by_ref() {
++            if body.starts_with(FENCE) || body == "." {
++                break;
++            }
++            markdown.push_str(&body.replace('→', "\t"));
++            markdown.push('\n');
++        }
++        inputs.push(markdown);
++    }
++    inputs
++}
++
++#[test]
++fn specification_fixtures_parse_the_same() {
++    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
++    let mut examples = 0usize;
++    for fixture in [
++        "tests/spec_fixtures/commonmark-0.31.2-spec.txt",
++        "tests/spec_fixtures/gfm-extensions-spec.txt",
++    ] {
++        let path = root.join(fixture);
++        let text = std::fs::read_to_string(&path)
++            .unwrap_or_else(|error| panic!("read {}: {error}", path.display()));
++        for markdown in spec_inputs(&text) {
++            for source in line_ending_variants(&markdown) {
++                for (label, options) in option_matrix() {
++                    check(&source, &options, &format!("{fixture} ({label})"));
++                }
++            }
++            examples += 1;
++        }
++    }
++    assert!(
++        examples > 600,
++        "expected the full spec suite, got {examples}"
++    );
++}
++
++#[test]
++fn frozen_corpus_parses_the_same() {
++    const CORPUS: &str = "docs/reports/2026-09-14-simd-round/corpus.json.gz";
++    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(CORPUS);
++    let Ok(raw) = std::fs::read(&path) else {
++        // Published crate archives carry `tests/` but not `docs/`.
++        println!("{CORPUS}: not present, skipped");
++        return;
++    };
++    let json = super::prepass::gzip::gunzip(&raw).unwrap_or_else(|error| panic!("{error}"));
++    let corpus: serde_json::Value =
++        serde_json::from_slice(&json).unwrap_or_else(|error| panic!("{error}"));
++    let cases = corpus["cases"].as_array().expect("cases array");
++    assert_eq!(cases.len(), 72, "{CORPUS}: case count changed");
++    let matrix = option_matrix();
++    for case in cases {
++        let name = case["name"].as_str().expect("case name");
++        let input = case["input"].as_str().expect("case input");
++        let profile = case["profile"].as_str().expect("case profile");
++        assert!(
++            matrix.iter().any(|(label, _)| *label == profile),
++            "{name}: unknown profile {profile}"
++        );
++        // The corpus profile's own options, plus the line-comment profile
++        // for the branches only it reaches.
++        let options: Vec<_> = matrix
++            .iter()
++            .filter(|(label, _)| *label == profile || *label == "line_comments")
++            .collect();
++        for source in line_ending_variants(input) {
++            for (label, options) in &options {
++                check(&source, options, &format!("{name} ({label})"));
++            }
++        }
++    }
++}
+diff --git a/src/parser/cursor.rs b/src/parser/cursor.rs
+index 833e0909..5eaa0233 100644
+--- a/src/parser/cursor.rs
++++ b/src/parser/cursor.rs
+@@ -4,6 +4,105 @@ use super::Parser;
+ use super::line_scan::{
+     is_line_ending_byte, line_end, line_terminator_end, next_line_start as scan_next_line_start,
+ };
++use super::whitespace;
++
++/// The leading space/tab run of a line, in the units the block parsers
++/// measure indentation in.
++///
++/// The two column counts deliberately disagree on tabs, because their
++/// callers always have: [`Self::columns`] is the real column the run ends
++/// on, while [`Self::flat_columns`] reproduces
++/// [`Parser::calc_indentation`], which charges every tab four columns
++/// wherever it sits. List continuation depth has always been compared in
++/// the flat unit, so unifying the two would move item boundaries.
++#[derive(Clone, Copy)]
++pub(super) struct LineIndent {
++    /// Length of the run in bytes.
++    pub bytes: usize,
++    /// True columns: a tab advances to the next multiple of four, as in
++    /// `line_indent_width` and the tracker's `leading_indent`.
++    pub columns: usize,
++    /// [`Parser::calc_indentation`]'s count: a space is one column and a
++    /// tab a flat four.
++    pub flat_columns: usize,
++    /// Whether the run holds a tab at all. Without one both counts are the
++    /// byte length and column arithmetic collapses into slicing.
++    pub has_tab: bool,
++}
++
++impl LineIndent {
++    /// Measures the space/tab run that starts at `line_start`.
++    ///
++    /// Neither terminator byte is a space or a tab, so the run stops at the
++    /// line's end by itself: the walk needs no line bound, and a caller can
++    /// look at the byte after the run before it pays for a terminator
++    /// search.
++    pub(super) fn at(bytes: &[u8], line_start: usize) -> Self {
++        let mut indent = LineIndent {
++            bytes: 0,
++            columns: 0,
++            flat_columns: 0,
++            has_tab: false,
++        };
++        for &byte in &bytes[line_start..] {
++            match byte {
++                b' ' => {
++                    indent.columns += 1;
++                    indent.flat_columns += 1;
++                }
++                b'\t' => {
++                    indent.columns = (indent.columns / 4 + 1) * 4;
++                    indent.flat_columns += 4;
++                    indent.has_tab = true;
++                }
++                _ => break,
++            }
++            indent.bytes += 1;
++        }
++        indent
++    }
++}
++
++/// Everything a container's line walk needs to know about one source line.
++///
++/// List items and block quotes ask the same questions of every line they
++/// consume — where it ends, where the next one starts, how deeply it is
++/// indented, whether it is blank, and what it looks like past its
++/// indentation — and each answer used to come from its own scan over the
++/// same bytes. These facts come from one walk of the leading whitespace
++/// followed by one terminator search that starts where the walk stopped.
++pub(super) struct LineFacts<'a> {
++    /// The line without its terminator.
++    pub line: &'a str,
++    /// Where the next line starts: past the terminator, or `source.len()`
++    /// when the line is unterminated.
++    pub next: usize,
++    /// The leading space/tab run, measured once.
++    pub indent: LineIndent,
++}
++
++impl<'a> LineFacts<'a> {
++    /// The line past its leading space/tab run — what a container strips
++    /// before looking for its marker.
++    pub fn after_indent(&self) -> &'a str {
++        &self.line[self.indent.bytes..]
++    }
++
++    /// Byte-identical to [`whitespace::trim_start`] of the whole line, but
++    /// resumed where the space/tab run ended: a single byte test when the
++    /// run ends on content. Only a vertical tab or a form feed walks on,
++    /// which is also why this can be shorter than [`Self::after_indent`].
++    pub fn trimmed(&self) -> &'a str {
++        whitespace::trim_start(self.after_indent())
++    }
++
++    /// Whether the line holds nothing but whitespace, matching the
++    /// [`whitespace::is_blank`] test the list walk has always used. A
++    /// no-break space is content, so a line of them is not blank.
++    pub fn is_blank(&self) -> bool {
++        self.trimmed().is_empty()
++    }
++}
+ 
+ /// What [`Parser::probe_line`] learned about the current line.
+ pub(super) struct BlockProbe {
+@@ -91,7 +190,8 @@ impl<'a> Parser<'a> {
+         }
+     }
+ 
+-    /// Returns true when the current line begins a block-level construct.
++    /// Returns true when the line at `line_start` begins a block-level
++    /// construct, given the offset of its first non-space, non-tab byte.
+     ///
+     /// This is the paragraph-continuation counterpart of `parse_block`'s
+     /// first-byte dispatcher. Paragraph parsing calls it for each following
+@@ -99,11 +199,16 @@ impl<'a> Parser<'a> {
+     /// the leading marker byte makes a block parse plausible. Keeping this
+     /// byte-dispatch table aligned with `parse_block` preserves Markdown
+     /// behavior while avoiding repeated full-line scans on ordinary prose.
+-    pub(super) fn line_starts_block(&self) -> bool {
+-        let line_start = self.position;
+-        let Some(trimmed_start) = self.first_non_whitespace_in_line(line_start) else {
+-            return false;
+-        };
++    ///
++    /// The callers reach this from their own line walk, which located that
++    /// byte on the way in: taking it as an argument keeps the indentation
++    /// from being walked a second time here.
++    pub(super) fn line_starts_block(&self, line_start: usize, trimmed_start: usize) -> bool {
++        debug_assert_eq!(
++            Some(trimmed_start),
++            self.first_non_whitespace_in_line(line_start),
++            "a reported first non-whitespace byte must match a fresh scan"
++        );
+         self.probe_line(line_start, trimmed_start).starts_block
+     }
+ 
+@@ -293,6 +398,34 @@ impl<'a> Parser<'a> {
+         scan_next_line_start(self.source.as_bytes(), line_start)
+     }
+ 
++    /// Everything the container walks need to know about the line starting
++    /// at `line_start`, from one pass over it. See [`LineFacts`].
++    pub(super) fn line_facts(&self, line_start: usize) -> LineFacts<'a> {
++        let indent = LineIndent::at(self.source.as_bytes(), line_start);
++        self.line_facts_with_indent(line_start, indent)
++    }
++
++    /// [`Self::line_facts`] for a caller that has already measured the
++    /// line's indentation: a block quote does, so that its closing blank
++    /// line stops the walk before any terminator search.
++    ///
++    /// The indentation holds no terminator, so the search starts where the
++    /// run ends and never reads those bytes a second time.
++    pub(super) fn line_facts_with_indent(
++        &self,
++        line_start: usize,
++        indent: LineIndent,
++    ) -> LineFacts<'a> {
++        let source = self.source;
++        let bytes = source.as_bytes();
++        let end = line_end(bytes, line_start + indent.bytes);
++        LineFacts {
++            line: &source[line_start..end],
++            next: line_terminator_end(bytes, end),
++            indent,
++        }
++    }
++
+     pub(super) fn consume_line(&mut self) -> &'a str {
+         let start = self.position;
+         let bytes = self.source.as_bytes();
+@@ -352,9 +485,11 @@ pub(super) mod line_reuse_corpus {
+ 
+ #[cfg(test)]
+ mod tests {
++    use super::LineIndent;
+     use super::line_reuse_corpus::SOURCES;
+     use crate::allocator::Allocator;
+-    use crate::parser::line_scan::{line_end, next_line_start};
++    use crate::parser::line_scan::{is_line_ending_byte, line_end, next_line_start};
++    use crate::parser::whitespace;
+     use crate::parser::{Parser, ParserOptions};
+ 
+     fn option_matrix() -> [ParserOptions; 4] {
+@@ -420,6 +555,119 @@ mod tests {
+         }
+     }
+ 
++    /// Line shapes the container walks treat differently from the scanner
++    /// corpus above: no-break spaces, which are content rather than
++    /// blankness, a vertical tab or form feed behind the indentation, which
++    /// the ASCII trim strips but the space/tab run does not, and tabs mixed
++    /// into the run at every offset from a tab stop.
++    const CONTAINER_SOURCES: &[&str] = &[
++        "\u{a0}\n",
++        " \u{a0}\r\n  \u{a0} x\r",
++        "\u{a0}- item\n  \u{a0}\n",
++        " \u{c}- item\n\u{b}\n \u{c} \n",
++        "\t \tx\r\n  \t\n \t\t\r",
++        ">\t\tcode\n  > \tquote\n   \t>x",
++        "   - a\n\t- b\n  \t - c\n",
++    ];
++
++    #[test]
++    fn line_facts_match_the_separate_scans_they_replace() {
++        // Every fact the one-pass walk reports has to equal the answer the
++        // helper it replaced would have produced, including the two column
++        // counts, which disagree on tabs on purpose.
++        for source in SOURCES.iter().chain(CONTAINER_SOURCES) {
++            let allocator = Allocator::new();
++            let parser = Parser::new(&allocator, source);
++            let bytes = source.as_bytes();
++            for offset in 0..=source.len() {
++                if !source.is_char_boundary(offset) {
++                    continue;
++                }
++                let facts = parser.line_facts(offset);
++                assert_eq!(
++                    (facts.line, facts.next),
++                    parser.line_and_next(offset),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.trimmed(),
++                    whitespace::trim_start(facts.line),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.is_blank(),
++                    whitespace::is_blank(facts.line),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.indent.flat_columns,
++                    parser.calc_indentation(offset),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.indent.columns,
++                    parser.line_indent_width(offset, offset + facts.indent.bytes),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.after_indent(),
++                    facts.line.trim_start_matches([' ', '\t']),
++                    "source {source:?} offset {offset}"
++                );
++                assert_eq!(
++                    facts.indent.has_tab,
++                    facts.after_indent().len() != facts.line.trim_start_matches(' ').len(),
++                    "source {source:?} offset {offset}"
++                );
++                // The block quote's own blank test, which it runs on the
++                // measured run before it builds the facts.
++                let run_end = offset + LineIndent::at(bytes, offset).bytes;
++                assert_eq!(
++                    facts.after_indent().is_empty(),
++                    run_end >= bytes.len() || is_line_ending_byte(bytes[run_end]),
++                    "source {source:?} offset {offset}"
++                );
++                if !facts.after_indent().is_empty() {
++                    assert_eq!(
++                        parser.first_non_whitespace_in_line(offset),
++                        Some(run_end),
++                        "source {source:?} offset {offset}"
++                    );
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn dedenting_a_measured_line_agrees_with_the_walking_form() {
++        // The tab-free fast path has to reproduce the column walk exactly,
++        // both in what it writes and in the source offset it reports.
++        let lines = [
++            "", " ", "    ", "\t", " \tx", "x", "  x", "     x", "\tx", "\t\tx", "  \tx", " x \t",
++            " \u{a0}x", "  \u{c}x",
++        ];
++        for line in lines {
++            for columns in 0..8usize {
++                let allocator = Allocator::new();
++                let mut measured = allocator.new_string();
++                let mut walked = allocator.new_string();
++                let indent = LineIndent::at(line.as_bytes(), 0);
++                let measured_offset = Parser::push_measured_line_without_indent(
++                    &mut measured,
++                    line,
++                    &indent,
++                    columns,
++                );
++                let walked_offset = Parser::push_line_without_indent(&mut walked, line, columns);
++                assert_eq!(*measured, *walked, "line {line:?} columns {columns}");
++                assert_eq!(
++                    measured_offset, walked_offset,
++                    "line {line:?} columns {columns}"
++                );
++            }
++        }
++    }
++
+     #[test]
+     fn line_and_next_matches_two_separate_scans() {
+         for source in SOURCES {
+diff --git a/src/parser/list.rs b/src/parser/list.rs
+index 58b1128e..67c65757 100644
+--- a/src/parser/list.rs
++++ b/src/parser/list.rs
+@@ -10,6 +10,10 @@ use super::whitespace;
+ use crate::parser::error::ParseResult;
+ 
+ mod item_source;
++/// The item walk as it read each line before the line facts, kept for the
++/// container equivalence tests.
++#[cfg(test)]
++mod per_line;
+ 
+ impl<'a> Parser<'a> {
+     pub(super) fn parse_list(
+@@ -141,6 +145,16 @@ impl<'a> Parser<'a> {
+         Option<ListItemSource<'a>>,
+         Option<ParsedListItem<'a>>,
+     ) {
++        #[cfg(test)]
++        if super::container_equivalence::per_line_walk() {
++            return self.consume_item_continuation_per_line(
++                item,
++                baseline_indent,
++                consumed_newline,
++                lazy_lines,
++            );
++        }
++
+         let content_indent = item.content_indent;
+         let item_is_empty = whitespace::is_blank(item.content);
+         let mut item_source = None;
+@@ -160,7 +174,12 @@ impl<'a> Parser<'a> {
+             }
+ 
+             let continuation_start = self.position;
+-            let (continuation_line, continuation_next) = self.line_and_next(continuation_start);
++            // One pass over the line answers every question below: where it
++            // ends, where the next one starts, how far it is indented, what
++            // follows that indentation, and whether anything does.
++            let facts = self.line_facts(continuation_start);
++            let continuation_line = facts.line;
++            let continuation_next = facts.next;
+ 
+             if self.is_line_comment_at(continuation_start) {
+                 let source = item_source
+@@ -171,9 +190,10 @@ impl<'a> Parser<'a> {
+                 open_paragraph.catch_up(&source.text, &self.options);
+                 // Preserve normal list dedenting even when a nested code or
+                 // HTML parser will keep this eligible line as literal content.
+-                let stripped = Self::push_line_without_indent(
++                let stripped = Self::push_measured_line_without_indent(
+                     &mut source.text,
+                     continuation_line,
++                    &facts.indent,
+                     content_indent,
+                 );
+                 source.text.push('\n');
+@@ -190,26 +210,28 @@ impl<'a> Parser<'a> {
+                 continue;
+             }
+ 
+-            if whitespace::is_blank(continuation_line) {
++            if facts.is_blank() {
+                 let mut lookahead = continuation_next;
+-                // The line that stops the walk is the one a sibling marker
+-                // would be read from, so carry it out instead of scanning it
+-                // again below.
+-                let mut lookahead_line = "";
++                // The line that stops the walk is the one the indentation
++                // test and a sibling marker are read from, so carry its
++                // facts out instead of measuring it again below.
++                let mut lookahead_facts = None;
+                 while lookahead < self.source.len() {
+-                    let (line, next) = self.line_and_next(lookahead);
+-                    if !whitespace::is_blank(line) && !self.is_line_comment_at(lookahead) {
+-                        lookahead_line = line;
++                    let line = self.line_facts(lookahead);
++                    if !line.is_blank() && !self.is_line_comment_at(lookahead) {
++                        lookahead_facts = Some(line);
+                         break;
+                     }
+-                    lookahead = next;
++                    lookahead = line.next;
+                 }
+ 
+-                if lookahead >= self.source.len() {
++                // The walk only stops early on a line it kept, so an empty
++                // result means it ran out of source.
++                let Some(lookahead_facts) = lookahead_facts else {
+                     break;
+-                }
++                };
+ 
+-                let next_indent = self.calc_indentation(lookahead);
++                let next_indent = lookahead_facts.indent.flat_columns;
+                 // An item with no content yet cannot continue past a
+                 // blank line, but its list may (`* a\n*\n\n* c`).
+                 if next_indent >= content_indent && !(item_is_empty && item_source.is_none()) {
+@@ -246,7 +268,11 @@ impl<'a> Parser<'a> {
+                 if next_indent >= baseline_indent
+                     && next_indent <= baseline_indent + 3
+                     && let Some(sibling) = self
+-                        .parse_list_item_line_from_line(lookahead, lookahead_line)
++                        .parse_list_item_line_from_trimmed(
++                            lookahead,
++                            lookahead_facts.line,
++                            lookahead_facts.trimmed(),
++                        )
+                         .filter(|next| next.ordered == item.ordered && next.marker == item.marker)
+                 {
+                     // Blank line between siblings: the list is loose.
+@@ -259,15 +285,16 @@ impl<'a> Parser<'a> {
+                 break;
+             }
+ 
+-            let current_indent = self.calc_indentation(continuation_start);
++            let current_indent = facts.indent.flat_columns;
+             if current_indent >= content_indent {
+                 // Indented continuation content.
+                 let item_source = item_source
+                     .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
+                 let generated_start = item_source.text.len();
+-                let source_offset_in_line = Self::push_line_without_indent(
++                let source_offset_in_line = Self::push_measured_line_without_indent(
+                     &mut item_source.text,
+                     continuation_line,
++                    &facts.indent,
+                     content_indent,
+                 );
+                 item_source.text.push('\n');
+@@ -289,8 +316,11 @@ impl<'a> Parser<'a> {
+             // baseline — deeper "markers" are just text) ends this item.
+             if current_indent >= baseline_indent
+                 && current_indent <= baseline_indent + 3
+-                && let Some(sibling) =
+-                    self.parse_list_item_line_from_line(continuation_start, continuation_line)
++                && let Some(sibling) = self.parse_list_item_line_from_trimmed(
++                    continuation_start,
++                    continuation_line,
++                    facts.trimmed(),
++                )
+             {
+                 // A thematic break can overlap list syntax only when an
+                 // unordered item's content starts with the same `-` or
+@@ -309,8 +339,14 @@ impl<'a> Parser<'a> {
+             // continues the item's trailing paragraph regardless of its
+             // indentation (CommonMark laziness) — and only a paragraph: a
+             // line after a closed fence, an HTML block, a heading or a
+-            // table belongs to the enclosing block instead.
+-            if item_is_empty || after_blank || self.line_starts_block() {
++            // table belongs to the enclosing block instead. The line is not
++            // blank, so its first non-space, non-tab byte is exactly where
++            // its space/tab run ended.
++            if item_is_empty
++                || after_blank
++                || self
++                    .line_starts_block(continuation_start, continuation_start + facts.indent.bytes)
++            {
+                 break;
+             }
+             let paragraph_open = match &item_source {
+diff --git a/src/parser/list/per_line.rs b/src/parser/list/per_line.rs
+new file mode 100644
+index 00000000..91536151
+--- /dev/null
++++ b/src/parser/list/per_line.rs
+@@ -0,0 +1,228 @@
++//! The list item walk as it read each line before the line facts: a
++//! terminator search, a blank test, an indentation count and a dedent walk
++//! per line, with a trim and a first-content walk again once a line turned
++//! out to hold a marker or to continue a paragraph lazily. Tests only; the
++//! container equivalence tests parse every input through this and through
++//! the production walk and compare the results.
++
++use super::super::Parser;
++use super::super::lazy_paragraph::OpenParagraph;
++use super::super::list_item::ParsedListItem;
++use super::super::whitespace;
++use super::ListItemSource;
++
++impl<'a> Parser<'a> {
++    pub(super) fn consume_item_continuation_per_line(
++        &mut self,
++        item: &ParsedListItem<'a>,
++        baseline_indent: usize,
++        consumed_newline: bool,
++        lazy_lines: &mut rustc_hash::FxHashSet<u32>,
++    ) -> (
++        bool,
++        usize,
++        Option<ListItemSource<'a>>,
++        Option<ParsedListItem<'a>>,
++    ) {
++        let content_indent = item.content_indent;
++        let item_is_empty = whitespace::is_blank(item.content);
++        let mut item_source = None;
++        let mut item_end = self.position;
++        let mut gap_spread = false;
++        let mut next_item = None;
++        // Lazy paragraph continuation is only valid while the item's last
++        // consumed line kept a paragraph open (not right after blanks, and
++        // not after a fence, an HTML block, a heading or a table). The
++        // tracker that knows is asked only when such a line turns up.
++        let mut after_blank = false;
++        let mut open_paragraph = OpenParagraph::default();
++
++        loop {
++            if self.is_at_end() {
++                break;
++            }
++
++            let continuation_start = self.position;
++            let (continuation_line, continuation_next) = self.line_and_next(continuation_start);
++
++            if self.is_line_comment_at(continuation_start) {
++                let source = item_source
++                    .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
++                let generated_start = source.text.len();
++                // The comment is not content the tracker classifies: it
++                // catches up on what precedes it and skips past it.
++                open_paragraph.catch_up(&source.text, &self.options);
++                // Preserve normal list dedenting even when a nested code or
++                // HTML parser will keep this eligible line as literal content.
++                let stripped = Self::push_line_without_indent(
++                    &mut source.text,
++                    continuation_line,
++                    content_indent,
++                );
++                source.text.push('\n');
++                open_paragraph.skip_to(source.text.len());
++                source.source_map.push_line_with_block_start(
++                    generated_start,
++                    source.text.len() - generated_start,
++                    continuation_start,
++                    continuation_start + stripped,
++                    continuation_next - (continuation_start + stripped),
++                );
++                self.position = continuation_next;
++                item_end = self.position;
++                continue;
++            }
++
++            if whitespace::is_blank(continuation_line) {
++                let mut lookahead = continuation_next;
++                // The line that stops the walk is the one a sibling marker
++                // would be read from, so carry it out instead of scanning it
++                // again below.
++                let mut lookahead_line = "";
++                while lookahead < self.source.len() {
++                    let (line, next) = self.line_and_next(lookahead);
++                    if !whitespace::is_blank(line) && !self.is_line_comment_at(lookahead) {
++                        lookahead_line = line;
++                        break;
++                    }
++                    lookahead = next;
++                }
++
++                if lookahead >= self.source.len() {
++                    break;
++                }
++
++                let next_indent = self.calc_indentation(lookahead);
++                // An item with no content yet cannot continue past a
++                // blank line, but its list may (`* a\n*\n\n* c`).
++                if next_indent >= content_indent && !(item_is_empty && item_source.is_none()) {
++                    // Interior blank line(s): the item continues below.
++                    let item_source = item_source
++                        .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
++                    let mut blank_start = continuation_start;
++                    // The first replayed line is the blank line that opened
++                    // this branch; its successor is already known.
++                    let mut first_blank_next = Some(continuation_next);
++                    while blank_start < lookahead {
++                        let blank_next = first_blank_next
++                            .take()
++                            .unwrap_or_else(|| self.next_line_start(blank_start));
++                        if self.is_line_comment_at(blank_start) {
++                            blank_start = blank_next;
++                            continue;
++                        }
++                        let generated_start = item_source.text.len();
++                        item_source.text.push('\n');
++                        item_source.source_map.push_blank_line(
++                            generated_start,
++                            blank_start,
++                            blank_next.saturating_sub(blank_start),
++                        );
++                        blank_start = blank_next;
++                    }
++                    self.position = lookahead;
++                    item_end = self.position;
++                    after_blank = true;
++                    continue;
++                }
++
++                if next_indent >= baseline_indent
++                    && next_indent <= baseline_indent + 3
++                    && let Some(sibling) = self
++                        .parse_list_item_line_from_line(lookahead, lookahead_line)
++                        .filter(|next| next.ordered == item.ordered && next.marker == item.marker)
++                {
++                    // Blank line between siblings: the list is loose.
++                    self.position = lookahead;
++                    gap_spread = true;
++                    next_item = Some(sibling);
++                    break;
++                }
++
++                break;
++            }
++
++            let current_indent = self.calc_indentation(continuation_start);
++            if current_indent >= content_indent {
++                // Indented continuation content.
++                let item_source = item_source
++                    .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
++                let generated_start = item_source.text.len();
++                let source_offset_in_line = Self::push_line_without_indent(
++                    &mut item_source.text,
++                    continuation_line,
++                    content_indent,
++                );
++                item_source.text.push('\n');
++                let source_start = continuation_start + source_offset_in_line;
++                item_source.source_map.push_line_with_block_start(
++                    generated_start,
++                    item_source.text.len() - generated_start,
++                    continuation_start,
++                    source_start,
++                    continuation_next.saturating_sub(source_start),
++                );
++                self.position = continuation_next;
++                item_end = self.position;
++                after_blank = false;
++                continue;
++            }
++
++            // A list marker (indented at most three columns past the
++            // baseline — deeper "markers" are just text) ends this item.
++            if current_indent >= baseline_indent
++                && current_indent <= baseline_indent + 3
++                && let Some(sibling) =
++                    self.parse_list_item_line_from_line(continuation_start, continuation_line)
++            {
++                // A thematic break can overlap list syntax only when an
++                // unordered item's content starts with the same `-` or
++                // `*` marker. All ordinary item text skips the full-line
++                // marker scan that previously ran before every sibling.
++                let could_be_thematic = !sibling.ordered
++                    && matches!(sibling.marker, b'-' | b'*')
++                    && sibling.content.as_bytes().first() == Some(&sibling.marker);
++                if !could_be_thematic || !Self::try_parse_thematic_break_line(continuation_line) {
++                    next_item = Some(sibling);
++                }
++                break;
++            }
++
++            // A block start interrupts the item; anything else lazily
++            // continues the item's trailing paragraph regardless of its
++            // indentation (CommonMark laziness) — and only a paragraph: a
++            // line after a closed fence, an HTML block, a heading or a
++            // table belongs to the enclosing block instead.
++            if item_is_empty || after_blank || self.line_starts_block_per_line() {
++                break;
++            }
++            let paragraph_open = match &item_source {
++                Some(source) => open_paragraph.catch_up(&source.text, &self.options),
++                None => open_paragraph.catch_up_first_line(item.content, &self.options),
++            };
++            if !paragraph_open {
++                break;
++            }
++            let source = item_source
++                .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
++            // Keep the lazy line's own indentation: the sub-parse then
++            // treats it as paragraph continuation even when it looks like
++            // an (over-indented) marker, e.g. `- e` five columns deep.
++            // Recording the offset stops setext reinterpretation.
++            let generated_start = source.text.len();
++            lazy_lines.insert(source.text.len() as u32);
++            source.text.push_str(continuation_line);
++            source.text.push('\n');
++            source.source_map.push_line(
++                generated_start,
++                source.text.len() - generated_start,
++                continuation_start,
++                continuation_next.saturating_sub(continuation_start),
++            );
++            self.position = continuation_next;
++            item_end = self.position;
++        }
++
++        (gap_spread, item_end, item_source, next_item)
++    }
++}
+diff --git a/src/parser/list_item.rs b/src/parser/list_item.rs
+index 3246523b..d21c8818 100644
+--- a/src/parser/list_item.rs
++++ b/src/parser/list_item.rs
+@@ -1,4 +1,5 @@
+ use super::Parser;
++use super::cursor::LineIndent;
+ use super::whitespace;
+ 
+ pub(super) struct ParsedListItem<'a> {
+@@ -68,6 +69,10 @@ impl<'a> Parser<'a> {
+     }
+ 
+     /// Calculates the indentation level (number of spaces) of the current line.
++    ///
++    /// A tab counts as a flat four columns here, wherever it sits — see
++    /// [`LineIndent::flat_columns`](super::cursor::LineIndent), which
++    /// produces the same count for callers that walk the line anyway.
+     pub(super) fn calc_indentation(&self, start: usize) -> usize {
+         let mut indent = 0;
+         let bytes = self.source.as_bytes();
+@@ -99,10 +104,11 @@ impl<'a> Parser<'a> {
+         None
+     }
+ 
+-    /// `line` must come from the parser's own line scanner: `str::lines()`
+-    /// recognizes LF and CRLF but not a lone CR, so a sibling after a CR
+-    /// blank line has to stay limited to its own source line rather than
+-    /// swallowing the rest of the list.
++    /// The list item a whole `line` opens, trimmed the way the list walk
++    /// used to trim it before its line facts carried the trimmed slice.
++    /// Only the per-line reference walk the tests compare against still
++    /// calls it.
++    #[cfg(test)]
+     pub(super) fn parse_list_item_line_from_line(
+         &self,
+         line_start: usize,
+@@ -112,6 +118,11 @@ impl<'a> Parser<'a> {
+         self.parse_list_item_line_from_trimmed(line_start, line, trimmed)
+     }
+ 
++    /// `line` must come from the parser's own line scanner: `str::lines()`
++    /// recognizes LF and CRLF but not a lone CR, so a sibling after a CR
++    /// blank line has to stay limited to its own source line rather than
++    /// swallowing the rest of the list. `trimmed` is the line's tail from
++    /// its first content byte, which each caller has already located.
+     pub(super) fn parse_list_item_line_from_trimmed(
+         &self,
+         line_start: usize,
+@@ -270,6 +281,28 @@ impl<'a> Parser<'a> {
+         })
+     }
+ 
++    /// [`Self::push_line_without_indent`] for a line whose leading run the
++    /// caller's line walk has already measured as `indent`.
++    ///
++    /// A run without tabs needs no second walk: its columns are its bytes,
++    /// so the dedent is a slice and the padding a count. A run with a tab
++    /// takes the column walk.
++    pub(super) fn push_measured_line_without_indent(
++        out: &mut crate::allocator::String<'a>,
++        line: &str,
++        indent: &LineIndent,
++        columns: usize,
++    ) -> usize {
++        if indent.has_tab {
++            return Self::push_line_without_indent(out, line, columns);
++        }
++        for _ in columns..indent.bytes {
++            out.push(' ');
++        }
++        out.push_str(&line[indent.bytes..]);
++        indent.bytes.min(columns)
++    }
++
+     /// Pushes `line` minus its first `columns` columns onto `out`,
+     /// expanding the whole leading whitespace run to spaces so tab stops
+     /// keep their original alignment through item/quote re-parsing.
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index 3e98ca1c..c8c89e56 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -46,6 +46,10 @@ use crate::ast::{Document, Span};
+ mod block;
+ mod block_quote;
+ mod byte_class;
++/// The list and block quote walks, measured per line through the line
++/// facts, are proven against the per-line walks they replaced.
++#[cfg(test)]
++mod container_equivalence;
+ mod cursor;
+ mod definition_list;
+ mod delimiters;
+-- 
+2.55.0
+
