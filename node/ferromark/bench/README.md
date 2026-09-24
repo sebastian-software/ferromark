@@ -21,9 +21,12 @@ splits each call into four parts:
   default call passes no options.
 
 The benchmark times the four public exports with the same addon that carries
-the diagnostic exports, so all lanes run in one binary. It does not time the
-JavaScript facade in `index.mjs`. With no options, the facade adds only
-`validateOptions(undefined)` and a cached `loadNative()`.
+the diagnostic exports, so all lanes run in one binary. The per-document lanes
+call the exports directly, without the JavaScript facade in `index.mjs`. With
+no options, the facade adds only `validateOptions(undefined)` and a cached
+`loadNative()`. With options, it reads and packs them itself (see
+[Options](#options)), so the fixed table also times the facade, loaded against
+the same addon.
 
 ## Build
 
@@ -46,7 +49,8 @@ Add `FERROMARK_PGO=1` to profile the addon as published builds are profiled
 feature adds exports but leaves the profiled core code unchanged.
 
 To compare two revisions, build one addon from each checkout into its own
-directory and pass each directory with `--addon`. The script skips diagnostic
+directory and pass each directory with `--addon`, together with that
+checkout's `node/ferromark/` as `--facade`. The script skips diagnostic
 exports that an older addon lacks, so one checkout's script can time both.
 
 ## Run
@@ -60,6 +64,7 @@ node --expose-gc bench/boundary.mjs --json ../../target/boundary-bench/boundary.
 | Flag               | Default                                                            | Meaning                                                               |
 | ------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------- |
 | `--addon <path>`   | `target/boundary-bench/`                                           | The diagnostic addon, or a directory holding exactly one `.node` file |
+| `--facade <dir>`   | `node/ferromark/`                                                  | The directory whose `index.mjs` the facade lanes run                  |
 | `--corpus <path>`  | `docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz` | The 57 broad documents                                                |
 | `--filter <regex>` | all documents                                                      | Documents whose name matches                                          |
 | `--rounds <n>`     | 15                                                                 | Paired rounds per document                                            |
@@ -124,11 +129,50 @@ The residual is what the model does not explain: `catch_unwind`, the
 stays large, a part is missing from the model. The **N-API** column adds up
 input, output and the bare call floor.
 
+### Options
+
+napi-rs converts an `Options` object field by field: one
+`napi_get_named_property` and one `napi_typeof` for each of its 30 fields,
+present or not. The facade therefore reads the object itself, in the same order
+and with the same property gets, and passes the private `…Packed` exports a
+bitmask for `renderPolicy` and the boolean fields plus the three other values
+([`node/native/src/packed.rs`](../../native/src/packed.rs)). The fixed table
+times both paths:
+
+| Lane                                | What it runs                                                          |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| `optionsNone`, `optionsEmpty`       | `boundaryOptions()` and `boundaryOptions({})`: the object path        |
+| `optionsTrusted`                    | `boundaryOptions({ renderPolicy: 'trusted' })`                        |
+| `optionsPackedNone`                 | `boundaryOptionsPacked(0, 0)`: the packed path, native side only      |
+| `optionsPackedTrusted`              | `boundaryOptionsPacked(1, 1)`, the packed `{ renderPolicy }`          |
+| `toHtmlEmpty`, `toHtmlEmptyOptions` | the `toHtml` export with `''`, without and with `{}`                  |
+| `toHtmlTrusted`                     | the same with `{ renderPolicy: 'trusted' }`                           |
+| `rendererConstruct`                 | `new Renderer()` on the addon's class                                 |
+| `rendererConstructTrusted`          | the same with `{ renderPolicy: 'trusted' }`                           |
+| `facadeToHtmlEmpty`                 | the facade's `toHtml('')`                                             |
+| `facadeToHtmlEmptyOptions`          | the facade's `toHtml('', {})`: validation, packing and `toHtmlPacked` |
+| `facadeToHtmlTrusted`               | the same with `{ renderPolicy: 'trusted' }`                           |
+| `facadeRendererTrusted`             | the facade's `new Renderer({ renderPolicy: 'trusted' })`              |
+
+The facade lanes copy `index.mjs` and `native-target.mjs` from `--facade` into
+a temporary directory next to a link to the addon, which the facade then loads
+as its local binary. Before timing, the script checks that the facade calls
+into that same addon and renders as the object-taking export does, and that
+packed and object options resolve alike. An addon from before the packed
+exports lacks the packed lanes; its facade still has the facade lanes.
+
+The second table pairs each object-path lane with its packed counterpart per
+round. The object side of the `toHtml` and `Renderer` rows is what the facade
+called before it packed options, minus its `validateOptions`, which both
+versions run and the packed side includes.
+
 ## Reading the output
 
 1. **Fixed per-call costs**: the call floors, option handling (the cost of an
    `Options` object is independent of the document), `new Renderer()` from
-   JavaScript and `Renderer::new` inside Rust.
+   JavaScript and `Renderer::new` inside Rust. A second table sets the object
+   path of options (before) against the packed path (after), with the paired
+   saving.
 2. **Per document: time per call**: the median public lanes and parts in
    nanoseconds. `input` shows the characters the Markdown contains and how V8
    stores it: `ascii`, `latin1` (up to U+00FF) or `wide`, and `one-byte` or

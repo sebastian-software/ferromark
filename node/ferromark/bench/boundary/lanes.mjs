@@ -198,11 +198,88 @@ export function documentLanes(state) {
   };
 }
 
+const trusted = { renderPolicy: "trusted" };
+const empty = {};
+
+/**
+ * Whether the addon has the packed options entries the facade calls since it
+ * packs options itself. An older addon lacks them, and the script then skips
+ * the packed lanes.
+ * @param native The loaded addon.
+ */
+function hasPackedOptions(native) {
+  return typeof native.boundaryOptionsPacked === "function";
+}
+
+/**
+ * The option lanes must agree before they are timed: packed and object options
+ * resolve alike, and the facade renders as the object-taking export does.
+ */
+export function verifyFixed(native, facade) {
+  const markdown = "<i>raw</i> x^2^";
+  try {
+    facade.toHtml(markdown, trusted);
+  } catch (error) {
+    throw new Error(
+      "The facade does not work with this addon; pass --facade with the package directory " +
+        "of the checkout the addon was built from",
+      { cause: error },
+    );
+  }
+  const checks = {
+    ...(hasPackedOptions(native) && {
+      optionsPackedNone: native.boundaryOptionsPacked(0, 0) === native.boundaryOptions(empty),
+      optionsPackedTrusted: native.boundaryOptionsPacked(1, 1) === native.boundaryOptions(trusted),
+    }),
+    facadeRendererTrusted:
+      new facade.Renderer(trusted).toHtml(markdown) ===
+      new native.Renderer(trusted).toHtml(markdown),
+    facadeToHtmlEmpty: facade.toHtml(markdown) === native.toHtml(markdown),
+    facadeToHtmlEmptyOptions: facade.toHtml(markdown, empty) === native.toHtml(markdown, empty),
+    facadeToHtmlTrusted: facade.toHtml(markdown, trusted) === native.toHtml(markdown, trusted),
+  };
+  const failed = Object.keys(checks).filter((name) => !checks[name]);
+  if (failed.length > 0) {
+    throw new Error(`fixed lanes: output mismatch in ${failed.join(", ")}`);
+  }
+}
+
+// Options as the facade passes them now: packed into plain arguments. Only
+// an addon with the packed entries has these lanes.
+function packedLanes(native) {
+  if (!hasPackedOptions(native)) return {};
+  return {
+    optionsPackedNone(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryOptionsPacked(0, 0);
+    },
+    optionsPackedTrusted(k) {
+      for (let i = 0; i < k; i++) sink = native.boundaryOptionsPacked(1, 1);
+    },
+  };
+}
+
+// The package facade (index.mjs), loaded against this addon: its validation,
+// option packing and the export it calls.
+function facadeLanes(facade) {
+  return {
+    facadeRendererTrusted(k) {
+      for (let i = 0; i < k; i++) sink = new facade.Renderer(trusted);
+    },
+    facadeToHtmlEmpty(k) {
+      for (let i = 0; i < k; i++) sink = facade.toHtml("");
+    },
+    facadeToHtmlEmptyOptions(k) {
+      for (let i = 0; i < k; i++) sink = facade.toHtml("", empty);
+    },
+    facadeToHtmlTrusted(k) {
+      for (let i = 0; i < k; i++) sink = facade.toHtml("", trusted);
+    },
+  };
+}
+
 /** Document-independent costs: call floors, options and renderer setup. */
-export function fixedLanes(native) {
+export function fixedLanes(native, facade) {
   const probe = new native.BoundaryProbe("");
-  const trusted = { renderPolicy: "trusted" };
-  const empty = {};
   const { coreSetup } = coreLanes({ markdown: "", native });
   const { methodNoop, noop } = boundaryLanes({ markdown: "", native, outputBytes: 0, probe });
   return {
@@ -221,11 +298,19 @@ export function fixedLanes(native) {
     rendererConstruct(k) {
       for (let i = 0; i < k; i++) sink = new native.Renderer();
     },
+    rendererConstructTrusted(k) {
+      for (let i = 0; i < k; i++) sink = new native.Renderer(trusted);
+    },
     toHtmlEmpty(k) {
       for (let i = 0; i < k; i++) sink = native.toHtml("");
     },
     toHtmlEmptyOptions(k) {
       for (let i = 0; i < k; i++) sink = native.toHtml("", empty);
     },
+    toHtmlTrusted(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtml("", trusted);
+    },
+    ...packedLanes(native),
+    ...facadeLanes(facade),
   };
 }

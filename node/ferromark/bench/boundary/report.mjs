@@ -30,6 +30,7 @@ export function printEnvironment(environment, settings, documentCount) {
     `Node ${environment.node} (V8 ${environment.v8}) on ${environment.platform}/${environment.arch}, ${environment.cpu}`,
   );
   console.log(`Addon: ${environment.addon}`);
+  console.log(`Facade: ${environment.facade}`);
   const widened = settings.twoByte ? " (inputs widened to two-byte)" : "";
   console.log(
     `Documents: ${documentCount}${widened}; rounds ${settings.rounds}, ` +
@@ -38,7 +39,7 @@ export function printEnvironment(environment, settings, documentCount) {
   if (!environment.exposeGc) console.log("Hint: node --expose-gc collects between documents.");
 }
 
-export function printFixed({ medians }) {
+export function printFixed({ comparison, medians }) {
   console.log("\n## Fixed per-call costs (ns)\n");
   const rows = [
     ["free-function call floor (boundaryNoop)", medians.noop],
@@ -46,14 +47,41 @@ export function printFixed({ medians }) {
     ["options: undefined, over the call floor", medians.optionsNone - medians.noop],
     ["options: {}, over the call floor", medians.optionsEmpty - medians.noop],
     ["options: { renderPolicy }, over the call floor", medians.optionsTrusted - medians.noop],
+    ["packed options: none, over the call floor", medians.optionsPackedNone - medians.noop],
+    [
+      "packed options: { renderPolicy }, over the call floor",
+      medians.optionsPackedTrusted - medians.noop,
+    ],
     ["toHtml('')", medians.toHtmlEmpty],
     ["toHtml('', {})", medians.toHtmlEmptyOptions],
+    ["facade toHtml('')", medians.facadeToHtmlEmpty],
+    ["facade toHtml('', {})", medians.facadeToHtmlEmptyOptions],
+    ["facade toHtml('', { renderPolicy })", medians.facadeToHtmlTrusted],
     ["new Renderer()", medians.rendererConstruct],
+    ["facade new Renderer({ renderPolicy })", medians.facadeRendererTrusted],
     ["Renderer::new plus drop inside Rust", medians.coreSetup],
   ];
   table(
     ["cost", "ns"],
-    rows.map(([label, value]) => [label, nanoseconds(value)]),
+    rows
+      .filter(([, value]) => Number.isFinite(value))
+      .map(([label, value]) => [label, nanoseconds(value)]),
+  );
+  if (comparison.length === 0) return;
+  console.log("\n## Options: object path (before) and packed path (after), ns\n");
+  table(
+    ["call", "object", "packed", "saved"],
+    comparison.map(({ after, before, label, savedNs }) => [
+      label,
+      nanoseconds(before),
+      nanoseconds(after),
+      nanoseconds(savedNs),
+    ]),
+  );
+  console.log(
+    "\nsaved: paired per round. The toHtml and Renderer rows compare the object-taking\n" +
+      "export with the facade, which packs the options; the facade's validation, which\n" +
+      "both versions run, counts only on the packed side.",
   );
 }
 
