@@ -4,6 +4,7 @@
 // throw the same error, and make the same property gets in the same order.
 /* eslint-disable max-lines */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import test from "node:test";
 
@@ -284,6 +285,69 @@ const values = [
   boxed(1),
   new Date(0),
 ];
+
+/**
+ * `Options` as napi-rs generates it into native.d.ts, as [name, type] pairs.
+ * napi-rs emits the fields in their declaration order, which is also the
+ * order it reads them in.
+ */
+function declaredFields() {
+  const declarations = readFileSync(new URL("../native.d.ts", import.meta.url), "utf8");
+  const body = /^export interface Options \{\n([\s\S]*?)^\}/m.exec(declarations)?.[1];
+  assert.ok(body, "native.d.ts declares no Options interface");
+  return body
+    .split("\n")
+    .filter((line) => line.trim() !== "" && !/^\s*(?:\/\*\*|\*)/.test(line))
+    .map((line) => {
+      const member = /^ {2}(\w+)\?: (boolean|number|string)$/.exec(line);
+      assert.ok(member, `unexpected Options member in native.d.ts: ${line}`);
+      return [member[1], member[2]];
+    });
+}
+
+/** The keys in the facade's `optionKeys`, the set `validateOptions` accepts. */
+function facadeOptionKeys() {
+  const source = readFileSync(new URL("../index.mjs", import.meta.url), "utf8");
+  const list = /^const optionKeys = new Set\(\[([^\]]*)\]\);$/m.exec(source)?.[1];
+  assert.ok(list, "index.mjs declares no optionKeys set");
+  return [...list.matchAll(/"(\w+)"/g)].map(([, key]) => key);
+}
+
+test("the field lists follow the generated Options declaration", () => {
+  const declared = declaredFields();
+  const names = declared.map(([key]) => key);
+  // The list these tests use: names, order and types.
+  assert.deepEqual(fields, declared);
+
+  // The keys `validateOptions` accepts: the same set, as written and as run.
+  const accepted = facadeOptionKeys();
+  assert.equal(new Set(accepted).size, accepted.length, "optionKeys repeats a key");
+  assert.deepEqual(accepted.toSorted(), names.toSorted());
+  for (const key of names) {
+    assert.doesNotThrow(() => toHtml("", { [key]: undefined }), `optionKeys lacks ${key}`);
+  }
+});
+
+test("the packed path gets every declared field once, in declaration order", () => {
+  const declared = declaredFields();
+  const names = declared.map(([key]) => key);
+  // A valid value for every field, so napi-rs and the facade read them all.
+  const valid = () =>
+    Object.fromEntries(
+      declared.map(([key, type]) => [
+        key,
+        key === "renderPolicy" ? "trusted" : { boolean: true, number: 1, string: "" }[type],
+      ]),
+    );
+  for (const entry of entries) {
+    const facadeGets = [];
+    const directGets = [];
+    entry.facade(probe, logged(valid(), facadeGets));
+    entry.direct(probe, logged(valid(), directGets));
+    assert.deepEqual(directGets, names, `${entry.name}: napi-rs's gets`);
+    assert.deepEqual(facadeGets, names, `${entry.name}: the facade's gets`);
+  }
+});
 
 test("the probe document shows every option", () => {
   // `allowHtml` and `disallowedRawHtml` only matter for trusted rendering,
