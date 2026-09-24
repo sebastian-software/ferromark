@@ -25,7 +25,7 @@
 //! reservation stays below 1.7 GB. That also fits the `int` capacity Node.js
 //! 22 passes on to V8.
 //!
-//! The reservation adds [`MAX_UTF8_CHAR`] spare bytes, so each conversion also
+//! The reservation adds `MAX_UTF8_CHAR` spare bytes, so each conversion also
 //! proves that it is complete. N-API stops before the end of a string only when
 //! the next character does not fit into the room left, and no character takes
 //! more than four bytes. A conversion that leaves four bytes unused has
