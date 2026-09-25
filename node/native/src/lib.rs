@@ -1,8 +1,8 @@
 mod options;
 
 use ferromark::{
-    Allocator, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, Parser,
-    ParserOptions,
+    Allocator, HeadingIdPlanner, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks,
+    HtmlRenderer, Parser, ParserOptions,
     ast::{Node, Visit},
 };
 use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
@@ -185,28 +185,18 @@ pub struct TransformResult {
 
 struct Metadata {
     headings: Vec<Heading>,
-    counts: std::collections::HashMap<String, usize>,
-    heading_ids: bool,
+    id_planner: Option<HeadingIdPlanner>,
 }
 
 impl<'a> Visit<'a> for Metadata {
     fn visit_heading(&mut self, heading: &ferromark::ast::Heading<'a>) {
         let text = ferromark::collect_heading_text(&heading.children);
-        let id = if self.heading_ids {
-            let slug = heading
+        let id = self.id_planner.as_mut().map(|planner| {
+            let base = heading
                 .id
                 .map_or_else(|| ferromark::slugify_heading(&text), str::to_owned);
-            let count = self.counts.entry(slug.clone()).or_default();
-            let id = if *count == 0 || heading.id.is_some() {
-                slug
-            } else {
-                format!("{slug}-{count}")
-            };
-            *count += 1;
-            Some(id)
-        } else {
-            None
-        };
+            planner.unique_id(&base).to_string()
+        });
         self.headings.push(Heading {
             level: u32::from(heading.depth),
             id,
@@ -261,8 +251,10 @@ fn render_document(
         .map_err(parse_error)?;
     let mut metadata = Metadata {
         headings: Vec::new(),
-        counts: std::collections::HashMap::new(),
-        heading_ids: options.html.heading_ids,
+        id_planner: options
+            .html
+            .heading_ids
+            .then(|| HeadingIdPlanner::for_document(&document, options.html.semantic_footnotes)),
     };
     metadata.visit_document(&document);
     let front_matter = document

@@ -35,17 +35,14 @@ impl HtmlRenderer {
     #[must_use]
     pub fn render_provisional_fragment(&mut self, document: &Document<'_>) -> String {
         let document_scan = self.scan_for_fragment(document);
-        let heading_id_counts =
-            (document_scan.heading_count != 0).then(|| self.heading_id_counts.clone());
+        let heading_id_planner = self.heading_id_planner.clone();
         let footnote_ref_counts = self.footnote_ref_counts.clone();
         let footnote_index = self.footnote_index.clone();
         let footnote_records = self.footnote_records.clone();
         let footnote_slug_counts = self.footnote_slug_counts.clone();
         let code_block_index = self.code_block_index;
         let html = self.render_fragment_with_scan(document, document_scan);
-        if let Some(heading_id_counts) = heading_id_counts {
-            self.heading_id_counts = heading_id_counts;
-        }
+        self.heading_id_planner = heading_id_planner;
         self.footnote_ref_counts = footnote_ref_counts;
         self.footnote_index = footnote_index;
         self.footnote_records = footnote_records;
@@ -62,17 +59,14 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) -> String {
         let document_scan = self.scan_for_fragment(document);
-        let heading_id_counts =
-            (document_scan.heading_count != 0).then(|| self.heading_id_counts.clone());
+        let heading_id_planner = self.heading_id_planner.clone();
         let footnote_ref_counts = self.footnote_ref_counts.clone();
         let footnote_index = self.footnote_index.clone();
         let footnote_records = self.footnote_records.clone();
         let footnote_slug_counts = self.footnote_slug_counts.clone();
         let code_block_index = self.code_block_index;
         let html = self.render_fragment_with_scan_and_hooks(document, document_scan, hooks);
-        if let Some(heading_id_counts) = heading_id_counts {
-            self.heading_id_counts = heading_id_counts;
-        }
+        self.heading_id_planner = heading_id_planner;
         self.footnote_ref_counts = footnote_ref_counts;
         self.footnote_index = footnote_index;
         self.footnote_records = footnote_records;
@@ -84,7 +78,7 @@ impl HtmlRenderer {
     /// Clears renderer state that spans incremental fragments.
     pub fn reset_incremental_state(&mut self) {
         self.output.clear();
-        self.heading_id_counts.clear();
+        self.heading_id_planner.clear();
         self.clear_footnote_state();
         self.toc_entries.clear();
         self.document_has_toc_marker = false;
@@ -134,10 +128,21 @@ impl HtmlRenderer {
         self.output.clear();
         self.toc_entries.clear();
         self.document_has_toc_marker = document_scan.has_toc_marker;
-        if self.document_has_toc_marker {
-            collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
+        self.heading_id_planner
+            .reserve_capacity(document_scan.heading_count);
+        if document_scan.has_footnotes {
+            self.heading_id_planner
+                .reserve_document_footnote_ids(document, self.options.semantic_footnotes);
         }
-        self.heading_id_counts.reserve(document_scan.heading_count);
+        if self.document_has_toc_marker {
+            let mut toc_planner = self.heading_id_planner.clone();
+            collect_inline_toc_entries(
+                document,
+                self.options.toc_max_depth,
+                &mut toc_planner,
+                &mut self.toc_entries,
+            );
+        }
         self.in_link = false;
         self.reserve_output_for(document);
         self.render_document(document);
@@ -154,10 +159,21 @@ impl HtmlRenderer {
         self.output.clear();
         self.toc_entries.clear();
         self.document_has_toc_marker = document_scan.has_toc_marker;
-        if self.document_has_toc_marker {
-            collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
+        self.heading_id_planner
+            .reserve_capacity(document_scan.heading_count);
+        if document_scan.has_footnotes {
+            self.heading_id_planner
+                .reserve_document_footnote_ids(document, self.options.semantic_footnotes);
         }
-        self.heading_id_counts.reserve(document_scan.heading_count);
+        if self.document_has_toc_marker {
+            let mut toc_planner = self.heading_id_planner.clone();
+            collect_inline_toc_entries(
+                document,
+                self.options.toc_max_depth,
+                &mut toc_planner,
+                &mut self.toc_entries,
+            );
+        }
         self.in_link = false;
         self.reserve_output_for(document);
         self.render_document_with_hooks(document, hooks);

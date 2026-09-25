@@ -7,7 +7,6 @@
 use std::fmt::{Display, Write as _};
 
 use crate::ast::{Heading, Node, Span};
-use compact_str::CompactString;
 use smallvec::SmallVec;
 
 use super::super::autolink::find_autolink_match;
@@ -348,12 +347,8 @@ impl HtmlRenderer {
             self.heading_id_is_explicit = true;
             self.heading_id_scratch.clear();
             reserve_heading_scratch(&mut self.heading_id_scratch);
-            self.heading_id_scratch.push_str(id);
-            if let Some(count) = self.heading_id_counts.get_mut(id) {
-                *count += 1;
-            } else {
-                self.heading_id_counts.insert(CompactString::from(id), 1);
-            }
+            self.heading_id_planner
+                .write_unique_id(id, &mut self.heading_id_scratch);
             return;
         }
         self.heading_id_is_explicit = false;
@@ -367,20 +362,8 @@ impl HtmlRenderer {
 
         self.heading_id_scratch.clear();
         reserve_heading_scratch(&mut self.heading_id_scratch);
-        if let Some(count) = self
-            .heading_id_counts
-            .get_mut(self.heading_slug_scratch.as_str())
-        {
-            let n = *count;
-            *count += 1;
-            self.heading_id_scratch.push_str(&self.heading_slug_scratch);
-            let _ = write!(self.heading_id_scratch, "-{n}");
-            return;
-        }
-
-        self.heading_id_scratch.push_str(&self.heading_slug_scratch);
-        let key = CompactString::from(self.heading_slug_scratch.as_str());
-        self.heading_id_counts.insert(key, 1);
+        self.heading_id_planner
+            .write_unique_id(&self.heading_slug_scratch, &mut self.heading_id_scratch);
     }
 }
 

@@ -25,6 +25,7 @@ use rustc_hash::FxHashMap;
 
 use super::autolink::FirstByteIndex;
 use super::escape::{write_escaped_into, write_url_escaped_into};
+use super::heading_ids::HeadingIdPlanner;
 use super::options::{HtmlRendererOptions, RendererOptions};
 use super::toc::{
     DocumentRenderScan, InlineTocEntry, collect_inline_toc_entries, scan_document_for_render,
@@ -41,12 +42,9 @@ pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRen
 pub struct HtmlRenderer {
     options: RendererOptions,
     output: String,
-    /// Keyed by `CompactString` rather than `String`: heading slugs are
-    /// short (median 22 bytes on the bundled corpora), so the majority sit
-    /// inside `CompactString`'s 24-byte inline capacity and cost no heap
-    /// allocation at all. This map is the renderer's single largest
-    /// allocation source — one insert per unique heading.
-    heading_id_counts: FxHashMap<CompactString, usize>,
+    /// Shared heading/footnote ID state for this document or fragment
+    /// sequence. TOC collection and Node metadata use the same planner.
+    heading_id_planner: HeadingIdPlanner,
     /// How many times each footnote identifier has been referenced so
     /// far in this render, so repeated references can be given unique
     /// `fnref-` ids. Cleared per `render()` like the heading id map.
@@ -78,9 +76,8 @@ pub struct HtmlRenderer {
     /// allocated one `text` String per call. Empty until the first heading
     /// (see [`reserve_heading_scratch`]).
     heading_text_scratch: String,
-    /// Reusable scratch buffer for the slugified id. The final id that
-    /// ends up in `heading_id_counts` is copied out of here on vacant
-    /// inserts; the buffer itself stays around across renders.
+    /// Reusable scratch buffer for the slugified heading ID before the shared
+    /// planner applies any collision suffix.
     heading_slug_scratch: String,
     /// Unique heading id for the heading currently being written, including
     /// any `-N` suffix. Permalinks reuse this exact value instead of
@@ -187,7 +184,7 @@ impl HtmlRenderer {
         Self {
             options,
             output: String::new(),
-            heading_id_counts: FxHashMap::default(),
+            heading_id_planner: HeadingIdPlanner::new(),
             footnote_ref_counts: FxHashMap::default(),
             footnote_index: FxHashMap::default(),
             footnote_records: Vec::new(),
@@ -247,8 +244,7 @@ impl HtmlRenderer {
         // and allocates a slug per entry, which used to fire on every render
         // regardless of whether a `[[toc]]` directive existed. The scan below
         // records only booleans/counts, so documents without TOC markers skip
-        // all TOC allocation while the heading count still lets us reserve the
-        // unique-id map once.
+        // all TOC allocation while the heading count sizes the ID planner.
         self.toc_entries.clear();
         self.code_block_index = 0;
         // Both facts the scan derives are consumed only when `heading_ids` is
@@ -266,11 +262,22 @@ impl HtmlRenderer {
             DocumentRenderScan::NONE
         };
         self.document_has_toc_marker = document_scan.has_toc_marker;
-        if self.document_has_toc_marker {
-            collect_inline_toc_entries(document, self.options.toc_max_depth, &mut self.toc_entries);
+        self.heading_id_planner.clear();
+        self.heading_id_planner
+            .reserve_capacity(document_scan.heading_count);
+        if document_scan.has_footnotes {
+            self.heading_id_planner
+                .reserve_document_footnote_ids(document, self.options.semantic_footnotes);
         }
-        self.heading_id_counts.clear();
-        self.heading_id_counts.reserve(document_scan.heading_count);
+        if self.document_has_toc_marker {
+            let mut toc_planner = self.heading_id_planner.clone();
+            collect_inline_toc_entries(
+                document,
+                self.options.toc_max_depth,
+                &mut toc_planner,
+                &mut self.toc_entries,
+            );
+        }
         self.clear_footnote_state();
         // The autolink first-byte index is built once per renderer (see the
         // field) because it depends only on the immutable options.

@@ -137,7 +137,8 @@ fn excluded_headings_still_reserve_automatic_ids() {
         html.contains("<h2 id=\"repeated-2\">Repeated</h2>"),
         "{html}"
     );
-    assert!(nav.contains("href=\"#fixed\">Visible</a>"), "{html}");
+    assert!(nav.contains("href=\"#fixed-1\">Visible</a>"), "{html}");
+    assert!(html.contains("<h2 id=\"fixed-1\">Visible</h2>"), "{html}");
     assert!(!nav.contains(">Deep</a>"), "{html}");
     assert_eq!(nav.matches("<li ").count(), 2, "{html}");
 }

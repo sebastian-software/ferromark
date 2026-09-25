@@ -652,6 +652,26 @@ test("metadata IDs agree with v2 heading output and reset between documents", ()
   assert.equal(transform("# A title!").headings[0].id, "a-title");
 });
 
+test("heading IDs stay unique across generated, explicit, and footnote IDs", () => {
+  const result = transform("# a\n\n# a\n\n# a-1\n\n# Custom {#custom}\n\n# Custom {#custom}", {
+    headingAttributes: true,
+  });
+
+  const expectedIds = ["a", "a-1", "a-1-1", "custom", "custom-1"];
+  assert.deepEqual(
+    result.headings.map((heading) => heading.id),
+    expectedIds,
+  );
+  assert.deepEqual(
+    Array.from(result.html.matchAll(/<h[1-6] id="([^"]+)"/g), ([, id]) => id),
+    expectedIds,
+  );
+
+  const footnote = transform("# fn-1\n\nReference[^1].\n\n[^1]: note", { footnotes: true });
+  assert.equal(footnote.headings[0].id, "fn-1-1");
+  assert.match(footnote.html, /id="fn-1"/);
+});
+
 test("a reusable renderer recovers after a bounded-depth parse error", () => {
   const renderer = new Renderer();
   assert.throws(() => renderer.toHtml(`${"> ".repeat(150)}deep`), /nest|depth/i);

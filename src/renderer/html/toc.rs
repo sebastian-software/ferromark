@@ -4,11 +4,10 @@
 //! pre-collects headings only when such a marker exists, preserving duplicate-heading
 //! ID behavior while avoiding allocation in documents without TOC markers.
 
-use rustc_hash::FxHashMap;
-
 use crate::ast::{Document, ListItem, Node, Paragraph};
 
-use super::heading::{collect_heading_text, slugify_heading};
+use super::heading::collect_heading_text;
+use super::heading_ids::{HeadingIdPlanner, heading_id_base};
 
 #[derive(Debug, Clone)]
 pub(super) struct InlineTocEntry {
@@ -25,6 +24,7 @@ pub(super) struct InlineTocEntry {
 /// while preserving the lazy TOC behavior for documents without a marker.
 pub(super) struct DocumentRenderScan {
     pub(super) has_toc_marker: bool,
+    pub(super) has_footnotes: bool,
     pub(super) heading_count: usize,
 }
 
@@ -35,6 +35,7 @@ impl DocumentRenderScan {
     /// disabled inline TOC would have concluded anyway.
     pub(super) const NONE: Self = Self {
         has_toc_marker: false,
+        has_footnotes: false,
         heading_count: 0,
     };
 }
@@ -42,12 +43,11 @@ impl DocumentRenderScan {
 pub(super) fn collect_inline_toc_entries(
     document: &Document<'_>,
     max_depth: u8,
+    ids: &mut HeadingIdPlanner,
     entries: &mut Vec<InlineTocEntry>,
 ) {
-    let mut counts = FxHashMap::default();
-
     for node in &document.children {
-        collect_inline_toc_node(node, max_depth, &mut counts, entries);
+        collect_inline_toc_node(node, max_depth, ids, entries);
     }
 }
 
@@ -100,6 +100,7 @@ fn scan_node_for_render(node: &Node<'_>, detect_toc_marker: bool, scan: &mut Doc
         }
         Node::ListItem(item) => scan_list_item_for_render(item, detect_toc_marker, scan),
         Node::FootnoteDefinition(def) => {
+            scan.has_footnotes = true;
             for child in &def.children {
                 scan_node_for_render(child, detect_toc_marker, scan);
             }
@@ -172,49 +173,16 @@ pub(super) fn is_toc_marker_paragraph(paragraph: &Paragraph<'_>) -> bool {
 fn collect_inline_toc_node(
     node: &Node<'_>,
     max_depth: u8,
-    counts: &mut FxHashMap<String, usize>,
+    ids: &mut HeadingIdPlanner,
     entries: &mut Vec<InlineTocEntry>,
 ) {
-    use std::fmt::Write as _;
-
     match node {
         Node::Heading(heading) => {
             let include_heading = heading.depth <= max_depth;
             let text = collect_heading_text(&heading.children);
-            if let Some(explicit_id) = heading.id {
-                if let Some(count) = counts.get_mut(explicit_id) {
-                    *count += 1;
-                } else {
-                    counts.insert(explicit_id.to_string(), 1);
-                }
-                if include_heading {
-                    entries.push(InlineTocEntry {
-                        depth: heading.depth,
-                        text,
-                        id: explicit_id.to_string(),
-                    });
-                }
-                return;
-            }
-            let mut slug = slugify_heading(&text);
-            let id = if let Some(count) = counts.get_mut(slug.as_str()) {
-                let suffix = *count;
-                *count += 1;
-                if include_heading {
-                    let _ = write!(slug, "-{suffix}");
-                    Some(slug)
-                } else {
-                    None
-                }
-            } else if include_heading {
-                counts.insert(slug.clone(), 1);
-                Some(slug)
-            } else {
-                counts.insert(slug, 1);
-                None
-            };
-
-            if let Some(id) = id {
+            let base = heading_id_base(heading);
+            let id = ids.unique_id(&base).to_string();
+            if include_heading {
                 entries.push(InlineTocEntry {
                     depth: heading.depth,
                     text,
@@ -224,34 +192,34 @@ fn collect_inline_toc_node(
         }
         Node::BlockQuote(block_quote) => {
             for child in &block_quote.children {
-                collect_inline_toc_node(child, max_depth, counts, entries);
+                collect_inline_toc_node(child, max_depth, ids, entries);
             }
         }
         Node::List(list) => {
             for item in &list.children {
                 for child in &item.children {
-                    collect_inline_toc_node(child, max_depth, counts, entries);
+                    collect_inline_toc_node(child, max_depth, ids, entries);
                 }
             }
         }
         Node::ListItem(item) => {
             for child in &item.children {
-                collect_inline_toc_node(child, max_depth, counts, entries);
+                collect_inline_toc_node(child, max_depth, ids, entries);
             }
         }
         Node::FootnoteDefinition(definition) => {
             for child in &definition.children {
-                collect_inline_toc_node(child, max_depth, counts, entries);
+                collect_inline_toc_node(child, max_depth, ids, entries);
             }
         }
         Node::MdxJsxFlowElement(node) => {
             for child in &node.children {
-                collect_inline_toc_node(child, max_depth, counts, entries);
+                collect_inline_toc_node(child, max_depth, ids, entries);
             }
         }
         Node::MdxJsxTextElement(node) => {
             for child in &node.children {
-                collect_inline_toc_node(child, max_depth, counts, entries);
+                collect_inline_toc_node(child, max_depth, ids, entries);
             }
         }
         _ => {}

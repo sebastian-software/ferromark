@@ -10,6 +10,7 @@ mod callout;
 mod code_annotations;
 mod escape;
 mod heading;
+mod heading_ids;
 mod html_attr;
 mod mdx_payload;
 mod options;
@@ -21,6 +22,7 @@ mod toc;
 mod tests;
 
 pub use heading::{HEADING_PERMALINK_CLASS, collect_heading_text, slugify_heading};
+pub use heading_ids::HeadingIdPlanner;
 pub use options::{CodeAnnotationSyntax, HtmlRendererOptions};
 pub use renderer::{
     HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, NoHtmlRenderHooks,
