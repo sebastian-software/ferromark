@@ -77,9 +77,51 @@ about 10% on repeated-quote diagnostics and was reverted. Any new candidate
 still has to satisfy the exact-parity and two-architecture requirements in
 ADR-0021.
 
-The [per-document broad results](data/broad-summary.csv), [quote diagnostic
-results](data/quote-summary.csv), [broad run metadata](data/broad-run.json) and
-[quote run metadata](data/quote-run.json) are archived beside this report.
+## Follow-up experiment: monotonic start-index hint
+
+A second candidate cached the previous generated start and its `SourceMap`
+partition point. It searched only the remaining suffix for nondecreasing
+queries, used the original full lookup for backward queries, and cleared the
+hint when the map changed. Differential lookup tests covered ascending,
+descending and interleaved query orders; empty, contiguous, gapped, blank-run,
+zero-length and indented maps; and map growth. The paired comparator found
+exact HTML and AST/span equality for all 57 broad and 26 container cases across
+fresh, reuse, parse and render.
+
+The runs used the same baseline, Rust 1.95.0, fat LTO, generic CPU target, 3
+rounds and 3 paired windows per round on Apple Silicon. Ratios are baseline
+time divided by candidate time.
+
+| Broad corpus, 57 documents | Geometric mean | Round ratios | Cases faster | Cases below 0.970× |
+| --- | ---: | --- | ---: | --- |
+| Fresh | 1.0062× | 1.003 / 1.009 / 1.006 | 44 | none |
+| Reuse | 1.0033× | 0.998 / 1.003 / 1.004 | 40 | none |
+| Parse | 1.0063× | 1.006 / 1.007 / 1.006 | 40 | none |
+| Render | 1.0012× | 1.002 / 1.002 / 1.000 | 28 | none |
+
+| Container diagnostics, 26 cases | Geometric mean | Round ratios | Cases faster | Cases below 0.970× |
+| --- | ---: | --- | ---: | --- |
+| Fresh | 1.0516× | 1.054 / 1.050 / 1.047 | 12 | 5 |
+| Reuse | 1.0469× | 1.047 / 1.051 / 1.048 | 10 | 5 |
+| Parse | 1.0504× | 1.054 / 1.048 / 1.047 | 12 | 5 |
+| Render | 0.9994× | 1.000 / 0.999 / 1.001 | 10 | none |
+
+The diagnostic gains do not meet the broad 1.010× retention bar. In parse
+mode, five quote-related diagnostics regress below 0.970×: nested quotes reach
+0.798×, plain quotes 0.843×, quote tabs 0.903×, lazy quotes 0.914× and mixed
+quote/list 0.954×. The variant was rejected; no x86-64 run was dispatched and
+no performance improvement is claimed.
+
+The candidate passed `cargo fmt --all --check`,
+`cargo test --workspace --all-features --locked`,
+`cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
+and `cargo bench --workspace --no-run --locked`. The benchmark harness tests
+also passed (10 tests).
+
+The measurement data is archived beside this report:
+
+- Original [broad results](data/broad-summary.csv), [quote results](data/quote-summary.csv), [broad metadata](data/broad-run.json) and [quote metadata](data/quote-run.json).
+- Start-hint [broad results](data/map-hint-broad-summary.csv), [container results](data/map-hint-containers-summary.csv), [broad metadata](data/map-hint-broad-run.json) and [container metadata](data/map-hint-containers-run.json).
 The paired runner SHA-256 was
 `eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95`, the
 worker SHA-256 was
