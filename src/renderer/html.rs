@@ -19,6 +19,7 @@ mod tagfilter;
 #[cfg(test)]
 mod tests;
 
+pub use autolink::find_autolink_ranges;
 pub use heading::{
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, InvalidHeadingIdPrefix, collect_heading_text,
     map_heading_level, slugify_heading,

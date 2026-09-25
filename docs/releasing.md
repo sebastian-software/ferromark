@@ -1,9 +1,13 @@
 # Releasing ferromark v2
 
-One Rust crate, `ferromark`, publishes to crates.io. The npm facade and eight
-native platform packages share its version. The Node development workspace and
+The `ferromark` core crate publishes to crates.io. The optional
+`ferromark-transforms` crate shares its version and depends on that core. The
+current publish workflow still lists only `ferromark`; before the transform
+crate's first release, that workflow must be approved and changed to publish
+the core first and then the extension. The npm facade and eight native platform
+packages share the root product version. The Node development workspace and
 `ferromark-node` binding crate remain private. Allocator, AST, parser and
-renderer are modules inside the Rust library; consumers can use them
+renderer are modules inside the core library; consumers can use them
 individually through `ferromark`. Since
 [ADR-0020](arch/ADR-0020-standards-release-blueprint.md) that crate is the
 repository root package, and the release follows the organization's
@@ -19,11 +23,17 @@ repository root package, and the release follows the organization's
    the changelog section that becomes the release notes.
 3. Merge it. Release Please writes the version commit, creates the `v<version>`
    tag and the GitHub release, and sets `releases_created`.
-4. The gated jobs in the same workflow run from that tag. They gate on Release
+4. The currently gated jobs in the same workflow run from that tag. They gate on Release
    Please alone, so the crates.io publication and the native addon pipeline start
-   in parallel: the crate goes to crates.io while the eight native addons are
+   in parallel: the core crate goes to crates.io while the eight native addons are
    built, assembled, verified and published to npm, sidecars before the facade,
    and the published versions are confirmed on the registry.
+
+The transform extension is not included in that current publish action. Its
+first release is blocked until the publish action lists `ferromark` before
+`ferromark-transforms` and crates.io Trusted Publishing is configured for the
+new crate. The package and version-bump rehearsal do not test registry
+credentials or upload an archive.
 
 Nothing else publishes. Merging ordinary source still only opens or updates the
 release pull request.
@@ -39,9 +49,11 @@ checks at all.
 component. The strategy updates natively, with no template to keep in step:
 
 - the root `Cargo.toml` `[package]` version,
+- `transforms/Cargo.toml`'s version and its exact
+  `ferromark = { version = "…", path = ".." }` dependency,
 - `node/native/Cargo.toml`'s version and its explicit
   `ferromark = { version = "…", path = "../.." }` requirement,
-- both local entries in `Cargo.lock`,
+- all local entries in `Cargo.lock`,
 - `CHANGELOG.md` and `.release-please-manifest.json`.
 
 Four `extra-files` entries cover the rest: a typed `$.version` for
@@ -173,31 +185,35 @@ python3 scripts/rehearse-rust-packages.py /tmp/ferromark-rust-package-review
 ```
 
 The output directory must not exist. `cargo package --locked` builds and
-verifies the actual `ferromark` archive from the root package. There are no
-internal crate dependencies or repository-only cross-crate test dependencies to
-resolve.
+verifies the `ferromark` core archive first, then the `ferromark-transforms`
+archive. The latter's development manifest uses a local path to the core; Cargo
+normalizes that to its exact registry dependency in the package archive. The
+rehearsal applies a temporary Cargo patch to the local core because its current
+version is not published yet; the package manifest itself still targets the
+crates.io version.
 
-The rehearsal checks package metadata, upstream MIT notices and the absence of
-internal path dependencies, then builds and runs an isolated consumer from the
-unpacked archive. External versions must remain within the workspace lockfile.
-The README, the upstream `LICENSE` notice, the `LICENSE-MIT` text and
-`UPSTREAM.md` ship with the package. This does not test registry credentials.
+The rehearsal checks both packages' metadata, upstream MIT notices and absence
+of repository-only paths, then builds and runs an isolated consumer from both
+unpacked archives. External versions must remain within the workspace
+lockfile. Each README, the upstream `LICENSE` notice, the `LICENSE-MIT` text
+and `UPSTREAM.md` ship with the core archive; the extension declares the same
+MIT license through workspace metadata and carries its own README. This does
+not test registry credentials.
 
-Finally it runs `cargo check --all-targets --locked --offline` inside the
-unpacked archive. The consumer only links the library, but `tests/`, `benches/`
-and `examples/` ship too, so anyone running `cargo test` on the published crate
-compiles them: a test that embeds a file the `include` list leaves out fails
-there and nowhere else. `--offline` needs the dev-dependencies, which the
-`cargo fetch --locked` above resolves.
+Finally it runs `cargo check --all-targets --locked --offline` inside each
+unpacked archive. The consumer links and runs the custom pass against both
+packages. `tests/`, `benches/` and `examples/` also ship, so anyone running
+`cargo test` on a published package compiles them. `--offline` needs the
+dev-dependencies, which the `cargo fetch --locked` above resolves.
 
-Because the crate sits at the repository root, a narrow `include` list in
-`Cargo.toml` decides what the archive contains. Compare `cargo package --list`
-before and after any change to it; `scripts/test_release_package.py` guards the
-allow-list and keeps `docs/`, `benchmarks/`, `homepage/`, `node/`, `scripts/`
-and `.github/` out as directories. Three regression corpora that shipped tests
-embed with `include_str!` are the sole exception, named there as individual
-files; the same test checks that no shipped target embeds anything else from
-outside the archive.
+The root `Cargo.toml` decides what the core archive contains. Compare
+`cargo package --list` before and after any change to it;
+`scripts/test_release_package.py` guards both package manifests' allow-lists.
+The core allow-list keeps `docs/`, `benchmarks/`, `homepage/`, `node/`,
+`scripts/` and `.github/` out as directories. Three regression corpora that
+shipped tests embed with `include_str!` are the sole exception, named there as
+individual files; the same test checks that no shipped target embeds anything
+else from outside the core archive.
 
 ## The pre-merge rehearsal
 

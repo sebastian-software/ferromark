@@ -4,6 +4,8 @@
 //! first indexes possible leading bytes so most prose is skipped without repeated
 //! prefix checks, then validates word boundaries and trims punctuation around matches.
 
+use std::ops::Range;
+
 mod index;
 
 pub(in crate::renderer::html) use index::FirstByteIndex;
@@ -64,6 +66,32 @@ pub(super) fn find_autolink_match<P: AsRef<str>>(
         base = i + 1;
     }
     None
+}
+
+/// Finds the byte ranges that the HTML renderer would recognize as bare URLs.
+///
+/// This explicit helper lets optional AST transforms protect the same URL
+/// spellings without adding URL scanning to parsing or rendering. Each range
+/// starts at the registered prefix and ends before trailing punctuation, using
+/// the renderer's existing boundary and trimming rules. Calling this function
+/// is the only work it performs; the ordinary parser and renderer never call it.
+///
+/// `patterns` uses the same prefix format as
+/// [`crate::renderer::HtmlRendererOptions::autolink_patterns`].
+#[must_use]
+pub fn find_autolink_ranges<P: AsRef<str>>(s: &str, patterns: &[P]) -> Vec<Range<usize>> {
+    let index = FirstByteIndex::from_patterns(patterns);
+    let mut ranges = Vec::new();
+    let mut cursor = 0;
+
+    while let Some((start, end)) = find_autolink_match(s, cursor, patterns, &index) {
+        ranges.push(start..end);
+        // Matches always consume at least the pattern and one URL byte, but
+        // keep the public iterator robust if that recognizer contract changes.
+        cursor = end.max(start + 1);
+    }
+
+    ranges
 }
 
 /// Extends a URL from `from` to the offset where it stops.
@@ -325,6 +353,41 @@ mod trimming_tests {
                 original(&bytes, 7, end)
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod range_tests {
+    use super::find_autolink_ranges;
+
+    #[test]
+    fn finds_renderer_ranges_and_excludes_trailing_punctuation() {
+        let text = "See https://example.test/a_(b)). and http://example.test/x...";
+        let ranges = find_autolink_ranges(text, &["http://", "https://"]);
+
+        assert_eq!(
+            ranges
+                .iter()
+                .map(|range| &text[range.clone()])
+                .collect::<Vec<_>>(),
+            ["https://example.test/a_(b)", "http://example.test/x"]
+        );
+    }
+
+    #[test]
+    fn uses_registered_patterns_and_renderer_word_boundaries() {
+        let text = "xhttps://bad.test https://good.test ftp://also-good.test";
+
+        let ranges = find_autolink_ranges(text, &["https://"]);
+        assert_eq!(ranges.len(), 1);
+        assert_eq!(
+            ranges[0],
+            text.find("https://good").unwrap()..text.find(" ftp://").unwrap()
+        );
+
+        let ranges = find_autolink_ranges(text, &["ftp://"]);
+        assert_eq!(ranges.len(), 1);
+        assert_eq!(ranges[0], text.find("ftp://").unwrap()..text.len());
     }
 }
 

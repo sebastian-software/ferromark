@@ -46,6 +46,15 @@ class PackagedTargets(unittest.TestCase):
         self.assertIn("--locked", self.command)
         self.assertIn("--offline", self.command)
 
+    def test_transform_targets_patch_the_core_to_the_extracted_archive(self):
+        core = Path("/unpacked/ferromark-9.9.9")
+        command = rehearsal.packaged_targets_command(self.package, core)
+        self.assertIn("--config", command)
+        self.assertIn(
+            'patch.crates-io.ferromark.path="/unpacked/ferromark-9.9.9"',
+            command,
+        )
+
     def test_a_failing_step_fails_the_rehearsal(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "step.log"
@@ -61,7 +70,8 @@ class RehearsalRecord(unittest.TestCase):
         self.assertEqual(self.result["packaged_consumer"], "passed")
         self.assertEqual(self.result["packaged_targets"], "passed")
 
-    def test_the_method_names_what_the_archive_itself_compiled(self):
+    def test_the_method_names_what_each_archive_itself_compiled(self):
+        self.assertIn("each unpacked archive", self.result["method"])
         self.assertIn("test, bench and example targets", self.result["method"])
 
     def test_the_limits_stay_honest_about_publishing(self):

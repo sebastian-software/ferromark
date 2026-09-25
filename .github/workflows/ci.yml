@@ -429,7 +429,7 @@ jobs:
         run: node ./scripts/clean-install-smoke.mjs --target linux-x64-musl --package-tests
 
   rust-packages:
-    name: Verify packaged Rust consumer
+    name: Verify packaged Rust consumers
     runs-on: ubuntu-latest
     permissions:
       contents: read

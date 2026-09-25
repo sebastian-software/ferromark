@@ -68,13 +68,34 @@ class RootPackage(unittest.TestCase):
         for member in self.manifest["workspace"]["members"]:
             package = tomllib.loads((ROOT / member / "Cargo.toml").read_text())
             self.assertEqual(package["package"]["version"], version, member)
-            self.assertIs(package["package"]["publish"], False, member)
+            if package["package"]["name"] == "ferromark-transforms":
+                self.assertEqual(package["package"]["publish"], ["crates-io"], member)
+            else:
+                self.assertIs(package["package"]["publish"], False, member)
             requirement = package.get("dependencies", {}).get("ferromark")
             if requirement is not None:
                 # A path dependency without an explicit version is skipped by
                 # Release Please and would silently keep the previous release.
                 self.assertEqual(requirement["version"], version, member)
-                self.assertEqual(requirement["path"], "../..", member)
+                expected_path = "/".join([".."] * len(Path(member).parts))
+                self.assertEqual(requirement["path"], expected_path, member)
+
+    def test_transforms_is_the_only_published_workspace_member(self):
+        published = []
+        for member in self.manifest["workspace"]["members"]:
+            package = tomllib.loads((ROOT / member / "Cargo.toml").read_text())["package"]
+            if package.get("publish") is not False:
+                published.append(package["name"])
+        self.assertEqual(published, ["ferromark-transforms"])
+
+    def test_transforms_depends_on_core_with_a_release_managed_version(self):
+        manifest = tomllib.loads((ROOT / "transforms" / "Cargo.toml").read_text())
+        dependency = manifest["dependencies"]["ferromark"]
+        self.assertEqual(dependency["version"], self.manifest["package"]["version"])
+        self.assertEqual(dependency["path"], "..")
+
+    def test_core_does_not_depend_on_the_optional_transform_crate(self):
+        self.assertNotIn("ferromark-transforms", self.manifest["dependencies"])
 
     def test_no_simple_strategy_leftovers(self):
         self.assertFalse((ROOT / "version.txt").exists())
@@ -125,6 +146,27 @@ class PublishedArchive(unittest.TestCase):
     def test_upstream_attribution_ships_with_the_crate(self):
         for attribution in ("/LICENSE", "/LICENSE-MIT", "/UPSTREAM.md"):
             self.assertIn(attribution, self.include)
+
+
+class TransformArchive(unittest.TestCase):
+    def setUp(self):
+        self.manifest = tomllib.loads((ROOT / "transforms" / "Cargo.toml").read_text())
+
+    def test_transform_crate_has_a_narrow_archive_allow_list(self):
+        expected = [
+            "/src",
+            "/tests",
+            "/examples",
+            "/README.md",
+        ]
+        self.assertEqual(self.manifest["package"]["include"], expected)
+        for entry in expected:
+            self.assertTrue((ROOT / "transforms" / entry.lstrip("/")).exists(), entry)
+
+    def test_transform_package_inherits_the_workspace_license(self):
+        self.assertTrue(self.manifest["package"]["license"]["workspace"])
+        workspace = tomllib.loads((ROOT / "Cargo.toml").read_text())["workspace"]["package"]
+        self.assertEqual(workspace["license"], "MIT")
 
 
 class ReleaseTemplate(unittest.TestCase):

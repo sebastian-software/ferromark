@@ -147,11 +147,26 @@ export function validateRelease(files, expectedVersion) {
   for (const member of cargo.workspace.members) {
     const memberManifest = TOML.parse(files.get(`${member}/Cargo.toml`));
     assert.equal(memberManifest.package.version, expectedVersion, `${member}: package version`);
-    assert.equal(memberManifest.package.publish, false, `${member}: stays unpublished`);
+    if (memberManifest.package.name === "ferromark-transforms") {
+      assert.deepEqual(
+        memberManifest.package.publish,
+        ["crates-io"],
+        `${member}: crates.io package`,
+      );
+    } else {
+      assert.equal(memberManifest.package.publish, false, `${member}: stays unpublished`);
+    }
     const requirement = memberManifest.dependencies?.ferromark;
     if (requirement) {
       assert.equal(requirement.version, expectedVersion, `${member}: ferromark requirement`);
-      assert.equal(requirement.path, "../..", `${member}: ferromark path`);
+      assert.equal(
+        requirement.path,
+        member
+          .split("/")
+          .map(() => "..")
+          .join("/"),
+        `${member}: ferromark path`,
+      );
     }
     localNames.push(memberManifest.package.name);
   }

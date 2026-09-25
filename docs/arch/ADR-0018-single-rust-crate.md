@@ -55,3 +55,19 @@ checks and measured performance support it.
 The consolidation passed the existing tests and package checks. The retained
 [measurement report](../reports/2026-09-15-single-crate/README.md) records complete
 corpus timings, individual regressions, unchanged outputs and build identities.
+
+## Amendment (2026-09-25): optional transform extension
+
+Keep `ferromark` as the single published **core** crate. Add
+`ferromark-transforms` as one optional extension crate for the native AST pass
+pipeline. The extension depends on `ferromark`; the parser and renderer do not
+depend on the extension. Both packages share the root product version, and the
+release strategy updates their explicit workspace manifests together. When the
+extension is enabled for publishing, publish `ferromark` first and then
+`ferromark-transforms`. This does not split the allocator, AST, parser or
+renderer into separately released core crates.
+
+The extension package and its archive rehearsal are part of the transform
+foundation. Updating the publish workflow and configuring crates.io Trusted
+Publishing for the new crate remain a separately gated release action; see
+[ADR-0022](ADR-0022-native-transform-pipeline.md).

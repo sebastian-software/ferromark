@@ -20,7 +20,7 @@ async function developmentBaseline() {
   ).files;
 }
 
-it("configures the native rust strategy with one root component", () => {
+it("configures one release component for the versioned Cargo workspace", () => {
   const config = JSON.parse(readReleaseFiles().get("release-please-config.json"));
   assert.equal(config["release-type"], "rust");
   // The published tag is `v2.0.0`, so the component must not enter it.
@@ -111,6 +111,7 @@ it("proposes the next patch release from the commit range alone", async () => {
   assert.ok(proposed.paths.includes("Cargo.toml"));
   assert.ok(proposed.paths.includes("Cargo.lock"));
   assert.ok(proposed.paths.includes("node/native/Cargo.toml"));
+  assert.ok(proposed.paths.includes("transforms/Cargo.toml"));
   for (const target of ["darwin-arm64", "win32-arm64-msvc"]) {
     assert.ok(proposed.paths.includes(`node/ferromark/npm/${target}/package.json`));
   }
