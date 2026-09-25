@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "rounds": 3,
+  "pairs_per_round": 3,
+  "window_ms": 40,
+  "warmup_ms": 40,
+  "seed": 20260914,
+  "modes": [
+    "fresh",
+    "reuse",
+    "parse",
+    "render"
+  ],
+  "case_filter": "^container-quote-4096$",
+  "cases": [
+    "container-quote-4096"
+  ],
+  "corpus_sha256": "f921f7880fc8145dff67c8783b9e2f0577441cd09a20f12dc9331a23f9821ab7",
+  "runner_sha256": "eba0a2038f1c65479a9555705dc923cc8ff6869725832584161c0646529f1c95",
+  "worker_sha256": "d0fb282448170d2e43edc79bc7e5bd4e1aaac62f9abab75cd2bfed03de8b1fa7",
+  "host_before": {
+    "time_utc": "2026-09-25T18:43:09Z",
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "load_average": [
+      5.54052734375,
+      5.8994140625,
+      4.77001953125
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  },
+  "host_after": {
+    "time_utc": "2026-09-25T18:43:13Z",
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "load_average": [
+      5.5771484375,
+      5.90087890625,
+      4.77685546875
+    ],
+    "cpu": "Command '['sysctl', '-n', 'machdep.cpu.brand_string']' returned non-zero exit status 1.",
+    "power": "Now drawing from 'AC Power'",
+    "thermal": "Error:Failed to get thermal warning level with error code 0xe00002bc\nError: Failed to get performance warning level with error code 0xe00002bc\nError: No CPU power status with error code 0xe00002bc"
+  }
+}
