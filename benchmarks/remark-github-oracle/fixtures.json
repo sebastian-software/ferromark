@@ -1,0 +1,525 @@
+{
+  "schemaVersion": 1,
+  "reference": {
+    "package": "remark-github",
+    "version": "12.0.0",
+    "gitHead": "9cd4e9d8fa6cd3520d11aa922462a0089e1204c5",
+    "registryIntegrity": "sha512-ByefQKFN184LeiGRCabfl7zUJsdlMYWEhiLX1gpmQ11yFg6xSuOTW7LVCv0oc1x+YvUMJW23NU36sJX2RWGgvg==",
+    "license": "MIT"
+  },
+  "configuration": {
+    "packages": {
+      "remark": "15.0.1",
+      "remark-gfm": "4.0.0",
+      "remark-github": "12.0.0"
+    },
+    "repository": "ferromark/fixtures",
+    "parserPlugins": [
+      "remark-gfm"
+    ],
+    "transformPlugins": [
+      "remark-github"
+    ]
+  },
+  "cases": [
+    {
+      "name": "bare-url-and-email-as-text-without-gfm-autolinks",
+      "parserPlugins": [],
+      "source": "See https://example.com/x#123 and foo@bar.com.\n",
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "See https://example.com/x#123 and foo@bar.com."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "See https://example.com/x#123 and foo@bar.com."
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "See https://example.com/x#123 and foo@bar.com.\n"
+    },
+    {
+      "name": "local-issue-and-gh-prefix",
+      "source": "Fixes #123 and closes GH-7.\n",
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Fixes #123 and closes GH-7."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Fixes "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/ferromark/fixtures/issues/123",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "#123"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": " and closes "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/ferromark/fixtures/issues/7",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "GH-7"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": "."
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "Fixes [#123](https://github.com/ferromark/fixtures/issues/123) and closes [GH-7](https://github.com/ferromark/fixtures/issues/7).\n"
+    },
+    {
+      "name": "user-and-team-mentions",
+      "source": "Thanks @wooorm and @remarkjs/maintainers!\n",
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Thanks @wooorm and @remarkjs/maintainers!"
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Thanks "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/wooorm",
+                "children": [
+                  {
+                    "type": "strong",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "@wooorm"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": " and "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/remarkjs/maintainers",
+                "children": [
+                  {
+                    "type": "strong",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "@remarkjs/maintainers"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": "!"
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "Thanks [**@wooorm**](https://github.com/wooorm) and [**@remarkjs/maintainers**](https://github.com/remarkjs/maintainers)!\n"
+    },
+    {
+      "name": "cross-repository-issue-and-commit",
+      "source": "See remarkjs/remark-github#1 and remarkjs/remark-github@1f2a4fb.\n",
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "See remarkjs/remark-github#1 and remarkjs/remark-github@1f2a4fb."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "See "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/remarkjs/remark-github/issues/1",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "remarkjs/remark-github#1"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": " and "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/remarkjs/remark-github/commit/1f2a4fb",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "remarkjs/remark-github@"
+                  },
+                  {
+                    "type": "inlineCode",
+                    "value": "1f2a4fb"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": "."
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "See [remarkjs/remark-github#1](https://github.com/remarkjs/remark-github/issues/1) and [remarkjs/remark-github@`1f2a4fb`](https://github.com/remarkjs/remark-github/commit/1f2a4fb).\n"
+    },
+    {
+      "name": "commit-and-compare-range",
+      "source": "Commits 1f2a4fb and e2acebc...2aa9311.\n",
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Commits 1f2a4fb and e2acebc...2aa9311."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Commits "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/ferromark/fixtures/commit/1f2a4fb",
+                "children": [
+                  {
+                    "type": "inlineCode",
+                    "value": "1f2a4fb"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": " and "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/ferromark/fixtures/compare/e2acebc...2aa9311",
+                "children": [
+                  {
+                    "type": "inlineCode",
+                    "value": "e2acebc...2aa9311"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": "."
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "Commits [`1f2a4fb`](https://github.com/ferromark/fixtures/commit/1f2a4fb) and [`e2acebc...2aa9311`](https://github.com/ferromark/fixtures/compare/e2acebc...2aa9311).\n"
+    },
+    {
+      "name": "existing-link-code-and-bare-url",
+      "source": "`#2` and [#3](https://example.com/issues/3); https://example.com/issues#123.\n",
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "inlineCode",
+                "value": "#2"
+              },
+              {
+                "type": "text",
+                "value": " and "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://example.com/issues/3",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "#3"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": "; "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://example.com/issues#123",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "https://example.com/issues#123"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": "."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "inlineCode",
+                "value": "#2"
+              },
+              {
+                "type": "text",
+                "value": " and "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://example.com/issues/3",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "#3"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": "; "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://example.com/issues#123",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "https://example.com/issues#123"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": "."
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "`#2` and [#3](https://example.com/issues/3); <https://example.com/issues#123>.\n"
+    },
+    {
+      "name": "email-and-punctuation-boundaries",
+      "source": "Email foo@bar.com, mention @foo, and close (#42).\n",
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Email "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "mailto:foo@bar.com",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "foo@bar.com"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": ", mention @foo, and close (#42)."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "Email "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "mailto:foo@bar.com",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "foo@bar.com"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": ", mention "
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/foo",
+                "children": [
+                  {
+                    "type": "strong",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "@foo"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": ", and close ("
+              },
+              {
+                "type": "link",
+                "title": null,
+                "url": "https://github.com/ferromark/fixtures/issues/42",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "#42"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "value": ")."
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "Email <foo@bar.com>, mention [**@foo**](https://github.com/foo), and close ([#42](https://github.com/ferromark/fixtures/issues/42)).\n"
+    }
+  ]
+}
