@@ -18,6 +18,7 @@
 
 pub mod allocator;
 pub mod ast;
+pub mod outline;
 pub mod parser;
 pub mod renderer;
 
@@ -25,6 +26,7 @@ mod convenience;
 
 pub use allocator::Allocator;
 pub use convenience::{to_html, to_html_into, to_html_into_with_options, to_html_with_options};
+pub use outline::{OutlineEntry, OutlineOptions};
 pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
 pub use renderer::{
     CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HeadingIdPlanner, HtmlRenderContext,
