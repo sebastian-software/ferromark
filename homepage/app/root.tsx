@@ -12,7 +12,7 @@ import {
   ArdoSidebarSection,
   ArdoThemeToggle,
 } from "ardo/ui";
-import { Mark, MarkDefs, SiteFooter, ToolSwitcher } from "ferramenta-family";
+import { MarkDefs, SiteFooter, SiteHeader } from "ferramenta-family";
 import bigShouldersFont from "ferramenta-family/fonts/big-shoulders.woff2?url";
 import { useRef } from "react";
 import { NavLink, useLocation } from "react-router";
@@ -23,6 +23,7 @@ import "ardo/ui/styles.css";
 import "ferramenta-family/tokens.css";
 import "ferramenta-family/fonts.css";
 import "ferramenta-family/theme.css";
+import "ferramenta-family/landing.css";
 
 import "./styles/site.css";
 // Last on purpose, as the package README requires: the shared chrome has to win
@@ -162,51 +163,6 @@ function DocsActions() {
   );
 }
 
-/*
- * The header bar. The family package's `SiteHeader` puts the Ferramenta lockup
- * in the brand slot and the site's own name into the navigation, which reads
- * as the family site with a ferromark section. This is ferromark's site, so
- * the bar is composed here from the package's parts instead: the iron bar and
- * the lockup are the package's classes (`site-header`, `wrap`, `bar`,
- * `lockup`, `ghlink`, styled by chrome.css), ferromark takes the lockup, and
- * the family becomes one quiet control at the end of the bar — the package's
- * `ToolSwitcher` with a small "Ferramenta" trigger, so the other tools stay one
- * click away without the family outranking the product. The footer keeps the
- * full family chrome.
- */
-function SiteBar() {
-  return (
-    <header className="site-header">
-      <div className="wrap bar">
-        <NavLink to="/" className="lockup ferromark-lockup">
-          <Mark name="ferromark" size={26} />
-          <span>ferromark</span>
-        </NavLink>
-        <GuideNav />
-        <nav className="site" aria-label="Site">
-          <ToolSwitcher
-            current="ferromark"
-            className="ferromark-family"
-            label={
-              <>
-                <Mark name="ferramenta" className="mark ferromark-family-mark" size={18} />
-                <span>Ferramenta</span>
-              </>
-            }
-          />
-          <a className="ghlink" href="https://github.com/sebastian-software" aria-label="GitHub">
-            <svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true">
-              <use href="#i-github" />
-            </svg>
-          </a>
-          <DocsActions />
-          <ArdoThemeToggle />
-        </nav>
-      </div>
-    </header>
-  );
-}
-
 function FamilyFooter() {
   return (
     <SiteFooter
@@ -225,7 +181,13 @@ export default function Root() {
   return (
     <>
       <MarkDefs />
-      <SiteBar />
+      <SiteHeader
+        current="ferromark"
+        lockup="project"
+        nav={<GuideNav />}
+        actions={<DocsActions />}
+        themeToggle={<ArdoThemeToggle />}
+      />
 
       {/* `ferromark-shell` is the hook site.css needs to turn Ardo's
           fixed-viewport application shell into a document-scrolling page: the

@@ -1,56 +1,18 @@
-/*
- * Site chrome — the seam between Ardo's documentation shell and the shared
- * family chrome from ferramenta-family.
- *
- * The iron bar, the lockup, the tool switcher and the footer are styled by
- * `ferramenta-family/chrome.css`, which root.tsx loads *after* this file so the
- * package keeps winning the ties. That includes the chrome's own link colors
- * and the tool switcher's narrow-viewport flyout: the package ships both, so
- * this file does not.
- *
- * What this file owns is the integration — handing the scrolling back to the
- * document, the documentation affordances the site puts into the bar it
- * composes in root.tsx (guide links, search, the small-screen menu), the quiet
- * family control that stands in for the package's "Tools" trigger, and the one
- * place the bar itself has to give way, at phone width.
- */
+/* Ardo shell and Ferromark documentation controls around the family chrome. */
 
 :root {
-  /*
-   * Ardo derives its sticky offsets, the height of the section navigation and
-   * the page's `scroll-padding-top` from this variable, and the family bar is
-   * 4rem tall (`.bar` in chrome.css), so the two have to agree — at every
-   * width, which is why the phone bar at the end of this file restates the
-   * variable rather than growing behind its back.
-   *
-   * The second row is what that phone bar reserves for the search field: zero
-   * while the bar is one row, raised by the media query below. The bar's own
-   * height is derived from the same two numbers, so the variable and the bar
-   * cannot drift apart.
-   */
   --ferromark-search-row: 0rem;
   --ardo-layout-headerHeight: calc(4rem + var(--ferromark-search-row));
 }
 
-/*
- * ── The Ardo shell inside the family chrome ──
- *
- * Ardo's documentation layout is an application shell: a 100vh frame that never
- * scrolls and an inner <main> that does. The family footer sits below that
- * frame, so the page — not the article — has to be what scrolls. These rules
- * hand the scrolling back to the document and pin the two rails that relied on
- * the inner scroll container. The wrapper class comes from app/root.tsx; the
- * inner hooks are Ardo's stable ones (#main-content, .ardo-sidebar) or a
- * direct-child path, because Ardo's own layout class names are hashed.
- */
-
+/* Ardo's application shell becomes document-scrolling so the family footer
+   follows the full site and its sidebar rails remain sticky. */
 .ferromark-shell > div {
   height: auto;
   min-height: 100vh;
   overflow: visible;
 }
 
-/* The layout container reserves room for a fixed header; ours is sticky. */
 .ferromark-shell > div > div {
   padding-top: 0;
 }
@@ -66,66 +28,12 @@
   height: calc(100vh - var(--ardo-layout-headerHeight));
 }
 
-/* "On this page": its sticky offset assumed a scroll container, not the page. */
 .ferromark-shell #main-content > div > aside {
   top: calc(var(--ardo-layout-headerHeight) + var(--ardo-space-xl));
 }
 
-/*
- * Deep links need no rule of their own here. Ardo already gives the document
- * `scroll-padding-top: calc(var(--ardo-layout-headerHeight) +
- * env(safe-area-inset-top) + 32px)`, and the document is the scrolling box
- * now, so that padding is exactly what a hash target clears — but only while
- * the variable above tells the truth about the bar, which is why the phone bar
- * raises it instead of growing behind its back. A `scroll-margin-top` of our
- * own would only add the header height a second time.
- */
-
-/*
- * ── The site's own contents of the bar ──
- *
- * The guide links sit between the lockup and the site navigation; the family
- * switcher, search and the small-screen guide menu sit in that navigation,
- * before the theme toggle. The family chrome styles the bar, the lockup and the
- * switcher's flyout; everything below is ours — and because `chrome.css` loads
- * last, nothing below may reuse one of its class names on its own. Where a rule
- * has to adjust a package element (the switcher's trigger), it does so through
- * the site's own class on that element, so it wins on specificity, not on order.
- */
-
-/*
- * The family switcher, demoted. The package's trigger is a bold "Tools" at the
- * weight of the guide links; here it is the family's name at a smaller size,
- * regular weight and the bar's soft ink, so it reads as provenance rather than
- * as navigation. The flyout underneath is the package's, unchanged: every other
- * tool stays one click away.
- */
-.site-header details.ferromark-family summary {
-  gap: 0.35rem;
-  font-family: var(--display), var(--body);
-  font-weight: var(--disp-weight);
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--iron-soft);
-  transition: color 120ms ease;
-}
-
-.site-header details.ferromark-family summary:hover,
-.site-header details.ferromark-family[open] summary {
-  color: var(--iron-ink);
-}
-
-.site-header details.ferromark-family summary svg.chev {
-  width: 12px;
-  height: 12px;
-}
-
-.ferromark-family-mark {
-  color: var(--ember);
-  opacity: 0.85;
-}
-
+/* The family header owns the chrome; these slots contain Ferromark docs nav,
+   search, and its small-screen menu. */
 .ferromark-nav {
   display: flex;
   align-items: center;
@@ -135,20 +43,19 @@
 }
 
 .ferromark-nav a {
-  color: inherit;
-  text-decoration: none;
   display: flex;
   align-items: center;
   min-height: 44px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .ferromark-nav a:hover,
-.ferromark-nav a[aria-current="page"] {
+.ferromark-nav a[aria-current="page"],
+.ferromark-nav a[data-active="true"] {
   color: var(--ember);
 }
 
-/* Ardo colors the field and its result popover from its own tokens; only the
-   width is ours. */
 .ferromark-search {
   width: clamp(10rem, 18vw, 16rem);
 }
@@ -157,25 +64,22 @@
   width: 100%;
 }
 
-/* The guide menu: hidden while the bar shows the links (see the media query
-   below), and the whole guide once it takes over. */
-
 .ferromark-guide-menu {
   position: relative;
   display: none;
 }
 
 .ferromark-guide-menu > summary {
-  list-style: none;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
   padding: 0.4rem 0.45rem;
-  font-weight: 600;
   font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
 }
 
 .ferromark-guide-menu > summary::-webkit-details-marker {
@@ -184,39 +88,51 @@
 
 .ferromark-guide-flyout {
   position: absolute;
-  right: 0;
   top: calc(100% + 0.85rem);
+  right: 0;
   z-index: 60;
   display: grid;
   min-width: 13rem;
+  max-width: calc(100vw - 1.5rem);
+  max-height: calc(100dvh - var(--ardo-layout-headerHeight) - 2rem);
+  overflow-y: auto;
   padding: 0.5rem;
-  background: var(--iron);
   border: 1px solid var(--iron-line);
   border-top: 2px solid var(--rust);
+  background: var(--iron);
   box-shadow: 0 18px 44px -16px oklch(0.1 0.01 45 / 0.55);
+  color: var(--iron-ink);
 }
 
 .ferromark-guide-flyout a {
   display: flex;
   align-items: center;
   padding: 0.55rem 0.6rem;
-  font-size: 0.95rem;
   color: inherit;
+  font-size: 0.95rem;
   text-decoration: none;
 }
 
 .ferromark-guide-flyout a:hover,
-.ferromark-guide-flyout a[aria-current="page"] {
+.ferromark-guide-flyout a[aria-current="page"],
+.ferromark-guide-flyout a[data-active="true"] {
   background: var(--iron-2);
   color: var(--ember);
 }
 
-/*
- * Below 1180px the bar no longer holds the guide links next to the switcher and
- * the search field, and below 1024px Ardo hides the sidebar rail as well: the
- * menu takes over both jobs, and it carries the whole guide, not just the four
- * links the bar shows.
- */
+.ferromark-section-switch {
+  padding-block: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--iron-line);
+}
+
+.ferromark-menu-label {
+  margin-bottom: 0.25rem;
+  padding: 0.5rem 0.6rem 0;
+  color: var(--iron-soft);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
 @media (max-width: 1180px) {
   .ferromark-nav {
     display: none;
@@ -227,50 +143,26 @@
   }
 }
 
-/*
- * On a phone the bar runs out of room. Search drops to a full-width second row
- * rather than disappearing — a documentation site without search is the worse
- * trade — and the GitHub link steps aside, since the tool switcher and the
- * footer both still carry it.
- */
 @media (max-width: 640px) {
   :root {
-    /*
-     * The bar keeps its 4rem row and reserves this much below it for the
-     * search field, so the sticky header is that much taller. Raising the row
-     * raises `--ardo-layout-headerHeight` with it, which is what every offset
-     * derived from that variable reads — Ardo's `scroll-padding-top` above
-     * all, so a deep link keeps the same cushion under the bar here as it has
-     * on a desktop.
-     */
     --ferromark-search-row: 3.5rem;
   }
 
-  /*
-   * Height from the variable, second row from the same custom property: the
-   * bar cannot grow without the offsets that clear it growing too.
-   */
-  .site-header .bar {
+  .site-header:has(.ferromark-search) .bar {
     height: var(--ardo-layout-headerHeight);
     gap: 0.75rem;
     padding-block: 0 var(--ferromark-search-row);
   }
 
-  .site-header .lockup {
+  .site-header:has(.ferromark-search) .lockup {
     font-size: 1.35rem;
   }
 
-  .site-header nav.site {
+  .site-header:has(.ferromark-search) nav.site-nav {
     gap: 0.4rem;
   }
 
-  .site-header .ghlink {
-    display: none;
-  }
-
-  /* The family control keeps its mark and chevron; the word would push the
-     theme toggle off the bar. Its accessible name ("All tools") stays. */
-  .site-header details.ferromark-family summary > span {
+  .site-header:has(.ferromark-search) .ghlink {
     display: none;
   }
 
@@ -283,8 +175,9 @@
   }
 }
 
-/* Keep the five-parser feature matrix readable on narrow guide pages. */
-.feature-benchmark-table {
+/* Wide docs tables scroll within the content column. */
+.feature-benchmark-table,
+.native-benchmark-table {
   overflow-x: auto;
 }
 
@@ -296,9 +189,7 @@
   white-space: nowrap;
 }
 
-/* Native pairs retain independent baselines and readable columns on small screens. */
 .native-benchmark-table {
-  overflow-x: auto;
   margin-block: 1rem;
 }
 
@@ -347,6 +238,7 @@
   margin-block: 2rem 1rem;
   color: var(--ink);
 }
+
 .platform-choices article {
   display: flex;
   flex-direction: column;
@@ -355,106 +247,96 @@
   border-top: 3px solid var(--line-heavy);
   background: var(--bg-dim);
 }
+
 .platform-choices .platform-label {
+  margin: 0;
+  color: var(--rust);
   font: 600 0.75rem/1.5 var(--mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--rust);
-  margin: 0;
 }
+
 .platform-choices h2 {
-  font:
-    750 2rem/1.2 var(--display),
-    var(--body);
   margin: 0.6rem 0;
   border: 0;
   padding: 0;
+  font:
+    750 2rem/1.2 var(--display),
+    var(--body);
 }
+
 .platform-choices p:not(.platform-label) {
   color: var(--ink-soft);
   line-height: 1.65;
 }
+
 .platform-choices .platform-link {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
+  min-height: 44px;
   margin-top: auto;
   padding-top: 1rem;
-  min-height: 44px;
   color: var(--rust);
   font-weight: 650;
   text-decoration: none;
 }
+
 .platform-link:hover {
   text-decoration: underline;
 }
+
 .platform-choices .platform-primary {
   border-top-color: var(--rust);
 }
+
 .platform-choices .platform-primary .platform-link {
   margin-top: auto;
   padding: 0.75rem 1rem;
   background: var(--rust);
   color: var(--bg);
 }
+
 .runtime-switch {
   display: flex;
   gap: 0.25rem;
   margin-block: 1rem 2rem;
   border-bottom: 1px solid var(--line-heavy);
 }
+
 .ferromark-shell .runtime-switch a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0.5rem 1.25rem;
   margin-bottom: -1px;
+  padding: 0.5rem 1.25rem;
   border-bottom: 3px solid transparent;
   color: var(--ink-soft);
-  text-decoration: none;
   font-weight: 600;
+  text-decoration: none;
 }
+
 .ferromark-shell .runtime-switch a[aria-current="page"] {
-  color: var(--rust);
   border-bottom-color: var(--rust);
-}
-.ferromark-shell .runtime-switch a:hover {
   color: var(--rust);
-  background: var(--bg-dim);
 }
+
+.ferromark-shell .runtime-switch a:hover {
+  background: var(--bg-dim);
+  color: var(--rust);
+}
+
 .ferromark-shell .runtime-switch a:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+
 .platform-link:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 5px;
 }
-.ferromark-nav a[data-active="true"] {
-  color: var(--ember);
-}
-.ferromark-guide-flyout {
-  max-height: calc(100dvh - var(--ardo-layout-headerHeight) - 2rem);
-  max-width: calc(100vw - 1.5rem);
-  overflow-y: auto;
-  color: var(--iron-ink);
-}
-.ferromark-section-switch {
-  border-bottom: 1px solid var(--iron-line);
-  padding-block: 0.25rem 0.5rem;
-}
-.ferromark-section-switch a[data-active="true"] {
-  color: var(--ember);
-  background: var(--iron-2);
-}
-.ferromark-menu-label {
-  color: var(--iron-soft);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  padding: 0.5rem 0.6rem 0;
-  margin-bottom: 0.25rem;
-}
+
 @media (max-width: 640px) {
   .platform-choices {
     grid-template-columns: 1fr;
