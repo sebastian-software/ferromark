@@ -1,0 +1,220 @@
+import assert from "node:assert/strict";
+import { writeFile } from "node:fs/promises";
+import { runTransformReference } from "./lib/transform-reference.mjs";
+
+const fixtureUrl = new URL("../benchmarks/native-transform-oracles/fixtures.json", import.meta.url);
+
+if (process.argv.length !== 3 || process.argv[2] !== "--write") {
+  throw new Error("Regeneration requires the explicit --write flag.");
+}
+
+const locales = ["en-US", "es", "fr", "de", "it", "nl", "pl", "ru", "uk"];
+const typographySource = 'She said "Hello" -- it\'s 12 km...';
+
+const fixtures = {
+  schemaVersion: 1,
+  referencePackages: {
+    smartypants: {
+      package: "remark-smartypants",
+      version: "3.0.3",
+      license: "MIT",
+      registryGitHead: "a7a30398af761cafce6b1b2372f7eaf428db3908",
+      issueSourceRevision: "a7a30398af761cafce6b1b2372f7eaf428db3908",
+      registryIntegrity:
+        "sha512-gCaK+ndZ0hYezlqFegHFCVh2CQemsi0Npdh1qVM9bxlUFknjkbP6VmojWhddOCrbK0PbbacmYLWfTULRiT1eWA==",
+      lockKey: "remark-smartypants@3.0.3",
+      dependencies: [
+        {
+          package: "retext-smartypants",
+          version: "6.2.0",
+          license: "MIT",
+          registryIntegrity:
+            "sha512-kk0jOU7+zGv//kfjXEBjdIryL1Acl4i9XNkHxtM7Tm5lFiCog576fjNC9hjoR7LTKQ0DsPWy09JummSsH1uqfQ==",
+          lockKey: "retext-smartypants@6.2.0",
+        },
+      ],
+    },
+    typograf: {
+      package: "@mavrin/remark-typograf",
+      version: "2.1.6",
+      license: "MIT",
+      registryGitHead: "685611ff7c305ed14ccc34a694084c35a66f08cb",
+      issueSourceRevision: "4a42cbd51ec0b1346b8dbe8bfd16537ae43e581d",
+      registryIntegrity:
+        "sha512-6fOVtmX7U1ytwYJh9pd8HbDq2T4SodVkp6bZpe6aYfnieHlujvmyBMtogl+TkA8rPX3BEhNEBCDG07Kesk8y9Q==",
+      lockKey: "@mavrin/remark-typograf@2.1.6",
+      dependencies: [
+        {
+          package: "typograf",
+          version: "6.11.3",
+          license: "MIT",
+          registryIntegrity:
+            "sha512-aj+FLX8mc9BaWHQeSB1dk7Om7Ag4dGx+rl5jpO6QdpMUKcwqffhFjGAki/SAzsjbUZKUGHXJgaYUcUD6z3eSJg==",
+          lockKey: "typograf@6.11.3",
+        },
+      ],
+    },
+    gemoji: {
+      package: "remark-gemoji",
+      version: "8.0.0",
+      license: "MIT",
+      registryGitHead: "fb4d8a5021f02384e180c17f72f40d8dc698bd46",
+      issueSourceRevision: "3c2d6b66eda69a22e57234067de71c67fd73e47f",
+      registryIntegrity:
+        "sha512-/fL9rc72FYwFGtOKcT+QeQdx9Q9t5v4N6KLXSDOTEgaedzK85I9judBqB2eqz+g4b0ERMejlwSOuPK+wket6aA==",
+      lockKey: "remark-gemoji@8.0.0",
+      dependencies: [
+        {
+          package: "gemoji",
+          version: "8.1.0",
+          license: "MIT",
+          registryGitHead: "95b8d4669ce0b67ad6cfe09632c0515b9b0e01e2",
+          issueDatasetRevision: "2952469469d6e9215ce0ed391ac4193b840be89b",
+          registryIntegrity:
+            "sha512-HA4Gx59dw2+tn+UAa7XEV4ufUKI4fH1KgcbenVA9YKSj1QJTT0xh5Mwv5HMFNN3l2OtUe3ZIfuRwSyZS5pLIWw==",
+          lockKey: "gemoji@8.1.0",
+        },
+      ],
+    },
+    emoji: {
+      package: "remark-emoji",
+      version: "5.0.2",
+      license: "MIT",
+      registryGitHead: "2373e26b06f5d446435f64e42760454a7b662d22",
+      issueSourceRevision: "16fb3927cb7241ab9fecc7758a80be9bce8a7edd",
+      registryIntegrity:
+        "sha512-IyIqGELcyK5AVdLFafoiNww+Eaw/F+rGrNSXoKucjo95uL267zrddgxGM83GN1wFIb68pyDuAsY3m5t2Cav1pQ==",
+      lockKey: "remark-emoji@5.0.2",
+      dependencies: [
+        {
+          package: "node-emoji",
+          version: "2.2.0",
+          license: "MIT",
+          registryIntegrity:
+            "sha512-Z3lTE9pLaJF47NyMhd4ww1yFTAP8YhYI8SleJiHzM46Fgpm5cnNzSl9XfzFNqbaz+VlJrIj3fXQ4DeN1Rjm6cw==",
+          lockKey: "node-emoji@2.2.0",
+        },
+        {
+          package: "emojilib",
+          version: "2.4.0",
+          license: "MIT",
+          registryIntegrity:
+            "sha512-5U0rVMU5Y2n2+ykNLQqMoqklN9ICBT/KsvC1Gz6vqHbz2AXXGkG+Pm5rMWk/8Vjrr/mY9985Hi8DYzn1F09Nyw==",
+          lockKey: "emojilib@2.4.0",
+        },
+        {
+          package: "skin-tone",
+          version: "2.0.0",
+          license: "MIT",
+          registryIntegrity:
+            "sha512-kUMbT1oBJCpgrnKoSr0o6wPtvRWT9W9UKvGLwfJYO2WuahZRHOpEyL1ckyMGgMWh0UdpmaoFqKKD29WTomNEGA==",
+          lockKey: "skin-tone@2.0.0",
+        },
+        {
+          package: "emoticon",
+          version: "4.1.0",
+          license: "MIT",
+          registryIntegrity:
+            "sha512-VWZfnxqwNcc51hIy/sbOdEem6D+cVtpPzEEtVAFdaas30+1dgkyaOQ4sQ6Bp0tOMqWO1v+HQfYaoodOkdhK6SQ==",
+          lockKey: "emoticon@4.1.0",
+        },
+      ],
+    },
+    runner: {
+      packages: { remark: "15.0.1", "remark-gfm": "4.0.0" },
+    },
+  },
+  cases: [
+    {
+      name: "smartypants-default-english",
+      reference: "smartypants",
+      source: 'She said "Hello" -- it\'s 12 km...',
+      options: { dashes: "oldschool" },
+    },
+    {
+      name: "smartypants-across-inline-markup",
+      reference: "smartypants",
+      source: '"Hello **world**" -- it\'s fine...',
+      options: { dashes: "oldschool" },
+    },
+    ...locales.map((locale) => ({
+      name: "typograf-" + locale.toLowerCase(),
+      reference: "typograf",
+      source: typographySource,
+      options: { locale: [locale] },
+    })),
+    {
+      name: "gemoji-known-alias-and-unknown",
+      reference: "gemoji",
+      source: "Known :rocket: and :+1:; unknown :not_a_real_shortcode:.",
+      options: {},
+    },
+    {
+      name: "gemoji-case-and-overlap-observation",
+      reference: "gemoji",
+      source: "Case :Smile:; overlap :other:smile:.",
+      options: {},
+    },
+    {
+      name: "gemoji-protected-context-observation",
+      reference: "gemoji",
+      source: "Code \u0060:smile:\u0060 and [label :rocket:](https://example.com/:smile:).",
+      options: {},
+    },
+    {
+      name: "gemoji-bare-url-default-parser-observation",
+      reference: "gemoji",
+      source: "https://host/:smile:",
+      parserPlugins: [],
+      options: {},
+    },
+    {
+      name: "gemoji-bare-url-gfm-parser-observation",
+      reference: "gemoji",
+      source: "www.example.com/:smile:",
+      parserPlugins: ["remark-gfm"],
+      options: {},
+    },
+    {
+      name: "emoji-known-alias-and-unknown",
+      reference: "emoji",
+      source: "Known :rocket: and :+1:; unknown :not_a_real_shortcode:.",
+      options: { accessible: false, emoticon: false, padSpaceAfter: false },
+    },
+    {
+      name: "emoji-case-and-overlap-observation",
+      reference: "emoji",
+      source: "Case :Smile:; overlap :other:smile:.",
+      options: { accessible: false, emoticon: false, padSpaceAfter: false },
+    },
+    {
+      name: "emoji-protected-context-observation",
+      reference: "emoji",
+      source: "Code \u0060:smile:\u0060 and [label :rocket:](https://example.com/:smile:).",
+      options: { accessible: false, emoticon: false, padSpaceAfter: false },
+    },
+    {
+      name: "emoji-bare-url-default-parser-observation",
+      reference: "emoji",
+      source: "https://host/:smile:",
+      parserPlugins: [],
+      options: { accessible: false, emoticon: false, padSpaceAfter: false },
+    },
+    {
+      name: "emoji-bare-url-gfm-parser-observation",
+      reference: "emoji",
+      source: "www.example.com/:smile:",
+      parserPlugins: ["remark-gfm"],
+      options: { accessible: false, emoticon: false, padSpaceAfter: false },
+    },
+  ],
+};
+
+assert.equal(new Set(fixtures.cases.map(({ name }) => name)).size, fixtures.cases.length);
+
+for (const fixture of fixtures.cases) {
+  Object.assign(fixture, await runTransformReference(fixture));
+}
+
+await writeFile(fixtureUrl, JSON.stringify(fixtures, null, 2) + "\n");
+console.log("Regenerated " + fixtures.cases.length + " transform reference fixtures.");
