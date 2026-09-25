@@ -1,0 +1,15 @@
+---
+source: tests/snapshot_parse/containers.rs
+description: "> - first\n>   - nested\n>     child\nlazy continuation\n"
+---
+<blockquote>
+<ul>
+<li>first
+<ul>
+<li>nested
+child
+lazy continuation</li>
+</ul>
+</li>
+</ul>
+</blockquote>

@@ -1,0 +1,9 @@
+---
+source: tests/snapshot_parse.rs
+description: "> ```\n> code\n> ```\nlazy paragraph\n"
+---
+Document [0..34]
+  BlockQuote [0..19]
+    CodeBlock lang=None meta=None value="code\n" [2..19]
+  Paragraph [19..34]
+    Text "lazy paragraph" [19..33]

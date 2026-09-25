@@ -1,0 +1,14 @@
+---
+source: tests/snapshot_parse.rs
+description: "> - first\n>   - nested\n>     child\nlazy continuation\n"
+---
+Document [0..53]
+  BlockQuote [0..53]
+    List ordered=false start=- spread=false [2..53]
+      ListItem spread=false checked=- [2..53]
+        Paragraph [4..10]
+          Text "first" [4..9]
+        List ordered=false start=- spread=false [12..53]
+          ListItem spread=false checked=- [12..53]
+            Paragraph [16..53]
+              Text "nested\nchild\nlazy continuation" [16..52]

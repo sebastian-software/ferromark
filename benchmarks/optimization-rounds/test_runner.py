@@ -149,6 +149,40 @@ class RunnerGuards(unittest.TestCase):
                 for size in (4096, 16000):
                     self.assertIn(f"scanner-opt-{bits}-{shape}-{size}", cases)
 
+    def test_generated_container_corpus_covers_container_edges_and_filter(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "corpus.json"
+            with patch.object(sys, "argv", [
+                "make_corpus.py", str(output), "--include-container-diagnostics",
+            ]):
+                MAKE_CORPUS.main()
+            payload = json.loads(output.read_text())
+        cases = {case["name"]: case for case in payload["cases"]}
+        shapes = (
+            "quote", "nested-quote", "quote-lazy", "quote-tabs", "quote-fence",
+            "list-multiline", "list-loose", "nested-list", "list-tabs",
+            "mixed-quote-list", "gfm-table-quote", "gfm-lazy-boundary",
+            "commented-containers",
+        )
+        filter_pattern = (Path(__file__).parent / "filters/containers.txt").read_text().strip()
+        selected = [name for name in cases if re.search(filter_pattern, name)]
+        self.assertEqual(len(selected), len(shapes) * 2)
+        for shape in shapes:
+            for size in (4096, 16000):
+                name = f"container-{shape}-{size}"
+                item = cases[name]
+                raw = item["input"].encode()
+                self.assertEqual(item["category"], "container-diagnostic")
+                self.assertGreaterEqual(len(raw), size)
+                self.assertEqual(len(raw), item["byte_count"])
+                self.assertEqual(MAKE_CORPUS.hashlib.sha256(raw).hexdigest(), item["sha256"])
+                expected_profile = (
+                    "gfm-comments" if shape == "commented-containers" else
+                    "gfm" if shape.startswith("gfm-") else "commonmark"
+                )
+                self.assertEqual(item["profile"], expected_profile)
+        self.assertEqual(payload["diagnostic_counts"]["containers"], len(shapes) * 2)
+
     def test_run_rejects_corrupt_frozen_worker_and_binary(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

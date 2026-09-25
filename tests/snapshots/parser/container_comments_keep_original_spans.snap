@@ -1,0 +1,16 @@
+---
+source: tests/snapshot_parse.rs
+description: "> first\n// private quote comment\n> **second**\n\n- first\n// private list comment\n  **second**\n"
+---
+Document [0..92]
+  BlockQuote [0..46]
+    Paragraph [2..46]
+      Text "first\n" [2..8]
+      Strong [35..45]
+        Text "second" [37..43]
+  List ordered=false start=- spread=false [47..92]
+    ListItem spread=false checked=- [47..92]
+      Paragraph [49..92]
+        Text "first\n" [49..55]
+        Strong [81..91]
+          Text "second" [83..89]

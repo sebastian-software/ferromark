@@ -1,0 +1,12 @@
+---
+source: tests/snapshot_parse/containers.rs
+description: "> first\n// private quote comment\n> **second**\n\n- first\n// private list comment\n  **second**\n"
+---
+<blockquote>
+<p>first
+<strong>second</strong></p>
+</blockquote>
+<ul>
+<li>first
+<strong>second</strong></li>
+</ul>

@@ -48,6 +48,10 @@ impl Engine {
         match profile {
             "commonmark" | "autolink" => ParserOptions::default(),
             "gfm" => ParserOptions::gfm(),
+            "gfm-comments" => ParserOptions {
+                line_comments: true,
+                ..ParserOptions::gfm_spec()
+            },
             "extensions" => ParserOptions {
                 footnotes: true,
                 superscript: true,
@@ -81,7 +85,7 @@ impl Engine {
             autolink_urls: profile == "autolink",
             autolink_target_blank: false,
             link_target_blank: false,
-            disallow_raw_html: profile == "gfm",
+            disallow_raw_html: matches!(profile, "gfm" | "gfm-comments"),
             ..HtmlRendererOptions::new()
         }
     }

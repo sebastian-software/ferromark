@@ -1,0 +1,12 @@
+---
+source: tests/snapshot_parse.rs
+description: "> -\tfoo\n>\n>   bar\n"
+---
+Document [0..18]
+  BlockQuote [0..18]
+    List ordered=false start=- spread=true [2..18]
+      ListItem spread=true checked=- [2..18]
+        Paragraph [4..8]
+          Text "foo" [4..7]
+        Paragraph [12..18]
+          Text "bar" [14..17]

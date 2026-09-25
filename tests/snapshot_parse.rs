@@ -12,6 +12,8 @@ use ferromark::parser::{Parser, ParserOptions};
 mod basics;
 #[path = "snapshot_parse/blocks.rs"]
 mod blocks;
+#[path = "snapshot_parse/containers.rs"]
+mod containers;
 #[path = "snapshot_parse/html.rs"]
 mod html;
 #[path = "snapshot_parse/inline.rs"]
