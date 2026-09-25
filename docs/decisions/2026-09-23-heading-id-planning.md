@@ -21,10 +21,13 @@ fragments.
 
 ## Scope
 
-The planner covers heading IDs. Footnote IDs keep their existing `fn-*` and
-`fnref-*` rules; collisions between a heading and a footnote are a separate
-namespace concern. The companion heading-prefix issue (#407) will decide how
-opt-in prefixes interact with footnote IDs and authored fragment links.
+The follow-up decision in
+[`2026-09-25-document-id-uniqueness.md`](2026-09-25-document-id-uniqueness.md)
+extends the same registry to footnote targets and references. Footnotes keep
+their existing `fn-*` and `fnref-*` IDs when there is no collision; in a
+collision, the ID encountered later in document order is suffixed. Heading
+prefixes are applied before a heading claims its ID, while footnote IDs remain
+unprefixed.
 
 ## Compatibility
 

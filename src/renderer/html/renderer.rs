@@ -38,13 +38,19 @@ pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRen
 pub struct HtmlRenderer {
     options: RendererOptions,
     output: String,
-    /// Shared with Node metadata so generated and explicit heading IDs use the
-    /// same collision rules. It is retained across incremental fragments.
+    /// Shared by heading and footnote IDs, and with Node metadata for matching
+    /// heading IDs. It is retained across incremental fragments.
     heading_id_planner: HeadingIdPlanner,
     /// How many times each footnote identifier has been referenced so
     /// far in this render, so repeated references can be given unique
     /// `fnref-` ids. Cleared per `render()` like the heading id map.
     footnote_ref_counts: FxHashMap<String, usize>,
+    /// Legacy source identifier → claimed target ID. Kept across incremental
+    /// fragments so a later reference points to the same target.
+    legacy_footnote_targets: FxHashMap<CompactString, PlannedId>,
+    /// Reserved first reference ID for each legacy footnote. Definitions use
+    /// it for their backlink even when the reference appears later.
+    legacy_footnote_first_references: FxHashMap<CompactString, PlannedId>,
     /// Source identifier → list index for semantic footnotes. One insert
     /// per unique footnote; later markers look up this map.
     footnote_index: FxHashMap<CompactString, u32>,
@@ -65,10 +71,9 @@ pub struct HtmlRenderer {
     /// Reusable scratch buffer for semantic footnote slugs. Heading slugs are
     /// written straight into the heading ID planner instead.
     heading_slug_scratch: String,
-    /// Unique heading id for the heading currently being written, including
-    /// any `-N` suffix but not the configured prefix, as held by
-    /// `heading_id_planner`. Permalinks reuse this exact value instead of
-    /// slugifying again.
+    /// Unique heading ID for the heading currently being written, including
+    /// any `-N` suffix and configured prefix, as held by `heading_id_planner`.
+    /// Permalinks reuse this exact value instead of slugifying again.
     heading_id: PlannedId,
     /// Whether `heading_id` came from an explicit `{#id}` heading attribute
     /// rather than from the slugifier.
@@ -172,9 +177,10 @@ impl HtmlRenderer {
     /// Returns this renderer configured to prefix heading IDs and their
     /// generated permalink fragments.
     ///
-    /// The prefix is applied after duplicate-ID planning, so numbering stays
-    /// the same with or without a prefix. It affects heading IDs only;
-    /// authored fragment links and footnote identifiers are unchanged.
+    /// The prefix is included in duplicate-ID planning, so generated IDs stay
+    /// unique when a prefixed heading collides with another emitted ID. It
+    /// affects heading IDs only; authored fragment links and footnote
+    /// identifiers are unchanged.
     /// Prefixes may contain ASCII letters, digits, `_`, and `-`. Use an empty
     /// prefix to keep the default behavior.
     pub fn try_with_heading_id_prefix(
@@ -216,6 +222,8 @@ impl HtmlRenderer {
             output: String::new(),
             heading_id_planner: HeadingIdPlanner::new(),
             footnote_ref_counts: FxHashMap::default(),
+            legacy_footnote_targets: FxHashMap::default(),
+            legacy_footnote_first_references: FxHashMap::default(),
             footnote_index: FxHashMap::default(),
             footnote_records: Vec::new(),
             footnote_slug_counts: FxHashMap::default(),

@@ -36,6 +36,8 @@ impl HtmlRenderer {
             .heading_ids
             .then(|| self.heading_id_planner.clone());
         let footnote_ref_counts = self.footnote_ref_counts.clone();
+        let legacy_footnote_targets = self.legacy_footnote_targets.clone();
+        let legacy_footnote_first_references = self.legacy_footnote_first_references.clone();
         let footnote_index = self.footnote_index.clone();
         let footnote_records = self.footnote_records.clone();
         let footnote_slug_counts = self.footnote_slug_counts.clone();
@@ -45,6 +47,8 @@ impl HtmlRenderer {
             self.heading_id_planner = heading_id_planner;
         }
         self.footnote_ref_counts = footnote_ref_counts;
+        self.legacy_footnote_targets = legacy_footnote_targets;
+        self.legacy_footnote_first_references = legacy_footnote_first_references;
         self.footnote_index = footnote_index;
         self.footnote_records = footnote_records;
         self.footnote_slug_counts = footnote_slug_counts;
@@ -64,6 +68,8 @@ impl HtmlRenderer {
             .heading_ids
             .then(|| self.heading_id_planner.clone());
         let footnote_ref_counts = self.footnote_ref_counts.clone();
+        let legacy_footnote_targets = self.legacy_footnote_targets.clone();
+        let legacy_footnote_first_references = self.legacy_footnote_first_references.clone();
         let footnote_index = self.footnote_index.clone();
         let footnote_records = self.footnote_records.clone();
         let footnote_slug_counts = self.footnote_slug_counts.clone();
@@ -73,6 +79,8 @@ impl HtmlRenderer {
             self.heading_id_planner = heading_id_planner;
         }
         self.footnote_ref_counts = footnote_ref_counts;
+        self.legacy_footnote_targets = legacy_footnote_targets;
+        self.legacy_footnote_first_references = legacy_footnote_first_references;
         self.footnote_index = footnote_index;
         self.footnote_records = footnote_records;
         self.footnote_slug_counts = footnote_slug_counts;

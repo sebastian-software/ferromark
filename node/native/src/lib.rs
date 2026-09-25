@@ -5,6 +5,10 @@ pub mod input;
 mod options;
 pub mod packed;
 
+use std::collections::HashMap;
+
+use crate::input::Utf8Input;
+use crate::options::{CoreOptions, addon_defaults};
 use ferromark::{
     Allocator, HeadingIdPlanner, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks,
     HtmlRenderer, Parser, ParserOptions,
@@ -13,9 +17,6 @@ use ferromark::{
 use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
 use napi::{Env, JsString};
 use napi_derive::napi;
-
-use crate::input::Utf8Input;
-use crate::options::{CoreOptions, addon_defaults};
 
 #[cfg(feature = "panic-test")]
 #[napi(catch_unwind)]
@@ -324,9 +325,59 @@ pub struct TransformResult {
 struct Metadata {
     headings: Vec<Heading>,
     id_planner: HeadingIdPlanner,
+    legacy_footnote_targets: HashMap<String, String>,
+    legacy_footnote_reference_counts: HashMap<String, usize>,
+    legacy_footnote_first_references: HashMap<String, String>,
     heading_ids: bool,
     heading_level_offset: i32,
     heading_id_prefix: String,
+}
+
+impl Metadata {
+    fn legacy_footnote_target_id(&mut self, identifier: &str) -> String {
+        if let Some(id) = self.legacy_footnote_targets.get(identifier) {
+            return id.clone();
+        }
+        let mut base = String::from("fn-");
+        base.push_str(identifier);
+        let id = self.id_planner.plan(&base);
+        self.legacy_footnote_targets
+            .insert(identifier.to_owned(), id.clone());
+        id
+    }
+
+    fn plan_legacy_footnote_reference(&mut self, identifier: &str) {
+        let _ = self.legacy_footnote_target_id(identifier);
+        let occurrence = self
+            .legacy_footnote_reference_counts
+            .entry(identifier.to_owned())
+            .or_default();
+        *occurrence += 1;
+        let occurrence = *occurrence;
+        if occurrence == 1 {
+            let _ = self.legacy_footnote_first_reference_id(identifier);
+            return;
+        }
+        let mut base = String::from("fnref-");
+        base.push_str(identifier);
+        if occurrence > 1 {
+            base.push('-');
+            base.push_str(&occurrence.to_string());
+        }
+        let _ = self.id_planner.plan(&base);
+    }
+
+    fn legacy_footnote_first_reference_id(&mut self, identifier: &str) -> String {
+        if let Some(id) = self.legacy_footnote_first_references.get(identifier) {
+            return id.clone();
+        }
+        let mut base = String::from("fnref-");
+        base.push_str(identifier);
+        let id = self.id_planner.plan(&base);
+        self.legacy_footnote_first_references
+            .insert(identifier.to_owned(), id.clone());
+        id
+    }
 }
 
 impl<'a> Visit<'a> for Metadata {
@@ -336,11 +387,9 @@ impl<'a> Visit<'a> for Metadata {
             let base = heading
                 .id
                 .map_or_else(|| ferromark::slugify_heading(&text), str::to_owned);
-            Some(format!(
-                "{}{}",
-                self.heading_id_prefix,
-                self.id_planner.plan(&base)
-            ))
+            let mut requested = self.heading_id_prefix.clone();
+            requested.push_str(&base);
+            Some(self.id_planner.plan(&requested))
         } else {
             None
         };
@@ -352,6 +401,17 @@ impl<'a> Visit<'a> for Metadata {
             id,
             text,
         });
+        ferromark::ast::walk_heading(self, heading);
+    }
+
+    fn visit_footnote_reference(&mut self, footnote_ref: &ferromark::ast::FootnoteReference<'a>) {
+        self.plan_legacy_footnote_reference(footnote_ref.identifier);
+    }
+
+    fn visit_footnote_definition(&mut self, footnote_def: &ferromark::ast::FootnoteDefinition<'a>) {
+        let _ = self.legacy_footnote_target_id(footnote_def.identifier);
+        ferromark::ast::walk_footnote_definition(self, footnote_def);
+        let _ = self.legacy_footnote_first_reference_id(footnote_def.identifier);
     }
 }
 
@@ -402,6 +462,9 @@ fn render_document(
     let mut metadata = Metadata {
         headings: Vec::new(),
         id_planner: HeadingIdPlanner::new(),
+        legacy_footnote_targets: HashMap::new(),
+        legacy_footnote_reference_counts: HashMap::new(),
+        legacy_footnote_first_references: HashMap::new(),
         heading_ids: options.html.heading_ids,
         heading_level_offset: options.heading_level_offset,
         heading_id_prefix: options.heading_id_prefix.clone(),
