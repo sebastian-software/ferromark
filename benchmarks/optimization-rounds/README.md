@@ -22,7 +22,7 @@ candidate; then run, using fresh output directories:
 
 ```sh
 python3 benchmarks/optimization-rounds/make_corpus.py /tmp/fmv2-corpus.json \
-  --include-scanner-diagnostics --include-autolink-broad
+  --include-scanner-diagnostics --include-autolink-broad --include-container-diagnostics
 python3 benchmarks/optimization-rounds/prepare.py \
   --baseline-path /tmp/fmv2-baseline --candidate-path /tmp/fmv2-candidate \
   --out /tmp/fmv2-build
@@ -32,11 +32,13 @@ python3 benchmarks/optimization-rounds/run.py \
 python3 -m unittest discover -s benchmarks/optimization-rounds -p 'test_*.py'
 ```
 
-The full command above measures all four stages for all 207 cases and takes
-several minutes. `--filter REGEX` and `--modes fresh reuse parse render` select
-subsets. The actual study used four suites with different stage selections;
-its exact commands are archived in the report. Do not run measurements in
-parallel with each other or with compilation.
+The full command above measures all four stages for all 233 cases and takes
+several minutes. The optional container set contains 26 generated inputs for
+blockquote, list, tab, lazy-continuation, GFM-table and line-comment shapes.
+`--filter REGEX` and `--modes fresh reuse parse render` select subsets. The
+actual study used four suites with different stage selections; its exact
+commands are archived in the report. Do not run measurements in parallel with
+each other or with compilation.
 
 `prepare.py` snapshots both core sources beside the temporary worker crates,
 checks the baseline against Git, checks exact source lock agreement and resolved
@@ -61,11 +63,13 @@ omit smart punctuation after its [removal from the core](../../docs/typography.m
 Both compared cores use that reduced profile. Historical reports retain their
 original configuration; reproduce them with their original harness revision.
 `opt-0` through `opt-7` enable the MDX/math/superscript
-bits 1/2/4. `autolink` uses CommonMark parsing and enables renderer bare-URL
+bits 1/2/4. `gfm-comments` adds line comments to strict GFM for container
+diagnostics. `autolink` uses CommonMark parsing and enables renderer bare-URL
 recognition; other HTML comparison options stay fixed. The 57 `autolink-broad`
 replays use that profile even when the original case used GFM, so they form a
 separate within-profile comparison, not another sample in the original broad
-geometric mean. The 93 authored diagnostics are also excluded from broad means.
+geometric mean. Authored diagnostics, including the optional container set,
+are also excluded from broad means.
 
 `allocations.py` uses the prior global counting allocator in a separate worker;
 it records changing counts rather than rejecting the structural optimization.
@@ -94,6 +98,11 @@ unchanged on three GitHub-hosted `ubuntu-latest` runners in parallel. Start it
 from the Actions tab with a baseline and a candidate revision; using the same
 revision for both gives an A/A control. A pull request that changes the
 harness or the workflow runs that A/A control on its own head.
+
+The workflow's `containers` case choice generates the 26 targeted container
+diagnostics and selects `filters/containers.txt`. Parser-only pull requests do
+not trigger the workflow; manually dispatch it with the reviewed baseline and
+candidate revisions. `screen` and `broad` keep their existing case sets.
 
 Baseline and candidate alternate on the same VM, so differences between
 runner hosts largely cancel out. What remains is the noise of a shared VM,

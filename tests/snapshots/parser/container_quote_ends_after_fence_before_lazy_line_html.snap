@@ -1,0 +1,9 @@
+---
+source: tests/snapshot_parse/containers.rs
+description: "> ```\n> code\n> ```\nlazy paragraph\n"
+---
+<blockquote>
+<pre><code>code
+</code></pre>
+</blockquote>
+<p>lazy paragraph</p>

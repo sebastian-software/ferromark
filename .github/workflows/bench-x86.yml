@@ -24,7 +24,7 @@ on:
       cases:
         description: Case set
         type: choice
-        options: [screen, broad]
+        options: [screen, broad, containers]
         default: broad
       pairs:
         description: Paired windows per round and case
@@ -96,9 +96,14 @@ jobs:
           --out "$RUNNER_TEMP/paired/build"
           --baseline-revision "$BASE_SHA"
       - name: Generate the corpus
-        run: >-
-          python3 benchmarks/optimization-rounds/make_corpus.py
-          "$RUNNER_TEMP/paired/corpus.json" --include-scanner-diagnostics
+        run: |
+          set -euo pipefail
+          container_args=()
+          if [[ "$CASES" == "containers" ]]; then
+            container_args+=(--include-container-diagnostics)
+          fi
+          python3 benchmarks/optimization-rounds/make_corpus.py \
+            "$RUNNER_TEMP/paired/corpus.json" --include-scanner-diagnostics "${container_args[@]}"
       - name: Measure
         run: |
           set -euo pipefail

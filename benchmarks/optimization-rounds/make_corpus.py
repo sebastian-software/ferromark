@@ -67,6 +67,30 @@ def autolink_text(size, shape):
     return token * max(1, size // len(token.encode()))
 
 
+def container_text(size, shape):
+    """Repeat a closed container shape to exercise reparsing and remapping."""
+    blocks = {
+        "quote": "> Quoted paragraph with **strong**, *emphasis*, and ordinary text.\n",
+        "nested-quote": "> > > > Quoted paragraph with **strong** and ordinary text.\n",
+        "quote-lazy": "> Quoted paragraph with *emphasis* and\nlazy continuation text.\n",
+        "quote-tabs": ">\tQuoted text after a tab following the quote marker.\n",
+        "quote-fence": "> ```text\n> fenced content\n> ```\n> trailing paragraph\n",
+        "list-multiline": "- Item with **strong** text\n  and an indented continuation.\n",
+        "list-loose": "- first paragraph with *emphasis*\n\n  second paragraph\n- next item\n",
+        "nested-list": "- outer item\n  - nested item\n    - deep item with **strong** text\n",
+        "list-tabs": "-\tTabbed item\n\tcontinuation after a tab.\n",
+        "mixed-quote-list": "> - quoted item\n>   continuation\n>   - nested item\n>     deeper text\n",
+        "gfm-table-quote": "> | Name | Value |\n> | --- | --- |\n> | first | 1 |\n",
+        "gfm-lazy-boundary": "> ```\n> code\n> ```\nlazy text outside the quote\n",
+        "commented-containers": "> first line\n// private quote comment\n> second line\n- first item\n// private list comment\n  continuation\n",
+    }
+    block = blocks[shape]
+    text = block
+    while len(text.encode("utf-8")) < size:
+        text += block
+    return text
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
@@ -76,6 +100,8 @@ def main():
     )
     parser.add_argument("--include-autolink-broad", action="store_true",
                         help="also replay the 57 real mixed documents with CommonMark and renderer autolinks")
+    parser.add_argument("--include-container-diagnostics", action="store_true",
+                        help="add generated blockquote/list cases, including laziness, tabs, comments and GFM blocks")
     args = parser.parse_args()
     payload = json.loads(gzip.decompress(BASE.read_bytes()))
     cases = payload["cases"]
@@ -96,6 +122,19 @@ def main():
                 for shape in ("plain", "sparse", "disabled"):
                     additions.append(case(f"scanner-{profile}-{shape}-{size}", profile,
                                           scanner_text(size, profile, shape), "scanner-diagnostic"))
+    if args.include_container_diagnostics:
+        for size in (4096, 16000):
+            for shape in (
+                "quote", "nested-quote", "quote-lazy", "quote-tabs", "quote-fence",
+                "list-multiline", "list-loose", "nested-list", "list-tabs",
+                "mixed-quote-list", "gfm-table-quote", "gfm-lazy-boundary",
+                "commented-containers",
+            ):
+                profile = "gfm-comments" if shape == "commented-containers" else (
+                    "gfm" if shape.startswith("gfm-") else "commonmark"
+                )
+                additions.append(case(f"container-{shape}-{size}", profile,
+                                      container_text(size, shape), "container-diagnostic"))
     if args.include_autolink_broad:
         for original in cases:
             if original["suite"] == "broad":
@@ -109,9 +148,14 @@ def main():
     cases.extend(additions)
     result = {
         "schema": 1,
-        "selection": "Frozen 72-case SIMD corpus plus authored structural table, autolink, and optional scanner diagnostics; diagnostics are labeled and excluded from broad-corpus statistics.",
+        "selection": "Frozen 72-case SIMD corpus plus authored structural table, autolink, scanner, and optional container diagnostics; diagnostics are labeled and excluded from broad-corpus statistics.",
         "base_corpus_sha256": hashlib.sha256(BASE.read_bytes()).hexdigest(),
-        "diagnostic_counts": {"table": 12, "autolink": 18, "scanner": 48 if args.include_scanner_diagnostics else 0},
+        "diagnostic_counts": {
+            "table": 12,
+            "autolink": 18,
+            "scanner": 48 if args.include_scanner_diagnostics else 0,
+            "containers": 26 if args.include_container_diagnostics else 0,
+        },
         "cases": cases,
     }
     raw = json.dumps(result, indent=2, ensure_ascii=False).encode() + b"\n"
