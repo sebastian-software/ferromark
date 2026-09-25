@@ -285,7 +285,7 @@ impl HtmlRenderer {
         self.write_prepared_heading_id();
     }
 
-    /// Emits the configured prefix and the planned id into the output.
+    /// Emits the planned ID, including any configured prefix.
     ///
     /// Only an author-supplied `{#id}` can contain a byte that attribute
     /// escaping replaces. A generated slug is lowercase alphanumerics, `-`,
@@ -293,15 +293,9 @@ impl HtmlRenderer {
     /// the escape scanner over it can only ever copy it back unchanged — the
     /// `heading_id_is_explicit` flag lets that whole pass be skipped.
     ///
-    /// The prefix is validated to ASCII letters, digits, `_`, and `-`, which
-    /// attribute escaping leaves alone, and escaping maps each byte on its
-    /// own. Writing the prefix verbatim before the escaped id is therefore the
-    /// same as escaping the concatenated id.
+    /// The prefix is validated to ASCII letters, digits, `_`, and `-`, so it
+    /// needs no escaping. Explicit IDs still go through the attribute escaper.
     fn write_prepared_heading_id(&mut self) {
-        let prefix = self.options.heading_id_prefix();
-        if !prefix.is_empty() {
-            self.output.push_str(prefix);
-        }
         let id = self.heading_id_planner.id(self.heading_id);
         if self.heading_id_is_explicit {
             write_attribute_escaped_into(&mut self.output, id);
@@ -319,7 +313,7 @@ impl HtmlRenderer {
         }
         if heading_has_permalink_marker(
             &heading.children,
-            self.options.heading_id_prefix(),
+            "",
             self.heading_id_planner.id(self.heading_id),
         ) {
             return;
@@ -357,13 +351,16 @@ impl HtmlRenderer {
             collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
         }
 
-        // The planner keeps the claimed id in its own storage, so neither
-        // path copies the id into a renderer buffer; the prefix is written
-        // separately in `write_prepared_heading_id`, after planning, as the
-        // prefix decision requires.
+        // The planner keeps the full emitted ID in its own storage, so neither
+        // path copies the ID into a renderer buffer.
         if let Some(id) = heading.id {
             self.heading_id_is_explicit = true;
-            self.heading_id = self.heading_id_planner.claim(id);
+            let prefix = self.options.heading_id_prefix();
+            self.heading_id = if prefix.is_empty() {
+                self.heading_id_planner.claim(id)
+            } else {
+                self.heading_id_planner.claim_with_prefix(prefix, id)
+            };
             return;
         }
         self.heading_id_is_explicit = false;
@@ -371,7 +368,12 @@ impl HtmlRenderer {
         // slug itself is written into the planner's storage, where a
         // not-yet-taken slug is claimed in place.
         let text = single_text.unwrap_or(&self.heading_text_scratch);
-        self.heading_id = self.heading_id_planner.claim_slug(text);
+        let prefix = self.options.heading_id_prefix();
+        self.heading_id = if prefix.is_empty() {
+            self.heading_id_planner.claim_slug(text)
+        } else {
+            self.heading_id_planner.claim_slug_with_prefix(prefix, text)
+        };
     }
 }
 

@@ -663,6 +663,50 @@ test("headingIdPrefix matches rendered IDs and transform metadata", () => {
   assert.match(reused.toHtml("# Reused"), /id="docs-reused"/);
 });
 
+test("heading metadata reserves legacy footnote IDs", () => {
+  const source = "A[^1] and B[^1].\n\n[^1]: Shared.\n\n# fn-1\n\n# fnref-1";
+  const result = transform(source, { footnotes: true });
+
+  assert.deepEqual(
+    result.headings.map(({ id }) => id),
+    ["fn-1-1", "fnref-1-1"],
+  );
+  for (const id of result.headings.map(({ id }) => id)) {
+    assert.ok(result.html.includes(`id="${id}"`));
+  }
+  assert.match(result.html, /<div id="fn-1"/);
+  assert.match(result.html, /id="fnref-1"/);
+  assert.match(result.html, /id="fnref-1-2"/);
+});
+
+test("heading metadata stays aligned when later footnotes collide", () => {
+  const result = transform("# fn-1\n\nA[^1].\n\n[^1]: Shared.", { footnotes: true });
+
+  assert.equal(result.headings[0].id, "fn-1");
+  assert.ok(result.html.includes('<h1 id="fn-1">'));
+  assert.ok(result.html.includes('<div id="fn-1-1"'));
+});
+
+test("legacy definitions reserve backlink IDs before later headings", () => {
+  const result = transform("[^1]: Shared.\n\n# fnref-1\n\nUse[^1].", { footnotes: true });
+
+  assert.equal(result.headings[0].id, "fnref-1-1");
+  assert.ok(result.html.includes('<h1 id="fnref-1-1">'));
+  assert.match(result.html, /<a href="#fnref-1">↩<\/a>/);
+  assert.ok(result.html.includes('id="fnref-1"'));
+});
+
+test("headingIdPrefix reserves colliding footnote IDs in Node metadata", () => {
+  const result = transform("A[^1].\n\n[^1]: Shared.\n\n# 1", {
+    footnotes: true,
+    headingIdPrefix: "fn-",
+  });
+
+  assert.equal(result.headings[0].id, "fn-1-1");
+  assert.ok(result.html.includes('id="fn-1-1"'));
+  assert.ok(result.html.includes('<div id="fn-1"'));
+});
+
 test("headingIdPrefix rejects values outside the safe ID alphabet", () => {
   assert.throws(
     () => toHtml("# Heading", { headingIdPrefix: "bad prefix" }),

@@ -17,7 +17,7 @@ use compact_str::CompactString;
 
 use super::super::escape::write_escaped_into;
 use super::super::heading::slugify_heading_into;
-use super::{HtmlRenderHooks, HtmlRenderer, reserve_heading_scratch};
+use super::{HtmlRenderHooks, HtmlRenderer, PlannedId, reserve_heading_scratch};
 
 /// First `-N` tried when a slug repeats, matching the ids the scan produced.
 const FIRST_SUFFIX: usize = 2;
@@ -25,6 +25,8 @@ const FIRST_SUFFIX: usize = 2;
 #[derive(Clone)]
 pub(super) struct FootnoteRecord {
     pub(super) slug: CompactString,
+    pub(super) target_id: PlannedId,
+    pub(super) reference_ids: Vec<PlannedId>,
     pub(super) ref_count: usize,
     pub(super) body_html: Option<String>,
     pub(super) span: Option<Span>,
@@ -82,16 +84,16 @@ impl HtmlRenderer {
                 continue;
             };
             let display = index + 1;
-            let ref_count = self.footnote_records[index].ref_count;
-            self.write("<li id=\"fn-");
-            self.write_footnote_slug(index);
+            let target_id = self.footnote_records[index].target_id;
+            self.write("<li id=\"");
+            self.write_footnote_id(target_id);
             self.write("\"");
             if let Some(span) = self.footnote_records[index].span {
                 self.write_source_span_attr(span);
             }
             self.write(">\n");
             self.write(&body);
-            self.write_semantic_backlinks(index, display, ref_count);
+            self.write_semantic_backlinks(index, display);
             self.write("</li>\n");
         }
         self.write("</ol>\n</section>\n");
@@ -101,6 +103,8 @@ impl HtmlRenderer {
         // The legacy marker path uses this one whether or not the semantic
         // option is on.
         self.footnote_ref_counts.clear();
+        self.legacy_footnote_targets.clear();
+        self.legacy_footnote_first_references.clear();
         if !self.options.semantic_footnotes {
             // The other three are written only from `footnote_index_of` and
             // `assign_footnote_slug`, both reachable only through the semantic
@@ -135,31 +139,34 @@ impl HtmlRenderer {
             *count += 1;
             *count
         };
+        let target_id = self.legacy_footnote_target_id(identifier);
+        let reference_id = self.legacy_footnote_reference_id(identifier, occurrence);
 
-        self.write("<sup><a href=\"#fn-");
-        self.write_escaped(identifier);
-        self.write("\" id=\"fnref-");
-        self.write_escaped(identifier);
-        if occurrence > 1 {
-            self.write("-");
-            self.write_display(occurrence);
-        }
+        self.write("<sup><a href=\"#");
+        self.write_footnote_id(target_id);
+        self.write("\" id=\"");
+        self.write_footnote_id(reference_id);
         self.write("\">");
         self.write_escaped(identifier);
         self.write("</a></sup>");
     }
 
     fn render_legacy_footnote_definition(&mut self, footnote_def: &FootnoteDefinition<'_>) {
-        self.write("<div id=\"fn-");
-        self.write_escaped(footnote_def.identifier);
+        let target_id = self.legacy_footnote_target_id(footnote_def.identifier);
+        self.write("<div id=\"");
+        self.write_footnote_id(target_id);
         self.write("\" class=\"footnote\"");
         self.write_source_span_attr(footnote_def.span);
         self.write(">\n");
         for child in &footnote_def.children {
             self.render_node(child);
         }
-        self.write("<a href=\"#fnref-");
-        self.write_escaped(footnote_def.identifier);
+        // The definition emits a backlink even when its reference appears
+        // later in the document. Reserve that anchor now so a heading between
+        // the definition and reference cannot take the link's ID.
+        let reference_id = self.legacy_footnote_reference_id(footnote_def.identifier, 1);
+        self.write("<a href=\"#");
+        self.write_footnote_id(reference_id);
         self.write("\">↩</a>\n</div>\n");
     }
 
@@ -168,35 +175,44 @@ impl HtmlRenderer {
         footnote_def: &FootnoteDefinition<'_>,
         hooks: &mut H,
     ) {
-        self.write("<div id=\"fn-");
-        self.write_escaped(footnote_def.identifier);
+        let target_id = self.legacy_footnote_target_id(footnote_def.identifier);
+        self.write("<div id=\"");
+        self.write_footnote_id(target_id);
         self.write("\" class=\"footnote\"");
         self.write_source_span_attr(footnote_def.span);
         self.write(">\n");
         for child in &footnote_def.children {
             self.render_node_with_hooks(child, hooks);
         }
-        self.write("<a href=\"#fnref-");
-        self.write_escaped(footnote_def.identifier);
+        // Keep hooked rendering's claim order identical to the default path.
+        let reference_id = self.legacy_footnote_reference_id(footnote_def.identifier, 1);
+        self.write("<a href=\"#");
+        self.write_footnote_id(reference_id);
         self.write("\">↩</a>\n</div>\n");
     }
 
     fn render_semantic_footnote_reference(&mut self, identifier: &str) {
         let index = self.footnote_index_of(identifier);
-        let occurrence = {
+        let (occurrence, target_id, slug) = {
             let record = &mut self.footnote_records[index];
             record.ref_count += 1;
-            record.ref_count
+            (record.ref_count, record.target_id, record.slug.clone())
         };
-
-        self.write("<sup><a href=\"#fn-");
-        self.write_footnote_slug(index);
-        self.write("\" id=\"fnref-");
-        self.write_footnote_slug(index);
+        self.heading_slug_scratch.clear();
+        self.heading_slug_scratch.push_str("fnref-");
+        self.heading_slug_scratch.push_str(&slug);
         if occurrence > 1 {
-            self.write("-");
-            self.write_display(occurrence);
+            let _ = write!(self.heading_slug_scratch, "-{occurrence}");
         }
+        let reference_id = self.heading_id_planner.claim(&self.heading_slug_scratch);
+        self.footnote_records[index]
+            .reference_ids
+            .push(reference_id);
+
+        self.write("<sup><a href=\"#");
+        self.write_footnote_id(target_id);
+        self.write("\" id=\"");
+        self.write_footnote_id(reference_id);
         self.write("\">");
         self.write_display(index + 1);
         self.write("</a></sup>");
@@ -232,17 +248,15 @@ impl HtmlRenderer {
         self.footnote_records[index].span = Some(footnote_def.span);
     }
 
-    fn write_semantic_backlinks(&mut self, index: usize, display: usize, ref_count: usize) {
+    fn write_semantic_backlinks(&mut self, index: usize, display: usize) {
+        let ref_count = self.footnote_records[index].reference_ids.len();
         if ref_count == 0 {
             return;
         }
         for occurrence in 1..=ref_count {
-            self.write("<a href=\"#fnref-");
-            self.write_footnote_slug(index);
-            if occurrence > 1 {
-                self.write("-");
-                self.write_display(occurrence);
-            }
+            let reference_id = self.footnote_records[index].reference_ids[occurrence - 1];
+            self.write("<a href=\"#");
+            self.write_footnote_id(reference_id);
             self.write("\" aria-label=\"Back to reference ");
             self.write_display(display);
             if occurrence > 1 {
@@ -257,16 +271,55 @@ impl HtmlRenderer {
         self.write("\n");
     }
 
+    fn legacy_footnote_target_id(&mut self, identifier: &str) -> PlannedId {
+        let key = CompactString::from(identifier);
+        if let Some(&id) = self.legacy_footnote_targets.get(&key) {
+            return id;
+        }
+        self.heading_slug_scratch.clear();
+        self.heading_slug_scratch.push_str("fn-");
+        self.heading_slug_scratch.push_str(identifier);
+        let id = self.heading_id_planner.claim(&self.heading_slug_scratch);
+        self.legacy_footnote_targets.insert(key, id);
+        id
+    }
+
+    fn legacy_footnote_reference_id(&mut self, identifier: &str, occurrence: usize) -> PlannedId {
+        if occurrence == 1
+            && let Some(&id) = self.legacy_footnote_first_references.get(identifier)
+        {
+            return id;
+        }
+        self.heading_slug_scratch.clear();
+        self.heading_slug_scratch.push_str("fnref-");
+        self.heading_slug_scratch.push_str(identifier);
+        if occurrence > 1 {
+            let _ = write!(self.heading_slug_scratch, "-{occurrence}");
+        }
+        let id = self.heading_id_planner.claim(&self.heading_slug_scratch);
+        if occurrence == 1 {
+            self.legacy_footnote_first_references
+                .insert(CompactString::from(identifier), id);
+        }
+        id
+    }
+
     fn footnote_index_of(&mut self, identifier: &str) -> usize {
         if let Some(&index) = self.footnote_index.get(identifier) {
             return index as usize;
         }
         let index = self.footnote_records.len();
         let slug = self.assign_footnote_slug(identifier, index);
+        self.heading_slug_scratch.clear();
+        self.heading_slug_scratch.push_str("fn-");
+        self.heading_slug_scratch.push_str(&slug);
+        let target_id = self.heading_id_planner.claim(&self.heading_slug_scratch);
         self.footnote_index
             .insert(CompactString::from(identifier), index as u32);
         self.footnote_records.push(FootnoteRecord {
             slug,
+            target_id,
+            reference_ids: Vec::new(),
             ref_count: 0,
             body_html: None,
             span: None,
@@ -287,8 +340,8 @@ impl HtmlRenderer {
         CompactString::from(self.heading_slug_scratch.as_str())
     }
 
-    fn write_footnote_slug(&mut self, index: usize) {
-        write_escaped_into(&mut self.output, &self.footnote_records[index].slug);
+    fn write_footnote_id(&mut self, id: PlannedId) {
+        write_escaped_into(&mut self.output, self.heading_id_planner.id(id));
     }
 
     /// Turns the slug in `heading_slug_scratch` into one no footnote holds,

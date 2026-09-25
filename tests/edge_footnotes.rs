@@ -102,6 +102,114 @@ fn repeated_references_get_unique_ids() {
 }
 
 #[test]
+fn heading_ids_reserve_legacy_and_semantic_footnote_ids() {
+    let source = "# fn-1\n\n# fnref-1\n\nA[^1] and B[^1].\n\n[^1]: Shared.\n";
+
+    for semantic_footnotes in [false, true] {
+        let allocator = ferromark::allocator::Allocator::new();
+        let document =
+            ferromark::parser::Parser::with_options(&allocator, source, ParserOptions::gfm())
+                .parse()
+                .unwrap();
+        let mut renderer = ferromark::renderer::HtmlRenderer::with_options(HtmlRendererOptions {
+            semantic_footnotes,
+            heading_permalinks: true,
+            ..HtmlRendererOptions::default()
+        });
+        let html = renderer.render(&document);
+
+        assert!(html.contains("<h1 id=\"fn-1\">"), "{html}");
+        assert!(html.contains("<h1 id=\"fnref-1\">"), "{html}");
+        assert!(html.contains("href=\"#fn-1-1\""), "{html}");
+        assert!(html.contains("id=\"fnref-1-1\""), "{html}");
+        assert!(html.contains("id=\"fnref-1-2\""), "{html}");
+        assert!(html.contains("href=\"#fnref-1-1\""), "{html}");
+        assert!(html.contains("id=\"fn-1-1\""), "{html}");
+    }
+}
+
+#[test]
+fn footnote_ids_claimed_before_headings_keep_their_ids() {
+    let source = "A[^1].\n\n[^1]: Shared.\n\n# fn-1\n";
+    let html = gfm(source);
+
+    assert!(html.contains("<div id=\"fn-1\""), "{html}");
+    assert!(html.contains("<h1 id=\"fn-1-1\">"), "{html}");
+}
+
+#[test]
+fn legacy_definition_reserves_its_later_reference_backlink_id() {
+    let source = "[^1]: Shared.\n\n# fnref-1\n\nUse[^1].\n";
+    let html = gfm(source);
+
+    assert!(html.contains("<h1 id=\"fnref-1-1\">"), "{html}");
+    assert!(html.contains("id=\"fnref-1\">"), "{html}");
+    assert!(html.contains("<a href=\"#fnref-1\">↩</a>"), "{html}");
+
+    let allocator = ferromark::allocator::Allocator::new();
+    let document =
+        ferromark::parser::Parser::with_options(&allocator, source, ParserOptions::gfm())
+            .parse()
+            .unwrap();
+    let mut hooked_renderer = ferromark::renderer::HtmlRenderer::new();
+    let hooked_html =
+        hooked_renderer.render_with_hooks(&document, &mut ferromark::renderer::NoHtmlRenderHooks);
+    assert_eq!(hooked_html, html);
+}
+
+#[test]
+fn incremental_fragments_share_footnote_and_heading_ids() {
+    use ferromark::allocator::Allocator;
+    use ferromark::parser::Parser;
+    use ferromark::renderer::HtmlRenderer;
+
+    let first_source = "A[^1].\n\n[^1]: Shared.\n";
+    let second_source = "# fn-1\n";
+    let first_allocator = Allocator::new();
+    let first = Parser::with_options(&first_allocator, first_source, ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let second_allocator = Allocator::new();
+    let second = Parser::with_options(&second_allocator, second_source, ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let full_source = format!("{first_source}\n{second_source}");
+    let full = gfm(&full_source);
+    let mut renderer = HtmlRenderer::new();
+
+    let first_html = renderer.render_incremental_fragment(&first);
+    assert!(first_html.contains("<div id=\"fn-1\""), "{first_html}");
+    let provisional = renderer.render_provisional_fragment(&second);
+    assert!(provisional.contains("<h1 id=\"fn-1-1\">"), "{provisional}");
+    let committed = renderer.render_incremental_fragment(&second);
+    assert_eq!(committed, provisional);
+    assert_eq!(format!("{first_html}{committed}"), full);
+}
+
+#[test]
+fn prefixed_headings_reserve_footnote_ids_in_the_emitted_namespace() {
+    let allocator = ferromark::allocator::Allocator::new();
+    let document = ferromark::parser::Parser::with_options(
+        &allocator,
+        "# 1\n\nA[^1].\n\n[^1]: Shared.\n",
+        ParserOptions::gfm(),
+    )
+    .parse()
+    .unwrap();
+    let mut renderer = ferromark::renderer::HtmlRenderer::with_options(HtmlRendererOptions {
+        heading_permalinks: true,
+        ..HtmlRendererOptions::default()
+    })
+    .try_with_heading_id_prefix("fn-")
+    .unwrap();
+    let html = renderer.render(&document);
+
+    assert!(html.contains("<h1 id=\"fn-1\">"), "{html}");
+    assert!(html.contains("href=\"#fn-1-1\""), "{html}");
+    assert!(html.contains("<div id=\"fn-1-1\""), "{html}");
+}
+
+#[test]
 fn undefined_reference_stays_literal_text() {
     let html = gfm("Missing[^nope].\n");
 

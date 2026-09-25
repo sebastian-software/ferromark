@@ -157,6 +157,22 @@ impl HeadingIdPlanner {
         self.claim_candidate(start)
     }
 
+    /// Plans an explicit ID after applying the configured prefix.
+    pub(super) fn claim_with_prefix(&mut self, prefix: &str, base: &str) -> PlannedId {
+        let start = self.begin_candidate();
+        self.ids.push_str(prefix);
+        self.ids.push_str(base);
+        self.claim_candidate(start)
+    }
+
+    /// Plans the slug of `text` after applying the configured prefix.
+    pub(super) fn claim_slug_with_prefix(&mut self, prefix: &str, text: &str) -> PlannedId {
+        let start = self.begin_candidate();
+        self.ids.push_str(prefix);
+        slugify_heading_into(text, &mut self.ids);
+        self.claim_candidate(start)
+    }
+
     /// Returns a claimed ID.
     #[inline]
     pub(super) fn id(&self, id: PlannedId) -> &str {
