@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { types } from "node:util";
 
 import { linuxLibc, nativeTarget as resolveNativeTarget } from "./native-target.mjs";
 
@@ -207,11 +208,26 @@ class PackedOptions {
 }
 
 /**
+ * Whether the addon accepts `markdown`: a string, or a `Uint8Array` (which
+ * includes a `Buffer`) holding UTF-8.
+ *
+ * `types.isUint8Array` is a brand check, like the addon's own: it holds for
+ * subclasses and arrays from other realms, and no getter, proxy trap or
+ * patched prototype can change its answer.
+ *
+ * @param {unknown} markdown The Markdown argument.
+ * @returns {markdown is string | Uint8Array} Whether the addon converts it.
+ */
+function isMarkdown(markdown) {
+  return typeof markdown === "string" || types.isUint8Array(markdown);
+}
+
+/**
  * Packs validated options for the private native entries.
  *
- * An entry whose Markdown is not a string skips this and passes `options` to
- * the object-taking native entry: napi-rs rejects the Markdown before it gets
- * any option, and so gets none.
+ * An entry whose Markdown the addon rejects (see `isMarkdown`) skips this and
+ * passes `options` to the object-taking native entry: the addon rejects the
+ * Markdown before napi-rs gets any option, and so gets none.
  *
  * @param {import('./index.mjs').Options | null | undefined} options Validated options.
  * @returns {NativePackedOptions | NativeOptions} The packed arguments, or the
@@ -236,13 +252,13 @@ function packOptions(options) {
 }
 
 /**
- * @param {string} markdown Markdown source to render.
+ * @param {string | Uint8Array} markdown Markdown source to render.
  * @param {import('./index.mjs').Options} [options] Rendering options.
  */
 export function toHtml(markdown, options) {
   validateOptions(options);
   const addon = loadNative();
-  const packed = typeof markdown === "string" ? packOptions(options) : options;
+  const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
     ? addon.toHtmlPacked(markdown, ...packed)
     : addon.toHtml(markdown, packed);
@@ -250,14 +266,14 @@ export function toHtml(markdown, options) {
 
 /**
  * Render UTF-8 HTML into a Node.js Buffer.
- * @param {string} markdown Markdown source to render.
+ * @param {string | Uint8Array} markdown Markdown source to render.
  * @param {import('./index.mjs').Options} [options] Rendering options.
  * @returns {import('node:buffer').Buffer} Rendered HTML as a UTF-8 buffer.
  */
 export function toHtmlBuffer(markdown, options) {
   validateOptions(options);
   const addon = loadNative();
-  const packed = typeof markdown === "string" ? packOptions(options) : options;
+  const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
     ? addon.toHtmlBufferPacked(markdown, ...packed)
     : addon.toHtmlBuffer(markdown, packed);
@@ -278,25 +294,25 @@ export class Renderer {
       : new NativeRenderer(packed);
   }
 
-  /** @param {string} markdown Markdown source to render. */
+  /** @param {string | Uint8Array} markdown Markdown source to render. */
   toHtml(markdown) {
     return this.#native.toHtml(markdown);
   }
 
-  /** @param {string} markdown Markdown source to render. @returns {import('node:buffer').Buffer} Rendered HTML. */
+  /** @param {string | Uint8Array} markdown Markdown source to render. @returns {import('node:buffer').Buffer} Rendered HTML. */
   toHtmlBuffer(markdown) {
     return this.#native.toHtmlBuffer(markdown);
   }
 }
 
 /**
- * @param {string} markdown Markdown source to transform.
+ * @param {string | Uint8Array} markdown Markdown source to transform.
  * @param {import('./index.mjs').Options} [options] Transformation options.
  */
 export function transform(markdown, options) {
   validateOptions(options);
   const addon = loadNative();
-  const packed = typeof markdown === "string" ? packOptions(options) : options;
+  const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
     ? addon.transformPacked(markdown, ...packed)
     : addon.transform(markdown, packed);
@@ -343,7 +359,7 @@ function highlighterRenderer(highlighter, highlightOptions) {
 }
 
 /**
- * @param {string} markdown Markdown source to render.
+ * @param {string | Uint8Array} markdown Markdown source to render.
  * @param {import('./index.mjs').CodeHighlighter} highlighter Synchronous code highlighter.
  * @param {import('./index.mjs').HighlightOptions} highlightOptions Highlighter options.
  * @param {import('./index.mjs').Options} [options] Rendering options.
@@ -354,14 +370,14 @@ export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, o
   validateOptions(options);
   const render = highlighterRenderer(highlighter, highlightOptions);
   const addon = loadNative();
-  const packed = typeof markdown === "string" ? packOptions(options) : options;
+  const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
     ? addon.toHtmlWithRendererPacked(markdown, ...packed, render)
     : addon.toHtmlWithRenderer(markdown, packed, render);
 }
 
 /**
- * @param {string} markdown Markdown source to transform.
+ * @param {string | Uint8Array} markdown Markdown source to transform.
  * @param {import('./index.mjs').CodeHighlighter} highlighter Synchronous code highlighter.
  * @param {import('./index.mjs').HighlightOptions} highlightOptions Highlighter options.
  * @param {import('./index.mjs').Options} [options] Transformation options.
@@ -372,7 +388,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
   validateOptions(options);
   const render = highlighterRenderer(highlighter, highlightOptions);
   const addon = loadNative();
-  const packed = typeof markdown === "string" ? packOptions(options) : options;
+  const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
     ? addon.transformWithRendererPacked(markdown, ...packed, render)
     : addon.transformWithRenderer(markdown, packed, render);
@@ -381,8 +397,8 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
 /**
  * @typedef {(code: string, language?: string | null, meta?: string | null) => string | null} NativeFencedCodeRenderer
  * @typedef {{
- *   toHtml(markdown: string): string
- *   toHtmlBuffer(markdown: string): import('node:buffer').Buffer
+ *   toHtml(markdown: string | Uint8Array): string
+ *   toHtmlBuffer(markdown: string | Uint8Array): import('node:buffer').Buffer
  * }} NativeRendererSession
  * @typedef {import('./index.mjs').Options | null | undefined} NativeOptions
  * @typedef {[
@@ -405,37 +421,37 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     new (options?: NativeOptions): NativeRendererSession
  *     withPackedOptions(...options: NativePackedOptions): NativeRendererSession
  *   }
- *   toHtml(markdown: string, options?: NativeOptions): string
- *   toHtmlPacked(markdown: string, ...options: NativePackedOptions): string
- *   toHtmlBuffer(markdown: string, options?: NativeOptions): import('node:buffer').Buffer
+ *   toHtml(markdown: string | Uint8Array, options?: NativeOptions): string
+ *   toHtmlPacked(markdown: string | Uint8Array, ...options: NativePackedOptions): string
+ *   toHtmlBuffer(markdown: string | Uint8Array, options?: NativeOptions): import('node:buffer').Buffer
  *   toHtmlBufferPacked(
- *     markdown: string,
+ *     markdown: string | Uint8Array,
  *     ...options: NativePackedOptions
  *   ): import('node:buffer').Buffer
  *   toHtmlWithRenderer(
- *     markdown: string,
+ *     markdown: string | Uint8Array,
  *     options: NativeOptions,
  *     renderer: NativeFencedCodeRenderer,
  *   ): string
  *   toHtmlWithRendererPacked(
- *     markdown: string,
+ *     markdown: string | Uint8Array,
  *     ...options: NativePackedRendererOptions
  *   ): string
  *   transform(
- *     markdown: string,
+ *     markdown: string | Uint8Array,
  *     options?: NativeOptions,
  *   ): import('./index.mjs').TransformResult
  *   transformPacked(
- *     markdown: string,
+ *     markdown: string | Uint8Array,
  *     ...options: NativePackedOptions
  *   ): import('./index.mjs').TransformResult
  *   transformWithRenderer(
- *     markdown: string,
+ *     markdown: string | Uint8Array,
  *     options: NativeOptions,
  *     renderer: NativeFencedCodeRenderer,
  *   ): import('./index.mjs').TransformResult
  *   transformWithRendererPacked(
- *     markdown: string,
+ *     markdown: string | Uint8Array,
  *     ...options: NativePackedRendererOptions
  *   ): import('./index.mjs').TransformResult
  * }} NativeBindings

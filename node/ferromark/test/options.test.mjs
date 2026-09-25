@@ -475,6 +475,100 @@ test("rejects Markdown that is not a string before reading any option", () => {
   }
 });
 
+test("rejects Markdown that is neither a string nor a Uint8Array before reading any option", () => {
+  const markdowns = [
+    new Uint8ClampedArray(Buffer.from("# text")),
+    new Int8Array(Buffer.from("# text")),
+    new DataView(Buffer.from("# text").buffer),
+    Buffer.from("# text").buffer,
+    [...Buffer.from("# text")],
+    new Proxy(Buffer.from("# text"), {}),
+  ];
+  for (const markdown of markdowns) {
+    for (const options of [{}, { tables: 1 }, { renderPolicy: "bad" }, { superscript: true }]) {
+      assertEquivalent(
+        markdown,
+        (log) => logged({ ...options }, log),
+        `${Object.prototype.toString.call(markdown)} Markdown`,
+      );
+      for (const entry of entries.filter(({ name }) => name !== "Renderer")) {
+        const gets = [];
+        assert.throws(
+          () => entry.facade(markdown, logged({ ...options }, gets)),
+          (error) => error instanceof TypeError && error.code === "ERR_INVALID_ARG_TYPE",
+          entry.name,
+        );
+        assert.deepEqual(gets, [], `${entry.name} read options for invalid Markdown`);
+      }
+    }
+  }
+});
+
+test("packs options for Uint8Array Markdown as the object path reads them", () => {
+  // The same Markdown as bytes, in memory the options cannot reach.
+  const bytes = () => Buffer.from(probe);
+  for (const key of keys) {
+    for (const value of [undefined, true, false, 1, 1.5, "trusted", "bad prefix", "/docs", {}]) {
+      assertEquivalent(bytes(), () => ({ [key]: value }), `bytes, ${key}: ${describe(value)}`);
+    }
+  }
+  const random = mulberry32(0xb7_7e);
+  for (let round = 0; round < 100; round++) {
+    const options = randomOptions(random);
+    assertEquivalentOptions(bytes(), options, `bytes, round ${round}: ${describe(options)}`);
+  }
+});
+
+/** `text` in a length-tracking view of a resizable buffer. */
+function resizable(text) {
+  const bytes = new Uint8Array(new ArrayBuffer(text.length, { maxByteLength: 64 }));
+  bytes.set(Buffer.from(text));
+  return bytes;
+}
+
+test("reads Uint8Array Markdown only after the option getters ran", () => {
+  // An object-taking export converts Markdown first and options second, and
+  // the options' getters are JavaScript that can write, detach or resize the
+  // bytes. The addon reads them when it starts to render, so it renders what
+  // the getter left behind, or empty input for a detached or emptied buffer.
+  const cases = [
+    ["overwrite", () => Buffer.from("# Before"), (bytes) => bytes.write("# After!"), "# After!"],
+    [
+      "overwrite with invalid UTF-8",
+      () => Buffer.from("# Before"),
+      (b) => b.fill(0xff, 2),
+      "# \uFFFD".padEnd(8, "\uFFFD"),
+    ],
+    ["detach", () => new Uint8Array(Buffer.from("# Before")), (b) => b.buffer.transfer(), ""],
+    ["shrink", () => resizable("# Before"), (b) => b.buffer.resize(3), "# B"],
+    [
+      "grow",
+      () => resizable("# Before"),
+      (b) => {
+        b.buffer.resize(12);
+        b.set(Buffer.from(" now"), 8);
+      },
+      "# Before now",
+    ],
+  ];
+  for (const entry of entries.filter(({ natives }) => natives)) {
+    for (const [label, create, change, text] of cases) {
+      const bytes = create();
+      const options = {
+        get superscript() {
+          change(bytes);
+          return true;
+        },
+      };
+      assert.deepEqual(
+        outcome(() => entry.direct(bytes, options)),
+        outcome(() => entry.direct(text, { superscript: true })),
+        `${entry.name}: ${label}`,
+      );
+    }
+  }
+});
+
 test("rejects unknown keys before Markdown and before any get", () => {
   for (const entry of entries) {
     const gets = [];
@@ -710,6 +804,26 @@ test("routes options through the packed entries", (t) => {
   for (const entry of routed) {
     assertPacked(entry, spies);
     assertObjectPath(entry, spies);
+  }
+});
+
+test("routes Uint8Array Markdown through the packed entries", (t) => {
+  const routed = entries.filter(({ natives }) => natives);
+  const spies = spyOn(
+    t,
+    routed.flatMap(({ natives }) => natives),
+  );
+  for (const bytes of [Buffer.from(probe), new Uint8Array(Buffer.from(probe))]) {
+    for (const entry of routed) {
+      const [object, packed] = entry.natives;
+      spies.reset();
+      entry.facade(bytes, { superscript: true });
+      assert.deepEqual([spies.count(packed), spies.count(object)], [1, 0], `${entry.name} packs`);
+      assert.equal(spies.args(packed)[0], bytes, `${entry.name} passes the bytes on`);
+      spies.reset();
+      entry.facade(bytes);
+      assert.deepEqual([spies.count(packed), spies.count(object)], [0, 1], `${entry.name} bare`);
+    }
   }
 });
 

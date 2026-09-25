@@ -11,12 +11,33 @@ export function lastResult() {
   return sink;
 }
 
+/**
+ * Whether the addon's exports take Markdown as UTF-8 bytes (a `Uint8Array`).
+ * An addon built before they did lacks the public bytes lanes, and its
+ * `bytesInput` and `encodeIntoInput` candidates time its `boundaryBytesLen`
+ * prototype instead, so one script can time a build from before and one from
+ * after.
+ * @param native The loaded addon.
+ */
+export function acceptsBytes(native) {
+  try {
+    return native.boundaryLen(new Uint8Array([0x61])) === 1;
+  } catch {
+    return false;
+  }
+}
+
 /** Per-document state shared by verification and the lanes. */
 export function documentState(native, document) {
   const { markdown } = document;
   const probe = new native.BoundaryProbe(markdown);
+  const accepted = acceptsBytes(native);
   return {
+    acceptsBytes: accepted,
     bytes: Buffer.from(markdown, "utf8"),
+    // The input conversion of UTF-8 bytes: the exports' own, or on an addon
+    // from before they took bytes, its `boundaryBytesLen` prototype.
+    convertBytes: accepted ? native.boundaryLen : native.boundaryBytesLen,
     encoder: new TextEncoder(),
     html: probe.html(),
     markdown,
@@ -30,13 +51,6 @@ export function documentState(native, document) {
   };
 }
 
-function encodeIntoLength({ encoder, native, scratch }, markdown) {
-  const { written } = encoder.encodeInto(markdown, scratch);
-  return native.boundaryBytesLen(scratch.subarray(0, written));
-}
-
-const utf8 = (buffer) => buffer.toString("utf8");
-
 /**
  * Whether the addon renders one-shot calls without options on a kept renderer
  * and has `boundaryToHtmlFresh`, the one-shot path from before, as a reference.
@@ -49,22 +63,6 @@ export function hasKeptDefault(native) {
   return typeof native.boundaryToHtmlFresh === "function";
 }
 
-function outputChecks({ html, markdown, native, outputAscii, probe, renderer }) {
-  return {
-    "Renderer.toHtml": renderer.toHtml(markdown) === html,
-    "Renderer.toHtmlBuffer": utf8(renderer.toHtmlBuffer(markdown)) === html,
-    ...(hasKeptDefault(native) && {
-      boundaryToHtmlFresh: native.boundaryToHtmlFresh(markdown) === html,
-    }),
-    boundaryToHtmlExternal: native.boundaryToHtmlExternal(markdown) === html,
-    htmlBuffer: utf8(probe.htmlBuffer()) === html,
-    htmlBufferCopy: utf8(probe.htmlBufferCopy()) === html,
-    htmlLatin1: !outputAscii || probe.htmlLatin1() === html,
-    toHtml: native.toHtml(markdown) === html,
-    toHtmlBuffer: utf8(native.toHtmlBuffer(markdown)) === html,
-  };
-}
-
 /**
  * Whether the addon has napi-rs's `String` conversion as a reference next to
  * the exports' single pass. An addon built before the exports switched lacks
@@ -72,46 +70,8 @@ function outputChecks({ html, markdown, native, outputAscii, probe, renderer }) 
  * build from before and one from after the switch.
  * @param native The loaded addon.
  */
-function hasNapiStringReference(native) {
+export function hasNapiStringReference(native) {
   return typeof native.boundaryLenNapiString === "function";
-}
-
-function inputChecks({ bytes, markdown, native }) {
-  if (!hasNapiStringReference(native)) return {};
-  const converted = native.boundaryInputBytes(markdown);
-  return {
-    boundaryInputBytes:
-      converted.equals(bytes) && converted.equals(native.boundaryNapiStringBytes(markdown)),
-    boundaryLenNapiString: native.boundaryLenNapiString(markdown) === bytes.length,
-  };
-}
-
-function partChecks(state, inputBytes) {
-  const { bytes, markdown, native, outputBytes } = state;
-  const threeOutputs = (outputBytes * 3) >>> 0;
-  return {
-    boundaryBytesLen: native.boundaryBytesLen(bytes) === inputBytes,
-    boundaryEcho: native.boundaryEcho(markdown) === markdown,
-    boundaryLen: native.boundaryLen(markdown) === inputBytes,
-    boundaryMake: native.boundaryMake(outputBytes).length === outputBytes,
-    ...(hasKeptDefault(native) && {
-      coreDefault: native.boundaryCoreOnly(markdown, 3, "default") === threeOutputs,
-    }),
-    coreFresh: native.boundaryCoreOnly(markdown, 3, "fresh") === threeOutputs,
-    coreReuse: native.boundaryCoreOnly(markdown, 3, "reuse") === threeOutputs,
-    coreSetup: native.boundaryCoreOnly("", 3, "setup") === 3,
-    encodeIntoLen: encodeIntoLength(state, markdown) === inputBytes,
-    ...inputChecks(state),
-  };
-}
-
-/** Output equality comes before timing: every lane must produce what it claims. */
-export function verify(document, state) {
-  const checks = { ...outputChecks(state), ...partChecks(state, document.inputBytes) };
-  const failed = Object.keys(checks).filter((name) => !checks[name]);
-  if (failed.length > 0) {
-    throw new Error(`${document.name}: output mismatch in ${failed.join(", ")}`);
-  }
 }
 
 // The public exports, exactly as the package calls them.
@@ -128,6 +88,24 @@ function publicLanes({ markdown, native, renderer }) {
     },
     toHtmlBuffer(k) {
       for (let i = 0; i < k; i++) sink = native.toHtmlBuffer(markdown);
+    },
+  };
+}
+
+// The same public exports with the document as UTF-8 bytes, as a caller that
+// read the file into a `Buffer` passes it. Only an addon that takes bytes has
+// these lanes.
+function bytesLanes({ acceptsBytes: accepted, bytes, native, renderer }) {
+  if (!accepted) return {};
+  return {
+    rendererToHtmlBytes(k) {
+      for (let i = 0; i < k; i++) sink = renderer.toHtml(bytes);
+    },
+    toHtmlBufferBytes(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtmlBuffer(bytes);
+    },
+    toHtmlBytes(k) {
+      for (let i = 0; i < k; i++) sink = native.toHtml(bytes);
     },
   };
 }
@@ -179,18 +157,27 @@ function coreLanes({ markdown, native }) {
   };
 }
 
-// Prototypes of the reductions README.md describes.
-function candidateLanes({ bytes, encoder, markdown, native, outputAscii, probe, scratch }) {
-  const lanes = {
+// The input conversion of UTF-8 bytes (`convertBytes`), for a caller that holds
+// bytes and for one that encodes its string into a kept scratch buffer first.
+function bytesInputLanes({ bytes, convertBytes, encoder, markdown, scratch }) {
+  return {
     bytesLen(k) {
-      for (let i = 0; i < k; i++) sink = native.boundaryBytesLen(bytes);
+      for (let i = 0; i < k; i++) sink = convertBytes(bytes);
     },
     encodeIntoLen(k) {
       for (let i = 0; i < k; i++) {
         const { written } = encoder.encodeInto(markdown, scratch);
-        sink = native.boundaryBytesLen(scratch.subarray(0, written));
+        sink = convertBytes(scratch.subarray(0, written));
       }
     },
+  };
+}
+
+// Prototypes of the reductions README.md describes.
+function candidateLanes(state) {
+  const { markdown, native, outputAscii, probe } = state;
+  const lanes = {
+    ...bytesInputLanes(state),
     htmlBufferCopy(k) {
       for (let i = 0; i < k; i++) sink = probe.htmlBufferCopy();
     },
@@ -220,14 +207,15 @@ function candidateLanes({ bytes, encoder, markdown, native, outputAscii, probe, 
 export function documentLanes(state) {
   return {
     ...publicLanes(state),
+    ...bytesLanes(state),
     ...boundaryLanes(state),
     ...coreLanes(state),
     ...candidateLanes(state),
   };
 }
 
-const trusted = { renderPolicy: "trusted" };
-const empty = {};
+export const trusted = { renderPolicy: "trusted" };
+export const empty = {};
 
 /**
  * Whether the addon has the packed options entries the facade calls since it
@@ -235,41 +223,8 @@ const empty = {};
  * the packed lanes.
  * @param native The loaded addon.
  */
-function hasPackedOptions(native) {
+export function hasPackedOptions(native) {
   return typeof native.boundaryOptionsPacked === "function";
-}
-
-/**
- * The option lanes must agree before they are timed: packed and object options
- * resolve alike, and the facade renders as the object-taking export does.
- */
-export function verifyFixed(native, facade) {
-  const markdown = "<i>raw</i> x^2^";
-  try {
-    facade.toHtml(markdown, trusted);
-  } catch (error) {
-    throw new Error(
-      "The facade does not work with this addon; pass --facade with the package directory " +
-        "of the checkout the addon was built from",
-      { cause: error },
-    );
-  }
-  const checks = {
-    ...(hasPackedOptions(native) && {
-      optionsPackedNone: native.boundaryOptionsPacked(0, 0) === native.boundaryOptions(empty),
-      optionsPackedTrusted: native.boundaryOptionsPacked(1, 1) === native.boundaryOptions(trusted),
-    }),
-    facadeRendererTrusted:
-      new facade.Renderer(trusted).toHtml(markdown) ===
-      new native.Renderer(trusted).toHtml(markdown),
-    facadeToHtmlEmpty: facade.toHtml(markdown) === native.toHtml(markdown),
-    facadeToHtmlEmptyOptions: facade.toHtml(markdown, empty) === native.toHtml(markdown, empty),
-    facadeToHtmlTrusted: facade.toHtml(markdown, trusted) === native.toHtml(markdown, trusted),
-  };
-  const failed = Object.keys(checks).filter((name) => !checks[name]);
-  if (failed.length > 0) {
-    throw new Error(`fixed lanes: output mismatch in ${failed.join(", ")}`);
-  }
 }
 
 // Options as the facade passes them now: packed into plain arguments. Only

@@ -11,19 +11,14 @@ import { cpus } from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+import { verify, verifyFixed } from "./boundary/checks.mjs";
 import { loadDocuments } from "./boundary/corpus.mjs";
 import { loadFacade } from "./boundary/facade.mjs";
-import {
-  documentLanes,
-  documentState,
-  fixedLanes,
-  lastResult,
-  verify,
-  verifyFixed,
-} from "./boundary/lanes.mjs";
+import { documentLanes, documentState, fixedLanes, lastResult } from "./boundary/lanes.mjs";
 import {
   attribution,
   byRound,
+  bytesInput,
   candidates,
   mapValues,
   median,
@@ -145,6 +140,7 @@ async function measureDocument(document) {
   const perRound = byRound(rounds);
   return {
     attribution: attribution(perRound),
+    bytes: bytesInput(perRound),
     candidates: candidates(perRound),
     category: document.category,
     content: document.content,

@@ -116,6 +116,35 @@ response.end(toHtmlBuffer("# Hello"));
 Reusable renderers provide the same output path through
 `renderer.toHtmlBuffer(markdown)`.
 
+## Bytes input
+
+Every function and `Renderer` method that takes Markdown also accepts it as
+UTF-8 bytes: a `Uint8Array`, which includes a Node.js `Buffer`. A file read
+without an encoding goes in as it is, and no JavaScript string is built for it.
+
+```js
+import { readFile } from "node:fs/promises";
+import { toHtml, toHtmlBuffer } from "ferromark";
+
+const html = toHtml(await readFile("guide.md"));
+
+// Bytes in, bytes out.
+response.end(toHtmlBuffer(await readFile("guide.md")));
+```
+
+Bytes render exactly like the string `buffer.toString("utf8")` returns, so a
+file read as a `Buffer` gives the same HTML as the same file read with
+`"utf8"`. Invalid UTF-8 becomes U+FFFD the way Node.js decodes it, and a
+leading byte order mark is handled as it is in a string. An empty or detached
+view renders like `""`. Any other value, including an `ArrayBuffer`, another
+typed array or a `DataView`, throws a `TypeError` with the code
+`ERR_INVALID_ARG_TYPE`; wrap an `ArrayBuffer` in a `Uint8Array` first.
+
+Each call copies the bytes once, after it has read the options, and renders
+from that copy. A highlighter passed to `toHtmlWithHighlighter()` or
+`transformWithHighlighter()`, or a worker writing a `SharedArrayBuffer`, can
+change the buffer without affecting the call.
+
 ## Untrusted by default
 
 `toHtml()` and `transform()` default to `renderPolicy: 'untrusted'`. Raw HTML
@@ -171,8 +200,9 @@ fragment links. The setting applies to every document rendered by a reusable
 
 Ferromark stores source positions as compact `u32` offsets, so the parser
 addresses just under 4 GB of Markdown. Node.js strings stop far below that
-(`buffer.constants.MAX_STRING_LENGTH`), so no JavaScript input can reach the
-limit and the binding does not check for it.
+(`buffer.constants.MAX_STRING_LENGTH`), so no string can reach the limit.
+Bytes can: a `Uint8Array` of more than 4,294,967,295 bytes throws a
+`RangeError` with the code `ERR_OUT_OF_RANGE` before any of it is read.
 
 ## Syntax highlighting with Ferriki
 

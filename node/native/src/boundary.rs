@@ -10,7 +10,8 @@
 //! Every export does one isolated piece of a real call, and the core loops call
 //! the same helpers as the public exports (`render_one_shot`, `render_fresh`,
 //! `Renderer::render_reused`), so the parts add up to the real thing. Markdown
-//! arguments convert through [`Utf8Input`], as the public exports' do. The
+//! arguments convert through [`Utf8Input`], as the public exports' do, so each
+//! takes a string or UTF-8 bytes (a `Uint8Array`) exactly as they do. The
 //! `candidate` exports prototype reductions; they are measurements, not API.
 //! The `NapiString` exports keep napi-rs's own `String` conversion, which the
 //! public exports used before `Utf8Input`, as a reference, and
@@ -21,7 +22,7 @@ use std::cell::{Cell, RefCell};
 use std::hint::black_box;
 
 use ferromark::Parser;
-use napi::bindgen_prelude::{Buffer, BufferSlice, Error, Result, Status, Uint8ArraySlice};
+use napi::bindgen_prelude::{Buffer, BufferSlice, Error, Result, Status};
 use napi::{Env, JsString, JsStringLatin1};
 use napi_derive::napi;
 
@@ -33,11 +34,13 @@ use crate::{Options, Renderer, core_options, parse_error, render_fresh, render_o
 #[napi(catch_unwind, js_name = "boundaryNoop")]
 pub fn noop() {}
 
-/// Input conversion only, as the public exports convert Markdown: one
-/// `napi_get_value_string_utf8` pass into a reserved buffer. The string is
+/// Input conversion only, as the public exports convert Markdown.
+///
+/// A string takes one `napi_get_value_string_utf8` pass into a reserved
+/// buffer, and a `Uint8Array` has its bytes copied and validated. The text is
 /// dropped again.
 #[napi(catch_unwind, js_name = "boundaryLen")]
-pub fn len(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> u32 {
+pub fn len(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> u32 {
     markdown.len() as u32
 }
 
@@ -49,10 +52,22 @@ pub fn len_napi_string(markdown: String) -> u32 {
     markdown.len() as u32
 }
 
-/// The UTF-8 bytes the public exports convert a string to.
+/// The UTF-8 text the public exports convert a string or bytes to.
 #[napi(catch_unwind, js_name = "boundaryInputBytes")]
-pub fn input_bytes(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> Buffer {
+pub fn input_bytes(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> Buffer {
     markdown.into_string().into_bytes().into()
+}
+
+/// How the public exports obtain the text.
+///
+/// `"string"` for a string; for bytes `"empty"`, `"copied"` (one `memcpy`
+/// from a plain `ArrayBuffer`) or `"copied atomically"` (relaxed atomic loads
+/// from a `SharedArrayBuffer`).
+#[napi(catch_unwind, js_name = "boundaryInputOrigin")]
+pub fn input_origin(
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+) -> &'static str {
+    markdown.origin()
 }
 
 /// The UTF-8 bytes napi-rs's `String` conversion produces, to compare with
@@ -64,7 +79,7 @@ pub fn napi_string_bytes(markdown: String) -> Buffer {
 
 /// Input and output conversion of the same string, without the core.
 #[napi(catch_unwind, js_name = "boundaryEcho")]
-pub fn echo(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> String {
+pub fn echo(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> String {
     markdown.into_string()
 }
 
@@ -110,7 +125,7 @@ pub fn make(n: u32) -> &'static str {
 /// - `setup`: `Renderer::new` with default options and its drop, nothing else.
 #[napi(catch_unwind, js_name = "boundaryCoreOnly")]
 pub fn core_only(
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     iterations: u32,
     lifecycle: String,
 ) -> Result<u32> {
@@ -170,7 +185,9 @@ fn render_owned(markdown: &str) -> Result<String> {
 /// `toHtml` without options as it was before it kept a renderer, to pair with
 /// the export in one build.
 #[napi(catch_unwind, js_name = "boundaryToHtmlFresh")]
-pub fn to_html_fresh(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> Result<String> {
+pub fn to_html_fresh(
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+) -> Result<String> {
     render_owned(&markdown)
 }
 
@@ -197,15 +214,6 @@ pub fn options_packed(
     Ok(u32::from(black_box(options).html.sanitize))
 }
 
-/// Candidate input path: UTF-8 bytes borrowed from a `Uint8Array` or `Buffer`
-/// (no transcoding, no copy, no allocation), validated as a `&str` would be.
-#[napi(catch_unwind, js_name = "boundaryBytesLen")]
-pub fn bytes_len(bytes: Uint8ArraySlice) -> Result<u32> {
-    let markdown = std::str::from_utf8(&bytes)
-        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-    Ok(markdown.len() as u32)
-}
-
 /// Candidate one-shot output path: an external Latin-1 string for ASCII HTML.
 ///
 /// The owned HTML is handed to V8 without a copy and freed by the garbage
@@ -214,7 +222,7 @@ pub fn bytes_len(bytes: Uint8ArraySlice) -> Result<u32> {
 #[napi(catch_unwind, js_name = "boundaryToHtmlExternal")]
 pub fn to_html_external<'env>(
     env: &'env Env,
-    #[napi(ts_arg_type = "string")] markdown: Utf8Input,
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
 ) -> Result<JsString<'env>> {
     let html = render_owned(&markdown)?;
     if !html.is_empty() && html.is_ascii() {
@@ -235,7 +243,7 @@ pub struct BoundaryProbe {
 impl BoundaryProbe {
     /// Renders `markdown` once, as `new Renderer().toHtml(markdown)` does.
     #[napi(constructor, catch_unwind)]
-    pub fn new(#[napi(ts_arg_type = "string")] markdown: Utf8Input) -> Result<Self> {
+    pub fn new(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> Result<Self> {
         let mut renderer = Renderer::new(None)?;
         let html = renderer.render_reused(&markdown)?.to_owned();
         Ok(Self { html })

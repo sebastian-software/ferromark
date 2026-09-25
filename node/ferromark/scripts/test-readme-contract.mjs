@@ -117,9 +117,28 @@ function assertReadmeContract(candidate) {
   );
   assert.match(
     declarations,
-    /toHtmlBuffer\(markdown: string\): Buffer/,
+    /toHtmlBuffer\(markdown: string \| Uint8Array\): Buffer/,
     "reusable renderer must expose Buffer rendering",
   );
+
+  assert.match(candidate, /^## Bytes input$/m, "README must document UTF-8 bytes input");
+  assert.match(
+    candidate,
+    /toHtml\(await readFile\(/,
+    "README must show a file read as bytes passed straight to toHtml",
+  );
+  assert.match(
+    candidate,
+    /`ERR_INVALID_ARG_TYPE`/,
+    "README must name the error for Markdown of another type",
+  );
+  for (const entry of ["toHtml", "toHtmlBuffer", "transform"]) {
+    assert.match(
+      declarations,
+      new RegExp(`function ${entry}\\(\\s*markdown: string \\| Uint8Array,`),
+      `declarations must accept bytes in ${entry}`,
+    );
+  }
 
   assert.match(
     candidate,

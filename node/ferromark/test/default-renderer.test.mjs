@@ -75,13 +75,17 @@ const documents = [
 const fresh = (markdown, options) => new Renderer(options).toHtml(markdown);
 const expected = documents.map((markdown) => fresh(markdown));
 
-// Every public way to reach the kept renderer.
+// Every public way to reach the kept renderer, with the Markdown as a string
+// and as UTF-8 bytes.
 const defaultEntries = [
   ["toHtml", (markdown) => toHtml(markdown)],
   ["toHtml with null", (markdown) => toHtml(markdown, null)],
   ["toHtml with {}", (markdown) => toHtml(markdown, {})],
   ["toHtmlBuffer", (markdown) => toHtmlBuffer(markdown).toString("utf8")],
   ["toHtmlBuffer with {}", (markdown) => toHtmlBuffer(markdown, {}).toString("utf8")],
+  ["toHtml with bytes", (markdown) => toHtml(Buffer.from(markdown))],
+  ["toHtml with bytes and {}", (markdown) => toHtml(new TextEncoder().encode(markdown), {})],
+  ["toHtmlBuffer with bytes", (markdown) => toHtmlBuffer(Buffer.from(markdown)).toString("utf8")],
 ];
 
 let step = 0;
@@ -197,6 +201,7 @@ test("a failed call leaves later calls unaffected", () => {
     () => toHtml(deep),
     () => toHtmlBuffer(deep),
     () => toHtml(`${"*".repeat(20_000)}a${"*".repeat(20_000)}`),
+    () => toHtml(Buffer.from(deep)),
     () => toHtml(123),
   ];
   for (const [index, call] of calls.entries()) {

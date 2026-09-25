@@ -36,3 +36,15 @@ toHtmlWithHighlighter("```ts\nconst typed = true\n```", highlighter, {
 });
 
 toHtml("==text==^[note]", { highlight: true, inlineFootnotes: true, allowLinkRefs: false });
+
+// Markdown as UTF-8 bytes: any Uint8Array, including a Buffer.
+toHtml(new TextEncoder().encode("# Bytes"), options);
+const bytesOutput: Buffer = toHtmlBuffer(Buffer.from("# Buffered bytes"));
+bytesOutput.toString("utf8");
+renderer.toHtml(Buffer.from("# Reused bytes"));
+renderer.toHtmlBuffer(new Uint8Array(0));
+toHtmlWithHighlighter(Buffer.from("```ts\nconst typed = true\n```"), highlighter, {
+  theme: "github-dark",
+});
+// @ts-expect-error -- an ArrayBuffer must be wrapped in a Uint8Array first
+toHtml(new ArrayBuffer(8));

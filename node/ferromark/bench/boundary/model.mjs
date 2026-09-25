@@ -75,6 +75,8 @@ export function attribution(rounds) {
 // - `singlePassInput` has shipped: its pair is now napi-rs's `String`
 //   conversion, which the exports used before, and the exports' own single
 //   pass (`len`).
+// - `bytesInput` has shipped: `bytesLen` is the exports' own conversion of
+//   UTF-8 bytes, or on an older addon the prototype it replaced.
 // - `cachedRenderer` has shipped: its pair is now `toHtml` with a renderer of
 //   its own, as the export ran before (`toHtmlFresh`), and the export itself.
 // - `externalOutput` hands over the buffer of a renderer of its own, so it
@@ -99,6 +101,36 @@ export function candidates(rounds) {
     const savedNs = median(rounds.map((lane) => lane[current] - lane[candidate]));
     const relative = savedNs / median(rounds.map((lane) => lane[baseline]));
     result[name] = { baseline, relative, savedNs };
+  }
+  return result;
+}
+
+// Each public API called with the document as a string and as UTF-8 bytes,
+// as [string lane, bytes lane].
+const bytesPairs = {
+  "Renderer.toHtml": ["rendererToHtml", "rendererToHtmlBytes"],
+  toHtml: ["toHtml", "toHtmlBytes"],
+  toHtmlBuffer: ["toHtmlBuffer", "toHtmlBufferBytes"],
+};
+export const bytesApiNames = Object.keys(bytesPairs);
+
+/**
+ * Per public API: the median call with a string and with bytes, and the
+ * paired per-round saving of bytes (string minus bytes) as a share of the
+ * string call. An addon that does not take bytes has none.
+ */
+export function bytesInput(rounds) {
+  const result = {};
+  for (const [api, [string, bytes]] of Object.entries(bytesPairs)) {
+    if (!(bytes in rounds[0])) continue;
+    const stringNs = median(rounds.map((lane) => lane[string]));
+    const savedNs = median(rounds.map((lane) => lane[string] - lane[bytes]));
+    result[api] = {
+      bytesNs: median(rounds.map((lane) => lane[bytes])),
+      relative: savedNs / stringNs,
+      savedNs,
+      stringNs,
+    };
   }
   return result;
 }
