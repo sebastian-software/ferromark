@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.0](https://github.com/sebastian-software/ferromark/compare/v2.1.2...v2.2.0) (2026-09-25)
+
+
+### Features
+
+* **node:** accept UTF-8 bytes as Markdown input ([#441](https://github.com/sebastian-software/ferromark/issues/441)) ([7371efe](https://github.com/sebastian-software/ferromark/commit/7371efef2e1393d1f3e50edbe712df5cfe481401))
+
+
+### Performance Improvements
+
+* **node:** convert input strings in one pass ([#437](https://github.com/sebastian-software/ferromark/issues/437)) ([88e5e31](https://github.com/sebastian-software/ferromark/commit/88e5e31cfbb972f9355effb05f430e5952c61edf))
+* **node:** pass options to the addon in a compact form ([#439](https://github.com/sebastian-software/ferromark/issues/439)) ([2f283d4](https://github.com/sebastian-software/ferromark/commit/2f283d4e4e7398c9fad64cfc77e45f672eac0900))
+* **node:** render one-shot calls without options on a kept per-thread renderer ([#440](https://github.com/sebastian-software/ferromark/issues/440)) ([241944e](https://github.com/sebastian-software/ferromark/commit/241944ea35c11046abec0f2608d6d1a6361b1b41))
+
 ## [2.1.2](https://github.com/sebastian-software/ferromark/compare/v2.1.1...v2.1.2) (2026-09-24)
 
 
