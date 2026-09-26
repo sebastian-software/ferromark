@@ -30,6 +30,10 @@ and allocator lifetimes. [Node.js pipelines](/node/pipelines) cover strings,
 Buffers, metadata, and reusable renderers. Both support optional front-matter
 extraction; their API names and defaults differ.
 
+Rust applications that need to change a parsed document can opt into
+[ordered passes over the arena AST](/rust/transforms). This Rust extension is
+not exposed by the current Node.js bindings.
+
 For deployment under a subpath, configure site routing explicitly. Check links,
 images, and raw HTML URLs on representative pages. See [rendering and trust](/guide/rendering)
 and [configuration](/guide/configuration).

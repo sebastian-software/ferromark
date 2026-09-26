@@ -7,6 +7,7 @@ export const documentationSections = [
       ["Start with Rust", "/rust/getting-started"],
       ["Configuration", "/rust/configuration"],
       ["Content pipelines", "/rust/pipelines"],
+      ["AST transforms", "/rust/transforms"],
       ["Code rendering", "/rust/highlighting"],
       ["MDX integration", "/rust/mdx"],
       ["MDX examples", "/rust/mdx-examples"],

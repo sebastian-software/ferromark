@@ -30,4 +30,5 @@ export default [
   route("rust/mdx", "routes/rust/mdx.mdx"),
   route("rust/mdx-examples", "routes/rust/mdx-examples.mdx"),
   route("rust/pipelines", "routes/rust/pipelines.mdx"),
+  route("rust/transforms", "routes/rust/transforms.mdx"),
 ] satisfies RouteConfig
