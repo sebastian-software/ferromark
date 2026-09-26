@@ -27,7 +27,10 @@ use super::autolink::FirstByteIndex;
 use super::heading::{HeadingIdPlanner, PlannedId};
 use super::options::{HtmlRendererOptions, RendererOptions};
 
-pub use hooks::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, NoHtmlRenderHooks};
+pub use hooks::{
+    CodeHighlightInput, HighlightedCodeBlock, HtmlRenderContext, HtmlRenderControl,
+    HtmlRenderHooks, NoHtmlRenderHooks,
+};
 
 /// Stateful HTML renderer for Markdown AST documents.
 ///
