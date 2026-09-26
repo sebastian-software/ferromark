@@ -15,7 +15,8 @@ use ferromark::{
     ast::{Node, Visit},
 };
 use ferromark_transforms::{
-    TransformContext, TransformPass, TypographyLanguage, TypographyOptions, TypographyPass,
+    EmojiShortcodesPass, GitHubReferencesPass, TransformContext, TransformPipeline,
+    TypographyLanguage, TypographyOptions, TypographyPass,
 };
 use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
 use napi::{Env, JsString};
@@ -45,6 +46,15 @@ pub struct TypographyConfig {
     pub language: Option<String>,
     pub dashes: Option<bool>,
     pub ellipses: Option<bool>,
+}
+
+#[napi(object)]
+pub struct NativePassConfig {
+    pub kind: Option<String>,
+    pub language: Option<String>,
+    pub dashes: Option<bool>,
+    pub ellipses: Option<bool>,
+    pub repository: Option<String>,
 }
 
 #[napi(object)]
@@ -80,6 +90,7 @@ pub struct Options {
     pub mdx: Option<bool>,
     pub link_base_path: Option<String>,
     pub typography: Option<TypographyConfig>,
+    pub passes: Option<Vec<NativePassConfig>>,
 }
 
 fn core_options(options: Option<Options>) -> Result<CoreOptions> {
@@ -88,7 +99,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         mut html,
         mut heading_level_offset,
         mut heading_id_prefix,
-        mut typography,
+        mut pipeline,
     } = addon_defaults();
     if let Some(options) = options {
         if let Some(policy) = options.render_policy {
@@ -162,7 +173,15 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             html.base_url = base.into();
             html.convert_md_links = true;
         }
-        if let Some(config) = options.typography {
+        let typography_config = options.typography;
+        let pass_configs = options.passes;
+        if typography_config.is_some() && pass_configs.is_some() {
+            return Err(Error::new(
+                Status::InvalidArg,
+                "typography cannot be configured alongside ordered passes; put typography in passes",
+            ));
+        }
+        if let Some(config) = typography_config {
             let language = config.language.ok_or_else(|| {
                 Error::new(
                     Status::InvalidArg,
@@ -179,7 +198,12 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             if let Some(enabled) = config.ellipses {
                 resolved = resolved.with_ellipses(enabled);
             }
-            typography = Some(resolved);
+            pipeline.add(TypographyPass::new(resolved));
+        }
+        if let Some(configs) = pass_configs {
+            for (index, config) in configs.into_iter().enumerate() {
+                append_native_pass(&mut pipeline, config, index)?;
+            }
         }
     }
     Ok(CoreOptions {
@@ -187,8 +211,94 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         html,
         heading_level_offset,
         heading_id_prefix,
-        typography,
+        pipeline,
     })
+}
+
+fn append_native_pass(
+    pipeline: &mut TransformPipeline,
+    config: NativePassConfig,
+    index: usize,
+) -> Result<()> {
+    let option = |name: &str| format!("passes[{index}].{name}");
+    let kind = config.kind.ok_or_else(|| {
+        Error::new(
+            Status::InvalidArg,
+            format!("{} is required", option("kind")),
+        )
+    })?;
+
+    match kind.as_str() {
+        "typography" => {
+            if config.repository.is_some() {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    format!(
+                        "{} is only valid for githubReferences",
+                        option("repository")
+                    ),
+                ));
+            }
+            let language = config.language.ok_or_else(|| {
+                Error::new(
+                    Status::InvalidArg,
+                    format!("{} is required for typography", option("language")),
+                )
+            })?;
+            let language = language
+                .parse::<TypographyLanguage>()
+                .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+            let mut options = TypographyOptions::new(language);
+            if let Some(enabled) = config.dashes {
+                options = options.with_dashes(enabled);
+            }
+            if let Some(enabled) = config.ellipses {
+                options = options.with_ellipses(enabled);
+            }
+            pipeline.add(TypographyPass::new(options));
+        }
+        "githubReferences" => {
+            if config.language.is_some() || config.dashes.is_some() || config.ellipses.is_some() {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    format!("{} only accepts kind and repository", option("kind")),
+                ));
+            }
+            let repository = config.repository.ok_or_else(|| {
+                Error::new(
+                    Status::InvalidArg,
+                    format!("{} is required for githubReferences", option("repository")),
+                )
+            })?;
+            let pass = GitHubReferencesPass::new(&repository)
+                .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+            pipeline.add(pass);
+        }
+        "emojiShortcodes" => {
+            if config.language.is_some()
+                || config.dashes.is_some()
+                || config.ellipses.is_some()
+                || config.repository.is_some()
+            {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    format!("{} only accepts kind", option("kind")),
+                ));
+            }
+            pipeline.add(EmojiShortcodesPass::new());
+        }
+        _ => {
+            return Err(Error::new(
+                Status::InvalidArg,
+                format!(
+                    "{} must be 'githubReferences', 'emojiShortcodes', or 'typography'",
+                    option("kind")
+                ),
+            ));
+        }
+    }
+
+    Ok(())
 }
 
 fn parse_error(error: ferromark::ParseError) -> Error {
@@ -270,7 +380,7 @@ pub struct Renderer {
     parser: ParserOptions,
     html: HtmlRenderer,
     html_options: Option<ferromark::HtmlRendererOptions>,
-    typography: Option<TypographyPass>,
+    pipeline: TransformPipeline,
 }
 
 #[napi]
@@ -278,7 +388,7 @@ impl Renderer {
     #[napi(constructor, catch_unwind)]
     pub fn new(options: Option<Options>) -> Result<Self> {
         let options = core_options(options)?;
-        let html_options = options.typography.map(|_| options.html.clone());
+        let html_options = (!options.pipeline.is_empty()).then(|| options.html.clone());
         let html = HtmlRenderer::with_options(options.html)
             .with_heading_level_offset(options.heading_level_offset)
             .try_with_heading_id_prefix(options.heading_id_prefix)
@@ -288,7 +398,7 @@ impl Renderer {
             parser: options.parser,
             html,
             html_options,
-            typography: options.typography.map(TypographyPass::new),
+            pipeline: options.pipeline,
         })
     }
 
@@ -301,6 +411,7 @@ impl Renderer {
         heading_id_prefix: Option<String>,
         link_base_path: Option<String>,
         typography: Option<TypographyConfig>,
+        passes: Option<Vec<NativePassConfig>>,
     ) -> Result<Self> {
         let options = packed::unpack(
             set,
@@ -309,6 +420,7 @@ impl Renderer {
             heading_id_prefix,
             link_base_path,
             typography,
+            passes,
         );
         Self::new(Some(options))
     }
@@ -349,10 +461,10 @@ impl Renderer {
         let mut document = Parser::with_options(&self.allocator, markdown, self.parser.clone())
             .parse()
             .map_err(parse_error)?;
-        if let (Some(pass), Some(html_options)) = (&mut self.typography, self.html_options.as_ref())
-        {
+        if let Some(html_options) = self.html_options.as_ref() {
             let context = TransformContext::new(&self.allocator, markdown, html_options);
-            pass.apply(&mut document, &context)
+            self.pipeline
+                .run(&mut document, &context)
                 .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
         }
         Ok(self.html.render_borrowed(&document))
@@ -503,17 +615,18 @@ impl HtmlRenderHooks for CallbackRenderer<'_> {
 
 fn render_document(
     markdown: &str,
-    options: CoreOptions,
+    mut options: CoreOptions,
     callback: Option<CodeCallback<'_>>,
 ) -> Result<TransformResult> {
     let allocator = Allocator::for_source_len(markdown.len());
     let mut document = Parser::with_options(&allocator, markdown, options.parser)
         .parse()
         .map_err(parse_error)?;
-    if let Some(typography_options) = options.typography {
+    if !options.pipeline.is_empty() {
         let context = TransformContext::new(&allocator, markdown, &options.html);
-        let mut pass = TypographyPass::new(typography_options);
-        pass.apply(&mut document, &context)
+        options
+            .pipeline
+            .run(&mut document, &context)
             .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
     }
     let mut metadata = Metadata {

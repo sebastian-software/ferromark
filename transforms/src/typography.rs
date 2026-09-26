@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 use ferromark::ast::{Document, Node, Span};
 
+use crate::prose::raw_html_text_spans;
 use crate::{BoxError, TransformContext, TransformPass, text_runs};
 
 /// A supported language for the optional typography pass.
@@ -197,7 +198,13 @@ impl TransformPass for TypographyPass {
         document: &mut Document<'arena>,
         context: &TransformContext<'arena>,
     ) -> Result<(), BoxError> {
-        transform_block_children(&mut document.children, context, self.options);
+        let raw_html_spans = raw_html_text_spans(document, true);
+        transform_block_children(
+            &mut document.children,
+            context,
+            self.options,
+            &raw_html_spans,
+        );
         Ok(())
     }
 }
@@ -301,6 +308,7 @@ fn transform_block_children<'arena>(
     nodes: &mut [Node<'arena>],
     context: &TransformContext<'arena>,
     options: TypographyOptions,
+    raw_html_spans: &[Span],
 ) {
     let mut cursor = 0;
     while cursor < nodes.len() {
@@ -310,9 +318,9 @@ fn transform_block_children<'arena>(
             while cursor < nodes.len() && is_inline_node(&nodes[cursor]) {
                 cursor += 1;
             }
-            transform_inline_children(&mut nodes[start..cursor], context, options);
+            transform_inline_children(&mut nodes[start..cursor], context, options, raw_html_spans);
         } else {
-            transform_block_node(&mut nodes[cursor], context, options);
+            transform_block_node(&mut nodes[cursor], context, options, raw_html_spans);
             cursor += 1;
         }
     }
@@ -322,41 +330,55 @@ fn transform_block_node<'arena>(
     node: &mut Node<'arena>,
     context: &TransformContext<'arena>,
     options: TypographyOptions,
+    raw_html_spans: &[Span],
 ) {
     match node {
-        Node::Paragraph(node) => transform_inline_children(&mut node.children, context, options),
-        Node::Heading(node) => transform_inline_children(&mut node.children, context, options),
-        Node::BlockQuote(node) => transform_block_children(&mut node.children, context, options),
+        Node::Paragraph(node) => {
+            transform_inline_children(&mut node.children, context, options, raw_html_spans);
+        }
+        Node::Heading(node) => {
+            transform_inline_children(&mut node.children, context, options, raw_html_spans);
+        }
+        Node::BlockQuote(node) => {
+            transform_block_children(&mut node.children, context, options, raw_html_spans);
+        }
         Node::List(node) => {
             for item in &mut node.children {
-                transform_block_children(&mut item.children, context, options);
+                transform_block_children(&mut item.children, context, options, raw_html_spans);
             }
         }
-        Node::ListItem(node) => transform_block_children(&mut node.children, context, options),
+        Node::ListItem(node) => {
+            transform_block_children(&mut node.children, context, options, raw_html_spans);
+        }
         Node::Table(node) => {
             if let Some(attributes) = &mut node.attributes {
-                transform_inline_children(&mut attributes.caption, context, options);
+                transform_inline_children(
+                    &mut attributes.caption,
+                    context,
+                    options,
+                    raw_html_spans,
+                );
             }
             for row in &mut node.children {
                 for cell in &mut row.children {
-                    transform_inline_children(&mut cell.children, context, options);
+                    transform_inline_children(&mut cell.children, context, options, raw_html_spans);
                 }
             }
         }
         Node::DefinitionList(node) => {
-            transform_block_children(&mut node.children, context, options);
+            transform_block_children(&mut node.children, context, options, raw_html_spans);
         }
         Node::DefinitionListTerm(node) => {
-            transform_inline_children(&mut node.children, context, options);
+            transform_inline_children(&mut node.children, context, options, raw_html_spans);
         }
         Node::DefinitionListDefinition(node) => {
-            transform_block_children(&mut node.children, context, options);
+            transform_block_children(&mut node.children, context, options, raw_html_spans);
         }
         Node::FootnoteDefinition(node) => {
-            transform_block_children(&mut node.children, context, options);
+            transform_block_children(&mut node.children, context, options, raw_html_spans);
         }
         Node::MdxJsxFlowElement(node) => {
-            transform_block_children(&mut node.children, context, options);
+            transform_block_children(&mut node.children, context, options, raw_html_spans);
         }
         Node::ThematicBreak(_)
         | Node::CodeBlock(_)
@@ -409,9 +431,10 @@ fn transform_inline_children<'arena>(
     nodes: &mut [Node<'arena>],
     context: &TransformContext<'arena>,
     options: TypographyOptions,
+    raw_html_spans: &[Span],
 ) {
     let mut items = Vec::new();
-    collect_inline_items(nodes, context, &mut items);
+    collect_inline_items(nodes, context, raw_html_spans, &mut items);
     let next_after = next_char_after_items(&items);
     let mut state = QuoteState::default();
     let mut replacements = Vec::new();
@@ -444,6 +467,7 @@ fn transform_inline_children<'arena>(
 fn collect_inline_items<'arena>(
     nodes: &[Node<'arena>],
     context: &TransformContext<'arena>,
+    raw_html_spans: &[Span],
     items: &mut Vec<InlineItem<'arena>>,
 ) {
     let mut protected_by_node: Vec<Vec<Range<usize>>> =
@@ -451,7 +475,15 @@ fn collect_inline_items<'arena>(
 
     for run in text_runs(nodes) {
         let node_range = run.node_range();
-        let protected = run.protected_url_ranges(context);
+        let run_span = run.source_span();
+        let is_raw_html = raw_html_spans
+            .iter()
+            .any(|span| run_span.start < span.end && span.start < run_span.end);
+        let protected = if is_raw_html {
+            std::iter::once(0..run.value().len()).collect()
+        } else {
+            run.protected_url_ranges(context)
+        };
         let mut byte_cursor = 0;
 
         for node_index in node_range.clone() {
@@ -477,17 +509,33 @@ fn collect_inline_items<'arena>(
                 protected: std::mem::take(&mut protected_by_node[index]),
                 escaped: escaped_source_ranges(context.source(), text.span, text.value),
             }),
-            Node::Emphasis(node) => collect_inline_items(&node.children, context, items),
-            Node::Strong(node) => collect_inline_items(&node.children, context, items),
-            Node::Highlight(node) => collect_inline_items(&node.children, context, items),
-            Node::Delete(node) => collect_inline_items(&node.children, context, items),
-            Node::Superscript(node) => collect_inline_items(&node.children, context, items),
-            Node::Subscript(node) => collect_inline_items(&node.children, context, items),
-            Node::MdxJsxTextElement(node) => collect_inline_items(&node.children, context, items),
+            Node::Emphasis(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
+            Node::Strong(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
+            Node::Highlight(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
+            Node::Delete(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
+            Node::Superscript(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
+            Node::Subscript(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
+            Node::MdxJsxTextElement(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
             Node::Link(node) if is_url_label(node.url, &node.children) => {
                 items.push(InlineItem::Boundary);
             }
-            Node::Link(node) => collect_inline_items(&node.children, context, items),
+            Node::Link(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
             Node::Break(_) => items.push(InlineItem::SoftBreak),
             Node::InlineCode(_)
             | Node::InlineMath(_)

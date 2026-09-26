@@ -75,6 +75,13 @@ All properties are optional. Syntax examples and output semantics live in the
 | `cjkEmphasis`       | `false`       | CJK emphasis rules                                                     |
 | `mdx`               | `false`       | MDX syntax capture and static island output                            |
 | `typography`        | unset         | Optional language-aware prose punctuation transform                    |
+| `passes`            | unset         | Ordered GitHub-reference, emoji-shortcode, and typography transforms   |
+
+Use `passes` when you need more than one transform or need to control their
+order. Its entries use `kind: "githubReferences"` (with an explicit
+`repository`), `kind: "emojiShortcodes"`, or `kind: "typography"`. Do not set
+the separate `typography` option at the same time; put typography in `passes`
+to make its position explicit.
 
 `typography` requires a `language` from `en`, `es`, `fr`, `pt`, `de`, `it`,
 `nl`, `pl`, `ru`, or `uk`. The `dashes` and `ellipses` switches can disable
