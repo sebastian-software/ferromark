@@ -220,6 +220,15 @@ impl HtmlRenderer {
 
         self.code_block_index += 1;
         let state = self.build_code_block_state(code_block, self.code_block_index);
+        self.write_code_block_state(code_block, &state, None);
+    }
+
+    pub(in crate::renderer::html::renderer) fn write_code_block_state(
+        &mut self,
+        code_block: &CodeBlock<'_>,
+        state: &super::super::code_annotations::CodeBlockRenderState,
+        highlighted_lines: Option<&[String]>,
+    ) {
         let block_classes = state.block_classes();
 
         self.write("<pre");
@@ -257,7 +266,9 @@ impl HtmlRenderer {
         }
         self.write(">");
         if state.needs_line_wrappers() {
-            self.write_code_lines(&state);
+            self.write_code_lines(state, highlighted_lines);
+        } else if let Some(lines) = highlighted_lines {
+            self.write_highlighted_lines(lines);
         } else {
             self.write_escaped(code_block.value);
         }

@@ -16,8 +16,91 @@ use super::super::code_annotations::{
 };
 use super::super::heading::slugify_heading_into;
 use super::HtmlRenderer;
+use super::hooks::{CodeHighlightInput, HtmlRenderHooks};
 
 impl HtmlRenderer {
+    pub(in crate::renderer::html::renderer) fn render_code_block_with_hooks<H: HtmlRenderHooks>(
+        &mut self,
+        code_block: &CodeBlock<'_>,
+        hooks: &mut H,
+    ) {
+        if !self.options.code_annotations || !self.options.code_fence_metadata {
+            let language = if self.options.code_fence_metadata {
+                super::super::code_annotations::normalize_code_block_language(code_block.lang)
+            } else {
+                code_block
+                    .lang
+                    .map(str::trim)
+                    .filter(|lang| !lang.is_empty())
+            };
+            let highlighted = hooks.highlight_code_block(CodeHighlightInput {
+                code: code_block.value,
+                language,
+                raw_language: code_block.lang,
+                raw_meta: code_block.meta,
+            });
+            if let Some(highlighted) = highlighted
+                && highlighted.lines.len() == code_block.value.split('\n').count()
+            {
+                self.write_highlighted_plain_code_block(code_block, language, &highlighted.lines);
+            } else {
+                self.render_code_block(code_block);
+            }
+            return;
+        }
+
+        let state = self.build_code_block_state(code_block, self.code_block_index + 1);
+        let code = state
+            .lines
+            .iter()
+            .map(|line| line.value.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let highlighted = hooks.highlight_code_block(CodeHighlightInput {
+            code: &code,
+            language: state.language.as_deref(),
+            raw_language: code_block.lang,
+            raw_meta: code_block.meta,
+        });
+        let highlighted_lines = highlighted
+            .as_ref()
+            .filter(|highlighted| highlighted.lines.len() == state.lines.len())
+            .map(|highlighted| highlighted.lines.as_slice());
+        self.code_block_index += 1;
+        self.write_code_block_state(code_block, &state, highlighted_lines);
+    }
+
+    fn write_highlighted_plain_code_block(
+        &mut self,
+        code_block: &CodeBlock<'_>,
+        language: Option<&str>,
+        lines: &[String],
+    ) {
+        self.write("<pre");
+        self.write_source_span_attr(code_block.span);
+        self.write("><code");
+        if let Some(language) = language {
+            self.write(" class=\"language-");
+            self.write_escaped(language);
+            self.write("\"");
+        }
+        self.write(">");
+        self.write_highlighted_lines(lines);
+        self.write("</code></pre>\n");
+    }
+
+    pub(in crate::renderer::html::renderer) fn write_highlighted_lines(
+        &mut self,
+        lines: &[String],
+    ) {
+        for (index, line) in lines.iter().enumerate() {
+            if index > 0 {
+                self.write("\n");
+            }
+            self.write(line);
+        }
+    }
+
     /// Builds the normalized render state for one fenced code block.
     ///
     /// The renderer only pays the expensive annotation parsers when annotation
@@ -165,6 +248,7 @@ impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn write_code_lines(
         &mut self,
         state: &CodeBlockRenderState,
+        highlighted_lines: Option<&[String]>,
     ) {
         let has_focus = state.has_focus();
 
@@ -223,7 +307,11 @@ impl HtmlRenderer {
             }
 
             self.write(">");
-            self.write_escaped(&line.value);
+            if let Some(highlighted) = highlighted_lines {
+                self.write(&highlighted[index]);
+            } else {
+                self.write_escaped(&line.value);
+            }
             self.write("</span>");
 
             if index + 1 < state.lines.len() {

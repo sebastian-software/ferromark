@@ -43,6 +43,46 @@ pub trait HtmlRenderHooks {
         let _ = cx;
         HtmlRenderControl::Default
     }
+
+    /// Supplies trusted, tag-balanced inner HTML for each normalized code line.
+    ///
+    /// `input.code` is the text Ferromark will display, after any enabled inline
+    /// annotation directives have been removed. The input also carries the
+    /// normalized language and both original fence fields.
+    /// Return `None` to use escaped plain code. A result with the wrong number
+    /// of lines also falls back to escaped plain code. The returned HTML is
+    /// inserted without escaping, so implementations must escape source text
+    /// and must not include `<pre>`, `<code>`, or cross-line open tags.
+    /// Ferromark continues to write the block wrapper and line metadata.
+    fn highlight_code_block(
+        &mut self,
+        input: CodeHighlightInput<'_>,
+    ) -> Option<HighlightedCodeBlock> {
+        let _ = input;
+        None
+    }
+}
+
+/// Code and fence information offered to an opt-in code highlighter.
+#[derive(Clone, Copy, Debug)]
+pub struct CodeHighlightInput<'a> {
+    /// Displayed code, after any enabled inline annotation directives.
+    pub code: &'a str,
+    /// Normalized language used by Ferromark's `language-*` class.
+    pub language: Option<&'a str>,
+    /// Original language/info field, including any inline metadata suffix.
+    pub raw_language: Option<&'a str>,
+    /// Original metadata field after the language/info field.
+    pub raw_meta: Option<&'a str>,
+}
+
+/// Trusted inner HTML for one code block, with one entry per displayed line.
+///
+/// Line entries must be independently tag-balanced. They are inserted raw,
+/// while Ferromark escapes the block's attributes and metadata as usual.
+pub struct HighlightedCodeBlock {
+    /// Highlighted HTML for each line, including a final empty line if present.
+    pub lines: Vec<String>,
 }
 
 /// Empty hook implementation for callers that want the hook entry point shape
@@ -207,7 +247,7 @@ impl HtmlRenderer {
             Node::BlockQuote(node) => self.render_block_quote_with_hooks(node, hooks),
             Node::List(node) => self.render_list_with_hooks(node, hooks),
             Node::ListItem(node) => self.render_list_item_with_hooks(node, hooks),
-            Node::CodeBlock(node) => self.render_code_block(node),
+            Node::CodeBlock(node) => self.render_code_block_with_hooks(node, hooks),
             Node::MathBlock(node) => self.render_math_block(node),
             Node::Html(node) => self.render_html(node),
             Node::Table(node) => self.render_table_with_hooks(node, hooks),

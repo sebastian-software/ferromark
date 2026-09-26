@@ -97,6 +97,7 @@ covers metadata, Buffers, reusable renderers, and highlighters.
 - [Configuration](https://ferromark.dev/guide/configuration) — syntax and output policies.
 - [Content pipelines](https://ferromark.dev/guide/pipelines) — document metadata, navigation, and presentation.
 - [Rendering and trust](https://ferromark.dev/guide/rendering) — defaults and input boundaries.
+- [Native code highlighting](https://github.com/sebastian-software/ferromark/blob/main/docs/native-code-highlighting.md) — Rust hook contract and Ferriki integration status.
 - [Architecture](https://ferromark.dev/guide/architecture) — arena AST, modules, and integration points.
 - [MDX boundaries](https://ferromark.dev/guide/mdx) — syntax capture and static output.
 
