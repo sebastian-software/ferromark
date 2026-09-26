@@ -8,6 +8,7 @@
 //! trained configuration from drifting away from the shipped one.
 
 use ferromark::{HtmlRendererOptions, ParserOptions};
+use ferromark_transforms::TransformPipeline;
 
 /// A resolved parser and renderer pair, as every addon entry point uses it.
 pub struct CoreOptions {
@@ -15,6 +16,7 @@ pub struct CoreOptions {
     pub html: HtmlRendererOptions,
     pub heading_level_offset: i32,
     pub heading_id_prefix: String,
+    pub pipeline: TransformPipeline,
 }
 
 /// The configuration the addon uses when the caller passes no options.
@@ -35,5 +37,6 @@ pub fn addon_defaults() -> CoreOptions {
         html,
         heading_level_offset: 0,
         heading_id_prefix: String::new(),
+        pipeline: TransformPipeline::new(),
     }
 }

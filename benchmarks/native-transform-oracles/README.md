@@ -50,17 +50,21 @@ comparison with the dependency version cited in #403.
 
 ## Cases
 
-Typography observations execute SmartyPants and Typograf across their configured
-English, Spanish, French, German, Italian, Dutch, Polish, Russian, and Ukrainian
-locales. A missing Portuguese Typograf oracle is recorded above rather than
-represented as a Typograf result.
+Typography fixtures include generic SmartyPants cases and Typograf cases for
+English, Spanish, French, German, Italian, Dutch, Polish, Russian, Ukrainian,
+Danish, Finnish, and Swedish. The pinned Typograf package does not support
+Portuguese, Czech, or Norwegian Bokmål; those native profiles are reviewed
+separately rather than represented as Typograf results.
 
 Emoji observations compare the two released plugin/data chains with known
 shortcodes, aliases, unknown and differently cased names, overlap, code and
 link content, and bare URL text with and without GFM parser autolinks. Cases
 whose result depends on unresolved protected-content or provenance rules are
-observations only. The remaining #400 rule review and owner confirmation are
-still open; native URL, protected-content, and provenance policy stays with #399.
+observations only. The native implementation policy selected from these
+observations is recorded in
+[`docs/decisions/2026-09-26-native-github-and-emoji-passes.md`](../../docs/decisions/2026-09-26-native-github-and-emoji-passes.md).
+Issue #400 remains the shared qualification and acceptance tracker; this data
+does not by itself close it.
 
 ## Checks and regeneration
 

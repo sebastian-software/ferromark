@@ -70,6 +70,8 @@ const fields = [
   ["cjkEmphasis", "boolean"],
   ["mdx", "boolean"],
   ["linkBasePath", "string"],
+  ["typography", "object"],
+  ["passes", "array"],
 ];
 const keys = fields.map(([key]) => key);
 
@@ -110,7 +112,8 @@ const probe = [
   "",
   "// line comment",
   "",
-  "A**強調。**B",
+  "A**強調。**B and :rocket:.",
+  '"A quote" -- it\'s fine...',
   "",
   "<Component />",
   "",
@@ -299,9 +302,17 @@ function declaredFields() {
     .split("\n")
     .filter((line) => line.trim() !== "" && !/^\s*(?:\/\*\*|\*)/.test(line))
     .map((line) => {
-      const member = /^ {2}(\w+)\?: (boolean|number|string)$/.exec(line);
+      const member =
+        /^ {2}(\w+)\?: (boolean|number|string|TypographyConfig|Array<NativePassConfig>)$/.exec(
+          line,
+        );
       assert.ok(member, `unexpected Options member in native.d.ts: ${line}`);
-      return [member[1], member[2]];
+      const type = member[2].startsWith("TypographyConfig")
+        ? "object"
+        : member[2].startsWith("Array<NativePassConfig>")
+          ? "array"
+          : member[2];
+      return [member[1], type];
     });
 }
 
@@ -332,13 +343,25 @@ test("the packed path gets every declared field once, in declaration order", () 
   const declared = declaredFields();
   const names = declared.map(([key]) => key);
   // A valid value for every field, so napi-rs and the facade read them all.
-  const valid = () =>
-    Object.fromEntries(
+  const valid = () => {
+    const options = Object.fromEntries(
       declared.map(([key, type]) => [
         key,
-        key === "renderPolicy" ? "trusted" : { boolean: true, number: 1, string: "" }[type],
+        key === "renderPolicy"
+          ? "trusted"
+          : {
+              boolean: true,
+              number: 1,
+              string: "",
+              object: { language: "en" },
+              array: [],
+            }[type],
       ]),
     );
+    // Legacy typography and the ordered pass array are mutually exclusive.
+    options.typography = undefined;
+    return options;
+  };
   for (const entry of entries) {
     const facadeGets = [];
     const directGets = [];
@@ -354,6 +377,8 @@ test("the probe document shows every option", () => {
   // and `tableColumnNames` only with a colgroup.
   const bases = [{}, { renderPolicy: "trusted" }, { tableColgroup: true }];
   const choices = {
+    typography: [{ language: "en" }, { language: "ru", dashes: false, ellipses: false }],
+    passes: [[{ kind: "emojiShortcodes" }]],
     headingIdPrefix: ["", "p-"],
     headingOffset: [0, 1],
     linkBasePath: ["", "/docs"],
@@ -392,7 +417,13 @@ test("packs every boolean field in combination with trusted rendering", () => {
 test("packs every field at once", () => {
   const all = {};
   for (const [key, type] of fields) {
-    all[key] = { boolean: true, number: 1, string: "" }[type];
+    all[key] = {
+      boolean: true,
+      number: 1,
+      string: "",
+      object: { language: "en" },
+      array: [],
+    }[type];
   }
   all.renderPolicy = "trusted";
   all.headingIdPrefix = "docs-";
@@ -410,6 +441,8 @@ const validValues = {
   number: [-2, -1, 0, 1, 2],
   renderPolicy: ["trusted", "untrusted"],
   string: ["", "docs-", "/docs", "/docs/"],
+  object: [{ language: "en" }, { language: "fr" }],
+  array: [[], [{ kind: "emojiShortcodes" }], [{ kind: "typography", language: "en" }]],
 };
 
 /** Half the fields set, mostly to valid values and sometimes to any value. */
@@ -672,6 +705,68 @@ test("runs getters once each, in napi-rs's order, and stops where napi-rs stops"
       });
     },
     "a changing getter",
+  );
+});
+
+test("packs nested typography fields once in native declaration order", () => {
+  assertEquivalent(
+    probe,
+    (log) => {
+      const typography = {};
+      for (const [key, value] of [
+        ["language", "en"],
+        ["dashes", false],
+        ["ellipses", true],
+      ]) {
+        Object.defineProperty(typography, key, {
+          get() {
+            log.push(`typography.${key}`);
+            return value;
+          },
+        });
+      }
+      const options = {};
+      Object.defineProperty(options, "typography", {
+        get() {
+          log.push("typography");
+          return typography;
+        },
+      });
+      return options;
+    },
+    "nested typography getters",
+  );
+});
+
+test("packs nested ordered-pass fields once in native declaration order", () => {
+  assertEquivalent(
+    probe,
+    (log) => {
+      const pass = {};
+      for (const [key, value] of [
+        ["kind", "typography"],
+        ["language", "en"],
+        ["dashes", true],
+        ["ellipses", true],
+        ["repository", undefined],
+      ]) {
+        Object.defineProperty(pass, key, {
+          get() {
+            log.push(`passes[0].${key}`);
+            return value;
+          },
+        });
+      }
+      const options = {};
+      Object.defineProperty(options, "passes", {
+        get() {
+          log.push("passes");
+          return [pass];
+        },
+      });
+      return options;
+    },
+    "nested ordered-pass getters",
   );
 });
 

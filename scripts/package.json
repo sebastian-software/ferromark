@@ -8,12 +8,15 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test": "node --test ./test-*.mjs",
+    "gemoji:data": "node ./generate-gemoji-data.mjs --write",
+    "gemoji:data:check": "node ./generate-gemoji-data.mjs",
     "reference:remark-github:fixtures": "node ./regenerate-remark-github-fixtures.mjs --write",
     "reference:transforms:fixtures": "node ./regenerate-transform-oracle-fixtures.mjs --write"
   },
   "devDependencies": {
     "@iarna/toml": "3.0.0",
     "@mavrin/remark-typograf": "2.1.6",
+    "gemoji": "8.1.0",
     "oxfmt": "0.57.0",
     "release-please": "17.6.0",
     "remark": "15.0.1",

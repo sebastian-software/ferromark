@@ -2,6 +2,42 @@ import type { Buffer } from "node:buffer";
 
 export type RenderPolicy = "untrusted" | "trusted";
 
+// oxlint-disable-next-line typescript/consistent-type-definitions -- keeps this public config structurally extensible
+export interface TypographyOptions {
+  /** One explicit supported language code; regional variants are not inferred. */
+  language:
+    | "cs"
+    | "da"
+    | "de"
+    | "en"
+    | "es"
+    | "fi"
+    | "fr"
+    | "it"
+    | "nb"
+    | "nl"
+    | "pl"
+    | "pt"
+    | "ru"
+    | "sv"
+    | "uk";
+  /** Convert locale-aware dash sequences. Default: on. */
+  dashes?: boolean;
+  /** Convert three consecutive periods to an ellipsis. Default: on. */
+  ellipses?: boolean;
+}
+
+/** One ordered, opt-in native transform pass. Passes run in array order. */
+export type NativePassOptions =
+  | {
+      kind: "typography";
+      language: TypographyOptions["language"];
+      dashes?: boolean;
+      ellipses?: boolean;
+    }
+  | { kind: "githubReferences"; repository: string }
+  | { kind: "emojiShortcodes" };
+
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
 export interface Options {
   tableAttributes?: boolean;
@@ -64,6 +100,10 @@ export interface Options {
    * Enables v2 site routing, including .md to index.html conversion. Default: unset.
    */
   linkBasePath?: string;
+  /** Apply explicit locale-aware typography after parsing. Default: off. */
+  typography?: TypographyOptions;
+  /** Run native transform passes in the given order. Cannot be combined with `typography`. */
+  passes?: NativePassOptions[];
 }
 
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging

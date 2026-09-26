@@ -1,0 +1,51 @@
+---
+title: Optional Typography
+order: 15
+---
+
+# Optional typography
+
+Ferromark preserves authored punctuation by default. An explicit typography
+pass can convert prose punctuation after parsing. It does not run in the core
+parser or renderer unless you opt in, and it never detects a document's
+language.
+
+## Node.js
+
+Choose one supported language in the `typography` option:
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml('"A *quoted* phrase"...', {
+  typography: { language: "en" },
+});
+```
+
+Supported language codes are `cs`, `da`, `de`, `en`, `es`, `fi`, `fr`, `it`,
+`nb`, `nl`, `pl`, `pt`, `ru`, `sv`, and `uk`. Set `dashes: false` or
+`ellipses: false` to disable either conversion independently.
+
+## Rust
+
+The optional `ferromark-transforms` crate provides `TypographyPass` for the
+native AST pipeline:
+
+```rust
+use ferromark_transforms::{
+    TransformPipeline, TypographyLanguage, TypographyOptions, TypographyPass,
+};
+
+let mut pipeline = TransformPipeline::new();
+pipeline.add(TypographyPass::new(TypographyOptions::new(
+    TypographyLanguage::English,
+)));
+pipeline.run(&mut document, &context)?;
+```
+
+In both APIs, the pass pairs quotes across ordinary inline markup and protects
+code, math, raw HTML, MDX expressions, image metadata, link destinations, and
+detected autolinks. Paragraphs and other block containers have independent
+quote context. Existing Unicode punctuation is preserved. The rules and
+locale-specific conventions are described in the
+[implementation guide](https://github.com/sebastian-software/ferromark/blob/main/docs/typography.md).

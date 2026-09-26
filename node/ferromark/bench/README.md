@@ -149,10 +149,10 @@ input, output and the bare call floor.
 ### Options
 
 napi-rs converts an `Options` object field by field: one
-`napi_get_named_property` and one `napi_typeof` for each of its 30 fields,
+`napi_get_named_property` and one `napi_typeof` for each of its 32 fields,
 present or not. The facade therefore reads the object itself, in the same order
 and with the same property gets, and passes the private `…Packed` exports a
-bitmask for `renderPolicy` and the boolean fields plus the three other values
+bitmask for `renderPolicy` and the boolean fields plus the five other values
 ([`node/native/src/packed.rs`](../../native/src/packed.rs)). The fixed table
 times both paths:
 

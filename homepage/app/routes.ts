@@ -18,6 +18,7 @@ export default [
   route("guide/pipelines", "routes/guide/pipelines.mdx"),
   route("guide/quick-start", "routes/guide/quick-start.mdx"),
   route("guide/rendering", "routes/guide/rendering.mdx"),
+  route("guide/typography", "routes/guide/typography.mdx"),
   route("guide/workflow-benchmarks", "routes/guide/workflow-benchmarks.mdx"),
   route("node/configuration", "routes/node/configuration.mdx"),
   route("node/deployment", "routes/node/deployment.mdx"),

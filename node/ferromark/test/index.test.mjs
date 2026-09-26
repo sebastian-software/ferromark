@@ -37,6 +37,128 @@ test("renders UTF-8 HTML directly into Node.js Buffers", () => {
   assert.equal(reusedOutput.toString("utf8"), "<h1>Grüße</h1>\n");
 });
 
+test("applies optional locale-aware typography across the public Node API", () => {
+  const source = '# "Hello **world**" -- it\'s 12 km...';
+  const expected =
+    '<h1 id="hello-world-it-s-12-km">“Hello <strong>world</strong>” — it’s 12 km…</h1>\n';
+  const options = { typography: { language: "en" } };
+
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(toHtmlBuffer(source, options).toString(), expected);
+  assert.equal(transform(source, options).html, expected);
+  assert.equal(
+    toHtmlWithHighlighter(source, { codeToHtml: () => "" }, { theme: "dark" }, options),
+    expected,
+  );
+
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(renderer.toHtml("plain"), "<p>plain</p>\n");
+  assert.equal(
+    toHtml(source),
+    '<h1 id="hello-world-it-s-12-km">&quot;Hello <strong>world</strong>&quot; -- it&#39;s 12 km...</h1>\n',
+  );
+
+  assert.equal(
+    toHtml('"Hello" -- it\'s fine...', {
+      typography: { language: "en", dashes: false, ellipses: false },
+    }),
+    "<p>“Hello” -- it’s fine...</p>\n",
+  );
+  assert.throws(() => toHtml("text", { typography: {} }), /typography\.language is required/);
+  assert.throws(
+    () => toHtml("text", { typography: { language: "en-US" } }),
+    /unsupported typography language/,
+  );
+});
+
+test("supports the new reviewed European typography profiles", () => {
+  const cases = [
+    ["cs", "„Hello“"],
+    ["da", "»Hello«"],
+    ["fi", "”Hello”"],
+    ["nb", "«Hello»"],
+    ["sv", "”Hello”"],
+  ];
+
+  for (const [language, expected] of cases) {
+    assert.equal(toHtml('"Hello"', { typography: { language } }), `<p>${expected}</p>\n`, language);
+  }
+});
+
+test("runs ordered GitHub, emoji, and typography passes across the public Node API", () => {
+  const markdown = 'Issue #42 :rocket: :woman_technologist: :heart: "quoted" -- done...';
+  const options = {
+    passes: [
+      { kind: "githubReferences", repository: "acme/widgets" },
+      { kind: "emojiShortcodes" },
+      { kind: "typography", language: "en" },
+    ],
+  };
+  const expected =
+    '<p>Issue <a href="https://github.com/acme/widgets/issues/42">#42</a> 🚀 👩‍💻 ❤️ “quoted” — done…</p>\n';
+  const highlighter = { codeToHtml: () => "<pre>unused</pre>" };
+
+  assert.equal(toHtml(markdown, options), expected);
+  assert.equal(toHtmlBuffer(markdown, options).toString("utf8"), expected);
+  assert.equal(transform(markdown, options).html, expected);
+  assert.equal(toHtmlWithHighlighter(markdown, highlighter, { theme: "dark" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(markdown, highlighter, { theme: "dark" }, options).html,
+    expected,
+  );
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(markdown), expected);
+  assert.equal(renderer.toHtmlBuffer(markdown).toString("utf8"), expected);
+});
+
+test("validates ordered transform pass configuration", () => {
+  assert.throws(
+    () => toHtml("text", { passes: [{ kind: "githubReferences" }] }),
+    /passes\[0\]\.repository is required/,
+  );
+  assert.throws(
+    () => toHtml("text", { passes: [{ kind: "githubReferences", repository: "../repo" }] }),
+    /invalid GitHub repository/,
+  );
+  assert.throws(
+    () => toHtml("text", { passes: [{ kind: "unknown" }] }),
+    /passes\[0\]\.kind must be/,
+  );
+  assert.throws(
+    () => toHtml("text", { typography: { language: "en" }, passes: [] }),
+    /typography cannot be configured alongside ordered passes/,
+  );
+});
+
+test("pass order controls commit ranges and composes locale rules", () => {
+  const source = "Compare e2acebc...2aa9311.";
+  const repository = { kind: "githubReferences", repository: "ferromark/fixtures" };
+  const typography = { kind: "typography", language: "en" };
+  assert.equal(
+    toHtml(source, { passes: [repository, typography] }),
+    '<p>Compare <a href="https://github.com/ferromark/fixtures/compare/e2acebc...2aa9311">e2acebc…2aa9311</a>.</p>\n',
+  );
+  assert.equal(
+    toHtml(source, { passes: [typography, repository] }),
+    '<p>Compare <a href="https://github.com/ferromark/fixtures/commit/e2acebc">e2acebc</a>…<a href="https://github.com/ferromark/fixtures/commit/2aa9311">2aa9311</a>.</p>\n',
+  );
+  assert.equal(
+    toHtml("texte :smile: ;", {
+      passes: [{ kind: "emojiShortcodes" }, { kind: "typography", language: "fr" }],
+    }),
+    "<p>texte 😄 ;</p>\n",
+  );
+});
+
+test("transformed emoji heading text drives rendered IDs and metadata", () => {
+  const result = transform("# Ship it :rocket:", {
+    passes: [{ kind: "emojiShortcodes" }],
+  });
+  assert.equal(result.html, '<h1 id="ship-it">Ship it 🚀</h1>\n');
+  assert.deepEqual(result.headings, [{ level: 1, id: "ship-it", text: "Ship it 🚀" }]);
+});
+
 test("rejects non-string Markdown across every public render entry point", () => {
   const highlighter = { codeToHtml: () => "<pre><code></code></pre>\n" };
   const calls = [

@@ -209,7 +209,15 @@ pub fn options_packed(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
 ) -> Result<u32> {
-    let options = unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
+    let options = unpack(
+        set,
+        on,
+        heading_offset,
+        heading_id_prefix,
+        link_base_path,
+        None,
+        None,
+    );
     let options = core_options(Some(options))?;
     Ok(u32::from(black_box(options).html.sanitize))
 }

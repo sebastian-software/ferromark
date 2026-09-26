@@ -99,9 +99,11 @@ Reference footnotes have document-wide scope, including definitions in lists,
 block quotes, and Markdown blocks inside MDX components. References can precede
 their definitions. Code and raw HTML cannot define footnotes.
 
-V2 preserves authored punctuation. Automatic typography belongs in an optional,
-locale-aware document transform; the former English-oriented parser option has
-been removed. See the [typography decision](https://github.com/sebastian-software/ferromark/blob/main/docs/typography.md).
+V2 preserves authored punctuation by default. An optional, locale-aware
+typography pass is available after parsing in Rust and through the Node.js
+`typography` option. It never guesses a language. See the [typography guide](/guide/typography)
+for configuration and protected syntax; the former English-oriented parser
+option remains removed.
 
 Enable `ParserOptions::front_matter` to extract a leading `---` (YAML) or `+++`
 (TOML) metadata block into `document.front_matter`. It exposes the format, raw

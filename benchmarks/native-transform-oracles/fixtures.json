@@ -556,6 +556,123 @@
       "markdown": "She said «Hello» -- it's 12 km…\n"
     },
     {
+      "name": "typograf-da",
+      "reference": "typograf",
+      "source": "She said \"Hello\" -- it's 12 km...",
+      "options": {
+        "locale": [
+          "da"
+        ]
+      },
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "She said \"Hello\" -- it's 12 km..."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "She said »Hello« -- it’s 12 km…"
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "She said »Hello« -- it’s 12 km…\n"
+    },
+    {
+      "name": "typograf-fi",
+      "reference": "typograf",
+      "source": "She said \"Hello\" -- it's 12 km...",
+      "options": {
+        "locale": [
+          "fi"
+        ]
+      },
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "She said \"Hello\" -- it's 12 km..."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "She said ”Hello” -- it’s 12 km…"
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "She said ”Hello” -- it’s 12 km…\n"
+    },
+    {
+      "name": "typograf-sv",
+      "reference": "typograf",
+      "source": "She said \"Hello\" -- it's 12 km...",
+      "options": {
+        "locale": [
+          "sv"
+        ]
+      },
+      "parsedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "She said \"Hello\" -- it's 12 km..."
+              }
+            ]
+          }
+        ]
+      },
+      "transformedTree": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "type": "text",
+                "value": "She said ”Hello” -- it’s 12 km…"
+              }
+            ]
+          }
+        ]
+      },
+      "markdown": "She said ”Hello” -- it’s 12 km…\n"
+    },
+    {
       "name": "gemoji-known-alias-and-unknown",
       "reference": "gemoji",
       "source": "Known :rocket: and :+1:; unknown :not_a_real_shortcode:.",

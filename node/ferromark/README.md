@@ -78,6 +78,46 @@ const literalReferences = toHtml("[name]\n\n[name]: /target", {
 highlighter helpers. Inline notes do not require `footnotes: true`. Their output
 uses v2's existing footnote markup. Marked text does not enable code highlighting.
 
+## Optional typography
+
+Typography is an explicit post-parse pass. Set `typography.language` to one of
+`cs`, `da`, `de`, `en`, `es`, `fi`, `fr`, `it`, `nb`, `nl`, `pl`, `pt`,
+`ru`, `sv`, or `uk` to convert prose punctuation after parsing. It remains off
+when the option is omitted, and the core parser does not infer a language. See the
+[typography guide](../../docs/typography.md) for quote, spacing, dash, and
+ellipsis rules and protection boundaries.
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml('"A *quoted* phrase"...', {
+  typography: { language: "en" },
+});
+```
+
+## Ordered native transform passes
+
+`passes` composes optional built-in transformations after parsing. The array
+order determines how they see the document. It supports GitHub references with
+an explicit repository and the pinned emoji shortcode map; typography can also
+appear as a `kind: "typography"` pass. Do not combine `passes` with the legacy
+top-level `typography` option.
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml("Fixes #42 :rocket:", {
+  passes: [{ kind: "githubReferences", repository: "acme/widgets" }, { kind: "emojiShortcodes" }],
+});
+```
+
+GitHub references never infer the repository or access the network. Emoji
+shortcodes are case-sensitive; unknown names stay unchanged. Both are opt-in,
+preserve protected syntax and raw HTML, and use the regular renderer URL and
+escaping policy. The [native transform guide](../../transforms/README.md) and
+[reference decision](../../docs/decisions/2026-09-26-native-github-and-emoji-passes.md)
+describe supported forms and intentional differences from Remark plugins.
+
 Keep writing extensions off when their syntax is not needed. Disabled-option
 measurements were close to the pre-feature core; enabling unused syntax still
 costs several percent on ordinary documents and more on marker-heavy inputs.

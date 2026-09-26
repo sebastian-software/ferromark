@@ -38,6 +38,8 @@ const optionKeys = new Set([
   "definitionLists",
   "lineComments",
   "linkBasePath",
+  "typography",
+  "passes",
 ]);
 
 /** @param {import('./index.mjs').Options | null | undefined} options Options to validate. */
@@ -63,7 +65,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 30 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 32 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -74,9 +76,9 @@ function validateOptions(options) {
  * `renderPolicy` (bit 0) and the boolean fields (bits 1 to 26, in declaration
  * order, as `unpack` numbers them) take one bit each of `set` (present) and
  * `on` (its value; `'trusted'` for `renderPolicy`). `headingOffset`,
- * `headingIdPrefix` and `linkBasePath` keep their values. The native side
- * rebuilds `Options` and resolves it with the code the object path runs, so
- * later checks and their errors are shared.
+ * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
+ * values. The native side rebuilds `Options` and resolves it with the code the
+ * object path runs, so later checks and their errors are shared.
  *
  * napi-rs builds each conversion error from the value itself. For a value it
  * would reject, `rejected` holds a null-prototype object with just that field,
@@ -93,6 +95,10 @@ class PackedOptions {
   headingIdPrefix;
   /** @type {string | undefined} */
   linkBasePath;
+  /** @type {import('./index.mjs').TypographyOptions | null | undefined} */
+  typography;
+  /** @type {import('./index.mjs').NativePassOptions[] | null | undefined} */
+  passes;
   /** @type {import('./index.mjs').Options | undefined} */
   rejected;
   /** @type {string | undefined} */
@@ -147,7 +153,9 @@ class PackedOptions {
       this.flag("wikiLinks", 1 << 24, options.wikiLinks) &&
       this.flag("cjkEmphasis", 1 << 25, options.cjkEmphasis) &&
       this.flag("mdx", 1 << 26, options.mdx) &&
-      this.string("linkBasePath", options.linkBasePath)
+      this.string("linkBasePath", options.linkBasePath) &&
+      this.object("typography", options.typography) &&
+      this.array("passes", options.passes)
     );
   }
 
@@ -192,6 +200,24 @@ class PackedOptions {
   /** @param {"headingIdPrefix" | "linkBasePath"} key Field name. @param {unknown} value Field value. */
   string(key, value) {
     if (value !== undefined && typeof value !== "string") {
+      return this.reject(key, value);
+    }
+    this[key] = value;
+    return true;
+  }
+
+  /** @param {string} key Field name. @param {unknown} value The optional object value. */
+  object(key, value) {
+    if (value === null) {
+      return this.reject(key, value);
+    }
+    this.typography = /** @type {import('./index.mjs').TypographyOptions | undefined} */ (value);
+    return true;
+  }
+
+  /** @param {"passes"} key Field name. @param {unknown} value The optional array value. */
+  array(key, value) {
+    if (value !== undefined && !Array.isArray(value)) {
       return this.reject(key, value);
     }
     this[key] = value;
@@ -247,6 +273,8 @@ function packOptions(options) {
       packed.headingOffset,
       packed.headingIdPrefix,
       packed.linkBasePath,
+      packed.typography,
+      packed.passes,
     ]
   );
 }
@@ -407,6 +435,8 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   headingOffset: number | undefined,
  *   headingIdPrefix: string | undefined,
  *   linkBasePath: string | undefined,
+ *   typography: import('./index.mjs').TypographyOptions | null | undefined,
+ *   passes: import('./index.mjs').NativePassOptions[] | null | undefined,
  * ]} NativePackedOptions
  * @typedef {[
  *   set: number,
@@ -414,6 +444,8 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   headingOffset: number | undefined,
  *   headingIdPrefix: string | undefined,
  *   linkBasePath: string | undefined,
+ *   typography: import('./index.mjs').TypographyOptions | null | undefined,
+ *   passes: import('./index.mjs').NativePassOptions[] | null | undefined,
  *   renderer: NativeFencedCodeRenderer,
  * ]} NativePackedRendererOptions
  * @typedef {{
