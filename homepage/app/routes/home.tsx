@@ -1,7 +1,6 @@
 import {
   ClosingAction,
   EvidenceFigures,
-  family,
   IronBand,
   Ledger,
   Mark,
@@ -10,28 +9,13 @@ import {
   RegistryFacts,
   RunSample,
   Section,
-  useToolFacts,
 } from "ferramenta-family";
 import { Link } from "react-router";
 
 import { agreementDocuments, formatSpeed, nativeBenchmarks } from "../components/native-benchmarks";
 import landingSample from "../data/landing-sample.json";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
-
-function findFerromarkTool() {
-  const tool = family.find((candidate) => candidate.name === "ferromark");
-  if (tool === undefined) {
-    throw new Error("The ferramenta-family registry must include ferromark");
-  }
-  return tool;
-}
-
-const ferromarkTool = findFerromarkTool();
-
-function LiveVersion() {
-  const { version } = useToolFacts(ferromarkTool);
-  return <>{version}</>;
-}
+import { version } from "../version";
 
 const benchmarkFigures = nativeBenchmarks.platforms.flatMap((platform) =>
   platform.figures
@@ -101,8 +85,7 @@ function ProjectIntro() {
           <code>cargo add ferromark</code>
           <span> · </span>
           <code>npm install ferromark</code>
-          <span> · v</span>
-          <LiveVersion />
+          <span> · v{version}</span>
         </>
       }
     />
