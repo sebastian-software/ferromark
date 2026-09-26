@@ -34,8 +34,8 @@
 mod html;
 
 pub use html::{
-    AutolinkMatcher, CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HeadingIdPlanner,
-    HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions,
-    InvalidHeadingIdPrefix, NoHtmlRenderHooks, collect_heading_text, find_autolink_ranges,
-    map_heading_level, slugify_heading,
+    AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput, HEADING_PERMALINK_CLASS,
+    HeadingIdPlanner, HighlightedCodeBlock, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks,
+    HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix, NoHtmlRenderHooks,
+    collect_heading_text, find_autolink_ranges, map_heading_level, slugify_heading,
 };

@@ -26,5 +26,6 @@ pub use heading::{
 };
 pub use options::{CodeAnnotationSyntax, HtmlRendererOptions};
 pub use renderer::{
-    HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, NoHtmlRenderHooks,
+    CodeHighlightInput, HighlightedCodeBlock, HtmlRenderContext, HtmlRenderControl,
+    HtmlRenderHooks, HtmlRenderer, NoHtmlRenderHooks,
 };

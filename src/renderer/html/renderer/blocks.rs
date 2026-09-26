@@ -220,9 +220,21 @@ impl HtmlRenderer {
 
         self.code_block_index += 1;
         let state = self.build_code_block_state(code_block, self.code_block_index);
+        self.write_code_block_state(code_block, &state, None);
+    }
+
+    pub(in crate::renderer::html::renderer) fn write_code_block_state(
+        &mut self,
+        code_block: &CodeBlock<'_>,
+        state: &super::super::code_annotations::CodeBlockRenderState,
+        highlighted: Option<&super::hooks::HighlightedCodeBlock>,
+    ) {
         let block_classes = state.block_classes();
 
         self.write("<pre");
+        if let Some(highlighted) = highlighted {
+            self.write_highlighted_pre_colors(highlighted);
+        }
         if !block_classes.is_empty() {
             self.write(" class=\"");
             self.write(&block_classes.join(" "));
@@ -257,7 +269,9 @@ impl HtmlRenderer {
         }
         self.write(">");
         if state.needs_line_wrappers() {
-            self.write_code_lines(&state);
+            self.write_code_lines(state, highlighted.map(|block| block.lines.as_slice()));
+        } else if let Some(highlighted) = highlighted {
+            self.write_highlighted_lines(&highlighted.lines);
         } else {
             self.write_escaped(code_block.value);
         }
