@@ -8,7 +8,7 @@ dependency.
 
 [issue #393]: https://github.com/sebastian-software/ferromark/issues/393
 [Ferriki PR #128]: https://github.com/sebastian-software/ferriki/pull/128
-[reference adapter]: https://github.com/sebastian-software/ferriki/blob/codex/native-rust-api/docs/rust-api.md#ferromark-adapter-contract
+[reference adapter]: https://github.com/sebastian-software/ferriki/blob/main/docs/rust-api.md#ferromark-adapter-contract
 
 ## Contract
 
