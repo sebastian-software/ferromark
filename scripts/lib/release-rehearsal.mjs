@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import TOML from "@iarna/toml";
 import { Manifest, setLogger } from "release-please";
 import { parse as parseYaml } from "yaml";
+import { preserveExactTransformPin } from "./exact-transform-pin.mjs";
 
 export const root = resolve(import.meta.dirname, "../..");
 const quiet = Object.fromEntries(
@@ -119,6 +120,12 @@ export async function proposeRelease(files, history) {
     );
     updated.set(change.path, change.updater.updateContent(updated.get(change.path), quiet));
   }
+  const transformManifest = "transforms/Cargo.toml";
+  const exactPin = preserveExactTransformPin(
+    updated.get("Cargo.toml"),
+    updated.get(transformManifest),
+  );
+  updated.set(transformManifest, exactPin.content);
   return {
     files: updated,
     title: proposal.title.toString(),
@@ -133,7 +140,8 @@ export function validateRelease(files, expectedVersion) {
 
   // `release-type: rust` writes the root package version, every member version,
   // the published internal requirements and Cargo.lock — natively, with no
-  // `version.txt` and no Cargo `extra-files` to keep in step.
+  // `version.txt`. Its dependency updater strips exact `=` pins, so the same
+  // focused correction used by the release workflow runs below.
   assert.equal(cargo.package.name, "ferromark", "Root package");
   assert.equal(cargo.package.version, expectedVersion, "Root package version");
   assert.equal(
@@ -147,11 +155,30 @@ export function validateRelease(files, expectedVersion) {
   for (const member of cargo.workspace.members) {
     const memberManifest = TOML.parse(files.get(`${member}/Cargo.toml`));
     assert.equal(memberManifest.package.version, expectedVersion, `${member}: package version`);
-    assert.equal(memberManifest.package.publish, false, `${member}: stays unpublished`);
+    if (memberManifest.package.name === "ferromark-transforms") {
+      assert.deepEqual(
+        memberManifest.package.publish,
+        ["crates-io"],
+        `${member}: crates.io package`,
+      );
+    } else {
+      assert.equal(memberManifest.package.publish, false, `${member}: stays unpublished`);
+    }
     const requirement = memberManifest.dependencies?.ferromark;
     if (requirement) {
-      assert.equal(requirement.version, expectedVersion, `${member}: ferromark requirement`);
-      assert.equal(requirement.path, "../..", `${member}: ferromark path`);
+      const expectedRequirement =
+        memberManifest.package.name === "ferromark-transforms"
+          ? `=${expectedVersion}`
+          : expectedVersion;
+      assert.equal(requirement.version, expectedRequirement, `${member}: ferromark requirement`);
+      assert.equal(
+        requirement.path,
+        member
+          .split("/")
+          .map(() => "..")
+          .join("/"),
+        `${member}: ferromark path`,
+      );
     }
     localNames.push(memberManifest.package.name);
   }

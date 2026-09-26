@@ -79,9 +79,15 @@ test("coverage retains the report before enforcing the floor", () => {
 
 test("release packages target public registries", () => {
   assert.match(read("Cargo.toml"), /^publish = \["crates-io"\]$/m);
+  const transform = TOML.parse(read("transforms/Cargo.toml"));
+  const coreVersion = read("Cargo.toml").match(/^version = "([^"]+)"/m)[1];
+  assert.equal(transform.package.name, "ferromark-transforms");
+  assert.equal(transform.package.version, coreVersion);
+  assert.deepEqual(transform.package.publish, ["crates-io"]);
+  assert.deepEqual(transform.dependencies.ferromark, { version: `=${coreVersion}`, path: ".." });
   const packageJson = JSON.parse(read("node/ferromark/package.json"));
   assert.equal(packageJson.private, false);
-  assert.equal(packageJson.version, read("Cargo.toml").match(/^version = "([^"]+)"/m)[1]);
+  assert.equal(packageJson.version, coreVersion);
   for (const dependency of Object.keys(packageJson.optionalDependencies)) {
     const suffix = dependency.replace(/^ferromark-/, "");
     assert.equal(JSON.parse(read(`node/ferromark/npm/${suffix}/package.json`)).private, false);
@@ -103,6 +109,16 @@ test("publication follows the standards release blueprint", () => {
     true,
   );
   assert.equal(publisher.jobs["release-please"].outputs.tag_name.includes("tag_name"), true);
+  const releaseBranchCheckout = publisher.jobs["release-please"].steps.find(
+    (step) => step.name === "Check out the Release Please branch",
+  );
+  assert.equal(releaseBranchCheckout.if, "${{ steps.release.outputs.prs_created == 'true' }}");
+  assert.match(releaseBranchCheckout.with.ref, /fromJSON\(steps\.release\.outputs\.pr\)/);
+  const pinStep = publisher.jobs["release-please"].steps.find(
+    (step) => step.name === "Restore the exact transform dependency pin",
+  );
+  assert.match(pinStep.run, /preserve-exact-transform-pin\.mjs/);
+  assert.match(pinStep.run, /git push origin/);
 
   // The manual path is a retry for an existing release, so it needs the tag and
   // every job checks that tag out rather than the branch head.
@@ -121,6 +137,13 @@ test("publication follows the standards release blueprint", () => {
   }
   assert.deepEqual(publisher.jobs["publish-crates"].permissions["id-token"], "write");
   assert.deepEqual(publisher.jobs["publish-npm"].permissions["id-token"], "write");
+  const cratePublisher = publisher.jobs["publish-crates"].steps.find((step) =>
+    step.uses?.includes("/publish-crates@"),
+  );
+  assert.deepEqual(cratePublisher.with.crates.trim().split(/\s+/), [
+    "ferromark",
+    "ferromark-transforms",
+  ]);
 
   // The three release-shaped steps are the org's shared composite actions, not
   // hand-written copies, and the platform list lives in exactly one place.
@@ -191,7 +214,7 @@ test("Node native declarations follow the v2 option surface", () => {
   assert.ok(!declarations.includes("CodeCallback"), "callback types must be self-contained");
 });
 
-test("only ferromark is public and no path-only dependency exceptions remain", () => {
+test("the core and transform packages are public with release-managed path dependencies", () => {
   const policy = TOML.parse(read("deny.toml"));
   assert.equal(policy.bans.wildcards, "deny");
   assert.notEqual(policy.bans["allow-wildcard-paths"], true);
@@ -200,7 +223,12 @@ test("only ferromark is public and no path-only dependency exceptions remain", (
   // `release-type: rust` updates the root `[package]`, the members below it and
   // their explicit path requirements, so `ferromark` is the root package.
   assert.equal(root.package.name, "ferromark");
-  assert.deepEqual(workspace.members, ["node/native"]);
+  assert.deepEqual(workspace.members, ["node/native", "transforms"]);
+  const publicMembers = workspace.members
+    .map((member) => [member, TOML.parse(read(`${member}/Cargo.toml`))])
+    .filter(([, manifest]) => manifest.package.publish !== false)
+    .map(([, manifest]) => manifest.package.name);
+  assert.deepEqual(publicMembers, ["ferromark-transforms"]);
   const unversioned = [];
   for (const member of [".", ...workspace.members]) {
     const manifest = member === "." ? root : TOML.parse(read(`${member}/Cargo.toml`));

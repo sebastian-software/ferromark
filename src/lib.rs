@@ -29,7 +29,8 @@ pub use convenience::{to_html, to_html_into, to_html_into_with_options, to_html_
 pub use outline::{OutlineEntry, OutlineOptions};
 pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
 pub use renderer::{
-    CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HeadingIdPlanner, HtmlRenderContext,
-    HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
-    NoHtmlRenderHooks, collect_heading_text, map_heading_level, slugify_heading,
+    AutolinkMatcher, CodeAnnotationSyntax, HEADING_PERMALINK_CLASS, HeadingIdPlanner,
+    HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions,
+    InvalidHeadingIdPrefix, NoHtmlRenderHooks, collect_heading_text, find_autolink_ranges,
+    map_heading_level, slugify_heading,
 };

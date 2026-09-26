@@ -5,6 +5,8 @@
 
 use std::borrow::Cow;
 
+use super::autolink::AutolinkMatcher;
+
 /// HTML renderer options.
 ///
 /// Use [`HtmlRendererOptions::new`] or [`Default::default`] for the documented
@@ -370,6 +372,20 @@ impl HtmlRendererOptions {
             table_colgroup: false,
             table_column_names: false,
         }
+    }
+
+    /// Builds a reusable matcher for this renderer's bare-URL configuration.
+    ///
+    /// Returns `None` when URL autolinking is disabled or no prefixes are
+    /// configured. Optional AST transforms can keep the returned matcher and
+    /// scan each text node with the same configuration the renderer will use.
+    #[must_use]
+    pub fn autolink_matcher(&self) -> Option<AutolinkMatcher> {
+        if !self.autolink_urls || self.autolink_patterns.is_empty() {
+            return None;
+        }
+
+        Some(AutolinkMatcher::new(self.autolink_patterns.as_ref()))
     }
 
     /// Creates the strict CommonMark HTML profile.

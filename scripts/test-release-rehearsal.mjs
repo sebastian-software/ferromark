@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { it } from "node:test";
 import TOML from "@iarna/toml";
+import { preserveExactTransformPin } from "./lib/exact-transform-pin.mjs";
 import {
   maintenanceHistory,
   proposeRelease,
@@ -20,7 +21,7 @@ async function developmentBaseline() {
   ).files;
 }
 
-it("configures the native rust strategy with one root component", () => {
+it("configures one release component for the versioned Cargo workspace", () => {
   const config = JSON.parse(readReleaseFiles().get("release-please-config.json"));
   assert.equal(config["release-type"], "rust");
   // The published tag is `v2.0.0`, so the component must not enter it.
@@ -43,6 +44,22 @@ it("configures the native rust strategy with one root component", () => {
     assert.ok(!/lock\.yaml$/.test(path), `${path}: a lockfile is generated state`);
   }
   assert.ok(!existsSync(resolve(root, "version.txt")), "version.txt must not come back");
+});
+
+it("restores the exact transform dependency pin after the Rust updater", () => {
+  const files = readReleaseFiles();
+  const rootVersion = TOML.parse(files.get("Cargo.toml")).package.version;
+  const transformManifest = files.get("transforms/Cargo.toml");
+  const updaterOutput = transformManifest.replace(
+    `version = "=${rootVersion}"`,
+    `version = "${rootVersion}"`,
+  );
+  assert.notEqual(updaterOutput, transformManifest, "fixture models the Rust updater's caret pin");
+
+  const restored = preserveExactTransformPin(files.get("Cargo.toml"), updaterOutput);
+  assert.equal(restored.changed, true);
+  assert.equal(TOML.parse(restored.content).dependencies.ferromark.version, `=${rootVersion}`);
+  assert.equal(preserveExactTransformPin(files.get("Cargo.toml"), restored.content).changed, false);
 });
 
 it("builds coordinated RC, subsequent RC, stable, and patch release PRs with the real updater", async () => {
@@ -111,6 +128,7 @@ it("proposes the next patch release from the commit range alone", async () => {
   assert.ok(proposed.paths.includes("Cargo.toml"));
   assert.ok(proposed.paths.includes("Cargo.lock"));
   assert.ok(proposed.paths.includes("node/native/Cargo.toml"));
+  assert.ok(proposed.paths.includes("transforms/Cargo.toml"));
   for (const target of ["darwin-arm64", "win32-arm64-msvc"]) {
     assert.ok(proposed.paths.includes(`node/ferromark/npm/${target}/package.json`));
   }

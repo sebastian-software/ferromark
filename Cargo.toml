@@ -87,7 +87,7 @@ harness = false
 
 [workspace]
 resolver = "2"
-members = ["node/native"]
+members = ["node/native", "transforms"]
 
 # Package versions are deliberately not inherited: Release Please cannot replace
 # an inherited `version.workspace = true` with a concrete version, so the root
