@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.0](https://github.com/sebastian-software/ferromark/compare/v2.3.0...v2.4.0) (2026-09-26)
+
+
+### Features
+
+* **renderer:** add metadata-preserving highlighted-line hook ([#458](https://github.com/sebastian-software/ferromark/issues/458)) ([8b6b517](https://github.com/sebastian-software/ferromark/commit/8b6b5174f71615bf91f8596dc3921fcb8ad70118))
+* **transforms:** add typography, GitHub, and emoji passes ([#455](https://github.com/sebastian-software/ferromark/issues/455)) ([40913a3](https://github.com/sebastian-software/ferromark/commit/40913a34524b7b538145bbece112d3427a31ab29))
+
 ## [2.3.0](https://github.com/sebastian-software/ferromark/compare/v2.2.0...v2.3.0) (2026-09-26)
 
 
