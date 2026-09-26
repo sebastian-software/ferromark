@@ -34,6 +34,16 @@ pub enum TypographyLanguage {
     Russian,
     /// Ukrainian (`uk`).
     Ukrainian,
+    /// Czech (`cs`).
+    Czech,
+    /// Danish (`da`).
+    Danish,
+    /// Finnish (`fi`).
+    Finnish,
+    /// Norwegian Bokmål (`nb`).
+    NorwegianBokmal,
+    /// Swedish (`sv`).
+    Swedish,
 }
 
 impl TypographyLanguage {
@@ -51,6 +61,11 @@ impl TypographyLanguage {
             Self::Polish => "pl",
             Self::Russian => "ru",
             Self::Ukrainian => "uk",
+            Self::Czech => "cs",
+            Self::Danish => "da",
+            Self::Finnish => "fi",
+            Self::NorwegianBokmal => "nb",
+            Self::Swedish => "sv",
         }
     }
 
@@ -82,6 +97,11 @@ impl FromStr for TypographyLanguage {
             "pl" => Ok(Self::Polish),
             "ru" => Ok(Self::Russian),
             "uk" => Ok(Self::Ukrainian),
+            "cs" => Ok(Self::Czech),
+            "da" => Ok(Self::Danish),
+            "fi" => Ok(Self::Finnish),
+            "nb" => Ok(Self::NorwegianBokmal),
+            "sv" => Ok(Self::Swedish),
             _ => Err(UnsupportedTypographyLanguage {
                 language: language.to_owned(),
             }),
@@ -107,7 +127,7 @@ impl fmt::Display for UnsupportedTypographyLanguage {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
-            "unsupported typography language {:?}; supported languages are en, es, fr, pt, de, it, nl, pl, ru, and uk",
+            "unsupported typography language {:?}; supported languages are cs, da, de, en, es, fi, fr, it, nb, nl, pl, pt, ru, sv, and uk",
             self.language
         )
     }
@@ -287,6 +307,29 @@ impl QuoteState {
         next: Option<char>,
         language: TypographyLanguage,
     ) {
+        if let Some(primary) = symmetric_quote_level(character, language) {
+            if self
+                .stack
+                .last()
+                .is_some_and(|frame| frame.primary == primary)
+            {
+                if self.previous.is_some_and(can_close_quote)
+                    && next.is_none_or(|next| !next.is_alphanumeric())
+                {
+                    self.stack.pop();
+                }
+                return;
+            }
+
+            if can_open_quote(self.previous, next) {
+                self.stack.push(QuoteFrame {
+                    source: if primary { '"' } else { '\'' },
+                    primary,
+                });
+            }
+            return;
+        }
+
         if let Some((opening, primary)) = authored_quote_event(character, language) {
             if opening && can_open_quote(self.previous, next) {
                 self.stack.push(QuoteFrame {
@@ -1094,7 +1137,57 @@ fn quote_marks(language: TypographyLanguage, primary: bool) -> QuoteMarks {
             open: "„",
             close: "“",
         },
+        (TypographyLanguage::Czech, true) => QuoteMarks {
+            open: "„",
+            close: "“",
+        },
+        (TypographyLanguage::Czech, false) => QuoteMarks {
+            open: "‚",
+            close: "‘",
+        },
+        (TypographyLanguage::Danish, true) => QuoteMarks {
+            open: "»",
+            close: "«",
+        },
+        (TypographyLanguage::Danish, false) => QuoteMarks {
+            open: "„",
+            close: "“",
+        },
+        (TypographyLanguage::Finnish, true) => QuoteMarks {
+            open: "”",
+            close: "”",
+        },
+        (TypographyLanguage::Finnish, false) => QuoteMarks {
+            open: "’",
+            close: "’",
+        },
+        (TypographyLanguage::NorwegianBokmal, true) => QuoteMarks {
+            open: "«",
+            close: "»",
+        },
+        (TypographyLanguage::NorwegianBokmal, false) => QuoteMarks {
+            open: "‘",
+            close: "’",
+        },
+        (TypographyLanguage::Swedish, true) => QuoteMarks {
+            open: "”",
+            close: "”",
+        },
+        (TypographyLanguage::Swedish, false) => QuoteMarks {
+            open: "’",
+            close: "’",
+        },
     }
+}
+
+fn symmetric_quote_level(character: char, language: TypographyLanguage) -> Option<bool> {
+    for primary in [true, false] {
+        let marks = quote_marks(language, primary);
+        if marks.open == marks.close && marks.open.starts_with(character) {
+            return Some(primary);
+        }
+    }
+    None
 }
 
 fn authored_quote_event(character: char, language: TypographyLanguage) -> Option<(bool, bool)> {
@@ -1249,8 +1342,11 @@ mod tests {
     use super::{TypographyLanguage, TypographyOptions, UnsupportedTypographyLanguage};
 
     #[test]
-    fn parses_only_the_ten_reviewed_language_codes() {
-        for language in ["en", "es", "fr", "pt", "de", "it", "nl", "pl", "ru", "uk"] {
+    fn parses_only_the_fifteen_reviewed_language_codes() {
+        for language in [
+            "cs", "da", "de", "en", "es", "fi", "fr", "it", "nb", "nl", "pl", "pt", "ru", "sv",
+            "uk",
+        ] {
             assert_eq!(
                 language
                     .parse::<TypographyLanguage>()

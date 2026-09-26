@@ -9,41 +9,64 @@ This behavior is specified by the
 
 ## Reviewed locale rules
 
-The pass requires exactly one explicit language: `en`, `es`, `fr`, `pt`, `de`,
-`it`, `nl`, `pl`, `ru`, or `uk`. It does not detect a language, choose one by
-default, or switch languages within a document. `en` uses the US English rule
-set; regional variants such as `en-GB` are not separate supported codes. The
-`pt` rules use a Portugal Portuguese quote convention and are independently
-reviewed because the pinned Typograf reference has no Portuguese locale.
+The pass requires exactly one explicit language: `cs`, `da`, `de`, `en`,
+`es`, `fi`, `fr`, `it`, `nb`, `nl`, `pl`, `pt`, `ru`, `sv`, or `uk`.
+It does not detect a language, choose one by default, or switch languages
+within a document. `en` uses the US English rule set; regional variants such
+as `en-GB` are not separate supported codes. The `pt` rules use a Portugal
+Portuguese quote convention.
 
 | Code | Primary quotation marks | Nested quotation marks | Apostrophes | Measurement spacing | ASCII dash sequences |
 | --- | --- | --- | --- | --- | --- |
+| `cs` | „…“ | ‚…‘ | Curly | Non-breaking space | Preserved |
+| `da` | »…« | „…“ | Curly | Non-breaking space | Preserved |
+| `de` | „…“ | ‚…‘ | Curly | Non-breaking space | Preserved |
 | `en` | “…” | ‘…’ | Curly | Non-breaking space | `--` and `---` become em dashes |
 | `es` | «…» | “…” | Curly | Non-breaking space | Preserved |
+| `fi` | ”…” | ’…’ | Curly | Non-breaking space | Preserved |
 | `fr` | « … » | “…” | Curly | Non-breaking space | Preserved |
-| `pt` | «…» | “…” | Curly | Non-breaking space | Preserved |
-| `de` | „…“ | ‚…‘ | Curly | Non-breaking space | Preserved |
 | `it` | «…» | “…” | Curly | Non-breaking space | Preserved |
+| `nb` | «…» | ‘…’ | Curly | Non-breaking space | Preserved |
 | `nl` | ‘…’ | “…” | Curly | Non-breaking space | Preserved |
 | `pl` | „…” | ‚…‘ | Curly | Non-breaking space | Preserved |
+| `pt` | «…» | “…” | Curly | Non-breaking space | Preserved |
 | `ru` | «…» | „…“ | Straight | Ordinary space | `--` and `---` become em dashes |
+| `sv` | ”…” | ’…’ | Curly | Non-breaking space | Preserved |
 | `uk` | «…» | „…“ | Straight | Ordinary space | Preserved |
+
+The outer quote marks for `da`, `fi`, and `sv` follow the executed Typograf
+reference outputs recorded in the
+[oracle fixtures](../benchmarks/native-transform-oracles/fixtures.json).
+The Danish profile deliberately uses Typograf's guillemets; examples in
+[sproget.dk](https://sproget.dk/typiske-problemer/de-smaa-tegn/) also use
+English-style curly quotes, so this is a selected profile rather than a claim
+that only one convention exists.
+The Swedish profile also follows the typographic quotation marks in
+[Myndigheternas skrivregler](https://www.isof.se/download/18.17dda5f1791cdbd2873a99/1620030264840/Mynd-skrivreg2014-1.pdf);
+the Finnish profile follows the double quotation marks used in
+[Kotus guidance](https://kotus.fi/lainaa-vain/).
+The Czech profile follows the [Czech Internet Language Reference](https://prirucka.ujc.cas.cz/?id=162),
+which recommends double Czech quotation marks „…“ and allows single inner
+marks ‚…‘. The Norwegian Bokmål profile follows the Norwegian
+[Språkrådet guidance for quotation marks](https://sprakradet.no/godt-og-korrekt-sprak/rettskriving-og-grammatikk/tegn/hermeteikn/).
+These are reviewed profiles, not automatic language or region detection.
 
 Three periods become an ellipsis in each language. A spaced dash sequence in
 English and Russian gets a non-breaking space before the em dash. In French,
 the pass uses narrow no-break spaces inside guillemets and non-breaking spaces
-before `;`, `:`, `!`, and `?`. For supported non-Russian languages, a space
-between a number and one of `km/h`, `°C`, `km`, `cm`, `mm`, `kg`, `mg`, `m`,
-`g`, or `%` becomes non-breaking. A double hyphen between letters is left
-alone in every locale. Existing Unicode quotes, dashes, and ellipses are not
-normalized.
+before `;`, `:`, `!`, and `?`. For supported languages other than Russian
+and Ukrainian, a space between a number and one of `km/h`, `°C`, `km`,
+`cm`, `mm`, `kg`, `mg`, `m`, `g`, or `%` becomes non-breaking. A double
+hyphen between letters is left alone in every locale. Existing Unicode
+quotes, dashes, and ellipses are not normalized.
 
-The English, Spanish, French, German, Italian, Dutch, Polish, Russian, and
-Ukrainian examples were checked against the pinned
-[SmartyPants and Typograf outputs](../benchmarks/native-transform-oracles/README.md).
+Pinned [Typograf outputs](../benchmarks/native-transform-oracles/README.md)
+cover English, Spanish, French, German, Italian, Dutch, Polish, Russian,
+Ukrainian, Danish, Finnish, and Swedish. SmartyPants fixtures cover its generic
+English behavior.
 The native pass implements only the listed subset; it does not claim full
-compatibility with either plugin. Portuguese has an independently reviewed
-fixture and is not labeled Typograf-compatible.
+compatibility with either plugin. Portuguese, Czech, and Norwegian Bokmål use
+independently reviewed profiles and are not labeled Typograf-compatible.
 
 ## Protected content and order
 

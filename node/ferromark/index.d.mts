@@ -4,8 +4,23 @@ export type RenderPolicy = "untrusted" | "trusted";
 
 // oxlint-disable-next-line typescript/consistent-type-definitions -- keeps this public config structurally extensible
 export interface TypographyOptions {
-  /** One explicit supported language: `en`, `es`, `fr`, `pt`, `de`, `it`, `nl`, `pl`, `ru`, or `uk`. */
-  language: "en" | "es" | "fr" | "pt" | "de" | "it" | "nl" | "pl" | "ru" | "uk";
+  /** One explicit supported language code; regional variants are not inferred. */
+  language:
+    | "cs"
+    | "da"
+    | "de"
+    | "en"
+    | "es"
+    | "fi"
+    | "fr"
+    | "it"
+    | "nb"
+    | "nl"
+    | "pl"
+    | "pt"
+    | "ru"
+    | "sv"
+    | "uk";
   /** Convert locale-aware dash sequences. Default: on. */
   dashes?: boolean;
   /** Convert three consecutive periods to an ellipsis. Default: on. */

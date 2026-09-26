@@ -81,9 +81,9 @@ uses v2's existing footnote markup. Marked text does not enable code highlightin
 ## Optional typography
 
 Typography is an explicit post-parse pass. Set `typography.language` to one of
-`en`, `es`, `fr`, `pt`, `de`, `it`, `nl`, `pl`, `ru`, or `uk` to convert prose
-punctuation after parsing. It remains off when the option is omitted, and the
-core parser does not infer a language. See the
+`cs`, `da`, `de`, `en`, `es`, `fi`, `fr`, `it`, `nb`, `nl`, `pl`, `pt`,
+`ru`, `sv`, or `uk` to convert prose punctuation after parsing. It remains off
+when the option is omitted, and the core parser does not infer a language. See the
 [typography guide](../../docs/typography.md) for quote, spacing, dash, and
 ellipsis rules and protection boundaries.
 

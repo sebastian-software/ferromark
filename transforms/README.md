@@ -54,10 +54,10 @@ across separate documents and arena resets.
 
 `TypographyPass` changes straight quotes, in-word apostrophes, selected dash
 sequences, ellipses, and language-specific spacing after parsing. Choose one of
-the ten supported languages explicitly; the pass does not detect or switch
-languages. It carries quote pairing across ordinary inline markup and leaves
-code, math, raw HTML, MDX expressions, image metadata, link destinations, and
-renderer-recognized bare URLs protected.
+the fifteen supported language codes explicitly; the pass does not detect or
+switch languages. It carries quote pairing across ordinary inline markup and
+leaves code, math, raw HTML, MDX expressions, image metadata, link destinations,
+and renderer-recognized bare URLs protected.
 
 ```rust
 use ferromark_transforms::{

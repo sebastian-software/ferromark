@@ -50,10 +50,11 @@ comparison with the dependency version cited in #403.
 
 ## Cases
 
-Typography observations execute SmartyPants and Typograf across their configured
-English, Spanish, French, German, Italian, Dutch, Polish, Russian, and Ukrainian
-locales. A missing Portuguese Typograf oracle is recorded above rather than
-represented as a Typograf result.
+Typography fixtures include generic SmartyPants cases and Typograf cases for
+English, Spanish, French, German, Italian, Dutch, Polish, Russian, Ukrainian,
+Danish, Finnish, and Swedish. The pinned Typograf package does not support
+Portuguese, Czech, or Norwegian Bokmål; those native profiles are reviewed
+separately rather than represented as Typograf results.
 
 Emoji observations compare the two released plugin/data chains with known
 shortcodes, aliases, unknown and differently cased names, overlap, code and

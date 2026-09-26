@@ -8,7 +8,7 @@ if (process.argv.length !== 3 || process.argv[2] !== "--write") {
   throw new Error("Regeneration requires the explicit --write flag.");
 }
 
-const locales = ["en-US", "es", "fr", "de", "it", "nl", "pl", "ru", "uk"];
+const locales = ["en-US", "es", "fr", "de", "it", "nl", "pl", "ru", "uk", "da", "fi", "sv"];
 const typographySource = 'She said "Hello" -- it\'s 12 km...';
 
 const fixtures = {

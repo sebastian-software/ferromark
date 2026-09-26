@@ -72,6 +72,20 @@ test("applies optional locale-aware typography across the public Node API", () =
   );
 });
 
+test("supports the new reviewed European typography profiles", () => {
+  const cases = [
+    ["cs", "„Hello“"],
+    ["da", "»Hello«"],
+    ["fi", "”Hello”"],
+    ["nb", "«Hello»"],
+    ["sv", "”Hello”"],
+  ];
+
+  for (const [language, expected] of cases) {
+    assert.equal(toHtml('"Hello"', { typography: { language } }), `<p>${expected}</p>\n`, language);
+  }
+});
+
 test("runs ordered GitHub, emoji, and typography passes across the public Node API", () => {
   const markdown = 'Issue #42 :rocket: :woman_technologist: :heart: "quoted" -- done...';
   const options = {

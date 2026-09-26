@@ -26,11 +26,12 @@ set `typography` on `Options`; it is absent by default. The core Rust crate,
 parser, renderer, and Node.js calls without the option do not run typography or
 scan prose for URLs.
 
-Each invocation requires exactly one reviewed language code: `en`, `es`, `fr`,
-`pt`, `de`, `it`, `nl`, `pl`, `ru`, or `uk`. The pass does not detect language,
-infer a region, or change rules within a document. `en` uses US English quote
-conventions. `pt` uses the reviewed Portugal Portuguese quote convention.
-Unsupported and regional-tag codes are errors rather than implicit fallbacks.
+Each invocation requires exactly one reviewed language code: `cs`, `da`, `de`,
+`en`, `es`, `fi`, `fr`, `it`, `nb`, `nl`, `pl`, `pt`, `ru`, `sv`, or `uk`.
+The pass does not detect language, infer a region, or change rules within a
+document. `en` uses US English quote conventions. `pt` uses the reviewed
+Portugal Portuguese quote convention. Unsupported and regional-tag codes are
+errors rather than implicit fallbacks.
 
 The initial rule set converts unescaped straight quotation marks and linguistic
 apostrophes, three periods to an ellipsis, selected dashes, French punctuation
@@ -67,7 +68,7 @@ validation and getter-order contract.
 
 ## Validation
 
-Tests cover the ten language fixtures, nested and cross-format quotes,
+Tests cover the fifteen language fixtures, nested and cross-format quotes,
 protected Markdown and MDX nodes, links and autolinks, toggles, source spans,
 idempotence, Node/Rust parity, and all Node rendering entry points. The frozen
 oracle fixtures remain expected-output inputs; they do not substitute for the

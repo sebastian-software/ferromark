@@ -75,6 +75,26 @@ fn language_defaults_match_the_reviewed_reference_cases() {
             TypographyLanguage::Ukrainian,
             "<p>She said «Hello» -- it&#39;s 12 km…</p>\n",
         ),
+        (
+            TypographyLanguage::Czech,
+            "<p>She said „Hello“ -- it’s 12 km…</p>\n",
+        ),
+        (
+            TypographyLanguage::Danish,
+            "<p>She said »Hello« -- it’s 12 km…</p>\n",
+        ),
+        (
+            TypographyLanguage::Finnish,
+            "<p>She said ”Hello” -- it’s 12 km…</p>\n",
+        ),
+        (
+            TypographyLanguage::NorwegianBokmal,
+            "<p>She said «Hello» -- it’s 12 km…</p>\n",
+        ),
+        (
+            TypographyLanguage::Swedish,
+            "<p>She said ”Hello” -- it’s 12 km…</p>\n",
+        ),
     ];
 
     for (language, expected) in cases {
@@ -105,8 +125,47 @@ fn quotes_pair_across_inline_markup_and_nest_by_locale() {
         "<p>„He said ‚hello‘.“</p>\n"
     );
     assert_eq!(
+        render("\"He said 'hello'.\"", TypographyLanguage::Czech),
+        "<p>„He said ‚hello‘.“</p>\n"
+    );
+    assert_eq!(
+        render("\"He said 'hello'.\"", TypographyLanguage::Danish),
+        "<p>»He said „hello“.«</p>\n"
+    );
+    assert_eq!(
+        render("\"He said 'hello'.\"", TypographyLanguage::Finnish),
+        "<p>”He said ’hello’.”</p>\n"
+    );
+    assert_eq!(
+        render("\"He said 'hello'.\"", TypographyLanguage::NorwegianBokmal),
+        "<p>«He said ‘hello’.»</p>\n"
+    );
+    assert_eq!(
+        render("\"He said 'hello'.\"", TypographyLanguage::Swedish),
+        "<p>”He said ’hello’.”</p>\n"
+    );
+    assert_eq!(
         render("\"hello\nworld\"", TypographyLanguage::English),
         "<p>“hello\nworld”</p>\n"
+    );
+}
+
+#[test]
+fn symmetric_authored_quotes_close_before_the_next_quote_pair() {
+    assert_eq!(
+        render("”already” and \"new\".", TypographyLanguage::Swedish),
+        "<p>”already” and ”new”.</p>\n"
+    );
+    assert_eq!(
+        render("’already’ and \"new\".", TypographyLanguage::Finnish),
+        "<p>’already’ and ”new”.</p>\n"
+    );
+    assert_eq!(
+        render(
+            "”It’s ’twas fine’” and \"new\".",
+            TypographyLanguage::Swedish
+        ),
+        "<p>”It’s ’twas fine’” and ”new”.</p>\n"
     );
 }
 
