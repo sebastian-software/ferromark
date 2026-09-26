@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.3.0](https://github.com/sebastian-software/ferromark/compare/v2.2.0...v2.3.0) (2026-09-26)
+
+
+### Features
+
+* **core:** expose read-only document outline ([#448](https://github.com/sebastian-software/ferromark/issues/448)) ([d8073f1](https://github.com/sebastian-software/ferromark/commit/d8073f1348e5c92aa7587c43c082d3b55baad465))
+* **homepage:** adopt ferramenta-family landing kit ([#446](https://github.com/sebastian-software/ferromark/issues/446)) ([cc5a411](https://github.com/sebastian-software/ferromark/commit/cc5a41102a6d4987a047dfa60508d9e11536964d))
+* **transforms:** add optional native pass pipeline ([#452](https://github.com/sebastian-software/ferromark/issues/452)) ([b3a6d26](https://github.com/sebastian-software/ferromark/commit/b3a6d26b117680784e6afd1b94a226284bbf87fe))
+* **transforms:** add table of contents builder ([#453](https://github.com/sebastian-software/ferromark/issues/453)) ([9567487](https://github.com/sebastian-software/ferromark/commit/9567487be70078c10a243c644e59ee87f8673761))
+
+
+### Bug Fixes
+
+* **homepage:** use release package version ([#454](https://github.com/sebastian-software/ferromark/issues/454)) ([39531fc](https://github.com/sebastian-software/ferromark/commit/39531fc9d2bba09eccc3d2d87e89b78677417585))
+* **renderer:** keep heading and footnote IDs unique ([#444](https://github.com/sebastian-software/ferromark/issues/444)) ([01acef0](https://github.com/sebastian-software/ferromark/commit/01acef0760bb5e940461c5a05c9c2e1d5abbf407))
+
 ## [2.2.0](https://github.com/sebastian-software/ferromark/compare/v2.1.2...v2.2.0) (2026-09-25)
 
 
