@@ -152,6 +152,39 @@ planning, so collision suffixes stay the same. Only ASCII letters, digits,
 underscores, and hyphens are accepted. This setting does not rewrite authored
 fragment links and does not change footnote IDs.
 
+## Document outline and table of contents
+
+`Document::outline` returns owned heading text, effective levels, resolved
+IDs and source spans for the exact document tree. It performs work only when
+called. For a rendered table of contents, the optional `ferromark-transforms`
+crate can build a nested list from that outline; the caller chooses where to
+insert the returned AST node:
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, OutlineOptions, Parser};
+use ferromark_transforms::build_table_of_contents;
+
+let source = "# Setup\n\n## Install\n";
+let allocator = Allocator::for_source_len(source.len());
+let mut document = Parser::new(&allocator, source).parse()?;
+let outline = document.outline(&OutlineOptions::default());
+
+if let Some(toc) = build_table_of_contents(&allocator, &outline)? {
+    document.children.insert(0, toc);
+}
+
+let html = HtmlRenderer::new().render(&document);
+```
+
+This replaces the removed renderer-owned `[[toc]]` marker with explicit
+caller-controlled placement. Compute the outline after any transforms and use
+the same heading-ID settings as the renderer. The helper returns `None` for an
+empty outline and an error if heading IDs are disabled. It supports one
+complete document, not stateful committed or provisional fragments. Generated
+TOC nodes use `Span::empty()`.
+
+See the [TOC placement decision](decisions/2026-09-26-caller-placed-table-of-contents.md).
+
 ## Incremental fragments
 
 A streaming caller renders one document in committed pieces. `HtmlRenderer`

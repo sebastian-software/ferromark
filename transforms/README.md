@@ -71,3 +71,21 @@ across separate documents and arena resets.
   `TextRun` scans each original text segment independently, using the matcher
   built from the same `HtmlRendererOptions` passed to `TransformContext`.
   Disabled URL autolinking and custom prefixes therefore match the renderer.
+
+## Build a caller-placed table of contents
+
+The optional TOC helper turns a core `Document::outline` into a nested list AST
+node. It never scans for a Markdown marker or chooses an insertion location:
+
+```rust
+let outline = document.outline(&OutlineOptions::default());
+if let Some(toc) = build_table_of_contents(&allocator, &outline)? {
+    document.children.insert(0, toc);
+}
+```
+
+Compute the outline after other passes and use ID settings that match the
+renderer. An empty outline produces no node; an outline without heading IDs is
+an error. Generated nodes use `Span::empty()` and describe one complete
+document. See the [Rust API guide](../docs/rust-api.md#document-outline-and-table-of-contents)
+and the [TOC placement decision](../docs/decisions/2026-09-26-caller-placed-table-of-contents.md).
