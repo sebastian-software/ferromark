@@ -52,7 +52,8 @@ pub trait HtmlRenderHooks {
     /// Return `None` to use escaped plain code. A result with the wrong number
     /// of lines also falls back to escaped plain code. The returned HTML is
     /// inserted without escaping, so implementations must escape source text
-    /// and must not include `<pre>`, `<code>`, or cross-line open tags.
+    /// and must not include `<pre>`, `<code>`, newline characters, or cross-line
+    /// open tags.
     /// Ferromark continues to write the block wrapper and line metadata.
     fn highlight_code_block(
         &mut self,
@@ -80,9 +81,41 @@ pub struct CodeHighlightInput<'a> {
 ///
 /// Line entries must be independently tag-balanced. They are inserted raw,
 /// while Ferromark escapes the block's attributes and metadata as usual.
+#[non_exhaustive]
 pub struct HighlightedCodeBlock {
     /// Highlighted HTML for each line, including a final empty line if present.
     pub lines: Vec<String>,
+    /// Optional foreground color written to the `<pre>` style attribute.
+    pub foreground: Option<String>,
+    /// Optional background color written to the `<pre>` style attribute.
+    pub background: Option<String>,
+}
+
+impl HighlightedCodeBlock {
+    /// Creates a block with line fragments and no block-level theme colors.
+    pub fn new(lines: Vec<String>) -> Self {
+        Self {
+            lines,
+            foreground: None,
+            background: None,
+        }
+    }
+
+    /// Sets the theme colors applied to the outer `<pre>` element.
+    #[must_use]
+    pub fn with_colors(
+        mut self,
+        foreground: impl Into<String>,
+        background: impl Into<String>,
+    ) -> Self {
+        self.foreground = Some(foreground.into());
+        self.background = Some(background.into());
+        self
+    }
+
+    pub(in crate::renderer::html::renderer) fn is_valid_for(&self, line_count: usize) -> bool {
+        self.lines.len() == line_count && self.lines.iter().all(|line| !line.contains(['\n', '\r']))
+    }
 }
 
 /// Empty hook implementation for callers that want the hook entry point shape

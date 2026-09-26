@@ -227,11 +227,14 @@ impl HtmlRenderer {
         &mut self,
         code_block: &CodeBlock<'_>,
         state: &super::super::code_annotations::CodeBlockRenderState,
-        highlighted_lines: Option<&[String]>,
+        highlighted: Option<&super::hooks::HighlightedCodeBlock>,
     ) {
         let block_classes = state.block_classes();
 
         self.write("<pre");
+        if let Some(highlighted) = highlighted {
+            self.write_highlighted_pre_colors(highlighted);
+        }
         if !block_classes.is_empty() {
             self.write(" class=\"");
             self.write(&block_classes.join(" "));
@@ -266,9 +269,9 @@ impl HtmlRenderer {
         }
         self.write(">");
         if state.needs_line_wrappers() {
-            self.write_code_lines(state, highlighted_lines);
-        } else if let Some(lines) = highlighted_lines {
-            self.write_highlighted_lines(lines);
+            self.write_code_lines(state, highlighted.map(|block| block.lines.as_slice()));
+        } else if let Some(highlighted) = highlighted {
+            self.write_highlighted_lines(&highlighted.lines);
         } else {
             self.write_escaped(code_block.value);
         }

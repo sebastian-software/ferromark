@@ -16,7 +16,7 @@ use super::super::code_annotations::{
 };
 use super::super::heading::slugify_heading_into;
 use super::HtmlRenderer;
-use super::hooks::{CodeHighlightInput, HtmlRenderHooks};
+use super::hooks::{CodeHighlightInput, HighlightedCodeBlock, HtmlRenderHooks};
 
 impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn render_code_block_with_hooks<H: HtmlRenderHooks>(
@@ -40,9 +40,9 @@ impl HtmlRenderer {
                 raw_meta: code_block.meta,
             });
             if let Some(highlighted) = highlighted
-                && highlighted.lines.len() == code_block.value.split('\n').count()
+                && highlighted.is_valid_for(code_block.value.split('\n').count())
             {
-                self.write_highlighted_plain_code_block(code_block, language, &highlighted.lines);
+                self.write_highlighted_plain_code_block(code_block, language, &highlighted);
             } else {
                 self.render_code_block(code_block);
             }
@@ -50,33 +50,35 @@ impl HtmlRenderer {
         }
 
         let state = self.build_code_block_state(code_block, self.code_block_index + 1);
-        let code = state
-            .lines
-            .iter()
-            .map(|line| line.value.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
+        let normalized_code = state.copy_source.as_ref().map(|_| {
+            state
+                .lines
+                .iter()
+                .map(|line| line.value.as_str())
+                .collect::<Vec<_>>()
+                .join("\n")
+        });
         let highlighted = hooks.highlight_code_block(CodeHighlightInput {
-            code: &code,
+            code: normalized_code.as_deref().unwrap_or(code_block.value),
             language: state.language.as_deref(),
             raw_language: code_block.lang,
             raw_meta: code_block.meta,
         });
-        let highlighted_lines = highlighted
+        let highlighted = highlighted
             .as_ref()
-            .filter(|highlighted| highlighted.lines.len() == state.lines.len())
-            .map(|highlighted| highlighted.lines.as_slice());
+            .filter(|highlighted| highlighted.is_valid_for(state.lines.len()));
         self.code_block_index += 1;
-        self.write_code_block_state(code_block, &state, highlighted_lines);
+        self.write_code_block_state(code_block, &state, highlighted);
     }
 
     fn write_highlighted_plain_code_block(
         &mut self,
         code_block: &CodeBlock<'_>,
         language: Option<&str>,
-        lines: &[String],
+        highlighted: &HighlightedCodeBlock,
     ) {
         self.write("<pre");
+        self.write_highlighted_pre_colors(highlighted);
         self.write_source_span_attr(code_block.span);
         self.write("><code");
         if let Some(language) = language {
@@ -85,8 +87,30 @@ impl HtmlRenderer {
             self.write("\"");
         }
         self.write(">");
-        self.write_highlighted_lines(lines);
+        self.write_highlighted_lines(&highlighted.lines);
         self.write("</code></pre>\n");
+    }
+
+    pub(in crate::renderer::html::renderer) fn write_highlighted_pre_colors(
+        &mut self,
+        highlighted: &HighlightedCodeBlock,
+    ) {
+        if highlighted.foreground.is_none() && highlighted.background.is_none() {
+            return;
+        }
+        self.write(" style=\"");
+        if let Some(background) = highlighted.background.as_deref() {
+            self.write("background-color:");
+            self.write_attribute_escaped(background);
+        }
+        if let Some(foreground) = highlighted.foreground.as_deref() {
+            if highlighted.background.is_some() {
+                self.write(";");
+            }
+            self.write("color:");
+            self.write_attribute_escaped(foreground);
+        }
+        self.write("\"");
     }
 
     pub(in crate::renderer::html::renderer) fn write_highlighted_lines(

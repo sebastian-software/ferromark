@@ -33,7 +33,7 @@ impl HtmlRenderHooks for MarkHighlighter {
         if self.invalid_line_count {
             lines.pop();
         }
-        Some(HighlightedCodeBlock { lines })
+        Some(HighlightedCodeBlock::new(lines))
     }
 }
 
@@ -44,6 +44,95 @@ fn escape(source: &str) -> String {
         .replace('>', "&gt;")
         .replace('"', "&quot;")
         .replace('\'', "&#39;")
+}
+
+struct ThemedHighlighter {
+    add_newline: bool,
+    foreground: &'static str,
+    background: &'static str,
+}
+
+impl HtmlRenderHooks for ThemedHighlighter {
+    fn highlight_code_block(
+        &mut self,
+        input: CodeHighlightInput<'_>,
+    ) -> Option<HighlightedCodeBlock> {
+        let mut lines = input
+            .code
+            .split('\n')
+            .map(|line| format!("<em>{}</em>", escape(line)))
+            .collect::<Vec<_>>();
+        if self.add_newline {
+            lines[0].push('\n');
+        }
+        Some(HighlightedCodeBlock::new(lines).with_colors(self.foreground, self.background))
+    }
+}
+
+#[test]
+fn highlighted_theme_colors_reach_plain_and_annotated_pre_wrappers() {
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, "```rust\nlet x = 1;\n```")
+        .parse()
+        .unwrap();
+    let mut hooks = ThemedHighlighter {
+        add_newline: false,
+        foreground: "#eaf0ff",
+        background: "#101820",
+    };
+    let mut plain = HtmlRenderer::new();
+    let html = plain.render_with_hooks(&document, &mut hooks);
+    assert!(
+        html.contains("<pre style=\"background-color:#101820;color:#eaf0ff\"><code"),
+        "{html}"
+    );
+
+    let mut annotated = HtmlRenderer::with_options(HtmlRendererOptions {
+        code_annotations: true,
+        ..Default::default()
+    });
+    let html = annotated.render_with_hooks(&document, &mut hooks);
+    assert!(
+        html.contains("<pre style=\"background-color:#101820;color:#eaf0ff\""),
+        "{html}"
+    );
+    assert!(html.contains("<em>let x = 1;</em>"), "{html}");
+}
+
+#[test]
+fn newline_inside_highlighted_fragment_falls_back_to_plain_code() {
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, "```rust\n<unsafe>\n```")
+        .parse()
+        .unwrap();
+    let mut hooks = ThemedHighlighter {
+        add_newline: true,
+        foreground: "#eaf0ff",
+        background: "#101820",
+    };
+    let mut renderer = HtmlRenderer::new();
+    let html = renderer.render_with_hooks(&document, &mut hooks);
+    assert!(html.contains("&lt;unsafe&gt;"), "{html}");
+    assert!(!html.contains("<em>"), "{html}");
+    assert!(!html.contains("background-color:#101820"), "{html}");
+}
+
+#[test]
+fn theme_colors_are_escaped_as_pre_attributes() {
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, "```rust\nx\n```").parse().unwrap();
+    let mut hooks = ThemedHighlighter {
+        add_newline: false,
+        foreground: "#fff\" onmouseover=\"bad",
+        background: "#101820",
+    };
+    let mut renderer = HtmlRenderer::new();
+    let html = renderer.render_with_hooks(&document, &mut hooks);
+    assert!(
+        html.contains("color:#fff&quot; onmouseover=&quot;bad"),
+        "{html}"
+    );
+    assert!(!html.contains("onmouseover=\"bad"), "{html}");
 }
 
 #[test]
