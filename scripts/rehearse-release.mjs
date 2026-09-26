@@ -36,6 +36,12 @@ function proveCargo(directory) {
       symlinkSync(resolve(root, entry), resolve(directory, entry));
     }
   }
+  const transforms = resolve(directory, "transforms");
+  mkdirSync(transforms, { recursive: true });
+  for (const entry of ["src", "tests", "examples", "README.md"]) {
+    const target = resolve(transforms, entry);
+    if (!existsSync(target)) symlinkSync(resolve(root, "transforms", entry), target);
+  }
   cpSync(resolve(root, "node/native"), resolve(directory, "node/native"), {
     recursive: true,
     filter: (source) => !source.includes("/target"),

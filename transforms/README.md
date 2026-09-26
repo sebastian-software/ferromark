@@ -6,7 +6,7 @@ on this package, so parser-only and renderer-only users do not pull it in.
 
 ```rust
 use ferromark::ast::{Document, Node};
-use ferromark::{Allocator, HtmlRenderer, parse};
+use ferromark::{Allocator, HtmlRenderer, HtmlRendererOptions, parse};
 use ferromark_transforms::{BoxError, TransformContext, TransformPass, TransformPipeline};
 
 struct AddPeriod;
@@ -36,12 +36,13 @@ impl TransformPass for AddPeriod {
 let source = "Hello";
 let allocator = Allocator::new();
 let mut document = parse(&allocator, source)?;
-let context = TransformContext::new(&allocator, source);
+let renderer_options = HtmlRendererOptions::new();
+let context = TransformContext::new(&allocator, source, &renderer_options);
 let mut pipeline = TransformPipeline::new();
 pipeline.add(AddPeriod);
 pipeline.run(&mut document, &context)?;
 
-let mut renderer = HtmlRenderer::new();
+let mut renderer = HtmlRenderer::with_options(renderer_options);
 assert_eq!(renderer.render(&document), "<p>Hello.</p>\n");
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
@@ -57,6 +58,8 @@ across separate documents and arena resets.
   that document; the pipeline does not roll changes back.
 - Passes may keep configuration and reusable state, but document-specific
   references must stay inside `apply`. The pipeline keeps no arena references.
+  Passes are `Send` so a configured pipeline can move to the document's worker;
+  the document and context remain tied to their parsing thread.
 - `text_runs` groups adjacent `Text` siblings and exposes each segment's source
   span. It does not cross formatting nodes or choose which nested content is
   prose; the pass owns that traversal policy.
@@ -64,6 +67,7 @@ across separate documents and arena resets.
   preserves source spans for unchanged text and gives a replacement the
   bounding span of the source nodes it covers. Insertions use `Span::empty()`;
   that value is not a distinct provenance marker.
-- URL ranges are computed only when a pass explicitly asks for them. The
-  default helper recognizes the renderer's `http://` and `https://` prefixes;
-  custom prefixes can be supplied from `HtmlRendererOptions`.
+- URL ranges are computed only when a pass explicitly asks for them. A
+  `TextRun` scans each original text segment independently, using the matcher
+  built from the same `HtmlRendererOptions` passed to `TransformContext`.
+  Disabled URL autolinking and custom prefixes therefore match the renderer.

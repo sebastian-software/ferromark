@@ -2,7 +2,7 @@ use std::error::Error;
 use std::io::Write;
 
 use ferromark::ast::{Document, Node};
-use ferromark::{Allocator, HtmlRenderer, parse};
+use ferromark::{Allocator, HtmlRenderer, HtmlRendererOptions, parse};
 use ferromark_transforms::{BoxError, TransformContext, TransformPass, TransformPipeline};
 
 struct AddPeriod;
@@ -33,7 +33,8 @@ impl TransformPass for AddPeriod {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut arena = Allocator::new();
-    let mut renderer = HtmlRenderer::new();
+    let renderer_options = HtmlRendererOptions::new();
+    let mut renderer = HtmlRenderer::with_options(renderer_options.clone());
     let mut pipeline = TransformPipeline::new();
 
     // The pass instance is reused, but it stores no references into either
@@ -42,7 +43,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for source in ["Hello", "Again"] {
         {
             let mut document = parse(&arena, source)?;
-            let context = TransformContext::new(&arena, source);
+            let context = TransformContext::new(&arena, source, &renderer_options);
             pipeline.run(&mut document, &context)?;
             std::io::stdout().write_all(renderer.render(&document).as_bytes())?;
         }

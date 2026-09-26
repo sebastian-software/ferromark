@@ -68,6 +68,40 @@ pub(super) fn find_autolink_match<P: AsRef<str>>(
     None
 }
 
+/// Reusable bare-URL matcher configured with the renderer's prefix rules.
+///
+/// Construct this once when a caller needs to scan several text nodes. The
+/// matcher owns its configured prefixes and candidate index, so each scan
+/// reuses the index while applying the same word-boundary and punctuation
+/// rules as HTML rendering. The normal parser and renderer do not use this
+/// public helper.
+pub struct AutolinkMatcher {
+    patterns: Vec<String>,
+    index: FirstByteIndex,
+}
+
+impl AutolinkMatcher {
+    /// Creates a matcher for the provided URL prefixes.
+    #[must_use]
+    pub fn new<P: AsRef<str>>(patterns: &[P]) -> Self {
+        let patterns = patterns
+            .iter()
+            .map(|pattern| pattern.as_ref().to_owned())
+            .collect::<Vec<_>>();
+        let index = FirstByteIndex::from_patterns(&patterns);
+        Self { patterns, index }
+    }
+
+    /// Finds the URL ranges in one text node.
+    ///
+    /// Call this separately for each AST text node when reproducing renderer
+    /// behavior: autolinks never span node boundaries.
+    #[must_use]
+    pub fn find_ranges(&self, text: &str) -> Vec<Range<usize>> {
+        find_autolink_ranges_with_index(text, &self.patterns, &self.index)
+    }
+}
+
 /// Finds the byte ranges that the HTML renderer would recognize as bare URLs.
 ///
 /// This explicit helper lets optional AST transforms protect the same URL
@@ -81,10 +115,18 @@ pub(super) fn find_autolink_match<P: AsRef<str>>(
 #[must_use]
 pub fn find_autolink_ranges<P: AsRef<str>>(s: &str, patterns: &[P]) -> Vec<Range<usize>> {
     let index = FirstByteIndex::from_patterns(patterns);
+    find_autolink_ranges_with_index(s, patterns, &index)
+}
+
+fn find_autolink_ranges_with_index<P: AsRef<str>>(
+    s: &str,
+    patterns: &[P],
+    index: &FirstByteIndex,
+) -> Vec<Range<usize>> {
     let mut ranges = Vec::new();
     let mut cursor = 0;
 
-    while let Some((start, end)) = find_autolink_match(s, cursor, patterns, &index) {
+    while let Some((start, end)) = find_autolink_match(s, cursor, patterns, index) {
         ranges.push(start..end);
         // Matches always consume at least the pattern and one URL byte, but
         // keep the public iterator robust if that recognizer contract changes.

@@ -26,10 +26,12 @@ Add the published `ferromark-transforms` crate as an explicit Cargo workspace
 member. It depends on the root `ferromark` package; the core package never
 depends on transforms. Core-only callers therefore do not compile or run the
 pipeline. The crates share the root product version. Release Please updates the
-explicit workspace member and lockfile together. When publishing is enabled,
-the core crate must be published before the transform crate, whose registry
-dependency has an exact version and whose development manifest also has a local
-path.
+explicit workspace member and lockfile together. Its Rust updater writes
+dependency requirements as caret versions, so the release workflow restores
+the transform crate's exact core version after updating the Release Please
+branch. When publishing is enabled, the core crate must be published before the
+transform crate, whose registry dependency has an exact version and whose
+development manifest also has a local path.
 
 The crate contains `TransformPass`, `TransformPipeline`,
 `TransformContext`, text-run and text-range helpers, URL protection helpers,
@@ -44,8 +46,11 @@ later slice; this foundation adds no JavaScript callbacks or built-in passes.
   the document, source and arena for one call, so a safe implementation cannot
   retain those references in its longer-lived pass state. The pipeline stores
   no document or arena reference.
-- Passes are synchronous and run on the thread that owns the document. No
-  `Send` or `Sync` contract is added.
+- Passes are synchronous and run on the thread that owns the document.
+  `TransformPass: Send` and `BoxError: Send + Sync` let callers move a
+  configured pipeline to a worker; the document and context remain scoped to
+  the allocator and thread that created them. No `Sync` or async contract is
+  added.
 - The first error stops the pipeline and reports the pass's zero-based index,
   stable name and original error. A pass can have partially mutated the AST
   before failing; the pipeline does not roll back. The caller discards or
@@ -71,25 +76,31 @@ across segments gets the bounding range of source nodes it overlaps; unchanged
 prefixes and suffixes keep the bounding spans of their contributing nodes. A
 zero-width insertion receives `Span::empty()`. When one decoded text node is
 split around an edit, each resulting part retains that node's complete source
-span. Character-accurate source maps are not provided.
+span. Nodes outside the edited byte range keep their original strings and
+spans; intermediate empty text nodes are preserved. Character-accurate source
+maps are not provided.
 
 ### URL protection
 
 URL recognition is explicit work. The transform crate never scans URLs
-automatically: a URL-sensitive pass calls the context helper when it needs
-protected ranges. The default helper uses the renderer's existing
-`http://`/`https://` recognition, including its word-boundary and trailing
-punctuation rules. A pass can supply custom prefixes matching its renderer
-configuration. Neither parsing nor rendering calls the new range helper, so
-ordinary processing has no additional URL scan.
+automatically: a pass calls `TextRun::protected_url_ranges` when it needs
+protected ranges. `TransformContext` builds one reusable matcher from the
+actual `HtmlRendererOptions`, including whether autolinking is enabled and any
+custom prefixes. The helper scans each original text node independently and
+offsets those ranges into the run, matching the renderer's word-boundary and
+punctuation rules without allowing a match to cross node boundaries. Neither
+parsing nor ordinary rendering calls the helper, so normal processing adds no
+URL scan.
 
 ### Provenance
 
 No marker or side table distinguishes generated content. Replacement text keeps
 the source span of the replaced content. Pure insertion uses `Span::empty()`.
 Consumers must treat an empty span as “no source range available” and cannot
-infer that every such node was generated. Revisit this only when a concrete
-consumer needs that distinction.
+infer that every such node was generated. This deliberately defers the
+generated-content distinguishability request in #399 question 14 and the
+corresponding #401 acceptance criterion for v1. Revisit it only when a concrete
+consumer needs that distinction and a compatible AST contract is agreed.
 
 ### Derived data and terminology
 
@@ -107,10 +118,9 @@ while leaving formatting and protected-content traversal under each pass's
 control.
 
 The new package adds a second published Cargo archive to the product. The
-release workflow must publish `ferromark` before `ferromark-transforms`, and
-crates.io Trusted Publishing must be configured for the new package before its
-first release. The publish workflow remains a separate gated change until that
-external publish action is explicitly approved.
+publish workflow lists `ferromark` before `ferromark-transforms`, and crates.io
+Trusted Publishing must be configured for the new package before its first
+release.
 
 ## Validation
 

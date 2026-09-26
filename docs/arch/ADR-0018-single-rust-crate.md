@@ -68,6 +68,6 @@ extension is enabled for publishing, publish `ferromark` first and then
 renderer into separately released core crates.
 
 The extension package and its archive rehearsal are part of the transform
-foundation. Updating the publish workflow and configuring crates.io Trusted
-Publishing for the new crate remain a separately gated release action; see
-[ADR-0022](ADR-0022-native-transform-pipeline.md).
+foundation. The publish workflow lists the core before the extension; crates.io
+Trusted Publishing still needs configuration for the new crate before its first
+release. See [ADR-0022](ADR-0022-native-transform-pipeline.md).

@@ -55,6 +55,27 @@ jobs:
           # forks and a revoked token from failing the whole workflow.
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Check out the Release Please branch
+        if: ${{ steps.release.outputs.prs_created == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Restore the exact transform dependency pin
+        if: ${{ steps.release.outputs.prs_created == 'true' }}
+        env:
+          RELEASE_BRANCH: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+        run: |
+          node scripts/preserve-exact-transform-pin.mjs
+          if ! git diff --quiet -- transforms/Cargo.toml; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add transforms/Cargo.toml
+            git commit -m "chore: preserve exact transform dependency pin"
+            git push origin "HEAD:refs/heads/$RELEASE_BRANCH"
+          fi
+
   publish-crates:
     name: publish to crates.io
     needs: release-please
@@ -70,8 +91,9 @@ jobs:
     permissions:
       contents: read
       # crates.io Trusted Publishing exchanges this OIDC token for a
-      # short-lived registry token. It is enabled for `ferromark`, so the
-      # composite needs no `token` input and no long-lived secret exists.
+      # short-lived registry token. It is enabled for `ferromark`; configure it
+      # for `ferromark-transforms` before its first release. No long-lived
+      # registry secret is stored here.
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -82,12 +104,13 @@ jobs:
         with:
           toolchain: "1.95"
 
-      # One published crate, so the dependency ordering is trivial; the action
-      # still skips a version that is already in the index, which is what makes
-      # a retry safe.
+      # Publish the core before the optional transform crate that depends on
+      # it. The action skips versions already in the index, making retries safe.
       - uses: sebastian-software/standards/.github/actions/publish-crates@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
         with:
-          crates: ferromark
+          crates: |
+            ferromark
+            ferromark-transforms
 
   native-matrix:
     name: napi platform matrix

@@ -2,9 +2,9 @@
 
 The `ferromark` core crate publishes to crates.io. The optional
 `ferromark-transforms` crate shares its version and depends on that core. The
-current publish workflow still lists only `ferromark`; before the transform
-crate's first release, that workflow must be approved and changed to publish
-the core first and then the extension. The npm facade and eight native platform
+publish workflow sends the core first and then the extension. Before the
+extension's first release, crates.io Trusted Publishing must be configured for
+the new crate. The npm facade and eight native platform
 packages share the root product version. The Node development workspace and
 `ferromark-node` binding crate remain private. Allocator, AST, parser and
 renderer are modules inside the core library; consumers can use them
@@ -29,11 +29,16 @@ repository root package, and the release follows the organization's
    built, assembled, verified and published to npm, sidecars before the facade,
    and the published versions are confirmed on the registry.
 
-The transform extension is not included in that current publish action. Its
-first release is blocked until the publish action lists `ferromark` before
-`ferromark-transforms` and crates.io Trusted Publishing is configured for the
-new crate. The package and version-bump rehearsal do not test registry
-credentials or upload an archive.
+The package and version-bump rehearsal do not test registry credentials or
+upload an archive. The shared publish action receives `ferromark` before
+`ferromark-transforms`, so it publishes the dependency first and can safely
+skip already-published versions when a release is retried.
+
+Release Please's Rust updater removes Cargo's `=` exact-version operator from
+path dependencies. After it creates or updates the release pull request, the
+workflow runs `scripts/preserve-exact-transform-pin.mjs` on that branch and
+pushes a small correction only when needed. The release rehearsal applies and
+checks the same correction.
 
 Nothing else publishes. Merging ordinary source still only opens or updates the
 release pull request.
@@ -49,8 +54,8 @@ checks at all.
 component. The strategy updates natively, with no template to keep in step:
 
 - the root `Cargo.toml` `[package]` version,
-- `transforms/Cargo.toml`'s version and its exact
-  `ferromark = { version = "…", path = ".." }` dependency,
+- `transforms/Cargo.toml`'s version and `ferromark = { version = "…", path = ".." }`;
+  the workflow then restores the exact `=…` requirement,
 - `node/native/Cargo.toml`'s version and its explicit
   `ferromark = { version = "…", path = "../.." }` requirement,
 - all local entries in `Cargo.lock`,

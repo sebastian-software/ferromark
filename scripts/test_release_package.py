@@ -76,7 +76,11 @@ class RootPackage(unittest.TestCase):
             if requirement is not None:
                 # A path dependency without an explicit version is skipped by
                 # Release Please and would silently keep the previous release.
-                self.assertEqual(requirement["version"], version, member)
+                if package["package"]["name"] == "ferromark-transforms":
+                    expected_requirement = f"={version}"
+                else:
+                    expected_requirement = version
+                self.assertEqual(requirement["version"], expected_requirement, member)
                 expected_path = "/".join([".."] * len(Path(member).parts))
                 self.assertEqual(requirement["path"], expected_path, member)
 
@@ -88,10 +92,10 @@ class RootPackage(unittest.TestCase):
                 published.append(package["name"])
         self.assertEqual(published, ["ferromark-transforms"])
 
-    def test_transforms_depends_on_core_with_a_release_managed_version(self):
+    def test_transforms_depends_on_an_exact_core_version(self):
         manifest = tomllib.loads((ROOT / "transforms" / "Cargo.toml").read_text())
         dependency = manifest["dependencies"]["ferromark"]
-        self.assertEqual(dependency["version"], self.manifest["package"]["version"])
+        self.assertEqual(dependency["version"], f"={self.manifest['package']['version']}")
         self.assertEqual(dependency["path"], "..")
 
     def test_core_does_not_depend_on_the_optional_transform_crate(self):

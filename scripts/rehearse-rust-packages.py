@@ -73,7 +73,7 @@ def main():
             names.append(member_package['name'])
         if member_package['name'] == 'ferromark-transforms':
             dependency = manifest['dependencies']['ferromark']
-            assert dependency['version'] == version, f'{member}: exact core version'
+            assert dependency['version'] == f'={version}', f'{member}: exact core version'
             assert dependency['path'] == '..', f'{member}: local development path'
     assert names == ['ferromark', 'ferromark-transforms']
     for name in names:
@@ -112,7 +112,7 @@ def main():
                     assert 'path' not in spec, f'{name}: leaked workspace path'
         if name == 'ferromark-transforms':
             core = manifest['dependencies']['ferromark']
-            assert core['version'] == version, 'transforms: exact core dependency'
+            assert core['version'] == f'={version}', 'transforms: exact core dependency'
             assert 'path' not in core, 'transforms: published dependency must use crates.io'
         artifacts.append(dict(name=name, version=version, archive=str(archive.relative_to(output)),
             bytes=archive.stat().st_size, sha256=hashlib.sha256(archive.read_bytes()).hexdigest()))
@@ -157,7 +157,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let source = "Hello";
     let arena = Allocator::new();
     let mut document = parse(&arena, source)?;
-    let context = TransformContext::new(&arena, source);
+    let renderer_options = ferromark::HtmlRendererOptions::new();
+    let context = TransformContext::new(&arena, source, &renderer_options);
     let mut pipeline = TransformPipeline::new();
     pipeline.add(AddPeriod);
     pipeline.run(&mut document, &context)?;

@@ -10,6 +10,8 @@
 //! object can be reused for later documents, but it must not retain references
 //! into an arena that the caller may reset. See the packaged
 //! [`custom pass example`](https://github.com/sebastian-software/ferromark/tree/main/transforms/examples/custom_pass.rs).
+//! Pass objects are `Send`, so callers can move a configured pipeline to the
+//! thread that owns a document; documents and contexts stay thread-local.
 
 #![deny(missing_docs)]
 #![deny(
@@ -26,10 +28,10 @@ use std::fmt;
 use std::ops::Range;
 
 use ferromark::ast::{Document, Node, Span, Text};
-use ferromark::{Allocator, find_autolink_ranges};
+use ferromark::{Allocator, AutolinkMatcher, HtmlRendererOptions};
 
-/// The boxed error type returned by custom transform passes.
-pub type BoxError = Box<dyn Error + 'static>;
+/// The boxed, thread-safe error type returned by custom transform passes.
+pub type BoxError = Box<dyn Error + Send + Sync + 'static>;
 
 /// A stateful pass over one parsed document.
 ///
@@ -38,7 +40,9 @@ pub type BoxError = Box<dyn Error + 'static>;
 /// discard or reparse that document after a failure. Implementations must keep
 /// all document-specific references local to [`Self::apply`], since callers
 /// may reset the arena as soon as they have finished rendering the document.
-pub trait TransformPass {
+/// Pass values must be `Send` so a configured pipeline can move to the worker
+/// that owns a document.
+pub trait TransformPass: Send {
     /// Stable name included in pipeline errors.
     fn name(&self) -> &'static str;
 
@@ -108,20 +112,36 @@ impl TransformPipeline {
 
 /// Context available to a pass while one document is being transformed.
 ///
-/// The context only scans for URLs when a pass explicitly calls one of its URL
-/// helper methods. The default prefixes match Ferromark's default renderer
-/// autolinks. Passes with custom renderer prefixes can call
-/// [`Self::protected_url_ranges_with_patterns`] with those prefixes.
+/// The context only scans for URLs when a pass explicitly calls
+/// [`TextRun::protected_url_ranges`]. It builds one reusable matcher from the
+/// supplied renderer options, so disabled autolinks and custom prefixes match
+/// the renderer exactly.
 pub struct TransformContext<'arena> {
     allocator: &'arena Allocator,
     source: &'arena str,
+    autolink_matcher: Option<AutolinkMatcher>,
 }
 
 impl<'arena> TransformContext<'arena> {
-    /// Creates a context for the source and allocator used to parse a document.
+    /// Creates a context for the exact source and allocator used to parse a document.
+    ///
+    /// The caller must pass the same allocator and source that produced the
+    /// document; the public AST does not retain either identity for validation.
+    /// Renderer options are copied into one reusable URL matcher for the
+    /// optional URL-protection helper. Construct the renderer from those same
+    /// options (or an unchanged clone) so URL protection and output stay aligned.
+    /// This matcher is not used unless a pass explicitly scans a text run.
     #[must_use]
-    pub const fn new(allocator: &'arena Allocator, source: &'arena str) -> Self {
-        Self { allocator, source }
+    pub fn new(
+        allocator: &'arena Allocator,
+        source: &'arena str,
+        renderer_options: &HtmlRendererOptions,
+    ) -> Self {
+        Self {
+            allocator,
+            source,
+            autolink_matcher: renderer_options.autolink_matcher(),
+        }
     }
 
     /// Returns the source text parsed into the document.
@@ -160,26 +180,6 @@ impl<'arena> TransformContext<'arena> {
         text.value = self.alloc_str(value);
     }
 
-    /// Finds URL ranges using the renderer's default `http://` and `https://` prefixes.
-    ///
-    /// The returned byte ranges use the same word-boundary and trailing
-    /// punctuation rules as HTML autolinking. This method is opt-in work: the
-    /// pipeline does not call it unless a pass asks for the ranges.
-    #[must_use]
-    pub fn protected_url_ranges(&self, text: &str) -> Vec<Range<usize>> {
-        self.protected_url_ranges_with_patterns(text, &["http://", "https://"])
-    }
-
-    /// Finds URL ranges using caller-supplied renderer-compatible prefixes.
-    #[must_use]
-    pub fn protected_url_ranges_with_patterns<P: AsRef<str>>(
-        &self,
-        text: &str,
-        patterns: &[P],
-    ) -> Vec<Range<usize>> {
-        find_autolink_ranges(text, patterns)
-    }
-
     /// Replaces a byte range within adjacent text nodes and returns its source span.
     ///
     /// `node_range` selects one contiguous run from the `nodes` slice. The byte
@@ -198,45 +198,66 @@ impl<'arena> TransformContext<'arena> {
         replacement: &str,
     ) -> Result<Span, TextReplacementError> {
         validate_node_range(nodes, &node_range)?;
-
-        let mut original = String::new();
-        for node in &nodes[node_range.clone()] {
-            if let Node::Text(text) = node {
-                original.push_str(text.value);
-            }
-        }
-        validate_byte_range(&original, &byte_range)?;
+        validate_text_byte_range(nodes, &node_range, &byte_range)?;
 
         if byte_range.is_empty() && replacement.is_empty() {
             return Ok(Span::empty());
         }
 
         let replacement_span = span_for_byte_range(nodes, &node_range, &byte_range);
-        let prefix_span = span_for_byte_range(nodes, &node_range, &(0..byte_range.start));
-        let suffix_span =
-            span_for_byte_range(nodes, &node_range, &(byte_range.end..original.len()));
-        let prefix = &original[..byte_range.start];
-        let suffix = &original[byte_range.end..];
+        if byte_range.is_empty() {
+            insert_at_text_offset(self, nodes, &node_range, byte_range.start, replacement);
+            return Ok(replacement_span);
+        }
 
-        let mut replacements = Vec::with_capacity(3);
+        let (first, last, first_offset, last_offset) =
+            overlapping_text_nodes(nodes, &node_range, &byte_range)?;
+        let (first_value, first_span) = match &nodes[first] {
+            Node::Text(text) => (text.value, text.span),
+            _ => return Err(TextReplacementError::NonTextNode { index: first }),
+        };
+        let (last_value, last_span) = match &nodes[last] {
+            Node::Text(text) => (text.value, text.span),
+            _ => return Err(TextReplacementError::NonTextNode { index: last }),
+        };
+
+        // Rebuild only the nodes whose text overlaps the edit. Prefix and
+        // suffix slices borrow the original arena strings, and empty nodes in
+        // the consumed interval retain their value and span unchanged.
+        let mut replacements = std::vec::Vec::with_capacity(last - first + 3);
+        let prefix = &first_value[..first_offset];
         if !prefix.is_empty() {
-            replacements.push(Node::Text(self.replacement_text(prefix, prefix_span)));
+            replacements.push(Node::Text(Text {
+                value: prefix,
+                span: first_span,
+            }));
         }
         if !replacement.is_empty() {
             replacements.push(Node::Text(
                 self.replacement_text(replacement, replacement_span),
             ));
         }
+        if first < last {
+            for node in &nodes[first + 1..last] {
+                if let Node::Text(text) = node
+                    && text.value.is_empty()
+                {
+                    replacements.push(Node::Text(Text {
+                        value: text.value,
+                        span: text.span,
+                    }));
+                }
+            }
+        }
+        let suffix = &last_value[last_offset..];
         if !suffix.is_empty() {
-            replacements.push(Node::Text(self.replacement_text(suffix, suffix_span)));
+            replacements.push(Node::Text(Text {
+                value: suffix,
+                span: last_span,
+            }));
         }
 
-        for _ in node_range.clone() {
-            nodes.remove(node_range.start);
-        }
-        for (offset, node) in replacements.into_iter().enumerate() {
-            nodes.insert(node_range.start + offset, node);
-        }
+        drop(nodes.splice(first..last + 1, replacements));
 
         Ok(replacement_span)
     }
@@ -272,6 +293,32 @@ impl<'nodes, 'arena> TextRun<'nodes, 'arena> {
                 None
             }
         })
+    }
+
+    /// Finds protected URL ranges using the renderer options in `context`.
+    ///
+    /// Each original text segment is scanned independently, then its ranges
+    /// are offset into the coalesced run. This mirrors HTML rendering, where
+    /// autolinks do not cross AST text-node boundaries. If URL autolinking is
+    /// disabled or no prefixes are configured, this returns no ranges.
+    #[must_use]
+    pub fn protected_url_ranges(&self, context: &TransformContext<'_>) -> Vec<Range<usize>> {
+        let mut ranges = Vec::new();
+        let Some(matcher) = &context.autolink_matcher else {
+            return ranges;
+        };
+
+        let mut offset = 0;
+        for segment in self.segments() {
+            ranges.extend(
+                matcher
+                    .find_ranges(segment.value)
+                    .into_iter()
+                    .map(|range| range.start + offset..range.end + offset),
+            );
+            offset += segment.value.len();
+        }
+        ranges
     }
 
     /// Returns the coalesced text, borrowing for a one-node run.
@@ -446,6 +493,164 @@ fn validate_node_range(
         }
     }
     Ok(())
+}
+
+fn validate_text_byte_range(
+    nodes: &[Node<'_>],
+    node_range: &Range<usize>,
+    byte_range: &Range<usize>,
+) -> Result<(), TextReplacementError> {
+    if byte_range.start > byte_range.end {
+        return Err(TextReplacementError::ReversedByteRange {
+            start: byte_range.start,
+            end: byte_range.end,
+        });
+    }
+
+    let text_len = text_len_in_range(nodes, node_range);
+    if byte_range.end > text_len {
+        return Err(TextReplacementError::ByteRangeOutOfBounds {
+            end: byte_range.end,
+            text_len,
+        });
+    }
+
+    for offset in [byte_range.start, byte_range.end] {
+        if !is_text_char_boundary(nodes, node_range, offset) {
+            return Err(TextReplacementError::NotCharBoundary { offset });
+        }
+    }
+    Ok(())
+}
+
+fn text_len_in_range(nodes: &[Node<'_>], node_range: &Range<usize>) -> usize {
+    nodes[node_range.clone()]
+        .iter()
+        .map(|node| match node {
+            Node::Text(text) => text.value.len(),
+            _ => 0,
+        })
+        .sum()
+}
+
+fn is_text_char_boundary(nodes: &[Node<'_>], node_range: &Range<usize>, offset: usize) -> bool {
+    let mut cursor = 0;
+    for node in &nodes[node_range.clone()] {
+        let Node::Text(text) = node else {
+            return false;
+        };
+        let end = cursor + text.value.len();
+        if offset <= end {
+            return text.value.is_char_boundary(offset - cursor);
+        }
+        cursor = end;
+    }
+    offset == cursor
+}
+
+fn overlapping_text_nodes(
+    nodes: &[Node<'_>],
+    node_range: &Range<usize>,
+    byte_range: &Range<usize>,
+) -> Result<(usize, usize, usize, usize), TextReplacementError> {
+    let mut cursor = 0;
+    let mut first = None;
+    let mut last = None;
+    let mut first_offset = 0;
+    let mut last_offset = 0;
+
+    for index in node_range.clone() {
+        let Node::Text(text) = &nodes[index] else {
+            continue;
+        };
+        let end = cursor + text.value.len();
+        if cursor < byte_range.end && end > byte_range.start {
+            if first.is_none() {
+                first = Some(index);
+                first_offset = byte_range.start - cursor;
+            }
+            last = Some(index);
+            last_offset = byte_range.end.min(end) - cursor;
+        }
+        cursor = end;
+    }
+
+    let Some(first) = first else {
+        return Err(TextReplacementError::ByteRangeOutOfBounds {
+            end: byte_range.end,
+            text_len: text_len_in_range(nodes, node_range),
+        });
+    };
+    let Some(last) = last else {
+        return Err(TextReplacementError::ByteRangeOutOfBounds {
+            end: byte_range.end,
+            text_len: text_len_in_range(nodes, node_range),
+        });
+    };
+    Ok((first, last, first_offset, last_offset))
+}
+
+fn insert_at_text_offset<'arena>(
+    context: &TransformContext<'arena>,
+    nodes: &mut ferromark::allocator::Vec<'arena, Node<'arena>>,
+    node_range: &Range<usize>,
+    offset: usize,
+    replacement: &str,
+) {
+    let text_len = text_len_in_range(nodes, node_range);
+    if offset == 0 {
+        let inserted = Node::Text(context.generated_text(replacement));
+        drop(nodes.splice(
+            node_range.start..node_range.start,
+            std::iter::once(inserted),
+        ));
+        return;
+    }
+    if offset == text_len {
+        let inserted = Node::Text(context.generated_text(replacement));
+        drop(nodes.splice(node_range.end..node_range.end, std::iter::once(inserted)));
+        return;
+    }
+
+    let mut cursor = 0;
+    for index in node_range.clone() {
+        let Node::Text(text) = &nodes[index] else {
+            continue;
+        };
+        let end = cursor + text.value.len();
+        if cursor < offset && offset < end {
+            let (prefix, suffix, span) = (
+                &text.value[..offset - cursor],
+                &text.value[offset - cursor..],
+                text.span,
+            );
+            let inserted = Node::Text(context.generated_text(replacement));
+            let parts = [
+                Some(Node::Text(Text {
+                    value: prefix,
+                    span,
+                })),
+                Some(inserted),
+                Some(Node::Text(Text {
+                    value: suffix,
+                    span,
+                })),
+            ];
+            drop(nodes.splice(index..index + 1, parts.into_iter().flatten()));
+            return;
+        }
+        cursor = end;
+        if cursor == offset {
+            let inserted = Node::Text(context.generated_text(replacement));
+            drop(nodes.splice(index + 1..index + 1, std::iter::once(inserted)));
+            return;
+        }
+    }
+
+    // Byte-range validation guarantees a boundary in the selected text run.
+    // The run-end case is handled above, so this fallback inserts at its end.
+    let inserted = Node::Text(context.generated_text(replacement));
+    drop(nodes.splice(node_range.end..node_range.end, std::iter::once(inserted)));
 }
 
 fn validate_byte_range(value: &str, range: &Range<usize>) -> Result<(), TextReplacementError> {

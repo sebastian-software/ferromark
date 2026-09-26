@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { it } from "node:test";
 import TOML from "@iarna/toml";
+import { preserveExactTransformPin } from "./lib/exact-transform-pin.mjs";
 import {
   maintenanceHistory,
   proposeRelease,
@@ -43,6 +44,22 @@ it("configures one release component for the versioned Cargo workspace", () => {
     assert.ok(!/lock\.yaml$/.test(path), `${path}: a lockfile is generated state`);
   }
   assert.ok(!existsSync(resolve(root, "version.txt")), "version.txt must not come back");
+});
+
+it("restores the exact transform dependency pin after the Rust updater", () => {
+  const files = readReleaseFiles();
+  const rootVersion = TOML.parse(files.get("Cargo.toml")).package.version;
+  const transformManifest = files.get("transforms/Cargo.toml");
+  const updaterOutput = transformManifest.replace(
+    `version = "=${rootVersion}"`,
+    `version = "${rootVersion}"`,
+  );
+  assert.notEqual(updaterOutput, transformManifest, "fixture models the Rust updater's caret pin");
+
+  const restored = preserveExactTransformPin(files.get("Cargo.toml"), updaterOutput);
+  assert.equal(restored.changed, true);
+  assert.equal(TOML.parse(restored.content).dependencies.ferromark.version, `=${rootVersion}`);
+  assert.equal(preserveExactTransformPin(files.get("Cargo.toml"), restored.content).changed, false);
 });
 
 it("builds coordinated RC, subsequent RC, stable, and patch release PRs with the real updater", async () => {
