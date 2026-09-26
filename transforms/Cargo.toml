@@ -1,6 +1,6 @@
 [package]
 name = "ferromark-transforms"
-version = "2.2.0"
+version = "2.3.0"
 authors.workspace = true
 categories.workspace = true
 edition.workspace = true
@@ -16,7 +16,7 @@ include = ["/src", "/tests", "/examples", "/README.md"]
 publish = ["crates-io"]
 
 [dependencies]
-ferromark = { version = "=2.2.0", path = ".." }
+ferromark = { version = "2.3.0", path = ".." }
 
 [lints]
 workspace = true
