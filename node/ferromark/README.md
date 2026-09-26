@@ -95,6 +95,29 @@ const html = toHtml('"A *quoted* phrase"...', {
 });
 ```
 
+## Ordered native transform passes
+
+`passes` composes optional built-in transformations after parsing. The array
+order determines how they see the document. It supports GitHub references with
+an explicit repository and the pinned emoji shortcode map; typography can also
+appear as a `kind: "typography"` pass. Do not combine `passes` with the legacy
+top-level `typography` option.
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml("Fixes #42 :rocket:", {
+  passes: [{ kind: "githubReferences", repository: "acme/widgets" }, { kind: "emojiShortcodes" }],
+});
+```
+
+GitHub references never infer the repository or access the network. Emoji
+shortcodes are case-sensitive; unknown names stay unchanged. Both are opt-in,
+preserve protected syntax and raw HTML, and use the regular renderer URL and
+escaping policy. The [native transform guide](../../transforms/README.md) and
+[reference decision](../../docs/decisions/2026-09-26-native-github-and-emoji-passes.md)
+describe supported forms and intentional differences from Remark plugins.
+
 Keep writing extensions off when their syntax is not needed. Disabled-option
 measurements were close to the pre-feature core; enabling unused syntax still
 costs several percent on ordinary documents and more on marker-heavy inputs.

@@ -1,6 +1,6 @@
 //! Private entry points that take `Options` in packed form.
 //!
-//! napi-rs converts an `Options` argument field by field. For each of the 30
+//! napi-rs converts an `Options` argument field by field. For each of the 32
 //! fields, present or not, it calls `napi_get_named_property`, which creates
 //! the property key from a C string and runs an uncached property lookup, and
 //! then `napi_typeof`. That costs more per call than rendering a small
@@ -12,8 +12,8 @@
 //!   fields, numbered in their declaration order in [`Options`]. A bit in `set`
 //!   marks the field as present, and the same bit in `on` holds its value. For
 //!   `renderPolicy`, a set value bit means `'trusted'`.
-//! - `headingOffset`, `headingIdPrefix`, `linkBasePath` and `typography` pass
-//!   through as read, and `undefined` stands for an absent field.
+//! - `headingOffset`, `headingIdPrefix`, `linkBasePath`, `typography`, and
+//!   `passes` pass through as read, and `undefined` stands for an absent field.
 //!
 //! [`unpack`] rebuilds the `Options` value napi-rs would have produced from
 //! the object. Each entry then runs the same code as its public counterpart,
@@ -34,8 +34,8 @@ use napi_derive::napi;
 
 use crate::input::Utf8Input;
 use crate::{
-    Options, TransformResult, TypographyConfig, core_options, html_buffer, js_string,
-    render_document, render_one_shot,
+    NativePassConfig, Options, TransformResult, TypographyConfig, core_options, html_buffer,
+    js_string, render_document, render_one_shot,
 };
 
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
@@ -49,6 +49,7 @@ pub fn unpack(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
+    passes: Option<Vec<NativePassConfig>>,
 ) -> Options {
     let flag = |bit: u32| (set & (1 << bit) != 0).then_some(on & (1 << bit) != 0);
     Options {
@@ -84,6 +85,7 @@ pub fn unpack(
         mdx: flag(26),
         link_base_path,
         typography,
+        passes,
     }
 }
 
@@ -102,12 +104,14 @@ fn unpack_present(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
+    passes: Option<Vec<NativePassConfig>>,
 ) -> Option<Options> {
     let absent = set == 0
         && heading_offset.is_none()
         && heading_id_prefix.is_none()
         && link_base_path.is_none()
-        && typography.is_none();
+        && typography.is_none()
+        && passes.is_none();
     (!absent).then(|| {
         unpack(
             set,
@@ -116,6 +120,7 @@ fn unpack_present(
             heading_id_prefix,
             link_base_path,
             typography,
+            passes,
         )
     })
 }
@@ -132,6 +137,7 @@ pub fn to_html_packed<'env>(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
+    passes: Option<Vec<NativePassConfig>>,
 ) -> Result<JsString<'env>> {
     let options = unpack_present(
         set,
@@ -140,12 +146,14 @@ pub fn to_html_packed<'env>(
         heading_id_prefix,
         link_base_path,
         typography,
+        passes,
     );
     render_one_shot(&markdown, options, |html| js_string(env, html))
 }
 
 /// Internal to the `ferromark` facade: `toHtmlBuffer` with packed options.
 #[napi(catch_unwind, js_name = "toHtmlBufferPacked")]
+#[allow(clippy::too_many_arguments)]
 pub fn to_html_buffer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
@@ -154,6 +162,7 @@ pub fn to_html_buffer_packed(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
+    passes: Option<Vec<NativePassConfig>>,
 ) -> Result<Buffer> {
     let options = unpack_present(
         set,
@@ -162,12 +171,14 @@ pub fn to_html_buffer_packed(
         heading_id_prefix,
         link_base_path,
         typography,
+        passes,
     );
     render_one_shot(&markdown, options, html_buffer)
 }
 
 /// Internal to the `ferromark` facade: `transform` with packed options.
 #[napi(catch_unwind, js_name = "transformPacked")]
+#[allow(clippy::too_many_arguments)]
 pub fn transform_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
@@ -176,6 +187,7 @@ pub fn transform_packed(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
+    passes: Option<Vec<NativePassConfig>>,
 ) -> Result<TransformResult> {
     let options = unpack(
         set,
@@ -184,6 +196,7 @@ pub fn transform_packed(
         heading_id_prefix,
         link_base_path,
         typography,
+        passes,
     );
     render_document(&markdown, core_options(Some(options))?, None)
 }
@@ -201,6 +214,7 @@ pub fn to_html_with_renderer_packed(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
+    passes: Option<Vec<NativePassConfig>>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
     let options = unpack(
@@ -210,6 +224,7 @@ pub fn to_html_with_renderer_packed(
         heading_id_prefix,
         link_base_path,
         typography,
+        passes,
     );
     Ok(render_document(&markdown, core_options(Some(options))?, Some(renderer))?.html)
 }
@@ -227,6 +242,7 @@ pub fn transform_with_renderer_packed(
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
+    passes: Option<Vec<NativePassConfig>>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<TransformResult> {
     let options = unpack(
@@ -236,6 +252,7 @@ pub fn transform_with_renderer_packed(
         heading_id_prefix,
         link_base_path,
         typography,
+        passes,
     );
     render_document(&markdown, core_options(Some(options))?, Some(renderer))
 }

@@ -192,6 +192,12 @@ fn math_html_mdx_expressions_and_image_metadata_are_protected() {
     assert!(paragraph.children.iter().any(
         |node| matches!(node, ferromark::ast::Node::InlineMath(math) if math.value == "--...")
     ));
+    assert!(
+        paragraph
+            .children
+            .iter()
+            .any(|node| matches!(node, ferromark::ast::Node::Text(text) if text.value == "--..."))
+    );
     assert!(paragraph.children.iter().any(
         |node| matches!(node, ferromark::ast::Node::Image(image) if image.alt == "alt --..." && image.url == "image--..." && image.title == Some("title --..."))
     ));

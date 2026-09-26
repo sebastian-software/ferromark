@@ -76,6 +76,46 @@ independently. The
 are documented separately. The parser and renderer never run this pass unless
 the caller adds it.
 
+## GitHub references
+
+`GitHubReferencesPass` links an explicit supported subset of GitHub references.
+Always give it a repository; it never reads package metadata, Git remotes, or
+the network. Labels keep their authored text. Local `#N` and `GH-N` references,
+`owner/repo#N`, user/team mentions, 7–40 character hexadecimal commits, and commit
+ranges are recognized. Existing links, code, math, raw HTML, MDX expressions,
+image metadata, destinations, titles, and renderer-recognized bare URLs stay
+unchanged.
+
+```rust
+use ferromark_transforms::{GitHubReferencesPass, TransformPipeline};
+
+let mut pipeline = TransformPipeline::new();
+pipeline.add(GitHubReferencesPass::new("owner/repository")?);
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+See the [native reference decision](../docs/decisions/2026-09-26-native-github-and-emoji-passes.md)
+for qualification boundaries and differences from `remark-github`.
+
+## Emoji shortcodes
+
+`EmojiShortcodesPass` replaces known case-sensitive aliases from the pinned
+`gemoji@8.1.0` dataset with Unicode emoji. Unknown aliases stay as text; the
+pass adds no emoticons, spacing, or HTML wrappers. The 1,913-entry map and its
+MIT notice are bundled, so no data is downloaded or loaded at runtime.
+
+```rust
+use ferromark_transforms::{EmojiShortcodesPass, TransformPipeline};
+
+let mut pipeline = TransformPipeline::new();
+pipeline.add(EmojiShortcodesPass::new());
+```
+
+Run `pnpm --dir scripts gemoji:data:check` to verify that the generated Rust
+table matches the pinned source artifact. To intentionally update the data,
+review the provenance, change the pinned package and run
+`pnpm --dir scripts gemoji:data`.
+
 ## Contract
 
 - Passes run in insertion order. The first failure stops later passes and

@@ -12,6 +12,17 @@ export interface TypographyOptions {
   ellipses?: boolean;
 }
 
+/** One ordered, opt-in native transform pass. Passes run in array order. */
+export type NativePassOptions =
+  | {
+      kind: "typography";
+      language: TypographyOptions["language"];
+      dashes?: boolean;
+      ellipses?: boolean;
+    }
+  | { kind: "githubReferences"; repository: string }
+  | { kind: "emojiShortcodes" };
+
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
 export interface Options {
   tableAttributes?: boolean;
@@ -76,6 +87,8 @@ export interface Options {
   linkBasePath?: string;
   /** Apply explicit locale-aware typography after parsing. Default: off. */
   typography?: TypographyOptions;
+  /** Run native transform passes in the given order. Cannot be combined with `typography`. */
+  passes?: NativePassOptions[];
 }
 
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging

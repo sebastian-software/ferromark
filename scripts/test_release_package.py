@@ -161,6 +161,7 @@ class TransformArchive(unittest.TestCase):
             "/src",
             "/tests",
             "/examples",
+            "/data",
             "/README.md",
         ]
         self.assertEqual(self.manifest["package"]["include"], expected)

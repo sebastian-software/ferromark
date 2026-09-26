@@ -22,9 +22,15 @@
     clippy::unimplemented
 )]
 
+mod emoji;
+mod emoji_data;
+mod github;
+mod prose;
 mod toc;
 mod typography;
 
+pub use emoji::EmojiShortcodesPass;
+pub use github::{GitHubReferencesPass, InvalidGitHubRepository};
 pub use toc::{TableOfContentsError, build_table_of_contents};
 pub use typography::{
     TypographyLanguage, TypographyOptions, TypographyPass, UnsupportedTypographyLanguage,
@@ -35,7 +41,7 @@ use std::error::Error;
 use std::fmt;
 use std::ops::Range;
 
-use ferromark::ast::{Document, Node, Span, Text};
+use ferromark::ast::{Document, Link, Node, Span, Text};
 use ferromark::{Allocator, AutolinkMatcher, HtmlRendererOptions};
 
 /// The boxed, thread-safe error type returned by custom transform passes.
@@ -205,17 +211,27 @@ impl<'arena> TransformContext<'arena> {
         byte_range: Range<usize>,
         replacement: &str,
     ) -> Result<Span, TextReplacementError> {
+        Self::replace_text_range_with_node(nodes, node_range, byte_range, |span| {
+            (!replacement.is_empty()).then(|| Node::Text(self.replacement_text(replacement, span)))
+        })
+    }
+
+    pub(crate) fn replace_text_range_with_node(
+        nodes: &mut ferromark::allocator::Vec<'arena, Node<'arena>>,
+        node_range: Range<usize>,
+        byte_range: Range<usize>,
+        replacement: impl FnOnce(Span) -> Option<Node<'arena>>,
+    ) -> Result<Span, TextReplacementError> {
         validate_node_range(nodes, &node_range)?;
         validate_text_byte_range(nodes, &node_range, &byte_range)?;
 
-        if byte_range.is_empty() && replacement.is_empty() {
-            return Ok(Span::empty());
-        }
-
         let replacement_span = span_for_byte_range(nodes, &node_range, &byte_range);
+        let replacement = replacement(replacement_span);
         if byte_range.is_empty() {
-            insert_at_text_offset(self, nodes, &node_range, byte_range.start, replacement);
-            return Ok(replacement_span);
+            if let Some(node) = replacement {
+                insert_node_at_text_offset(nodes, &node_range, byte_range.start, node);
+            }
+            return Ok(Span::empty());
         }
 
         let (first, last, first_offset, last_offset) =
@@ -240,10 +256,8 @@ impl<'arena> TransformContext<'arena> {
                 span: first_span,
             }));
         }
-        if !replacement.is_empty() {
-            replacements.push(Node::Text(
-                self.replacement_text(replacement, replacement_span),
-            ));
+        if let Some(replacement) = replacement {
+            replacements.push(replacement);
         }
         if first < last {
             for node in &nodes[first + 1..last] {
@@ -268,6 +282,17 @@ impl<'arena> TransformContext<'arena> {
         drop(nodes.splice(first..last + 1, replacements));
 
         Ok(replacement_span)
+    }
+
+    pub(crate) fn text_link_node(&self, label: &str, url: &str, span: Span) -> Node<'arena> {
+        let mut children = self.allocator.new_vec();
+        children.push(Node::Text(self.replacement_text(label, span)));
+        Node::Link(self.allocator.boxed(Link {
+            url: self.alloc_str(url),
+            title: None,
+            children,
+            span,
+        }))
     }
 }
 
@@ -598,16 +623,14 @@ fn overlapping_text_nodes(
     Ok((first, last, first_offset, last_offset))
 }
 
-fn insert_at_text_offset<'arena>(
-    context: &TransformContext<'arena>,
+fn insert_node_at_text_offset<'arena>(
     nodes: &mut ferromark::allocator::Vec<'arena, Node<'arena>>,
     node_range: &Range<usize>,
     offset: usize,
-    replacement: &str,
+    inserted: Node<'arena>,
 ) {
     let text_len = text_len_in_range(nodes, node_range);
     if offset == 0 {
-        let inserted = Node::Text(context.generated_text(replacement));
         drop(nodes.splice(
             node_range.start..node_range.start,
             std::iter::once(inserted),
@@ -615,7 +638,6 @@ fn insert_at_text_offset<'arena>(
         return;
     }
     if offset == text_len {
-        let inserted = Node::Text(context.generated_text(replacement));
         drop(nodes.splice(node_range.end..node_range.end, std::iter::once(inserted)));
         return;
     }
@@ -632,7 +654,6 @@ fn insert_at_text_offset<'arena>(
                 &text.value[offset - cursor..],
                 text.span,
             );
-            let inserted = Node::Text(context.generated_text(replacement));
             let parts = [
                 Some(Node::Text(Text {
                     value: prefix,
@@ -649,7 +670,6 @@ fn insert_at_text_offset<'arena>(
         }
         cursor = end;
         if cursor == offset {
-            let inserted = Node::Text(context.generated_text(replacement));
             drop(nodes.splice(index + 1..index + 1, std::iter::once(inserted)));
             return;
         }
@@ -657,7 +677,6 @@ fn insert_at_text_offset<'arena>(
 
     // Byte-range validation guarantees a boundary in the selected text run.
     // The run-end case is handled above, so this fallback inserts at its end.
-    let inserted = Node::Text(context.generated_text(replacement));
     drop(nodes.splice(node_range.end..node_range.end, std::iter::once(inserted)));
 }
 
