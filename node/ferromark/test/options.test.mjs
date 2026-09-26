@@ -70,6 +70,7 @@ const fields = [
   ["cjkEmphasis", "boolean"],
   ["mdx", "boolean"],
   ["linkBasePath", "string"],
+  ["typography", "object"],
 ];
 const keys = fields.map(([key]) => key);
 
@@ -111,6 +112,7 @@ const probe = [
   "// line comment",
   "",
   "A**強調。**B",
+  '"A quote" -- it\'s fine...',
   "",
   "<Component />",
   "",
@@ -299,9 +301,9 @@ function declaredFields() {
     .split("\n")
     .filter((line) => line.trim() !== "" && !/^\s*(?:\/\*\*|\*)/.test(line))
     .map((line) => {
-      const member = /^ {2}(\w+)\?: (boolean|number|string)$/.exec(line);
+      const member = /^ {2}(\w+)\?: (boolean|number|string|TypographyConfig)$/.exec(line);
       assert.ok(member, `unexpected Options member in native.d.ts: ${line}`);
-      return [member[1], member[2]];
+      return [member[1], member[2].startsWith("TypographyConfig") ? "object" : member[2]];
     });
 }
 
@@ -336,7 +338,9 @@ test("the packed path gets every declared field once, in declaration order", () 
     Object.fromEntries(
       declared.map(([key, type]) => [
         key,
-        key === "renderPolicy" ? "trusted" : { boolean: true, number: 1, string: "" }[type],
+        key === "renderPolicy"
+          ? "trusted"
+          : { boolean: true, number: 1, string: "", object: { language: "en" } }[type],
       ]),
     );
   for (const entry of entries) {
@@ -354,6 +358,7 @@ test("the probe document shows every option", () => {
   // and `tableColumnNames` only with a colgroup.
   const bases = [{}, { renderPolicy: "trusted" }, { tableColgroup: true }];
   const choices = {
+    typography: [{ language: "en" }, { language: "ru", dashes: false, ellipses: false }],
     headingIdPrefix: ["", "p-"],
     headingOffset: [0, 1],
     linkBasePath: ["", "/docs"],
@@ -392,7 +397,7 @@ test("packs every boolean field in combination with trusted rendering", () => {
 test("packs every field at once", () => {
   const all = {};
   for (const [key, type] of fields) {
-    all[key] = { boolean: true, number: 1, string: "" }[type];
+    all[key] = { boolean: true, number: 1, string: "", object: { language: "en" } }[type];
   }
   all.renderPolicy = "trusted";
   all.headingIdPrefix = "docs-";
@@ -410,6 +415,7 @@ const validValues = {
   number: [-2, -1, 0, 1, 2],
   renderPolicy: ["trusted", "untrusted"],
   string: ["", "docs-", "/docs", "/docs/"],
+  object: [{ language: "en" }, { language: "fr" }],
 };
 
 /** Half the fields set, mostly to valid values and sometimes to any value. */
@@ -672,6 +678,36 @@ test("runs getters once each, in napi-rs's order, and stops where napi-rs stops"
       });
     },
     "a changing getter",
+  );
+});
+
+test("packs nested typography fields once in native declaration order", () => {
+  assertEquivalent(
+    probe,
+    (log) => {
+      const typography = {};
+      for (const [key, value] of [
+        ["language", "en"],
+        ["dashes", false],
+        ["ellipses", true],
+      ]) {
+        Object.defineProperty(typography, key, {
+          get() {
+            log.push(`typography.${key}`);
+            return value;
+          },
+        });
+      }
+      const options = {};
+      Object.defineProperty(options, "typography", {
+        get() {
+          log.push("typography");
+          return typography;
+        },
+      });
+      return options;
+    },
+    "nested typography getters",
   );
 });
 

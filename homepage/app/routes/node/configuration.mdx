@@ -33,6 +33,9 @@ const html = toHtml("# Notes\n\nA detail.[^1]\n\n[^1]: More context.", options);
 Omitted values use the package defaults. There are no named preset constructors
 in the Node.js API; configure the individual options directly. To add bare URL
 and email detection to the default GFM extensions, set `autolinkLiterals: true`.
+Typography is also explicit: set `typography: { language: "en" }` (or another
+supported language) to run the built-in post-parse typography pass. It is off
+when omitted and never detects or switches languages.
 
 ## Option reference
 
@@ -71,6 +74,12 @@ All properties are optional. Syntax examples and output semantics live in the
 | `wikiLinks`         | `false`       | Wiki-link syntax                                                       |
 | `cjkEmphasis`       | `false`       | CJK emphasis rules                                                     |
 | `mdx`               | `false`       | MDX syntax capture and static island output                            |
+| `typography`        | unset         | Optional language-aware prose punctuation transform                    |
+
+`typography` requires a `language` from `en`, `es`, `fr`, `pt`, `de`, `it`,
+`nl`, `pl`, `ru`, or `uk`. The `dashes` and `ellipses` switches can disable
+those conversions independently. See the [typography guide](/guide/typography)
+for examples, locale rules, and protected syntax.
 
 The [published TypeScript declarations](https://github.com/sebastian-software/ferromark/blob/main/node/ferromark/index.d.mts)
 are the complete API contract and power editor autocomplete.

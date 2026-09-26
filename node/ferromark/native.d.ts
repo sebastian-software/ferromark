@@ -4,7 +4,7 @@
 export declare class Renderer {
   constructor(options?: Options | undefined | null)
   /** Internal to the `ferromark` facade: the constructor with packed options. */
-  static withPackedOptions(set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null): Renderer
+  static withPackedOptions(set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null, typography?: TypographyConfig | undefined | null): Renderer
   toHtml(markdown: string | Uint8Array): string
   toHtmlBuffer(markdown: string | Uint8Array): Buffer
 }
@@ -46,6 +46,7 @@ export interface Options {
   cjkEmphasis?: boolean
   mdx?: boolean
   linkBasePath?: string
+  typography?: TypographyConfig
 }
 
 export declare function toHtml(markdown: string | Uint8Array, options?: Options | undefined | null): string
@@ -53,10 +54,10 @@ export declare function toHtml(markdown: string | Uint8Array, options?: Options 
 export declare function toHtmlBuffer(markdown: string | Uint8Array, options?: Options | undefined | null): Buffer
 
 /** Internal to the `ferromark` facade: `toHtmlBuffer` with packed options. */
-export declare function toHtmlBufferPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null): Buffer
+export declare function toHtmlBufferPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null, typography?: TypographyConfig | undefined | null): Buffer
 
 /** Internal to the `ferromark` facade: `toHtml` with packed options. */
-export declare function toHtmlPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null): string
+export declare function toHtmlPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null, typography?: TypographyConfig | undefined | null): string
 
 export declare function toHtmlWithRenderer(markdown: string | Uint8Array, options: Options | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): string
 
@@ -64,12 +65,12 @@ export declare function toHtmlWithRenderer(markdown: string | Uint8Array, option
  * Internal to the `ferromark` facade: `toHtmlWithRenderer` with packed
  * options.
  */
-export declare function toHtmlWithRendererPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): string
+export declare function toHtmlWithRendererPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, typography: TypographyConfig | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): string
 
 export declare function transform(markdown: string | Uint8Array, options?: Options | undefined | null): TransformResult
 
 /** Internal to the `ferromark` facade: `transform` with packed options. */
-export declare function transformPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null): TransformResult
+export declare function transformPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null, typography?: TypographyConfig | undefined | null): TransformResult
 
 export interface TransformResult {
   html: string
@@ -83,4 +84,10 @@ export declare function transformWithRenderer(markdown: string | Uint8Array, opt
  * Internal to the `ferromark` facade: `transformWithRenderer` with packed
  * options.
  */
-export declare function transformWithRendererPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): TransformResult
+export declare function transformWithRendererPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, typography: TypographyConfig | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): TransformResult
+
+export interface TypographyConfig {
+  language?: string
+  dashes?: boolean
+  ellipses?: boolean
+}

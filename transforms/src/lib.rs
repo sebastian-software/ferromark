@@ -23,8 +23,12 @@
 )]
 
 mod toc;
+mod typography;
 
 pub use toc::{TableOfContentsError, build_table_of_contents};
+pub use typography::{
+    TypographyLanguage, TypographyOptions, TypographyPass, UnsupportedTypographyLanguage,
+};
 
 use std::borrow::Cow;
 use std::error::Error;

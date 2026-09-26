@@ -39,9 +39,10 @@ Markdown source
 ## Add only the passes you need
 
 `ferromark-transforms` is a separate Rust crate. The core `ferromark` crate
-does not depend on it, and the current Node.js bindings do not expose this
-pipeline. Core parsing and rendering do not run transform passes implicitly;
-your application opts in by constructing and running a `TransformPipeline`.
+does not depend on it. Core parsing and rendering do not run transform passes
+implicitly; your application opts in by constructing and running a
+`TransformPipeline`. Node.js exposes the built-in typography behavior through
+an option, but does not expose the Rust API for arbitrary custom passes.
 
 Each pass is an ordinary Rust type that implements `TransformPass`. The
 pipeline calls passes in the order you add them. A configured pipeline can be
@@ -50,6 +51,23 @@ arena. The [custom pass example](https://github.com/sebastian-software/ferromark
 shows the complete parse → pass → render flow. The
 [`ferromark-transforms` README](https://github.com/sebastian-software/ferromark/blob/main/transforms/README.md)
 documents its helpers and error contract.
+
+The crate also includes an opt-in, language-aware `TypographyPass`. It converts
+prose after parsing while protecting code, math, raw HTML, MDX expressions,
+image metadata, and link destinations. Choose one supported language explicitly;
+there is no language detection. See the [typography guide](/guide/typography)
+for its rules and the matching Node.js option.
+
+```rust
+use ferromark_transforms::{
+    TransformPipeline, TypographyLanguage, TypographyOptions, TypographyPass,
+};
+
+let options = TypographyOptions::new(TypographyLanguage::English);
+let mut pipeline = TransformPipeline::new();
+pipeline.add(TypographyPass::new(options));
+pipeline.run(&mut document, &context)?;
+```
 
 If a pass returns an error, later passes do not run. A pass may already have
 changed the document before it fails, so discard or reparse that document; the

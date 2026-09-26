@@ -2,6 +2,16 @@ import type { Buffer } from "node:buffer";
 
 export type RenderPolicy = "untrusted" | "trusted";
 
+// oxlint-disable-next-line typescript/consistent-type-definitions -- keeps this public config structurally extensible
+export interface TypographyOptions {
+  /** One explicit supported language: `en`, `es`, `fr`, `pt`, `de`, `it`, `nl`, `pl`, `ru`, or `uk`. */
+  language: "en" | "es" | "fr" | "pt" | "de" | "it" | "nl" | "pl" | "ru" | "uk";
+  /** Convert locale-aware dash sequences. Default: on. */
+  dashes?: boolean;
+  /** Convert three consecutive periods to an ellipsis. Default: on. */
+  ellipses?: boolean;
+}
+
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
 export interface Options {
   tableAttributes?: boolean;
@@ -64,6 +74,8 @@ export interface Options {
    * Enables v2 site routing, including .md to index.html conversion. Default: unset.
    */
   linkBasePath?: string;
+  /** Apply explicit locale-aware typography after parsing. Default: off. */
+  typography?: TypographyOptions;
 }
 
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging

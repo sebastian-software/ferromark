@@ -50,6 +50,32 @@ assert_eq!(renderer.render(&document), "<p>Hello.</p>\n");
 See [`examples/custom_pass.rs`](examples/custom_pass.rs) for a pipeline reused
 across separate documents and arena resets.
 
+## Optional locale-aware typography
+
+`TypographyPass` changes straight quotes, in-word apostrophes, selected dash
+sequences, ellipses, and language-specific spacing after parsing. Choose one of
+the ten supported languages explicitly; the pass does not detect or switch
+languages. It carries quote pairing across ordinary inline markup and leaves
+code, math, raw HTML, MDX expressions, image metadata, link destinations, and
+renderer-recognized bare URLs protected.
+
+```rust
+use ferromark_transforms::{
+    TransformPipeline, TypographyLanguage, TypographyOptions, TypographyPass,
+};
+
+let mut pipeline = TransformPipeline::new();
+pipeline.add(TypographyPass::new(TypographyOptions::new(
+    TypographyLanguage::English,
+)));
+```
+
+Use `with_dashes(false)` and `with_ellipses(false)` to control those changes
+independently. The
+[locale table, output rules, Node.js option, and reference deviations](../docs/typography.md)
+are documented separately. The parser and renderer never run this pass unless
+the caller adds it.
+
 ## Contract
 
 - Passes run in insertion order. The first failure stops later passes and

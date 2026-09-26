@@ -1,42 +1,112 @@
-# Typography belongs in an optional document transform
+# Optional locale-aware typography
 
-Decision: 2026-09-14, requested by the project owner.
+Automatic punctuation changes stay out of Ferromark's parser and renderer.
+Applications can opt in after parsing through the `ferromark-transforms`
+`TypographyPass`, or use the Node.js `typography` option. With no pass or
+option, authored punctuation and HTML output are unchanged.
+This behavior is specified by the
+[accepted typography decision](decisions/2026-09-26-optional-typography-pass.md).
 
-Remove `ParserOptions::smart_punctuation` and its inline post-pass from the core.
-The implementation chose fixed English quotation marks, applied English-oriented
-apostrophe heuristics, and replaced ASCII ellipses and dash sequences. It had no
-locale or configurable quotation conventions. Typography is an editorial choice
-that should be applied explicitly after Markdown parsing.
+## Reviewed locale rules
 
-The parser now preserves authored punctuation in every profile. Markdown escapes,
-entity decoding, and HTML output escaping retain their existing semantics. The
-removed option was disabled in all presets, so default CommonMark, GFM, and MDX
-behavior stays the same. Callers that explicitly set the removed field must
-remove that setting; no deprecated no-op option is retained in this unpublished
-development API.
+The pass requires exactly one explicit language: `en`, `es`, `fr`, `pt`, `de`,
+`it`, `nl`, `pl`, `ru`, or `uk`. It does not detect a language, choose one by
+default, or switch languages within a document. `en` uses the US English rule
+set; regional variants such as `en-GB` are not separate supported codes. The
+`pt` rules use a Portugal Portuguese quote convention and are independently
+reviewed because the pinned Typograf reference has no Portuguese locale.
 
-A future typography plugin should transform text nodes between parsing and
-rendering, with an explicit locale or configurable quote pairs, nested-quotation
-rules, spacing, and apostrophe handling. It should respect code, math, URLs,
-authored typography, and embedded languages. Ellipsis and dash replacement should
-be independently configurable. No plugin API or replacement transform is added
-by this removal; consumers can already inspect and transform the public AST.
+| Code | Primary quotation marks | Nested quotation marks | Apostrophes | Measurement spacing | ASCII dash sequences |
+| --- | --- | --- | --- | --- | --- |
+| `en` | “…” | ‘…’ | Curly | Non-breaking space | `--` and `---` become em dashes |
+| `es` | «…» | “…” | Curly | Non-breaking space | Preserved |
+| `fr` | « … » | “…” | Curly | Non-breaking space | Preserved |
+| `pt` | «…» | “…” | Curly | Non-breaking space | Preserved |
+| `de` | „…“ | ‚…‘ | Curly | Non-breaking space | Preserved |
+| `it` | «…» | “…” | Curly | Non-breaking space | Preserved |
+| `nl` | ‘…’ | “…” | Curly | Non-breaking space | Preserved |
+| `pl` | „…” | ‚…‘ | Curly | Non-breaking space | Preserved |
+| `ru` | «…» | „…“ | Straight | Ordinary space | `--` and `---` become em dashes |
+| `uk` | «…» | „…“ | Straight | Ordinary space | Preserved |
 
-## Validation and historical measurements
+Three periods become an ellipsis in each language. A spaced dash sequence in
+English and Russian gets a non-breaking space before the em dash. In French,
+the pass uses narrow no-break spaces inside guillemets and non-breaking spaces
+before `;`, `:`, `!`, and `?`. For supported non-Russian languages, a space
+between a number and one of `km/h`, `°C`, `km`, `cm`, `mm`, `kg`, `mg`, `m`,
+`g`, or `%` becomes non-breaking. A double hyphen between letters is left
+alone in every locale. Existing Unicode quotes, dashes, and ellipses are not
+normalized.
 
-Regression coverage checks literal ASCII and Unicode punctuation across parser
-profiles, link labels, GFM autolink boundaries, and HTML escaping. Existing
-specification fixtures and snapshots are unchanged.
+The English, Spanish, French, German, Italian, Dutch, Polish, Russian, and
+Ukrainian examples were checked against the pinned
+[SmartyPants and Typograf outputs](../benchmarks/native-transform-oracles/README.md).
+The native pass implements only the listed subset; it does not claim full
+compatibility with either plugin. Portuguese has an independently reviewed
+fixture and is not labeled Typograf-compatible.
 
-Active SIMD/optimization timing and allocation workers no longer enable smart
-punctuation in the `extensions` profile, including when built against an older
-core. This keeps both sides of a new comparison on the same feature set. The
-archived reports, logs, source hashes, and frozen workers retain the historical
-configuration. Reproduce those measurements using their original harness
-revision; do not compare their extension-profile timings directly with runs from
-the updated harness. No new speed claim accompanies this feature removal.
+## Protected content and order
 
-Validation passed: workspace formatting, all-feature locked workspace tests,
-Clippy with warnings denied, and the locked benchmark build. The three active
-timing/allocation worker sources also compile against the updated facade in a
-separate offline Cargo check.
+Quote context can span ordinary inline markup such as emphasis and link labels.
+The pass leaves code, math, raw HTML, MDX expressions and module payloads,
+image metadata, link destinations and titles unchanged. It protects bare URLs
+using the same renderer URL matcher supplied to `TransformContext`; URL
+recognition is work done only when this optional pass runs. Escaped and
+entity-authored straight quotes stay straight. Protected regions and block
+transitions end quote pairing.
+
+Run typography after other AST edits that need to inspect or replace source
+punctuation. Run it before heading metadata, outlines, or rendering so those
+derived values observe the transformed text. Reapplying the pass is
+idempotent.
+
+## Rust configuration
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, HtmlRendererOptions, Parser};
+use ferromark_transforms::{
+    TransformContext, TransformPipeline, TypographyLanguage, TypographyOptions,
+    TypographyPass,
+};
+
+let source = "She said \"Hello\" -- it's 12 km...";
+let allocator = Allocator::new();
+let mut document = Parser::new(&allocator, source).parse()?;
+let renderer_options = HtmlRendererOptions::new();
+let context = TransformContext::new(&allocator, source, &renderer_options);
+let mut pipeline = TransformPipeline::new();
+pipeline.add(TypographyPass::new(TypographyOptions::new(
+    TypographyLanguage::English,
+)));
+pipeline.run(&mut document, &context)?;
+
+let mut renderer = HtmlRenderer::with_options(renderer_options);
+let html = renderer.render(&document);
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+Use `with_dashes(false)` or `with_ellipses(false)` to disable either class of
+replacement. The rule table keeps the language required in Rust's type-level
+configuration.
+
+## Node.js configuration
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml('She said "Hello" -- it\'s 12 km...', {
+  typography: { language: "en" },
+});
+```
+
+The same option works with `Renderer`, buffer output, `transform()`, and the
+highlighter helpers. Omitting `typography` leaves punctuation unchanged. If
+the object is present, `language` is required; an unsupported code fails with
+an error. `dashes` and `ellipses` default to `true` and can be disabled
+independently. See the
+[Node options reference](../node/ferromark/index.d.mts).
+
+The parser's former `smart_punctuation` option and inline English-only pass
+were removed so the core has no implicit locale assumption or typography
+work. The original removal decision and benchmark history are retained in the
+[project report](reports/2026-09-14-ox-regression/ATTEMPTS.md).

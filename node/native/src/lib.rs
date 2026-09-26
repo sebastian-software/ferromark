@@ -14,6 +14,9 @@ use ferromark::{
     HtmlRenderer, Parser, ParserOptions,
     ast::{Node, Visit},
 };
+use ferromark_transforms::{
+    TransformContext, TransformPass, TypographyLanguage, TypographyOptions, TypographyPass,
+};
 use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
 use napi::{Env, JsString};
 use napi_derive::napi;
@@ -35,6 +38,13 @@ pub fn __test_panic_in_default_renderer(
     render_one_shot(&markdown, None, |_| {
         panic!("ferromark N-API panic-unwind verification in the kept renderer")
     })
+}
+
+#[napi(object)]
+pub struct TypographyConfig {
+    pub language: Option<String>,
+    pub dashes: Option<bool>,
+    pub ellipses: Option<bool>,
 }
 
 #[napi(object)]
@@ -69,6 +79,7 @@ pub struct Options {
     pub cjk_emphasis: Option<bool>,
     pub mdx: Option<bool>,
     pub link_base_path: Option<String>,
+    pub typography: Option<TypographyConfig>,
 }
 
 fn core_options(options: Option<Options>) -> Result<CoreOptions> {
@@ -77,6 +88,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         mut html,
         mut heading_level_offset,
         mut heading_id_prefix,
+        mut typography,
     } = addon_defaults();
     if let Some(options) = options {
         if let Some(policy) = options.render_policy {
@@ -150,12 +162,32 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             html.base_url = base.into();
             html.convert_md_links = true;
         }
+        if let Some(config) = options.typography {
+            let language = config.language.ok_or_else(|| {
+                Error::new(
+                    Status::InvalidArg,
+                    "typography.language is required when typography is configured",
+                )
+            })?;
+            let language = language
+                .parse::<TypographyLanguage>()
+                .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+            let mut resolved = TypographyOptions::new(language);
+            if let Some(enabled) = config.dashes {
+                resolved = resolved.with_dashes(enabled);
+            }
+            if let Some(enabled) = config.ellipses {
+                resolved = resolved.with_ellipses(enabled);
+            }
+            typography = Some(resolved);
+        }
     }
     Ok(CoreOptions {
         parser,
         html,
         heading_level_offset,
         heading_id_prefix,
+        typography,
     })
 }
 
@@ -237,6 +269,8 @@ pub struct Renderer {
     allocator: Allocator,
     parser: ParserOptions,
     html: HtmlRenderer,
+    html_options: Option<ferromark::HtmlRendererOptions>,
+    typography: Option<TypographyPass>,
 }
 
 #[napi]
@@ -244,6 +278,7 @@ impl Renderer {
     #[napi(constructor, catch_unwind)]
     pub fn new(options: Option<Options>) -> Result<Self> {
         let options = core_options(options)?;
+        let html_options = options.typography.map(|_| options.html.clone());
         let html = HtmlRenderer::with_options(options.html)
             .with_heading_level_offset(options.heading_level_offset)
             .try_with_heading_id_prefix(options.heading_id_prefix)
@@ -252,6 +287,8 @@ impl Renderer {
             allocator: Allocator::new(),
             parser: options.parser,
             html,
+            html_options,
+            typography: options.typography.map(TypographyPass::new),
         })
     }
 
@@ -263,8 +300,16 @@ impl Renderer {
         heading_offset: Option<f64>,
         heading_id_prefix: Option<String>,
         link_base_path: Option<String>,
+        typography: Option<TypographyConfig>,
     ) -> Result<Self> {
-        let options = packed::unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
+        let options = packed::unpack(
+            set,
+            on,
+            heading_offset,
+            heading_id_prefix,
+            link_base_path,
+            typography,
+        );
         Self::new(Some(options))
     }
 
@@ -301,9 +346,15 @@ impl Renderer {
     /// renders the same whatever the renderer rendered before.
     fn render_reused(&mut self, markdown: &str) -> Result<&str> {
         self.allocator.reset();
-        let document = Parser::with_options(&self.allocator, markdown, self.parser.clone())
+        let mut document = Parser::with_options(&self.allocator, markdown, self.parser.clone())
             .parse()
             .map_err(parse_error)?;
+        if let (Some(pass), Some(html_options)) = (&mut self.typography, self.html_options.as_ref())
+        {
+            let context = TransformContext::new(&self.allocator, markdown, html_options);
+            pass.apply(&mut document, &context)
+                .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
+        }
         Ok(self.html.render_borrowed(&document))
     }
 }
@@ -456,9 +507,15 @@ fn render_document(
     callback: Option<CodeCallback<'_>>,
 ) -> Result<TransformResult> {
     let allocator = Allocator::for_source_len(markdown.len());
-    let document = Parser::with_options(&allocator, markdown, options.parser)
+    let mut document = Parser::with_options(&allocator, markdown, options.parser)
         .parse()
         .map_err(parse_error)?;
+    if let Some(typography_options) = options.typography {
+        let context = TransformContext::new(&allocator, markdown, &options.html);
+        let mut pass = TypographyPass::new(typography_options);
+        pass.apply(&mut document, &context)
+            .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
+    }
     let mut metadata = Metadata {
         headings: Vec::new(),
         id_planner: HeadingIdPlanner::new(),

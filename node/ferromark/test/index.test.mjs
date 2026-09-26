@@ -37,6 +37,41 @@ test("renders UTF-8 HTML directly into Node.js Buffers", () => {
   assert.equal(reusedOutput.toString("utf8"), "<h1>Grüße</h1>\n");
 });
 
+test("applies optional locale-aware typography across the public Node API", () => {
+  const source = '# "Hello **world**" -- it\'s 12 km...';
+  const expected =
+    '<h1 id="hello-world-it-s-12-km">“Hello <strong>world</strong>” — it’s 12 km…</h1>\n';
+  const options = { typography: { language: "en" } };
+
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(toHtmlBuffer(source, options).toString(), expected);
+  assert.equal(transform(source, options).html, expected);
+  assert.equal(
+    toHtmlWithHighlighter(source, { codeToHtml: () => "" }, { theme: "dark" }, options),
+    expected,
+  );
+
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(renderer.toHtml("plain"), "<p>plain</p>\n");
+  assert.equal(
+    toHtml(source),
+    '<h1 id="hello-world-it-s-12-km">&quot;Hello <strong>world</strong>&quot; -- it&#39;s 12 km...</h1>\n',
+  );
+
+  assert.equal(
+    toHtml('"Hello" -- it\'s fine...', {
+      typography: { language: "en", dashes: false, ellipses: false },
+    }),
+    "<p>“Hello” -- it’s fine...</p>\n",
+  );
+  assert.throws(() => toHtml("text", { typography: {} }), /typography\.language is required/);
+  assert.throws(
+    () => toHtml("text", { typography: { language: "en-US" } }),
+    /unsupported typography language/,
+  );
+});
+
 test("rejects non-string Markdown across every public render entry point", () => {
   const highlighter = { codeToHtml: () => "<pre><code></code></pre>\n" };
   const calls = [

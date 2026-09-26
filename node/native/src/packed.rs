@@ -12,8 +12,8 @@
 //!   fields, numbered in their declaration order in [`Options`]. A bit in `set`
 //!   marks the field as present, and the same bit in `on` holds its value. For
 //!   `renderPolicy`, a set value bit means `'trusted'`.
-//! - `headingOffset`, `headingIdPrefix` and `linkBasePath` pass through as
-//!   read, and `undefined` stands for an absent field.
+//! - `headingOffset`, `headingIdPrefix`, `linkBasePath` and `typography` pass
+//!   through as read, and `undefined` stands for an absent field.
 //!
 //! [`unpack`] rebuilds the `Options` value napi-rs would have produced from
 //! the object. Each entry then runs the same code as its public counterpart,
@@ -34,8 +34,8 @@ use napi_derive::napi;
 
 use crate::input::Utf8Input;
 use crate::{
-    Options, TransformResult, core_options, html_buffer, js_string, render_document,
-    render_one_shot,
+    Options, TransformResult, TypographyConfig, core_options, html_buffer, js_string,
+    render_document, render_one_shot,
 };
 
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
@@ -48,6 +48,7 @@ pub fn unpack(
     heading_offset: Option<f64>,
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
+    typography: Option<TypographyConfig>,
 ) -> Options {
     let flag = |bit: u32| (set & (1 << bit) != 0).then_some(on & (1 << bit) != 0);
     Options {
@@ -82,6 +83,7 @@ pub fn unpack(
         cjk_emphasis: flag(25),
         mdx: flag(26),
         link_base_path,
+        typography,
     }
 }
 
@@ -99,16 +101,28 @@ fn unpack_present(
     heading_offset: Option<f64>,
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
+    typography: Option<TypographyConfig>,
 ) -> Option<Options> {
     let absent = set == 0
         && heading_offset.is_none()
         && heading_id_prefix.is_none()
-        && link_base_path.is_none();
-    (!absent).then(|| unpack(set, on, heading_offset, heading_id_prefix, link_base_path))
+        && link_base_path.is_none()
+        && typography.is_none();
+    (!absent).then(|| {
+        unpack(
+            set,
+            on,
+            heading_offset,
+            heading_id_prefix,
+            link_base_path,
+            typography,
+        )
+    })
 }
 
 /// Internal to the `ferromark` facade: `toHtml` with packed options.
 #[napi(catch_unwind, js_name = "toHtmlPacked")]
+#[allow(clippy::too_many_arguments)]
 pub fn to_html_packed<'env>(
     env: &'env Env,
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
@@ -117,8 +131,16 @@ pub fn to_html_packed<'env>(
     heading_offset: Option<f64>,
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
+    typography: Option<TypographyConfig>,
 ) -> Result<JsString<'env>> {
-    let options = unpack_present(set, on, heading_offset, heading_id_prefix, link_base_path);
+    let options = unpack_present(
+        set,
+        on,
+        heading_offset,
+        heading_id_prefix,
+        link_base_path,
+        typography,
+    );
     render_one_shot(&markdown, options, |html| js_string(env, html))
 }
 
@@ -131,8 +153,16 @@ pub fn to_html_buffer_packed(
     heading_offset: Option<f64>,
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
+    typography: Option<TypographyConfig>,
 ) -> Result<Buffer> {
-    let options = unpack_present(set, on, heading_offset, heading_id_prefix, link_base_path);
+    let options = unpack_present(
+        set,
+        on,
+        heading_offset,
+        heading_id_prefix,
+        link_base_path,
+        typography,
+    );
     render_one_shot(&markdown, options, html_buffer)
 }
 
@@ -145,8 +175,16 @@ pub fn transform_packed(
     heading_offset: Option<f64>,
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
+    typography: Option<TypographyConfig>,
 ) -> Result<TransformResult> {
-    let options = unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
+    let options = unpack(
+        set,
+        on,
+        heading_offset,
+        heading_id_prefix,
+        link_base_path,
+        typography,
+    );
     render_document(&markdown, core_options(Some(options))?, None)
 }
 
@@ -154,6 +192,7 @@ pub fn transform_packed(
 /// options.
 #[napi(catch_unwind, js_name = "toHtmlWithRendererPacked")]
 #[allow(clippy::type_complexity)]
+#[allow(clippy::too_many_arguments)]
 pub fn to_html_with_renderer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
@@ -161,9 +200,17 @@ pub fn to_html_with_renderer_packed(
     heading_offset: Option<f64>,
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
+    typography: Option<TypographyConfig>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
-    let options = unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
+    let options = unpack(
+        set,
+        on,
+        heading_offset,
+        heading_id_prefix,
+        link_base_path,
+        typography,
+    );
     Ok(render_document(&markdown, core_options(Some(options))?, Some(renderer))?.html)
 }
 
@@ -171,6 +218,7 @@ pub fn to_html_with_renderer_packed(
 /// options.
 #[napi(catch_unwind, js_name = "transformWithRendererPacked")]
 #[allow(clippy::type_complexity)]
+#[allow(clippy::too_many_arguments)]
 pub fn transform_with_renderer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
@@ -178,8 +226,16 @@ pub fn transform_with_renderer_packed(
     heading_offset: Option<f64>,
     heading_id_prefix: Option<String>,
     link_base_path: Option<String>,
+    typography: Option<TypographyConfig>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<TransformResult> {
-    let options = unpack(set, on, heading_offset, heading_id_prefix, link_base_path);
+    let options = unpack(
+        set,
+        on,
+        heading_offset,
+        heading_id_prefix,
+        link_base_path,
+        typography,
+    );
     render_document(&markdown, core_options(Some(options))?, Some(renderer))
 }
