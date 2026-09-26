@@ -22,6 +22,10 @@
     clippy::unimplemented
 )]
 
+mod toc;
+
+pub use toc::{TableOfContentsError, build_table_of_contents};
+
 use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;

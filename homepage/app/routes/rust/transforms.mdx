@@ -1,0 +1,101 @@
+---
+title: Post-process the Rust AST
+order: 4
+---
+
+# Post-process the Rust AST
+
+Ferromark parses Markdown into a `Document` allocated in an arena. The HTML
+renderer consumes that document. When a Rust application needs to change its
+content between those steps, the optional `ferromark-transforms` crate provides
+an ordered pipeline of passes over the native AST.
+
+## A Remark-like shape, with a different contract
+
+If you know [Remark and unified](https://unifiedjs.com/learn/guide/introduction-to-unified/),
+the staged model will feel familiar: parse content into a syntax tree, run
+transforms, then produce output. In unified, plugins are composed on a
+processor; its [plugin guide](https://unifiedjs.com/learn/guide/using-plugins/)
+shows that model.
+
+Ferromark shares this processing shape, not the Remark ecosystem. A
+`TransformPass` mutates Ferromark's Rust `Document` in place. Its API is not
+compatible with JavaScript `mdast` or `remark` plugins. The parser remains
+responsible for Markdown syntax, and the HTML renderer remains responsible for
+output. Passes do not add syntax, load Remark plugins, or stringify a Markdown
+tree back to Markdown. This is a conceptual comparison, not a compatibility
+claim.
+
+```text
+Markdown source
+    → Ferromark parser
+    → arena-backed Document
+    → optional ordered TransformPass values
+    → optional caller-managed AST additions
+    → Ferromark HTML renderer
+    → HTML
+```
+
+## Add only the passes you need
+
+`ferromark-transforms` is a separate Rust crate. The core `ferromark` crate
+does not depend on it, and the current Node.js bindings do not expose this
+pipeline. Core parsing and rendering do not run transform passes implicitly;
+your application opts in by constructing and running a `TransformPipeline`.
+
+Each pass is an ordinary Rust type that implements `TransformPass`. The
+pipeline calls passes in the order you add them. A configured pipeline can be
+reused for separate documents, but it stores no references to a document or
+arena. The [custom pass example](https://github.com/sebastian-software/ferromark/blob/main/transforms/examples/custom_pass.rs)
+shows the complete parse → pass → render flow. The
+[`ferromark-transforms` README](https://github.com/sebastian-software/ferromark/blob/main/transforms/README.md)
+documents its helpers and error contract.
+
+If a pass returns an error, later passes do not run. A pass may already have
+changed the document before it fails, so discard or reparse that document; the
+pipeline does not roll back mutations. The document and all arena-backed nodes
+must also be dropped before the allocator is reset.
+
+## Build derived content after transforms
+
+Run passes before asking for data derived from headings, such as the outline.
+This way, the outline and heading IDs describe the document that will be
+rendered. Use the same heading-ID settings for the outline and renderer.
+
+Ferromark's optional TOC helper builds a nested list node from that outline. It
+does not scan for `[[toc]]`, change the parser, or choose a location. The caller
+inserts the returned node wherever it belongs. In a fallible Rust function,
+the flow looks like this:
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, OutlineOptions, Parser};
+use ferromark_transforms::build_table_of_contents;
+
+fn render_with_toc(source: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let allocator = Allocator::for_source_len(source.len());
+    let mut document = Parser::new(&allocator, source).parse()?;
+
+    // Run configured TransformPass values here, before reading the outline.
+    let outline = document.outline(&OutlineOptions::default());
+    if let Some(toc) = build_table_of_contents(&allocator, &outline)? {
+        document.children.insert(0, toc);
+    }
+
+    let mut renderer = HtmlRenderer::new();
+    Ok(renderer.render(&document))
+}
+```
+
+An empty outline produces no node; an entry without an ID is an error. The
+helper handles one complete document, not stateful committed or provisional
+fragments. Generated nodes use `Span::empty()`, which means no source range is
+available; it is not a general marker for generated content. See the
+[outline and TOC API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md#document-outline-and-table-of-contents)
+for the full API contract and the
+[TOC placement decision](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-26-caller-placed-table-of-contents.md)
+for the contract.
+
+Use the direct HTML helpers when you only need rendered output. Use AST passes
+when your application needs to inspect or change the structured document
+before rendering. For the Rust ownership and rendering workflow, see [Build a
+Rust Content Pipeline](/rust/pipelines).

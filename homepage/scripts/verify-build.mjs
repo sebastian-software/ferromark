@@ -31,6 +31,7 @@ const expectedPages = [
   "rust/mdx-examples/index.html",
   "rust/mdx/index.html",
   "rust/pipelines/index.html",
+  "rust/transforms/index.html",
 ];
 
 await Promise.all(expectedPages.map((page) => access(new URL(page, outputDirectory))));
