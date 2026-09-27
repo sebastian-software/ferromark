@@ -1,7 +1,7 @@
 //! Optional image captions, attached only to standalone image paragraphs.
 
 use crate::allocator::Vec;
-use crate::ast::{Figure, Node, Span};
+use crate::ast::{Attribute, Figure, Node, Span};
 
 use super::Parser;
 use crate::parser::error::ParseResult;
@@ -11,6 +11,7 @@ struct CaptionLine<'a> {
     content_offset: usize,
     id: Option<&'a str>,
     classes: Vec<'a, &'a str>,
+    attributes: Vec<'a, Attribute<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -71,6 +72,7 @@ impl<'a> Parser<'a> {
             caption,
             id: parsed.id,
             classes: parsed.classes,
+            attributes: parsed.attributes,
             span: Span::new(start as u32, next as u32),
         })))
     }
@@ -99,12 +101,14 @@ impl<'a> Parser<'a> {
             if caption.is_empty() {
                 return None;
             }
-            let (id, classes) = self.parse_id_classes(&without_close[open + 1..])?;
+            let attributes = self
+                .parse_attributes(&without_close[open + 1..], self.options.extended_attributes)?;
             return Some(CaptionLine {
                 content: caption,
                 content_offset: offset,
-                id,
-                classes,
+                id: attributes.id,
+                classes: attributes.classes,
+                attributes: attributes.values,
             });
         }
         Some(CaptionLine {
@@ -112,6 +116,7 @@ impl<'a> Parser<'a> {
             content_offset: offset,
             id: None,
             classes: self.allocator.new_vec(),
+            attributes: self.allocator.new_vec(),
         })
     }
 }

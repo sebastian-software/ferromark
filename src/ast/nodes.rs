@@ -98,6 +98,8 @@ pub enum Node<'a> {
     // Inline nodes
     /// Plain text.
     Text(Text<'a>),
+    /// Bracketed inline span with authored attributes.
+    Span(Box<'a, InlineSpan<'a>>),
     /// Emphasis (italic).
     Emphasis(Box<'a, Emphasis<'a>>),
     /// Strong emphasis (bold).
@@ -163,6 +165,8 @@ pub struct Heading<'a> {
     pub id: Option<&'a str>,
     /// Explicit heading classes from a trailing attribute block.
     pub classes: Vec<'a, &'a str>,
+    /// Authored key/value attributes, before HTML-specific name mapping.
+    pub attributes: Vec<'a, Attribute<'a>>,
     /// Inline children.
     pub children: Vec<'a, Node<'a>>,
     /// Source span.
@@ -265,6 +269,8 @@ pub struct TableAttributes<'a> {
     pub id: Option<&'a str>,
     /// CSS class names, without leading dots.
     pub classes: Vec<'a, &'a str>,
+    /// Authored key/value attributes, before HTML-specific name mapping.
+    pub attributes: Vec<'a, Attribute<'a>>,
     /// Optional caption as inline Markdown nodes.
     pub caption: Vec<'a, Node<'a>>,
 }
@@ -283,6 +289,8 @@ pub struct Figure<'a> {
     pub id: Option<&'a str>,
     /// Figure CSS classes.
     pub classes: Vec<'a, &'a str>,
+    /// Authored key/value attributes, before HTML-specific name mapping.
+    pub attributes: Vec<'a, Attribute<'a>>,
     /// Span from the image through the caption line.
     pub span: Span,
 }
@@ -409,6 +417,12 @@ pub struct Link<'a> {
     pub url: &'a str,
     /// Title.
     pub title: Option<&'a str>,
+    /// Explicit link ID.
+    pub id: Option<&'a str>,
+    /// Explicit link classes.
+    pub classes: Vec<'a, &'a str>,
+    /// Authored key/value attributes, before HTML-specific name mapping.
+    pub attributes: Vec<'a, Attribute<'a>>,
     /// Inline children.
     pub children: Vec<'a, Node<'a>>,
     /// Source span.
@@ -428,7 +442,34 @@ pub struct Image<'a> {
     pub id: Option<&'a str>,
     /// Image CSS classes.
     pub classes: Vec<'a, &'a str>,
+    /// Authored key/value attributes, before HTML-specific name mapping.
+    pub attributes: Vec<'a, Attribute<'a>>,
     /// Source span.
+    pub span: Span,
+}
+
+/// An authored key/value attribute. HTML-specific `data-` mapping is deferred
+/// until rendering so other consumers can inspect the source name.
+#[derive(Debug, Clone, Copy)]
+pub struct Attribute<'a> {
+    /// Authored name, normalized to lowercase but without renderer data prefix.
+    pub name: &'a str,
+    /// Authored value after quote escape processing.
+    pub value: &'a str,
+}
+
+/// Inline content wrapped in an authored bracketed span.
+#[derive(Debug)]
+pub struct InlineSpan<'a> {
+    /// Nested inline Markdown.
+    pub children: Vec<'a, Node<'a>>,
+    /// Explicit span ID.
+    pub id: Option<&'a str>,
+    /// CSS classes in authored order.
+    pub classes: Vec<'a, &'a str>,
+    /// Other authored key/value attributes.
+    pub attributes: Vec<'a, Attribute<'a>>,
+    /// Source span including brackets and the attribute suffix.
     pub span: Span,
 }
 
@@ -529,6 +570,7 @@ impl<'a> Node<'a> {
             Self::DefinitionListTerm(n) => n.span,
             Self::DefinitionListDefinition(n) => n.span,
             Self::Text(n) => n.span,
+            Self::Span(n) => n.span,
             Self::Emphasis(n) => n.span,
             Self::Strong(n) => n.span,
             Self::InlineCode(n) => n.span,

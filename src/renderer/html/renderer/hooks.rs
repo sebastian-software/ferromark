@@ -293,6 +293,7 @@ impl HtmlRenderer {
                 self.render_definition_list_definition_with_hooks(node, hooks);
             }
             Node::Text(node) => self.render_text(node),
+            Node::Span(node) => self.render_span_with_hooks(node, hooks),
             Node::Emphasis(node) => self.render_emphasis_with_hooks(node, hooks),
             Node::Strong(node) => self.render_strong_with_hooks(node, hooks),
             Node::InlineCode(node) => self.render_inline_code(node),
@@ -326,6 +327,7 @@ impl HtmlRenderer {
     ) {
         match node {
             Node::Text(node) => self.render_text(node),
+            Node::Span(node) => self.render_span_with_hooks(node, hooks),
             Node::Html(node) => self.write_html_value(node.value),
             Node::Emphasis(node) => self.render_emphasis_with_hooks(node, hooks),
             Node::Strong(node) => self.render_strong_with_hooks(node, hooks),

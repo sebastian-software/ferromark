@@ -71,6 +71,8 @@ const fields = [
   ["mdx", "boolean"],
   ["imageAttributes", "boolean"],
   ["imageCaptions", "boolean"],
+  ["extendedAttributes", "boolean"],
+  ["bracketedSpans", "boolean"],
   ["linkBasePath", "string"],
   ["typography", "object"],
   ["passes", "array"],

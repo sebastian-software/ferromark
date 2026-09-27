@@ -144,6 +144,12 @@ pub(super) fn remap_table_cell_inline_spans(
         Node::Text(node) => {
             remap_table_cell_span(&mut node.span, source_offset, source_map);
         }
+        Node::Span(node) => {
+            remap_table_cell_span(&mut node.span, source_offset, source_map);
+            for child in &mut node.children {
+                remap_table_cell_inline_spans(child, source_offset, source_map);
+            }
+        }
         Node::Emphasis(node) => {
             remap_table_cell_span(&mut node.span, source_offset, source_map);
             for child in &mut node.children {

@@ -128,6 +128,9 @@ fn build_list<'arena>(
         let link = Node::Link(allocator.boxed(Link {
             url,
             title: None,
+            id: None,
+            classes: allocator.new_vec(),
+            attributes: allocator.new_vec(),
             children: link_children,
             span: Span::empty(),
         }));

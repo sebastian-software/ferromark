@@ -5,8 +5,8 @@
 //! single place.
 
 use crate::ast::{
-    Break, Delete, Emphasis, Highlight, Image, InlineCode, InlineMath, Link, Strong, Subscript,
-    Superscript, Text,
+    Break, Delete, Emphasis, Highlight, Image, InlineCode, InlineMath, InlineSpan, Link, Strong,
+    Subscript, Superscript, Text,
 };
 
 use super::HtmlRenderer;
@@ -99,11 +99,46 @@ impl HtmlRenderer {
             }
             self.write("\"");
         }
+        if image.title.is_some() {
+            self.write_authored_attributes(
+                &image.attributes,
+                &["src", "alt", "title", "id", "class"],
+            );
+        } else {
+            self.write_authored_attributes(&image.attributes, &["src", "alt", "id", "class"]);
+        }
         if self.options.xhtml {
             self.write(" />");
         } else {
             self.write(">");
         }
+    }
+
+    pub(in crate::renderer::html::renderer) fn render_span(&mut self, span: &InlineSpan<'_>) {
+        self.write_span_open(span);
+        for child in &span.children {
+            self.visit_inline_node(child);
+        }
+        self.write("</span>");
+    }
+
+    pub(in crate::renderer::html::renderer) fn write_span_open(&mut self, span: &InlineSpan<'_>) {
+        self.write("<span");
+        if let Some(id) = span.id {
+            self.write_explicit_element_id(id);
+        }
+        if !span.classes.is_empty() {
+            self.write(" class=\"");
+            for (index, class_name) in span.classes.iter().enumerate() {
+                if index > 0 {
+                    self.write(" ");
+                }
+                self.write_attribute_escaped(class_name);
+            }
+            self.write("\"");
+        }
+        self.write_authored_attributes(&span.attributes, &["id", "class"]);
+        self.write(">");
     }
 
     /// Visits highlighted text and its children.

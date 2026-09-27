@@ -82,6 +82,9 @@ impl<'a> Parser<'a> {
                         let link_node = Node::Link(self.allocator.boxed(Link {
                             url,
                             title: None,
+                            id: None,
+                            classes: self.allocator.new_vec(),
+                            attributes: self.allocator.new_vec(),
                             children: link_children,
                             span: link_span,
                         }));

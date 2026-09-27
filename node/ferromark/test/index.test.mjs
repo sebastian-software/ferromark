@@ -74,6 +74,39 @@ test("image and figure IDs agree with transformed heading metadata", () => {
   assert.equal(result.headings[0].id, "shared-2");
 });
 
+test("shared attributes and bracketed spans work through every public entry point", () => {
+  const source = '[Product **offer**]{.product lang=en sku="A-17"}';
+  const options = { extendedAttributes: true, bracketedSpans: true };
+  const expected =
+    '<p><span class="product" lang="en" data-sku="A-17">Product <strong>offer</strong></span></p>\n';
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(toHtmlBuffer(source, options).toString(), expected);
+  assert.equal(transform(source, options).html, expected);
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    expected,
+  );
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(renderer.toHtmlBuffer(source).toString(), expected);
+  assert.equal(
+    toHtml(source),
+    "<p>[Product <strong>offer</strong>]{.product lang=en sku=&quot;A-17&quot;}</p>\n",
+  );
+});
+
+test("span IDs share heading metadata collision planning", () => {
+  const result = transform("[Item]{#shared sku=x}\n\n# Heading {#shared}", {
+    extendedAttributes: true,
+    bracketedSpans: true,
+  });
+  assert.match(result.html, /<span id="shared" data-sku="x">Item<\/span>/);
+  assert.match(result.html, /<h1 id="shared-1">Heading<\/h1>/);
+  assert.equal(result.headings[0].id, "shared-1");
+});
+
 test("applies optional locale-aware typography across the public Node API", () => {
   const source = '# "Hello **world**" -- it\'s 12 km...';
   const expected =

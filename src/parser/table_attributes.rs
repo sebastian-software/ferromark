@@ -14,7 +14,12 @@ struct AttributeLine<'a> {
 
 impl<'a> Parser<'a> {
     pub(super) fn is_table_attributes_line(&self, position: usize) -> bool {
-        attribute_line(self.line_at(position)).is_some()
+        attribute_line(self.line_at(position)).is_some_and(|line| {
+            line.tokens.is_none_or(|tokens| {
+                self.parse_attributes(tokens, self.options.extended_attributes)
+                    .is_some()
+            })
+        })
     }
 
     /// Attach one following metadata line, optionally separated by one blank
@@ -39,18 +44,21 @@ impl<'a> Parser<'a> {
             return Ok(None);
         };
 
-        let (id, classes) = if let Some(tokens) = line.tokens {
-            // `attribute_line` has already validated this exact grammar.
-            self.parse_id_classes(tokens)
-                .unwrap_or_else(|| (None, self.allocator.new_vec()))
+        let attributes = if let Some(tokens) = line.tokens {
+            let Some(parsed) = self.parse_attributes(tokens, self.options.extended_attributes)
+            else {
+                return Ok(None);
+            };
+            parsed
         } else {
-            (None, self.allocator.new_vec())
+            self.empty_attributes()
         };
         let caption = self.parse_inline_block(line.caption, position + line.caption_offset)?;
         self.position = next_position;
         Ok(Some(self.allocator.boxed(TableAttributes {
-            id,
-            classes,
+            id: attributes.id,
+            classes: attributes.classes,
+            attributes: attributes.values,
             caption,
         })))
     }
@@ -86,28 +94,7 @@ fn attribute_line(line: &str) -> Option<AttributeLine<'_>> {
         return None;
     }
     let tokens = &without_close[open + 1..];
-    let mut seen_id = false;
-    let mut seen_attribute = false;
-    for token in tokens.split_whitespace() {
-        let name = if let Some(name) = token.strip_prefix('#') {
-            if seen_id {
-                return None;
-            }
-            seen_id = true;
-            name
-        } else {
-            token.strip_prefix('.')?
-        };
-        if name.is_empty()
-            || name.chars().any(|ch| {
-                ch.is_control() || matches!(ch, '"' | '\'' | '<' | '>' | '=' | '{' | '}' | '\\')
-            })
-        {
-            return None;
-        }
-        seen_attribute = true;
-    }
-    seen_attribute.then_some(AttributeLine {
+    Some(AttributeLine {
         caption: caption.trim_end_matches([' ', '\t']),
         caption_offset,
         tokens: Some(tokens),

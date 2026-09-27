@@ -90,6 +90,7 @@ impl HtmlRenderer {
             }
             self.output.push('"');
         }
+        self.write_authored_attributes(&heading.attributes, &["id", "class"]);
         self.write_source_span_attr(heading.span);
         self.output.push('>');
         for child in &heading.children {
@@ -410,6 +411,7 @@ impl HtmlRenderer {
             }
             self.write("\"");
         }
+        self.write_authored_attributes(&figure.attributes, &["id", "class"]);
         self.write_source_span_attr(figure.span);
         self.write(">\n");
     }
@@ -452,6 +454,9 @@ impl HtmlRenderer {
                 }
                 self.write("\"");
             }
+        }
+        if let Some(attributes) = &table.attributes {
+            self.write_authored_attributes(&attributes.attributes, &["id", "class"]);
         }
         self.write_source_span_attr(table.span);
         self.write(">\n");

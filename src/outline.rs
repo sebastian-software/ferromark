@@ -9,8 +9,9 @@ use std::ops::RangeInclusive;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::ast::{
-    Document, Figure, FootnoteDefinition, FootnoteReference, Heading, Image, Span, Table, Visit,
-    walk_document, walk_figure, walk_footnote_definition, walk_heading, walk_table,
+    Document, Figure, FootnoteDefinition, FootnoteReference, Heading, Image, InlineSpan, Link,
+    Span, Table, Visit, walk_document, walk_figure, walk_footnote_definition, walk_heading,
+    walk_link, walk_span, walk_table,
 };
 use crate::renderer::{
     HeadingIdPlanner, HtmlRenderer, InvalidHeadingIdPrefix, collect_heading_text,
@@ -258,6 +259,20 @@ impl<'options> OutlineCollector<'options> {
 }
 
 impl Visit<'_> for OutlineCollector<'_> {
+    fn visit_span(&mut self, span: &InlineSpan<'_>) {
+        if let Some(id) = span.id {
+            self.id_planner.plan_into(id, &mut self.claimed_id);
+        }
+        walk_span(self, span);
+    }
+
+    fn visit_link(&mut self, link: &Link<'_>) {
+        if let Some(id) = link.id {
+            self.id_planner.plan_into(id, &mut self.claimed_id);
+        }
+        walk_link(self, link);
+    }
+
     fn visit_figure(&mut self, figure: &Figure<'_>) {
         if let Some(id) = figure.id {
             self.id_planner.plan_into(id, &mut self.claimed_id);

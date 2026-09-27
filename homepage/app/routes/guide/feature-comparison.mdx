@@ -75,13 +75,15 @@ subscript compete for the same syntax; enabling subscript gives it priority.
 
 ### Optional writing syntax
 
-| Behavior                                                     | Rust `ParserOptions` | Node option       | Default |
-| ------------------------------------------------------------ | -------------------- | ----------------- | ------- |
-| `==marked text==` renders as `<mark>`                        | `highlight`          | `highlight`       | `false` |
-| `^[inline note]` creates a footnote                          | `inline_footnotes`   | `inlineFootnotes` | `false` |
-| Resolve full, collapsed, and shortcut reference links/images | `allow_link_refs`    | `allowLinkRefs`   | `true`  |
-| Image ID and class suffixes                                  | `image_attributes`   | `imageAttributes` | `false` |
-| Separate image figure captions                               | `image_captions`     | `imageCaptions`   | `false` |
+| Behavior                                                     | Rust `ParserOptions`  | Node option          | Default |
+| ------------------------------------------------------------ | --------------------- | -------------------- | ------- |
+| `==marked text==` renders as `<mark>`                        | `highlight`           | `highlight`          | `false` |
+| `^[inline note]` creates a footnote                          | `inline_footnotes`    | `inlineFootnotes`    | `false` |
+| Resolve full, collapsed, and shortcut reference links/images | `allow_link_refs`     | `allowLinkRefs`      | `true`  |
+| Image ID and class suffixes                                  | `image_attributes`    | `imageAttributes`    | `false` |
+| Separate image figure captions                               | `image_captions`      | `imageCaptions`      | `false` |
+| Shared key/value attributes                                  | `extended_attributes` | `extendedAttributes` | `false` |
+| Bracketed inline spans                                       | `bracketed_spans`     | `bracketedSpans`     | `false` |
 
 Inline notes accept inline formatting and work independently of reference
 footnotes. Disabling reference links preserves definitions as visible Markdown;

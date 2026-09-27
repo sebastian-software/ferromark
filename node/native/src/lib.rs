@@ -90,6 +90,8 @@ pub struct Options {
     pub mdx: Option<bool>,
     pub image_attributes: Option<bool>,
     pub image_captions: Option<bool>,
+    pub extended_attributes: Option<bool>,
+    pub bracketed_spans: Option<bool>,
     pub link_base_path: Option<String>,
     pub typography: Option<TypographyConfig>,
     pub passes: Option<Vec<NativePassConfig>>,
@@ -171,6 +173,8 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.mdx, options.mdx);
         apply!(parser.image_attributes, options.image_attributes);
         apply!(parser.image_captions, options.image_captions);
+        apply!(parser.extended_attributes, options.extended_attributes);
+        apply!(parser.bracketed_spans, options.bracketed_spans);
         if let Some(base) = options.link_base_path {
             // The JavaScript string is owned, so this becomes `Cow::Owned`;
             // every other renderer option keeps its borrowed default.
@@ -548,6 +552,20 @@ impl Metadata {
 }
 
 impl<'a> Visit<'a> for Metadata {
+    fn visit_span(&mut self, span: &ferromark::ast::InlineSpan<'a>) {
+        if let Some(id) = span.id {
+            let _ = self.id_planner.plan(id);
+        }
+        ferromark::ast::walk_span(self, span);
+    }
+
+    fn visit_link(&mut self, link: &ferromark::ast::Link<'a>) {
+        if let Some(id) = link.id {
+            let _ = self.id_planner.plan(id);
+        }
+        ferromark::ast::walk_link(self, link);
+    }
+
     fn visit_figure(&mut self, figure: &ferromark::ast::Figure<'a>) {
         if let Some(id) = figure.id {
             let _ = self.id_planner.plan(id);

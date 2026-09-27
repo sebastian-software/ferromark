@@ -376,6 +376,9 @@ fn transform_block_node<'arena>(
     raw_html_spans: &[Span],
 ) {
     match node {
+        Node::Span(node) => {
+            transform_inline_children(&mut node.children, context, options, raw_html_spans);
+        }
         Node::Paragraph(node) => {
             transform_inline_children(&mut node.children, context, options, raw_html_spans);
         }
@@ -551,6 +554,9 @@ fn collect_inline_items<'arena>(
 
     for (index, node) in nodes.iter().enumerate() {
         match node {
+            Node::Span(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
             Node::Text(text) => items.push(InlineItem::Text {
                 value: text.value,
                 protected: std::mem::take(&mut protected_by_node[index]),
@@ -620,6 +626,14 @@ fn apply_inline_replacements<'arena>(
 ) {
     for node in nodes {
         match node {
+            Node::Span(node) => {
+                apply_inline_replacements(
+                    &mut node.children,
+                    replacements,
+                    replacement_index,
+                    context,
+                );
+            }
             Node::Text(text) => {
                 if let Some(Some(value)) = replacements.get(*replacement_index) {
                     context.replace_text_value(text, value);

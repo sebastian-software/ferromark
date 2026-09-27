@@ -85,6 +85,8 @@ pub fn unpack(
         mdx: flag(26),
         image_attributes: flag(27),
         image_captions: flag(28),
+        extended_attributes: flag(29),
+        bracketed_spans: flag(30),
         link_base_path,
         typography,
         passes,

@@ -21,15 +21,44 @@ impl HtmlRenderer {
         self.write_url_escaped(href);
         self.write("\"");
         // Add target="_blank" for external links (http:// or https://)
-        if self.options.link_target_blank
-            && (href.starts_with("http://") || href.starts_with("https://"))
-        {
+        let automatic_target = self.options.link_target_blank
+            && (href.starts_with("http://") || href.starts_with("https://"));
+        if automatic_target {
             self.write(" target=\"_blank\" rel=\"noopener noreferrer\"");
         }
         if let Some(title) = link.title {
             self.write(" title=\"");
             self.write_escaped(title);
             self.write("\"");
+        }
+        if let Some(id) = link.id {
+            self.write_explicit_element_id(id);
+        }
+        if !link.classes.is_empty() {
+            self.write(" class=\"");
+            for (index, class_name) in link.classes.iter().enumerate() {
+                if index > 0 {
+                    self.write(" ");
+                }
+                self.write_attribute_escaped(class_name);
+            }
+            self.write("\"");
+        }
+        match (automatic_target, link.title.is_some()) {
+            (true, true) => self.write_authored_attributes(
+                &link.attributes,
+                &["href", "title", "id", "class", "target", "rel"],
+            ),
+            (true, false) => self.write_authored_attributes(
+                &link.attributes,
+                &["href", "id", "class", "target", "rel"],
+            ),
+            (false, true) => {
+                self.write_authored_attributes(&link.attributes, &["href", "title", "id", "class"]);
+            }
+            (false, false) => {
+                self.write_authored_attributes(&link.attributes, &["href", "id", "class"]);
+            }
         }
         self.write(">");
     }

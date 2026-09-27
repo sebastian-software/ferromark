@@ -341,6 +341,11 @@ fn collect_node_text(node: &Node<'_>, text: &mut String) {
                 collect_node_text(child, text);
             }
         }
+        Node::Span(value) => {
+            for child in &value.children {
+                collect_node_text(child, text);
+            }
+        }
         _ => {}
     }
 }

@@ -55,6 +55,8 @@ export interface Options {
   mdx?: boolean
   imageAttributes?: boolean
   imageCaptions?: boolean
+  extendedAttributes?: boolean
+  bracketedSpans?: boolean
   linkBasePath?: string
   typography?: TypographyConfig
   passes?: Array<NativePassConfig>

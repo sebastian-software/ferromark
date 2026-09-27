@@ -338,12 +338,13 @@ impl<'a> Parser<'a> {
                 }
                 let (content, leading) =
                     whitespace::trim_with_leading(&self.source[start..content_end]);
-                let (content, id, classes) = self.split_heading_attributes(content);
+                let (content, id, classes, attributes) = self.split_heading_attributes(content);
                 let children = self.parse_inline_block(content, start + leading)?;
                 return Ok(Some(Node::Heading(self.allocator.boxed(Heading {
                     depth,
                     id,
                     classes,
+                    attributes,
                     children,
                     span: Span::new(start as u32, heading_end as u32),
                 }))));
@@ -418,10 +419,15 @@ impl<'a> Parser<'a> {
         if heading.is_none() && content.is_empty() {
             return Ok(None);
         }
-        let (content, id, classes) = if heading.is_some() {
+        let (content, id, classes, attributes) = if heading.is_some() {
             self.split_heading_attributes(content)
         } else {
-            (content, None, self.allocator.new_vec())
+            (
+                content,
+                None,
+                self.allocator.new_vec(),
+                self.allocator.new_vec(),
+            )
         };
         // A remapped copy starts its own coordinates at zero; a borrowed
         // slice starts at `start`.
@@ -446,6 +452,7 @@ impl<'a> Parser<'a> {
                 depth,
                 id,
                 classes,
+                attributes,
                 children,
                 span: Span::new(start as u32, heading_end as u32),
             }))

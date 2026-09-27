@@ -74,6 +74,23 @@ A caption can omit attributes and follows a standalone image immediately or
 after one blank line. [Image syntax and boundaries](https://github.com/sebastian-software/ferromark/blob/main/docs/image-captions.md)
 also cover references, linked images, and containers.
 
+## Inline spans and shared attributes
+
+```text
+Das französische [C’est la vie]{lang=fr} trifft es gut.
+
+[Product **offer**]{.product sku="A-17" tracking-category=offer}
+
+[Documentation](https://example.org){.external hreflang=en}
+```
+
+Enable bracketed spans and shared key/value attributes separately. The span
+keeps nested Markdown; `lang` and `hreflang` remain HTML attributes, while
+custom `sku` and `tracking-category` become `data-sku` and
+`data-tracking-category` in HTML. The same grammar attaches to headings,
+tables, images, figure captions, and links. [Syntax and mapping rules](https://github.com/sebastian-software/ferromark/blob/main/docs/shared-attributes.md)
+describe duplicate keys and Markdown-owned values.
+
 ## Notes, marks, and callouts
 
 ```text

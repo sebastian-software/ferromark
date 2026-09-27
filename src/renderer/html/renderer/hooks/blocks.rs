@@ -56,6 +56,7 @@ impl HtmlRenderer {
             }
             self.output.push('"');
         }
+        self.write_authored_attributes(&heading.attributes, &["id", "class"]);
         self.write_source_span_attr(heading.span);
         self.write(">");
         for child in &heading.children {
