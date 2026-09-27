@@ -22,6 +22,8 @@ pub mod outline;
 pub mod parser;
 pub mod renderer;
 
+#[path = "renderer/html/callout.rs"]
+pub(crate) mod callout;
 mod convenience;
 
 pub use allocator::Allocator;

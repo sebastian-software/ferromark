@@ -1,11 +1,11 @@
-//! GitHub-style block quote callout markers.
+//! GitHub-style block quote callout markers, shared by parsing and rendering.
 //!
 //! The renderer recognizes markers such as `[!NOTE]` only at the beginning of a
 //! block quote paragraph. This module keeps the marker grammar and presentation labels
 //! together so block rendering can stay focused on emitting HTML.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum CalloutKind {
+pub enum CalloutKind {
     Note,
     Tip,
     Important,
@@ -14,7 +14,7 @@ pub(super) enum CalloutKind {
 }
 
 impl CalloutKind {
-    pub(super) fn from_name(name: &str) -> Option<Self> {
+    pub fn from_name(name: &str) -> Option<Self> {
         if name.eq_ignore_ascii_case("NOTE") {
             Some(Self::Note)
         } else if name.eq_ignore_ascii_case("TIP") {
@@ -30,8 +30,10 @@ impl CalloutKind {
         }
     }
 
-    pub(super) fn parse_marker(value: &str) -> Option<(Self, &str)> {
-        let marker = value.strip_prefix("[!")?;
+    pub fn parse_marker(value: &str) -> Option<(Self, &str)> {
+        let marker = value
+            .strip_prefix("[!")
+            .or_else(|| value.strip_prefix("\\[!"))?;
         let end = marker.find(']')?;
         // Allocation-free: the previous `to_ascii_uppercase().as_str()`
         // path allocated a fresh `String` for every `[!FOO]`-prefixed
@@ -46,7 +48,7 @@ impl CalloutKind {
         ))
     }
 
-    pub(super) fn class_name(self) -> &'static str {
+    pub fn class_name(self) -> &'static str {
         match self {
             Self::Note => "note",
             Self::Tip => "tip",
@@ -56,7 +58,7 @@ impl CalloutKind {
         }
     }
 
-    pub(super) fn label(self) -> &'static str {
+    pub fn label(self) -> &'static str {
         match self {
             Self::Note => "Note",
             Self::Tip => "Tip",

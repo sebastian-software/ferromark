@@ -71,6 +71,9 @@ pub(super) struct OpenParagraph {
     /// could head a table, with the markers it sat under.
     header: Option<(Markers, usize)>,
     paragraph_open: bool,
+    /// Container markers for the open paragraph. Lazy lines without markers
+    /// inherit these markers, including a surrounding block quote.
+    paragraph_markers: Markers,
     /// How many bytes of the container's collected text have been observed.
     observed: usize,
 }
@@ -103,6 +106,10 @@ impl OpenParagraph {
             self.observed = line.len() + 1;
         }
         self.paragraph_open
+    }
+
+    pub(super) fn paragraph_inside_block_quote(&self) -> bool {
+        self.paragraph_open && self.paragraph_markers.quotes > 0
     }
 
     /// Leaves the collected text up to `len` unobserved. A line comment the
@@ -240,6 +247,11 @@ impl OpenParagraph {
 
         // Paragraph text, which the next line may still turn into a table
         // header when it holds a pipe.
+        if options.blockquote_attributions
+            && (markers != Markers::default() || !self.paragraph_open)
+        {
+            self.paragraph_markers = markers;
+        }
         self.paragraph_open = true;
         self.header = (options.tables && memchr(b'|', trimmed.as_bytes()).is_some()).then(|| {
             (

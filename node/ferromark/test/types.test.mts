@@ -20,6 +20,7 @@ const options: Options = {
   imageCaptions: true,
   extendedAttributes: true,
   bracketedSpans: true,
+  blockquoteAttributions: true,
 };
 const highlighter: CodeHighlighter = {
   codeToHtml: (code, { lang, theme }) => `${lang}:${theme}:${code}`,

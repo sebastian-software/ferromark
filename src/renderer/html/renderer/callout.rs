@@ -6,8 +6,8 @@
 
 use crate::ast::{BlockQuote, Node, Paragraph};
 
-use super::super::callout::CalloutKind;
 use super::HtmlRenderer;
+use crate::callout::CalloutKind;
 
 impl HtmlRenderer {
     fn render_paragraph_with_skipped_text_prefix<'a>(

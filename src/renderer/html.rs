@@ -6,7 +6,6 @@
 //! preserving the crate-level `HtmlRenderer` API.
 
 mod autolink;
-mod callout;
 mod code_annotations;
 mod escape;
 mod heading;

@@ -54,6 +54,8 @@ export interface Options {
   extendedAttributes?: boolean;
   /** Enable `[inline Markdown]{attributes}` spans. */
   bracketedSpans?: boolean;
+  /** Attach a separate `: Author` line after a block quote. Default: off. */
+  blockquoteAttributions?: boolean;
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy;
   /** Allow raw HTML in trusted output. Default: on; untrusted output always escapes it. */

@@ -1,4 +1,5 @@
 use crate::ast::{BlockQuote, Node, Span};
+use crate::callout::CalloutKind;
 
 use super::Parser;
 use super::lazy_paragraph::OpenParagraph;
@@ -32,6 +33,8 @@ impl<'a> Parser<'a> {
         let mut open_paragraph = OpenParagraph::default();
         let mut lazy_lines = rustc_hash::FxHashSet::default();
         let mut source_map = SourceMap::default();
+        let mut immediate_attribution = None;
+        let mut callout_marker = None;
 
         loop {
             if self.position >= bytes.len() {
@@ -125,6 +128,15 @@ impl<'a> Parser<'a> {
 
                 // Advance past this line (and the trailing newline if any).
                 self.position = line_next;
+            } else if self.options.blockquote_attributions
+                && !Self::cached_callout_marker(&mut callout_marker, &inner)
+                && let Some(parsed) = self.parse_blockquote_attribution_line(line)
+            {
+                // Eligible source lines are outside the quote even when
+                // CommonMark would otherwise treat them as a lazy paragraph
+                // continuation. Attach the line after parsing the quote.
+                immediate_attribution = Some(parsed);
+                break;
             } else if !Self::quote_lazy_blocked(trimmed)
                 && !self.line_starts_block()
                 && open_paragraph.catch_up(&inner, &self.options)
@@ -164,9 +176,27 @@ impl<'a> Parser<'a> {
         }
 
         let span = Span::new(start as u32, self.position as u32);
-        Ok(Some(Node::BlockQuote(
-            self.allocator.boxed(BlockQuote { children, span }),
-        )))
+        let quote = Node::BlockQuote(self.allocator.boxed(BlockQuote { children, span }));
+        let is_callout = self.options.blockquote_attributions
+            && callout_marker.unwrap_or_else(|| Self::starts_with_callout_marker(inner_str));
+        Ok(Some(self.attach_blockquote_attribution(
+            quote,
+            start,
+            immediate_attribution,
+            is_callout,
+        )?))
+    }
+
+    fn cached_callout_marker(cache: &mut Option<bool>, source: &str) -> bool {
+        *cache.get_or_insert_with(|| Self::starts_with_callout_marker(source))
+    }
+
+    fn starts_with_callout_marker(source: &str) -> bool {
+        source
+            .lines()
+            .find(|line| !whitespace::is_blank(line))
+            .and_then(|line| CalloutKind::parse_marker(whitespace::trim_start(line)))
+            .is_some()
     }
 
     /// Lines that must not lazily continue a block quote paragraph even

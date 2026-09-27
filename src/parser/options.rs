@@ -54,6 +54,10 @@ pub struct ParserOptions {
     /// Independent of image attributes. Default: `false`.
     pub image_captions: bool,
 
+    /// Attach one colon-prefixed attribution line after a block quote as a
+    /// figure caption. Independent of image captions. Default: false.
+    pub blockquote_attributions: bool,
+
     /// Omit source-only physical lines beginning with `//` after at most
     /// three ASCII spaces. Comments do not introduce a paragraph break.
     /// Explicit container prefixes, code blocks, and raw HTML remain literal.
@@ -197,6 +201,7 @@ impl Default for ParserOptions {
             table_attributes: false,
             image_attributes: false,
             image_captions: false,
+            blockquote_attributions: false,
             line_comments: false,
             front_matter: false,
             strikethrough: false,
@@ -252,6 +257,7 @@ impl ParserOptions {
             table_attributes: false,
             image_attributes: false,
             image_captions: false,
+            blockquote_attributions: false,
             line_comments: false,
             front_matter: false,
             strikethrough: true,

@@ -93,6 +93,27 @@ describe duplicate keys and Markdown-owned values.
 With untrusted rendering, active names such as `style`, `srcset`, and `name`
 also become inert `data-*` attributes.
 
+## Block quotes with visible attributions
+
+```text
+> A memorable passage.
+: Jane Doe, **author** {#source .byline}
+```
+
+Enable `blockquote_attributions` in Rust or `blockquoteAttributions` in Node.js.
+The source line sits outside the quote and becomes a visible `<figcaption>` in a
+`<figure>` around the original block quote. Put it directly after the quote or
+leave one blank line. Inside a list, indent the source to keep it in the same
+item as the quote. Inline links and reference links work as usual; the
+renderer does not add a `<cite>` element or a `cite` URL. IDs and classes in
+the suffix apply to the figure. The shown example needs only the attribution
+option. Key/value entries such as `lang=en` also require
+`extended_attributes` (Rust) or `extendedAttributes` (Node.js). The option is off
+by default, so ordinary lazy continuations keep CommonMark behavior. See
+[syntax, boundaries, and examples](https://github.com/sebastian-software/ferromark/blob/main/docs/blockquote-attributions.md).
+Recognized callout markers do not receive attributions, even when callout
+rendering is disabled.
+
 ## Notes, marks, and callouts
 
 ```text

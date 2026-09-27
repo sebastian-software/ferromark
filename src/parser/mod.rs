@@ -46,6 +46,7 @@ use crate::ast::{Document, Span};
 mod attributes;
 mod block;
 mod block_quote;
+mod blockquote_attribution;
 mod byte_class;
 mod cursor;
 mod definition_list;
