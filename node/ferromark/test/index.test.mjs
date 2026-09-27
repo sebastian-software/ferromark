@@ -86,6 +86,38 @@ test("supports the new reviewed European typography profiles", () => {
   }
 });
 
+test("preserves guillemet digraphs and maps them with the selected typography language", () => {
+  const source = "Il a dit <<Bonjour *tout le monde*>>.";
+  const parserOption = { guillemetDigraphs: true };
+  assert.notEqual(
+    toHtml("Il a dit <<Bonjour>>.", { renderPolicy: "trusted" }),
+    toHtml("Il a dit <<Bonjour>>.", { ...parserOption, renderPolicy: "trusted" }),
+  );
+  assert.equal(
+    toHtml(source, { ...parserOption, renderPolicy: "trusted" }),
+    "<p>Il a dit &lt;&lt;Bonjour <em>tout le monde</em>&gt;&gt;.</p>\n",
+  );
+
+  for (const [language, expected] of [
+    ["fr", "« Bonjour <em>tout le monde</em> »"],
+    ["da", "»Bonjour <em>tout le monde</em>«"],
+    ["en", "“Bonjour <em>tout le monde</em>”"],
+  ]) {
+    assert.equal(
+      toHtml(source, { ...parserOption, typography: { language } }),
+      `<p>Il a dit ${expected}.</p>\n`,
+      language,
+    );
+  }
+
+  const result = transform("# <<Bonjour>>", {
+    ...parserOption,
+    typography: { language: "fr" },
+  });
+  assert.equal(result.html, '<h1 id="bonjour">« Bonjour »</h1>\n');
+  assert.deepEqual(result.headings, [{ level: 1, id: "bonjour", text: "« Bonjour »" }]);
+});
+
 test("runs ordered GitHub, emoji, and typography passes across the public Node API", () => {
   const markdown = 'Issue #42 :rocket: :woman_technologist: :heart: "quoted" -- done...';
   const options = {
@@ -110,6 +142,49 @@ test("runs ordered GitHub, emoji, and typography passes across the public Node A
   const renderer = new Renderer(options);
   assert.equal(renderer.toHtml(markdown), expected);
   assert.equal(renderer.toHtmlBuffer(markdown).toString("utf8"), expected);
+});
+
+test("guillemet option reaches typography in legacy and ordered pass pipelines", () => {
+  const markdown = "<< Bonjour >>";
+  const expected = "<p>« Bonjour »</p>\n";
+  assert.equal(
+    toHtml(markdown, {
+      guillemetDigraphs: true,
+      typography: { language: "fr" },
+    }),
+    expected,
+  );
+  assert.equal(
+    toHtml(markdown, {
+      guillemetDigraphs: true,
+      passes: [{ kind: "typography", language: "fr" }],
+    }),
+    expected,
+  );
+  assert.equal(
+    toHtml("<<outer <<inner>> end>>", {
+      guillemetDigraphs: true,
+      typography: { language: "en" },
+    }),
+    "<p>“outer ‘inner’ end”</p>\n",
+  );
+  assert.equal(
+    toHtml("<<hello\nworld>>", {
+      guillemetDigraphs: true,
+      typography: { language: "en" },
+    }),
+    "<p>“hello\nworld”</p>\n",
+  );
+  assert.equal(
+    toHtml("<<Foo />>", { guillemetDigraphs: true, mdx: true }),
+    "<p>&lt;&lt;Foo /&gt;&gt;</p>\n",
+  );
+  const urlHtml = toHtml("<<[https://example.com](https://example.com)>>", {
+    guillemetDigraphs: true,
+    typography: { language: "en" },
+  });
+  assert.match(urlHtml, /href="https:\/\/example\.com"/);
+  assert.doesNotMatch(urlHtml, /href="[^"]*[“”]/);
 });
 
 test("validates ordered transform pass configuration", () => {

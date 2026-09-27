@@ -107,6 +107,12 @@ pub struct ParserOptions {
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
     pub wiki_links: bool,
 
+    /// Preserve doubled angle brackets such as `<<Bonjour>>` as literal
+    /// inline text before raw HTML and autolink parsing. An optional
+    /// typography pass can convert balanced pairs to locale-specific quotes.
+    /// Default: `false`, including all presets.
+    pub guillemet_digraphs: bool,
+
     /// Recognize emphasis whose delimiters sit against East Asian punctuation.
     ///
     /// CommonMark decides whether a `*`/`_` run may open or close from the
@@ -190,6 +196,7 @@ impl Default for ParserOptions {
             definition_lists: false,
             heading_attributes: false,
             wiki_links: false,
+            guillemet_digraphs: false,
             cjk_emphasis: false,
             mdx: false,
             // Not `0`: an unbounded parse of hostile input overflows the
@@ -241,6 +248,7 @@ impl ParserOptions {
             definition_lists: false,
             heading_attributes: false,
             wiki_links: false,
+            guillemet_digraphs: false,
             // Not part of GFM: GitHub renders these runs per CommonMark too.
             cjk_emphasis: false,
             mdx: false,

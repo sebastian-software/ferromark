@@ -1,6 +1,6 @@
 //! Private entry points that take `Options` in packed form.
 //!
-//! napi-rs converts an `Options` argument field by field. For each of the 32
+//! napi-rs converts an `Options` argument field by field. For each of the 33
 //! fields, present or not, it calls `napi_get_named_property`, which creates
 //! the property key from a C string and runs an uncached property lookup, and
 //! then `napi_typeof`. That costs more per call than rendering a small
@@ -41,7 +41,7 @@ use crate::{
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
 ///
 /// The bit numbers follow the declaration order of [`Options`], skipping the
-/// three fields that pass through unpacked.
+/// five fields that pass through unpacked.
 pub fn unpack(
     set: u32,
     on: u32,
@@ -86,6 +86,7 @@ pub fn unpack(
         link_base_path,
         typography,
         passes,
+        guillemet_digraphs: None,
     }
 }
 

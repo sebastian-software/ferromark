@@ -40,7 +40,45 @@ const optionKeys = new Set([
   "linkBasePath",
   "typography",
   "passes",
+  "guillemetDigraphs",
 ]);
+
+/** @type {Array<[string, number]>} */
+const packedBooleanFlags = [
+  ["allowHtml", 1 << 1],
+  ["tables", 1 << 2],
+  ["mergedTableCells", 1 << 3],
+  ["tableColgroup", 1 << 4],
+  ["tableColumnNames", 1 << 5],
+  ["tableAttributes", 1 << 6],
+  ["strikethrough", 1 << 7],
+  ["superscript", 1 << 8],
+  ["subscript", 1 << 9],
+  ["taskLists", 1 << 10],
+  ["autolinkLiterals", 1 << 11],
+  ["disallowedRawHtml", 1 << 12],
+  ["footnotes", 1 << 13],
+  ["highlight", 1 << 14],
+  ["inlineFootnotes", 1 << 15],
+  ["allowLinkRefs", 1 << 16],
+  ["frontMatter", 1 << 17],
+  ["headingIds", 1 << 18],
+  ["headingAttributes", 1 << 19],
+  ["math", 1 << 20],
+  ["callouts", 1 << 21],
+  ["definitionLists", 1 << 22],
+  ["lineComments", 1 << 23],
+  ["wikiLinks", 1 << 24],
+  ["cjkEmphasis", 1 << 25],
+  ["mdx", 1 << 26],
+];
+
+/** @param {{set: number, on: number}} packed @param {Record<string, unknown>} target */
+function copyPackedBooleanFlags(packed, target) {
+  for (const [key, bit] of packedBooleanFlags) {
+    if (packed.set & bit) target[key] = Boolean(packed.on & bit);
+  }
+}
 
 /** @param {import('./index.mjs').Options | null | undefined} options Options to validate. */
 function validateOptions(options) {
@@ -65,7 +103,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 32 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 34 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -103,6 +141,8 @@ class PackedOptions {
   rejected;
   /** @type {string | undefined} */
   unknownPolicy;
+  /** @type {boolean} */
+  requiresObjectPath = false;
 
   /** @param {import('./index.mjs').Options} options Validated options. */
   constructor(options) {
@@ -155,7 +195,8 @@ class PackedOptions {
       this.flag("mdx", 1 << 26, options.mdx) &&
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
-      this.array("passes", options.passes)
+      this.array("passes", options.passes) &&
+      this.guillemetDigraphs(options.guillemetDigraphs)
     );
   }
 
@@ -186,6 +227,36 @@ class PackedOptions {
       this.on |= bit;
     }
     return true;
+  }
+
+  /** @param {unknown} value The optional guillemet parser flag. */
+  guillemetDigraphs(value) {
+    if (typeof value !== "boolean") {
+      return value === undefined || this.reject("guillemetDigraphs", value);
+    }
+    if (value) {
+      // Bit 27 is reserved for other opt-in parser flags. Keep the packed
+      // signature stable and use the already-supported object entry only for
+      // this uncommon enabled case.
+      this.requiresObjectPath = true;
+    }
+    return true;
+  }
+
+  /** Rebuilds values already read once, without repeating caller getters. */
+  toObjectOptions() {
+    const result = Object.create(null);
+    if (this.set & 1) {
+      result.renderPolicy = this.on & 1 ? "trusted" : "untrusted";
+    }
+    copyPackedBooleanFlags(this, result);
+    if (this.headingOffset !== undefined) result.headingOffset = this.headingOffset;
+    if (this.headingIdPrefix !== undefined) result.headingIdPrefix = this.headingIdPrefix;
+    if (this.linkBasePath !== undefined) result.linkBasePath = this.linkBasePath;
+    if (this.typography !== undefined) result.typography = this.typography;
+    if (this.passes !== undefined) result.passes = this.passes;
+    result.guillemetDigraphs = true;
+    return result;
   }
 
   /** @param {"headingOffset"} key Field name. @param {unknown} value Field value. */
@@ -267,15 +338,18 @@ function packOptions(options) {
   }
   const packed = new PackedOptions(options);
   return (
-    packed.rejected ?? [
-      packed.set,
-      packed.on,
-      packed.headingOffset,
-      packed.headingIdPrefix,
-      packed.linkBasePath,
-      packed.typography,
-      packed.passes,
-    ]
+    packed.rejected ??
+    (packed.requiresObjectPath
+      ? packed.toObjectOptions()
+      : [
+          packed.set,
+          packed.on,
+          packed.headingOffset,
+          packed.headingIdPrefix,
+          packed.linkBasePath,
+          packed.typography,
+          packed.passes,
+        ])
   );
 }
 

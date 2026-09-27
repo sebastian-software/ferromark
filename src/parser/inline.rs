@@ -293,6 +293,23 @@ impl<'a> Parser<'a> {
                     *pos += 1;
                 }
             }
+            b'<' if self.options.guillemet_digraphs
+                && Self::marker_run_len(bytes, *pos, b'<') >= 2 =>
+            {
+                // A doubled `<` begins the opt-in guillemet notation. Consume
+                // the whole run as text so an unmatched or triple opener
+                // cannot expose its inner `<tag>` to raw HTML or autolink
+                // parsing. Matching and locale-specific punctuation belong
+                // to the optional typography pass.
+                let run = Self::marker_run_len(bytes, *pos, b'<');
+                Self::push_text(
+                    children,
+                    &content[*pos..*pos + run],
+                    offset + *pos,
+                    offset + *pos + run,
+                );
+                *pos += run;
+            }
             b'<' => self.parse_inline_html_or_text(content, offset, children, pos)?,
             b'\\' if *pos + 1 < content.len() && bytes[*pos + 1].is_ascii_punctuation() => {
                 // A backslash escapes only ASCII punctuation (CommonMark

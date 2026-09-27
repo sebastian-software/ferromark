@@ -68,6 +68,44 @@ The native pass implements only the listed subset; it does not claim full
 compatibility with either plugin. Portuguese, Czech, and Norwegian Bokmål use
 independently reviewed profiles and are not labeled Typograf-compatible.
 
+## ASCII guillemet digraphs
+
+Authors can type `<<Bonjour>>` when the `«` and `»` characters are not easy to
+enter. This syntax is opt-in at parse time because otherwise the inner
+`<Bonjour>` can be read as raw HTML before a post-parse transform can see it.
+Set `guillemet_digraphs` in Rust or `guillemetDigraphs` in Node.js, then run the
+typography pass with an explicit language to convert balanced pairs. The
+parser option alone preserves the markers as text; it does not choose quote
+characters or enable typography. It is off by default.
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml("Il a dit <<Bonjour>>.", {
+  guillemetDigraphs: true,
+  typography: { language: "fr" },
+});
+```
+
+French produces `« Bonjour »`, Danish produces `»Bonjour«`, and English
+produces `“Bonjour”`. Only exact pairs of two opening and two closing angle
+brackets are converted. Unmatched markers and longer runs stay literal.
+Escaped or entity-authored brackets remain literal; code, math, and raw HTML
+remain protected. A single spaced marker such as `a << b` stays literal. When
+both markers have ASCII padding and the pair sits between word or numeric
+operands, as in `a << b and c >> d`, the ambiguous shift-like text stays
+literal. In French, a standalone `<< Bonjour >>` absorbs its ASCII padding and
+renders as `« Bonjour »`.
+
+When a renderer auto-links bare URLs, URLs immediately next to a marker pair
+keep the ASCII markers while the URL can still become a link. This prevents a
+generated quote from becoming part of the link destination. Put a Markdown link
+inside a digraph pair when the link must remain explicitly clickable.
+
+For portable Markdown, prefer ordinary quotes and select a language explicitly,
+for example `"Bonjour"` with `typography: { language: "fr" }`. That does not
+require the parser option.
+
 ## Protected content and order
 
 Quote context can span ordinary inline markup such as emphasis and link labels.
@@ -107,6 +145,38 @@ let mut renderer = HtmlRenderer::with_options(renderer_options);
 let html = renderer.render(&document);
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
+
+For ASCII guillemets, enable both parser preservation and typography
+conversion:
+
+```rust
+use ferromark::{Allocator, HtmlRenderer, HtmlRendererOptions, Parser, ParserOptions};
+use ferromark_transforms::{
+    TransformContext, TransformPipeline, TypographyLanguage, TypographyOptions,
+    TypographyPass,
+};
+
+let allocator = Allocator::new();
+let source = "<<Bonjour>>";
+let parser_options = ParserOptions {
+    guillemet_digraphs: true,
+    ..ParserOptions::default()
+};
+let mut document = Parser::with_options(&allocator, source, parser_options).parse()?;
+let typography = TypographyOptions::new(TypographyLanguage::French)
+    .with_guillemet_digraphs(true);
+let renderer_options = HtmlRendererOptions::new();
+let context = TransformContext::new(&allocator, source, &renderer_options);
+let mut pipeline = TransformPipeline::new();
+pipeline.add(TypographyPass::new(typography));
+pipeline.run(&mut document, &context)?;
+let html = HtmlRenderer::with_options(renderer_options).render(&document);
+assert!(html.contains("«\u{202f}Bonjour\u{202f}»"));
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+The Node.js `guillemetDigraphs` option is also passed to either the `typography`
+option or a `kind: "typography"` entry in `passes`.
 
 Use `with_dashes(false)` or `with_ellipses(false)` to disable either class of
 replacement. The rule table keeps the language required in Rust's type-level

@@ -46,6 +46,8 @@ export interface Options {
   cjkEmphasis?: boolean;
   /** Recognize MDX syntax; does not compile or execute JavaScript. */
   mdx?: boolean;
+  /** Preserve `<<…>>` as inline text and allow typography to map balanced pairs. Default: off. */
+  guillemetDigraphs?: boolean;
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy;
   /** Allow raw HTML in trusted output. Default: on; untrusted output always escapes it. */

@@ -158,7 +158,7 @@ impl<'a> Parser<'a> {
     /// text is the second-largest scalar walk after destinations on
     /// link-dense documents, so this matters for every `[`.
     pub(super) fn scan_balanced(content: &str, cursor: usize) -> (usize, bool) {
-        Self::walk_balanced::<false>(content, cursor, &mut |_, _, _| {})
+        Self::walk_balanced::<false>(content, cursor, false, &mut |_, _, _| {})
     }
 
     /// [`Self::scan_balanced`], answered from the openers an earlier walk
@@ -177,7 +177,11 @@ impl<'a> Parser<'a> {
         if let Some(matched) = self.bracket_match(content, cursor) {
             return matched;
         }
-        let (close, nested) = Self::scan_balanced(content, cursor);
+        let (close, nested) = if self.options.guillemet_digraphs {
+            Self::walk_balanced::<false>(content, cursor, true, &mut |_, _, _| {})
+        } else {
+            Self::scan_balanced(content, cursor)
+        };
         if nested && close >= content.len() {
             // Nothing closes this bracket, and the same is true for every
             // opener behind it in the run — the shape that walked to the end
@@ -199,11 +203,16 @@ impl<'a> Parser<'a> {
         }
         let base = content.as_ptr() as usize;
         let end = base + content.len();
-        Self::walk_balanced::<true>(content, cursor, &mut |start, close, nested| {
-            self.bracket_matches()
-                .borrow_mut()
-                .insert((base + start, end), (close - start, nested));
-        })
+        Self::walk_balanced::<true>(
+            content,
+            cursor,
+            self.options.guillemet_digraphs,
+            &mut |start, close, nested| {
+                self.bracket_matches()
+                    .borrow_mut()
+                    .insert((base + start, end), (close - start, nested));
+            },
+        )
     }
 
     /// The first byte at or after `from` that could start an inline
@@ -262,6 +271,7 @@ impl<'a> Parser<'a> {
     fn walk_balanced<const RECORD: bool>(
         content: &str,
         cursor: usize,
+        guillemet_digraphs: bool,
         matched: &mut impl FnMut(usize, usize, bool),
     ) -> (usize, bool) {
         let bytes = content.as_bytes();
@@ -302,7 +312,10 @@ impl<'a> Parser<'a> {
                     }
                 }
                 b'<' => {
-                    if let Some(end) = super::inline::autolink_end(content, at) {
+                    let angle_run = Self::marker_run_len(bytes, at, b'<');
+                    if guillemet_digraphs && angle_run >= 2 {
+                        at += angle_run;
+                    } else if let Some(end) = super::inline::autolink_end(content, at) {
                         at = end;
                     } else if let Some((_, end)) = Parser::parse_inline_html(content, at, 0) {
                         at = end;

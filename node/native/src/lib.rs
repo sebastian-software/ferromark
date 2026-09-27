@@ -91,6 +91,7 @@ pub struct Options {
     pub link_base_path: Option<String>,
     pub typography: Option<TypographyConfig>,
     pub passes: Option<Vec<NativePassConfig>>,
+    pub guillemet_digraphs: Option<bool>,
 }
 
 fn core_options(options: Option<Options>) -> Result<CoreOptions> {
@@ -167,6 +168,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.wiki_links, options.wiki_links);
         apply!(parser.cjk_emphasis, options.cjk_emphasis);
         apply!(parser.mdx, options.mdx);
+        apply!(parser.guillemet_digraphs, options.guillemet_digraphs);
         if let Some(base) = options.link_base_path {
             // The JavaScript string is owned, so this becomes `Cow::Owned`;
             // every other renderer option keeps its borrowed default.
@@ -191,7 +193,8 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             let language = language
                 .parse::<TypographyLanguage>()
                 .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-            let mut resolved = TypographyOptions::new(language);
+            let mut resolved =
+                TypographyOptions::new(language).with_guillemet_digraphs(parser.guillemet_digraphs);
             if let Some(enabled) = config.dashes {
                 resolved = resolved.with_dashes(enabled);
             }
@@ -202,7 +205,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         }
         if let Some(configs) = pass_configs {
             for (index, config) in configs.into_iter().enumerate() {
-                append_native_pass(&mut pipeline, config, index)?;
+                append_native_pass(&mut pipeline, config, index, parser.guillemet_digraphs)?;
             }
         }
     }
@@ -219,6 +222,7 @@ fn append_native_pass(
     pipeline: &mut TransformPipeline,
     config: NativePassConfig,
     index: usize,
+    guillemet_digraphs: bool,
 ) -> Result<()> {
     let option = |name: &str| format!("passes[{index}].{name}");
     let kind = config.kind.ok_or_else(|| {
@@ -248,7 +252,8 @@ fn append_native_pass(
             let language = language
                 .parse::<TypographyLanguage>()
                 .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-            let mut options = TypographyOptions::new(language);
+            let mut options =
+                TypographyOptions::new(language).with_guillemet_digraphs(guillemet_digraphs);
             if let Some(enabled) = config.dashes {
                 options = options.with_dashes(enabled);
             }

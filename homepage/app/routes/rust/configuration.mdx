@@ -52,6 +52,7 @@ let syntax = ParserOptions {
     front_matter: true,
     merged_table_cells: true,
     table_attributes: true,
+    guillemet_digraphs: true,
     ..ParserOptions::gfm()
 };
 let output = HtmlRendererOptions {
@@ -63,6 +64,10 @@ let output = HtmlRendererOptions {
 let html = ferromark::to_html_with_options("# Notes", syntax, output).unwrap();
 assert!(html.contains("Notes"));
 ```
+
+`guillemet_digraphs` preserves `<<Bonjour>>` as text for the optional
+locale-aware typography pass. See the [typography guide](/guide/typography)
+for the Rust pass and Node.js configuration.
 
 See [Markdown syntax](/guide/features) for author-facing examples and
 [the Rust API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md)

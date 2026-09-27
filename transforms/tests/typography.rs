@@ -21,12 +21,26 @@ fn render_with(
     parser_options: ParserOptions,
     renderer_options: HtmlRendererOptions,
 ) -> String {
+    render_with_options(
+        source,
+        TypographyOptions::new(language),
+        parser_options,
+        renderer_options,
+    )
+}
+
+fn render_with_options(
+    source: &str,
+    typography_options: TypographyOptions,
+    parser_options: ParserOptions,
+    renderer_options: HtmlRendererOptions,
+) -> String {
     let allocator = Allocator::new();
     let mut document = Parser::with_options(&allocator, source, parser_options)
         .parse()
         .unwrap();
     let context = TransformContext::new(&allocator, source, &renderer_options);
-    let mut pass = TypographyPass::new(TypographyOptions::new(language));
+    let mut pass = TypographyPass::new(typography_options);
     pass.apply(&mut document, &context).unwrap();
     HtmlRenderer::with_options(renderer_options).render(&document)
 }
@@ -148,6 +162,176 @@ fn quotes_pair_across_inline_markup_and_nest_by_locale() {
         render("\"hello\nworld\"", TypographyLanguage::English),
         "<p>“hello\nworld”</p>\n"
     );
+}
+
+#[test]
+fn guillemet_digraphs_use_the_selected_locale_and_pair_across_inline_markup() {
+    let source = "<<Bonjour *tout le monde*>>";
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    for (language, expected) in [
+        (
+            TypographyLanguage::French,
+            "<p>« Bonjour <em>tout le monde</em> »</p>\n",
+        ),
+        (
+            TypographyLanguage::Danish,
+            "<p>»Bonjour <em>tout le monde</em>«</p>\n",
+        ),
+        (
+            TypographyLanguage::English,
+            "<p>“Bonjour <em>tout le monde</em>”</p>\n",
+        ),
+    ] {
+        assert_eq!(
+            render_with_options(
+                source,
+                TypographyOptions::new(language).with_guillemet_digraphs(true),
+                parser_options.clone(),
+                HtmlRendererOptions::default(),
+            ),
+            expected,
+            "language: {}",
+            language.as_str()
+        );
+    }
+}
+
+#[test]
+fn guillemet_digraph_transform_is_separately_opt_in() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    assert_eq!(
+        render_with(
+            "<<Bonjour>>",
+            TypographyLanguage::French,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>&lt;&lt;Bonjour&gt;&gt;</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "<<Bonjour>>",
+            TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true),
+            parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>« Bonjour »</p>\n"
+    );
+}
+
+#[test]
+fn spaced_guillemets_trim_ascii_padding_and_leave_shift_expressions_literal() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    let typography_options =
+        TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true);
+    assert_eq!(
+        render_with_options(
+            "<< Bonjour >>",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>« Bonjour »</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "a << b and c >> d",
+            typography_options,
+            parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>a &lt;&lt; b and c &gt;&gt; d</p>\n"
+    );
+}
+
+#[test]
+fn nested_guillemets_and_soft_breaks_keep_quote_context() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    let typography_options =
+        TypographyOptions::new(TypographyLanguage::English).with_guillemet_digraphs(true);
+    for (source, expected) in [
+        ("<<outer <<inner>> end>>", "<p>“outer ‘inner’ end”</p>\n"),
+        ("<<hello\nworld>>", "<p>“hello\nworld”</p>\n"),
+    ] {
+        assert_eq!(
+            render_with_options(
+                source,
+                typography_options,
+                parser_options.clone(),
+                HtmlRendererOptions::default(),
+            ),
+            expected,
+            "source: {source:?}"
+        );
+    }
+}
+
+#[test]
+fn adjacent_bare_url_is_not_rewritten_into_a_renderer_link_destination() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    assert_eq!(
+        render_with_options(
+            "<<https://example.com>>",
+            TypographyOptions::new(TypographyLanguage::English).with_guillemet_digraphs(true),
+            parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>&lt;&lt;<a href=\"https://example.com\" target=\"_blank\" rel=\"noopener noreferrer\">https://example.com</a>&gt;&gt;</p>\n"
+    );
+}
+
+#[test]
+fn unmatched_escaped_and_protected_digraphs_stay_literal() {
+    let options = ParserOptions {
+        guillemet_digraphs: true,
+        math: true,
+        ..ParserOptions::default()
+    };
+    for (source, expected) in [
+        ("<<unmatched", "<p>&lt;&lt;unmatched</p>\n"),
+        ("Bonjour>>", "<p>Bonjour&gt;&gt;</p>\n"),
+        (
+            r#"\"escaped\" and <<Bonjour>>"#,
+            "<p>&quot;escaped&quot; and « Bonjour »</p>\n",
+        ),
+        ("<<<Bonjour>>>", "<p>&lt;&lt;&lt;Bonjour&gt;&gt;&gt;</p>\n"),
+        (r"\<\<escaped\>\>", "<p>&lt;&lt;escaped&gt;&gt;</p>\n"),
+        (
+            "&lt;&lt;entity&gt;&gt; &LT;&LT;uppercase&GT;&GT;",
+            "<p>&lt;&lt;entity&gt;&gt; &lt;&lt;uppercase&gt;&gt;</p>\n",
+        ),
+        ("<<`code`>>", "<p>&lt;&lt;<code>code</code>&gt;&gt;</p>\n"),
+        (
+            "$<<math>>$",
+            "<p><span class=\"ox-math ox-math-inline\" data-ox-tex=\"&lt;&lt;math&gt;&gt;\"><math><mtext>&lt;&lt;math&gt;&gt;</mtext></math></span></p>\n",
+        ),
+    ] {
+        assert_eq!(
+            render_with_options(
+                source,
+                TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true),
+                options.clone(),
+                HtmlRendererOptions::default(),
+            ),
+            expected,
+            "source: {source:?}"
+        );
+    }
 }
 
 #[test]
