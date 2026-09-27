@@ -19,13 +19,18 @@ mod table_columns;
 mod visit;
 mod write;
 
+use std::borrow::Cow;
+
 use crate::ast::{Document, Node};
 use compact_str::CompactString;
 use rustc_hash::FxHashMap;
 
+use super::abbreviation::AbbreviationMatcher;
 use super::autolink::FirstByteIndex;
 use super::heading::{HeadingIdPlanner, PlannedId};
-use super::options::{HtmlRendererOptions, RendererOptions};
+use super::options::{
+    AbbreviationOptions, DEFAULT_AUTOLINK_PATTERNS, HtmlRendererOptions, RendererOptions,
+};
 
 pub use hooks::{
     CodeHighlightInput, HighlightedCodeBlock, HtmlRenderContext, HtmlRenderControl,
@@ -116,6 +121,18 @@ pub struct HtmlRenderer {
     /// duration of the body and putting it back afterwards, so the per-render
     /// `is_some()` gate keeps its exact meaning.
     autolink_index: Option<FirstByteIndex>,
+    /// Optional, longest-term-first technical abbreviation matcher. It is
+    /// built once with the renderer so repeated documents share its dictionary.
+    abbreviation_matcher: Option<AbbreviationMatcher>,
+    /// URL scanner used only to keep URL text outside generated abbreviation
+    /// wrappers. It includes HTTP(S) even when autolinking is disabled.
+    abbreviation_url_index: Option<FirstByteIndex>,
+    /// URL prefixes paired with `abbreviation_url_index`.
+    abbreviation_url_patterns: Vec<String>,
+    /// Raw HTML elements are copied as authored, including their child text.
+    raw_html_depth: usize,
+    /// MDX elements named `abbr` must not gain generated child wrappers.
+    mdx_abbreviation_depth: usize,
 }
 
 /// Working capacity a heading scratch buffer is given on first use.
@@ -164,6 +181,35 @@ impl HtmlRenderer {
     #[must_use]
     pub fn with_options(options: HtmlRendererOptions) -> Self {
         Self::with_renderer_options(options.into())
+    }
+
+    /// Creates a renderer with abbreviation recognition enabled.
+    ///
+    /// This additive entry point keeps [`HtmlRendererOptions`] source-compatible
+    /// while providing optional render-time `<abbr>` annotation. See
+    /// [`AbbreviationOptions`] for exact-match overrides and suppression.
+    #[must_use]
+    pub fn with_options_and_abbreviations(
+        options: HtmlRendererOptions,
+        abbreviations: AbbreviationOptions,
+    ) -> Self {
+        Self::with_options(options).enable_abbreviations(abbreviations)
+    }
+
+    fn enable_abbreviations(mut self, abbreviations: AbbreviationOptions) -> Self {
+        self.abbreviation_matcher = Some(AbbreviationMatcher::new(abbreviations.overrides));
+        let mut patterns = self.options.autolink_patterns().to_vec();
+        for default in DEFAULT_AUTOLINK_PATTERNS {
+            if !patterns
+                .iter()
+                .any(|pattern| pattern.eq_ignore_ascii_case(default))
+            {
+                patterns.push(default.clone());
+            }
+        }
+        self.abbreviation_url_index = Some(FirstByteIndex::from_patterns(&patterns));
+        self.abbreviation_url_patterns = patterns.into_iter().map(Cow::into_owned).collect();
+        self
     }
 
     /// Returns this renderer with a fixed heading level offset.
@@ -244,6 +290,11 @@ impl HtmlRenderer {
             in_link: false,
             in_mdx_island_children: false,
             autolink_index,
+            abbreviation_matcher: None,
+            abbreviation_url_index: None,
+            abbreviation_url_patterns: Vec::new(),
+            raw_html_depth: 0,
+            mdx_abbreviation_depth: 0,
         }
     }
 
@@ -278,6 +329,8 @@ impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn prepare_render(&mut self, document: &Document<'_>) {
         self.output.clear();
         self.in_mdx_island_children = false;
+        self.raw_html_depth = 0;
+        self.mdx_abbreviation_depth = 0;
         self.code_block_index = 0;
         self.heading_id_planner.clear();
         self.clear_footnote_state();

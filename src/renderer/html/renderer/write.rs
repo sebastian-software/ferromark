@@ -9,6 +9,7 @@ use std::fmt::{Display, Write as _};
 use crate::ast::{Heading, Node, Span};
 use smallvec::SmallVec;
 
+use super::super::abbreviation::write_abbreviations_into;
 use super::super::autolink::find_autolink_match;
 use super::super::escape::{
     write_attribute_escaped_into, write_escaped_into, write_url_escaped_into,
@@ -186,6 +187,10 @@ impl HtmlRenderer {
     }
 
     pub(in crate::renderer::html::renderer) fn write_html_value(&mut self, value: &str) {
+        // Even when the renderer escapes raw HTML, the text between its tags
+        // belongs to that authored fragment and must not gain generated
+        // abbreviation markup.
+        self.update_raw_html_depth(value);
         if self.options.sanitize {
             self.write_escaped(value);
             return;
@@ -224,10 +229,166 @@ impl HtmlRenderer {
     /// and writing the configured value are the same thing.
     #[inline]
     pub(in crate::renderer::html::renderer) fn write_inline_text(&mut self, value: &str) {
-        if self.options.custom_soft_break {
+        if self.abbreviation_matcher.is_some()
+            && self.raw_html_depth == 0
+            && self.mdx_abbreviation_depth == 0
+        {
+            if self.options.custom_soft_break {
+                self.write_inline_text_with_abbreviations_and_soft_breaks(value);
+            } else {
+                self.write_inline_text_run_with_abbreviations(value);
+            }
+        } else if self.options.custom_soft_break {
             self.write_inline_text_with_soft_breaks(value);
         } else {
             self.write_inline_text_run(value);
+        }
+    }
+
+    #[inline(never)]
+    fn write_inline_text_with_abbreviations_and_soft_breaks(&mut self, value: &str) {
+        let mut lines = value.split('\n');
+        if let Some(first) = lines.next() {
+            self.write_inline_text_run_with_abbreviations(first);
+        }
+        for line in lines {
+            self.output.push_str(self.options.soft_break());
+            self.write_inline_text_run_with_abbreviations(line);
+        }
+    }
+
+    /// Applies abbreviation recognition only to prose around renderer URLs.
+    ///
+    /// A URL match is written as one link, so no generated abbreviation can
+    /// enter its visible URL text or its destination.
+    fn write_inline_text_run_with_abbreviations(&mut self, value: &str) {
+        let Some(matcher) = self.abbreviation_matcher.as_ref() else {
+            self.write_inline_text_run(value);
+            return;
+        };
+        let bytes = value.as_bytes();
+        let Some(index) = self.abbreviation_url_index.as_ref() else {
+            write_abbreviations_into(&mut self.output, value, matcher);
+            return;
+        };
+        if !index.may_match(bytes) {
+            write_abbreviations_into(&mut self.output, value, matcher);
+            return;
+        }
+
+        let patterns = self
+            .abbreviation_url_patterns
+            .iter()
+            .map(String::as_str)
+            .collect::<SmallVec<[&str; 4]>>();
+        let out = &mut self.output;
+        let mut cursor = 0usize;
+        while cursor < bytes.len() {
+            let Some((match_start, url_end)) = find_autolink_match(value, cursor, &patterns, index)
+            else {
+                break;
+            };
+            if match_start > cursor {
+                write_abbreviations_into(out, &value[cursor..match_start], matcher);
+            }
+            let url = &value[match_start..url_end];
+            let should_link = !self.in_link
+                && self.options.autolink_urls
+                && self.options.autolink_patterns().iter().any(|pattern| {
+                    url.get(..pattern.len())
+                        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(pattern))
+                });
+            if should_link {
+                out.push_str("<a href=\"");
+                write_url_escaped_into(out, url);
+                out.push('"');
+                if self.options.autolink_target_blank {
+                    out.push_str(" target=\"_blank\" rel=\"noopener noreferrer\"");
+                }
+                out.push('>');
+                write_escaped_into(out, url);
+                out.push_str("</a>");
+            } else {
+                write_escaped_into(out, url);
+            }
+            cursor = url_end;
+        }
+        if cursor < bytes.len() {
+            write_abbreviations_into(out, &value[cursor..], matcher);
+        }
+    }
+
+    /// Tracks trusted raw HTML elements so their contents remain authored.
+    fn update_raw_html_depth(&mut self, html: &str) {
+        let bytes = html.as_bytes();
+        let mut cursor = 0usize;
+        while cursor < bytes.len() {
+            if bytes[cursor..].starts_with(b"<!--") {
+                if let Some(end) = html[cursor + 4..].find("-->") {
+                    cursor += 4 + end + 3;
+                    continue;
+                }
+                break;
+            }
+            if bytes[cursor] != b'<' {
+                cursor += 1;
+                continue;
+            }
+
+            let mut name_start = cursor + 1;
+            let closing = bytes.get(name_start) == Some(&b'/');
+            if closing {
+                name_start += 1;
+            }
+            let mut name_end = name_start;
+            while bytes.get(name_end).is_some_and(|byte| {
+                byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b':' | b'_')
+            }) {
+                name_end += 1;
+            }
+            let Some(name) = bytes.get(name_start..name_end).filter(|name| {
+                !name.is_empty()
+                    && matches!(
+                        bytes.get(name_end),
+                        Some(b'>')
+                            | Some(b'/')
+                            | Some(b' ')
+                            | Some(b'\t')
+                            | Some(b'\n')
+                            | Some(b'\r')
+                    )
+            }) else {
+                cursor += 1;
+                continue;
+            };
+
+            let mut end = name_end;
+            let mut quote = None;
+            while let Some(byte) = bytes.get(end).copied() {
+                match (quote, byte) {
+                    (Some(current), value) if current == value => quote = None,
+                    (None, b'\'' | b'"') => quote = Some(byte),
+                    (None, b'>') => break,
+                    _ => {}
+                }
+                end += 1;
+            }
+            if end >= bytes.len() {
+                break;
+            }
+
+            if closing {
+                self.raw_html_depth = self.raw_html_depth.saturating_sub(1);
+            } else if !is_void_html_tag(name)
+                && bytes[name_end..end]
+                    .iter()
+                    .rev()
+                    .find(|byte| !byte.is_ascii_whitespace())
+                    .is_none_or(|byte| *byte != b'/')
+            {
+                self.raw_html_depth = self.raw_html_depth.saturating_add(1);
+            }
+            cursor = end + 1;
         }
     }
 
@@ -273,6 +434,55 @@ impl HtmlRenderer {
             Node::Text(text) => self.write_inline_text(text.value),
             Node::Html(html) => self.write_html_value(html.value),
             _ => self.render_node(node),
+        }
+    }
+
+    /// Visits inline children while treating adjacent plain text as one token
+    /// stream for abbreviation boundary checks.
+    pub(in crate::renderer::html::renderer) fn render_inline_children(
+        &mut self,
+        children: &[Node<'_>],
+    ) {
+        if self.abbreviation_matcher.is_none()
+            || self.in_link
+            || self.raw_html_depth > 0
+            || self.mdx_abbreviation_depth > 0
+        {
+            for child in children {
+                self.visit_inline_node(child);
+            }
+            return;
+        }
+
+        let mut index = 0usize;
+        while index < children.len() {
+            if matches!(children[index], Node::Text(_)) {
+                let start = index;
+                while matches!(children.get(index), Some(Node::Text(_))) {
+                    index += 1;
+                }
+                if index - start == 1 {
+                    self.visit_inline_node(&children[start]);
+                } else {
+                    let text_len = children[start..index]
+                        .iter()
+                        .filter_map(|node| match node {
+                            Node::Text(text) => Some(text.value.len()),
+                            _ => None,
+                        })
+                        .sum();
+                    let mut text = String::with_capacity(text_len);
+                    for node in &children[start..index] {
+                        if let Node::Text(text_node) = node {
+                            text.push_str(text_node.value);
+                        }
+                    }
+                    self.write_inline_text(&text);
+                }
+                continue;
+            }
+            self.visit_inline_node(&children[index]);
+            index += 1;
         }
     }
 
@@ -375,6 +585,27 @@ impl HtmlRenderer {
             self.heading_id_planner.claim_slug_with_prefix(prefix, text)
         };
     }
+}
+
+fn is_void_html_tag(name: &[u8]) -> bool {
+    [
+        b"area".as_slice(),
+        b"base",
+        b"br",
+        b"col",
+        b"embed",
+        b"hr",
+        b"img",
+        b"input",
+        b"link",
+        b"meta",
+        b"param",
+        b"source",
+        b"track",
+        b"wbr",
+    ]
+    .iter()
+    .any(|void| name.eq_ignore_ascii_case(void))
 }
 
 #[cfg(test)]

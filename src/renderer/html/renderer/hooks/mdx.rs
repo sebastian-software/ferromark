@@ -55,6 +55,10 @@ impl HtmlRenderer {
         };
 
         let previous_child_html = self.in_mdx_island_children;
+        let previous_abbreviation_depth = self.mdx_abbreviation_depth;
+        if name.eq_ignore_ascii_case("abbr") {
+            self.mdx_abbreviation_depth = self.mdx_abbreviation_depth.saturating_add(1);
+        }
         self.in_mdx_island_children = false;
         self.output.push('<');
         self.output.push_str(tag);
@@ -83,6 +87,7 @@ impl HtmlRenderer {
         self.output.push_str(tag);
         self.output.push('>');
         self.in_mdx_island_children = previous_child_html;
+        self.mdx_abbreviation_depth = previous_abbreviation_depth;
         if block {
             self.output.push('\n');
         }

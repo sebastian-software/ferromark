@@ -46,7 +46,7 @@ Set `sanitize: true` independently when the source is untrusted.
 ## Add publishing features
 
 ```rust
-use ferromark::{HtmlRendererOptions, ParserOptions};
+use ferromark::{AbbreviationOptions, HtmlRendererOptions, ParserOptions};
 
 let syntax = ParserOptions {
     front_matter: true,
@@ -60,9 +60,21 @@ let output = HtmlRendererOptions {
     sanitize: true,
     ..HtmlRendererOptions::default()
 };
-let html = ferromark::to_html_with_options("# Notes", syntax, output).unwrap();
+let abbreviations = AbbreviationOptions::default();
+let html = ferromark::to_html_with_options_and_abbreviations(
+    "# Notes",
+    syntax,
+    output,
+    abbreviations,
+).unwrap();
 assert!(html.contains("Notes"));
 ```
+
+Use `AbbreviationOptions { overrides: BTreeMap<String, Option<String>> }` to
+provide exact titles, bare wrappers (`Some("")`), or suppressions (`None`).
+Passing this separate configuration opts in to matching while keeping
+`HtmlRendererOptions` source-compatible. See the [technical abbreviation guide](/guide/features#technical-abbreviation-markup)
+for token boundaries, protected content, and the built-in dictionary.
 
 See [Markdown syntax](/guide/features) for author-facing examples and
 [the Rust API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md)

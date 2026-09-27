@@ -1,6 +1,6 @@
 use ferromark::{
-    HtmlRendererOptions, ParseErrorKind, ParserOptions, to_html, to_html_into,
-    to_html_into_with_options, to_html_with_options,
+    AbbreviationOptions, HtmlRendererOptions, ParseErrorKind, ParserOptions, to_html, to_html_into,
+    to_html_into_with_options, to_html_with_options, to_html_with_options_and_abbreviations,
 };
 
 #[test]
@@ -74,6 +74,38 @@ fn explicit_options_control_syntax_and_html_policy() {
     assert!(html.contains("<mark>Important</mark>"));
     assert!(html.contains("&lt;b&gt;text&lt;/b&gt;"));
     assert!(!html.contains("javascript:"));
+}
+
+#[test]
+fn abbreviation_convenience_entry_point_keeps_renderer_options_compatible() {
+    let html = to_html_with_options_and_abbreviations(
+        "API GraphQL",
+        ParserOptions::default(),
+        HtmlRendererOptions::default(),
+        AbbreviationOptions {
+            overrides: [
+                (
+                    "API".to_string(),
+                    Some("Application programming interface".to_string()),
+                ),
+                (
+                    "GraphQL".to_string(),
+                    Some("Graph query language".to_string()),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        html,
+        concat!(
+            "<p><abbr title=\"Application programming interface\">API</abbr> ",
+            "<abbr title=\"Graph query language\">GraphQL</abbr></p>\n"
+        )
+    );
 }
 
 #[test]

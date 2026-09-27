@@ -108,7 +108,7 @@ function ContractBand() {
         },
         {
           heading: "A focused core",
-          text: "Ferromark parses Markdown and renders HTML. Translation, site assembly, templates, and syntax highlighting stay in your pipeline.",
+          text: "Ferromark parses Markdown and renders HTML, with opt-in typography and technical abbreviation markup. Translation, site assembly, templates, and syntax highlighting stay in your pipeline.",
         },
       ]}
     />

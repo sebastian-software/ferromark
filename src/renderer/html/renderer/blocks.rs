@@ -54,9 +54,7 @@ impl HtmlRenderer {
         self.output.push_str("<p");
         self.write_source_span_attr(paragraph.span);
         self.output.push('>');
-        for child in &paragraph.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&paragraph.children);
         self.output.push_str("</p>\n");
     }
 
@@ -92,9 +90,7 @@ impl HtmlRenderer {
         }
         self.write_source_span_attr(heading.span);
         self.output.push('>');
-        for child in &heading.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&heading.children);
         self.write_heading_permalink_if_needed(heading);
         self.output.push_str("</h");
         self.output.push((b'0' + depth) as char);
@@ -192,9 +188,7 @@ impl HtmlRenderer {
         for child in &list_item.children {
             if tight {
                 if let crate::ast::Node::Paragraph(paragraph) = child {
-                    for inline in &paragraph.children {
-                        self.visit_inline_node(inline);
-                    }
+                    self.render_inline_children(&paragraph.children);
                     continue;
                 }
                 // Keep nested blocks on their own lines even when the
@@ -435,9 +429,7 @@ impl HtmlRenderer {
             return;
         }
         self.write("<caption>");
-        for child in &attributes.caption {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&attributes.caption);
         self.write("</caption>\n");
     }
 
@@ -472,9 +464,7 @@ impl HtmlRenderer {
     }
 
     pub(in crate::renderer::html::renderer) fn visit_table_cell(&mut self, cell: &TableCell<'_>) {
-        for child in &cell.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&cell.children);
     }
 }
 

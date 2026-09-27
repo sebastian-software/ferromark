@@ -85,6 +85,10 @@ harness = false
 name = "sanitized_urls"
 harness = false
 
+[[bench]]
+name = "abbreviations"
+harness = false
+
 [workspace]
 resolver = "2"
 members = ["node/native", "transforms"]

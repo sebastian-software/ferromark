@@ -70,6 +70,8 @@ fn every_extension() -> CoreOptions {
     let CoreOptions {
         mut parser,
         mut html,
+        auto_abbreviations,
+        abbreviations,
         heading_level_offset,
         heading_id_prefix,
         pipeline,
@@ -99,6 +101,8 @@ fn every_extension() -> CoreOptions {
     CoreOptions {
         parser,
         html,
+        auto_abbreviations,
+        abbreviations,
         heading_level_offset,
         heading_id_prefix,
         pipeline,

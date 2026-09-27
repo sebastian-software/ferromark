@@ -89,6 +89,19 @@ defaults. See the
 A root-absolute link stays root-absolute under an empty base, as recorded in the
 [renderer review fixes](decisions/2026-09-21-renderer-fixes.md).
 
+### Technical abbreviations
+
+Use `HtmlRenderer::with_options_and_abbreviations` or
+`to_html_with_options_and_abbreviations` to opt in to wrapping recognized prose
+terms in `<abbr>` elements. Pass exact-term overrides in the separate
+`AbbreviationOptions` value; `Some(nonempty)` sets a title, `Some("")` forces a
+bare wrapper, and `None` suppresses the term. This separate type preserves the
+source compatibility of `HtmlRendererOptions`. Matching happens at render time,
+so it does not change AST nodes, heading IDs, source spans, or plain-text
+heading metadata. See the
+[abbreviation guide](abbreviations.md) for the dictionary, recognition rules,
+and protected contexts.
+
 ### Heading levels
 
 `heading_level_offset` shifts the HTML heading level without changing the

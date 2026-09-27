@@ -31,9 +31,7 @@ impl HtmlRenderer {
         self.write("<dt");
         self.write_source_span_attr(term.span);
         self.write(">");
-        for child in &term.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&term.children);
         self.write("</dt>\n");
     }
 
@@ -47,9 +45,7 @@ impl HtmlRenderer {
             && let Some(Node::Paragraph(paragraph)) = definition.children.first()
         {
             self.write(">");
-            for child in &paragraph.children {
-                self.visit_inline_node(child);
-            }
+            self.render_inline_children(&paragraph.children);
             self.write("</dd>\n");
             return;
         }

@@ -87,3 +87,19 @@ Line comments omit physical source lines beginning with `//` after at most three
 spaces; code and HTML blocks stay literal. [Line-comment rules](https://github.com/sebastian-software/ferromark/blob/main/docs/line-comments.md)
 describe source-position behavior. [MDX boundaries](/guide/mdx) distinguish syntax
 capture from compilation.
+
+## Technical abbreviation markup
+
+Use `HtmlRenderer::with_options_and_abbreviations` or
+`to_html_with_options_and_abbreviations` in Rust, or set `autoAbbreviations` in
+Node.js, to add semantic `<abbr>` markup to complete uppercase technical terms.
+The feature is opt-in. A small built-in dictionary provides common titles;
+unknown candidates can receive a bare wrapper, and an exact override map can
+add a mixed-case term, change a title, or suppress a false positive. Processing
+runs during rendering, so it leaves the parsed AST and heading metadata
+unchanged.
+
+Code, math, raw HTML, MDX attributes, URLs and link destinations, and image alt
+text stay outside generated wrappers. Markdown link labels and emphasized prose
+remain eligible. See the [API, token-boundary rules, and known
+limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/abbreviations.md).

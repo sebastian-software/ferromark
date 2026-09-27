@@ -5,6 +5,7 @@
 //! rendering. This keeps each implementation file near a reviewable size while
 //! preserving the crate-level `HtmlRenderer` API.
 
+mod abbreviation;
 mod autolink;
 mod callout;
 mod code_annotations;
@@ -24,7 +25,7 @@ pub use heading::{
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, InvalidHeadingIdPrefix, collect_heading_text,
     map_heading_level, slugify_heading,
 };
-pub use options::{CodeAnnotationSyntax, HtmlRendererOptions};
+pub use options::{AbbreviationOptions, CodeAnnotationSyntax, HtmlRendererOptions};
 pub use renderer::{
     CodeHighlightInput, HighlightedCodeBlock, HtmlRenderContext, HtmlRenderControl,
     HtmlRenderHooks, HtmlRenderer, NoHtmlRenderHooks,
