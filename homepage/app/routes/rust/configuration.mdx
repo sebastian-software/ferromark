@@ -50,6 +50,7 @@ use ferromark::{HtmlRendererOptions, ParserOptions};
 
 let syntax = ParserOptions {
     front_matter: true,
+    insertions: true,
     merged_table_cells: true,
     table_attributes: true,
     ..ParserOptions::gfm()
@@ -60,8 +61,8 @@ let output = HtmlRendererOptions {
     sanitize: true,
     ..HtmlRendererOptions::default()
 };
-let html = ferromark::to_html_with_options("# Notes", syntax, output).unwrap();
-assert!(html.contains("Notes"));
+let html = ferromark::to_html_with_options("# Notes\n\n++An important note++.", syntax, output).unwrap();
+assert!(html.contains("<ins>An important note</ins>"));
 ```
 
 See [Markdown syntax](/guide/features) for author-facing examples and

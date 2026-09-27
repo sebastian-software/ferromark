@@ -186,6 +186,12 @@ pub(super) fn remap_table_cell_inline_spans(
                 remap_table_cell_inline_spans(child, source_offset, source_map);
             }
         }
+        Node::Insertion(node) => {
+            remap_table_cell_span(&mut node.span, source_offset, source_map);
+            for child in &mut node.children {
+                remap_table_cell_inline_spans(child, source_offset, source_map);
+            }
+        }
         Node::Superscript(node) => {
             remap_table_cell_span(&mut node.span, source_offset, source_map);
             for child in &mut node.children {

@@ -15,6 +15,30 @@ mod scan;
 
 use self::candidate::find_candidate;
 pub(super) use self::scan::may_contain_autolink;
+use self::scan::valid_boundary;
+
+/// Collects bare-link ranges so insertion delimiters inside a URL stay text.
+///
+/// This runs only when both insertions and GFM autolinks are enabled. The
+/// normal autolink post-pass still creates the actual link nodes.
+pub(super) fn collect_candidate_ranges<'arena>(
+    value: &str,
+    scan: AutolinkScan,
+    ranges: &mut Vec<'arena, (usize, usize)>,
+) {
+    let mut from = 0;
+    while from < value.len() {
+        let Some(candidate) = find_candidate(&value[from..], scan) else {
+            break;
+        };
+        let start = from + candidate.start;
+        let end = from + candidate.end;
+        if valid_boundary(value, start) {
+            ranges.push((start, end));
+        }
+        from = end;
+    }
+}
 
 use crate::parser::Parser;
 
@@ -55,6 +79,7 @@ impl<'a> Parser<'a> {
                 Node::Strong(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Highlight(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Delete(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Insertion(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Superscript(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Subscript(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Text(text) => {

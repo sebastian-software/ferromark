@@ -1,6 +1,6 @@
 //! Private entry points that take `Options` in packed form.
 //!
-//! napi-rs converts an `Options` argument field by field. For each of the 32
+//! napi-rs converts an `Options` argument field by field. For each of the 33
 //! fields, present or not, it calls `napi_get_named_property`, which creates
 //! the property key from a C string and runs an uncached property lookup, and
 //! then `napi_typeof`. That costs more per call than rendering a small
@@ -8,7 +8,7 @@
 //! JavaScript, where V8 caches them, and passes the result to these entries as
 //! plain arguments:
 //!
-//! - `set` and `on` hold one bit each for `renderPolicy` and the 26 boolean
+//! - `set` and `on` hold one bit each for `renderPolicy` and the 27 boolean
 //!   fields, numbered in their declaration order in [`Options`]. A bit in `set`
 //!   marks the field as present, and the same bit in `on` holds its value. For
 //!   `renderPolicy`, a set value bit means `'trusted'`.
@@ -62,27 +62,28 @@ pub fn unpack(
         table_column_names: flag(5),
         table_attributes: flag(6),
         strikethrough: flag(7),
-        superscript: flag(8),
-        subscript: flag(9),
-        task_lists: flag(10),
-        autolink_literals: flag(11),
-        disallowed_raw_html: flag(12),
-        footnotes: flag(13),
-        highlight: flag(14),
-        inline_footnotes: flag(15),
-        allow_link_refs: flag(16),
-        front_matter: flag(17),
-        heading_ids: flag(18),
+        insertions: flag(8),
+        superscript: flag(9),
+        subscript: flag(10),
+        task_lists: flag(11),
+        autolink_literals: flag(12),
+        disallowed_raw_html: flag(13),
+        footnotes: flag(14),
+        highlight: flag(15),
+        inline_footnotes: flag(16),
+        allow_link_refs: flag(17),
+        front_matter: flag(18),
+        heading_ids: flag(19),
         heading_offset,
         heading_id_prefix,
-        heading_attributes: flag(19),
-        math: flag(20),
-        callouts: flag(21),
-        definition_lists: flag(22),
-        line_comments: flag(23),
-        wiki_links: flag(24),
-        cjk_emphasis: flag(25),
-        mdx: flag(26),
+        heading_attributes: flag(20),
+        math: flag(21),
+        callouts: flag(22),
+        definition_lists: flag(23),
+        line_comments: flag(24),
+        wiki_links: flag(25),
+        cjk_emphasis: flag(26),
+        mdx: flag(27),
         link_base_path,
         typography,
         passes,

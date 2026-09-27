@@ -1,4 +1,4 @@
-use crate::ast::{Delete, Emphasis, Highlight, Link, Strong, Subscript, Superscript};
+use crate::ast::{Delete, Emphasis, Highlight, Insertion, Link, Strong, Subscript, Superscript};
 
 use super::HtmlRenderHooks;
 use crate::renderer::html::renderer::HtmlRenderer;
@@ -66,6 +66,18 @@ impl HtmlRenderer {
             self.render_inline_node_with_hooks(child, hooks);
         }
         self.write("</del>");
+    }
+
+    pub(in crate::renderer::html::renderer) fn render_insertion_with_hooks<H: HtmlRenderHooks>(
+        &mut self,
+        insertion: &Insertion<'_>,
+        hooks: &mut H,
+    ) {
+        self.write("<ins>");
+        for child in &insertion.children {
+            self.render_inline_node_with_hooks(child, hooks);
+        }
+        self.write("</ins>");
     }
 
     pub(in crate::renderer::html::renderer) fn render_superscript_with_hooks<H: HtmlRenderHooks>(

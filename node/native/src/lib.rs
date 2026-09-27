@@ -67,6 +67,7 @@ pub struct Options {
     pub table_column_names: Option<bool>,
     pub table_attributes: Option<bool>,
     pub strikethrough: Option<bool>,
+    pub insertions: Option<bool>,
     pub superscript: Option<bool>,
     pub subscript: Option<bool>,
     pub task_lists: Option<bool>,
@@ -130,6 +131,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(html.table_column_names, options.table_column_names);
         apply!(parser.table_attributes, options.table_attributes);
         apply!(parser.strikethrough, options.strikethrough);
+        apply!(parser.insertions, options.insertions);
         apply!(parser.superscript, options.superscript);
         apply!(parser.subscript, options.subscript);
         apply!(parser.task_lists, options.task_lists);

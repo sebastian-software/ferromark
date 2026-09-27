@@ -115,6 +115,8 @@ pub enum Node<'a> {
 
     /// Strikethrough (GFM extension).
     Delete(Box<'a, Delete<'a>>),
+    /// Inserted text (`++text++` extension).
+    Insertion(Box<'a, Insertion<'a>>),
     /// Superscript (extension).
     Superscript(Box<'a, Superscript<'a>>),
     /// Subscript (extension).
@@ -417,6 +419,15 @@ pub struct Delete<'a> {
     pub span: Span,
 }
 
+/// Inserted inline text.
+#[derive(Debug)]
+pub struct Insertion<'a> {
+    /// Inline children.
+    pub children: Vec<'a, Node<'a>>,
+    /// Source span, including the `++` delimiters.
+    pub span: Span,
+}
+
 /// Highlighted inline text.
 #[derive(Debug)]
 pub struct Highlight<'a> {
@@ -513,6 +524,7 @@ impl<'a> Node<'a> {
             Self::Image(n) => n.span,
             Self::Highlight(n) => n.span,
             Self::Delete(n) => n.span,
+            Self::Insertion(n) => n.span,
             Self::Superscript(n) => n.span,
             Self::Subscript(n) => n.span,
             Self::FootnoteReference(n) => n.span,

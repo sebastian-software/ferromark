@@ -113,7 +113,7 @@ pub(super) fn scheme_prefix_len(bytes: &[u8], at: usize) -> Option<usize> {
 
 /// Start-of-text, whitespace, or common delimiter punctuation may precede an
 /// autolink.
-fn valid_boundary(value: &str, start: usize) -> bool {
+pub(super) fn valid_boundary(value: &str, start: usize) -> bool {
     value[..start]
         .chars()
         .next_back()

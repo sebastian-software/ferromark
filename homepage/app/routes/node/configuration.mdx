@@ -19,6 +19,7 @@ spelling mistakes cannot silently change your output.
 import { type Options, toHtml } from "ferromark";
 
 const options = {
+  insertions: true,
   frontMatter: true,
   headingIds: true,
   footnotes: true,
@@ -27,7 +28,7 @@ const options = {
   tableAttributes: true,
 } satisfies Options;
 
-const html = toHtml("# Notes\n\nA detail.[^1]\n\n[^1]: More context.", options);
+const html = toHtml("# Notes\n\nAn ++important++ detail.[^1]\n\n[^1]: More context.", options);
 ```
 
 Omitted values use the package defaults. There are no named preset constructors
@@ -50,6 +51,7 @@ All properties are optional. Syntax examples and output semantics live in the
 | `tables`            | `true`        | GFM pipe tables                                                        |
 | `mergedTableCells`  | `false`       | Horizontal cell spans; requires `tables`                               |
 | `strikethrough`     | `true`        | Double-tilde strikethrough                                             |
+| `insertions`        | `false`       | Double-plus inserted text rendered as `<ins>`                          |
 | `highlight`         | `false`       | Highlight markup                                                       |
 | `superscript`       | `false`       | Superscript markup                                                     |
 | `subscript`         | `false`       | Subscript markup                                                       |

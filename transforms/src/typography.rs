@@ -423,6 +423,9 @@ fn transform_block_node<'arena>(
         Node::MdxJsxFlowElement(node) => {
             transform_block_children(&mut node.children, context, options, raw_html_spans);
         }
+        Node::Insertion(node) => {
+            transform_inline_children(&mut node.children, context, options, raw_html_spans);
+        }
         Node::ThematicBreak(_)
         | Node::CodeBlock(_)
         | Node::MathBlock(_)
@@ -461,6 +464,7 @@ fn is_inline_node(node: &Node<'_>) -> bool {
             | Node::Image(_)
             | Node::Highlight(_)
             | Node::Delete(_)
+            | Node::Insertion(_)
             | Node::Superscript(_)
             | Node::Subscript(_)
             | Node::FootnoteReference(_)
@@ -564,6 +568,9 @@ fn collect_inline_items<'arena>(
             Node::Delete(node) => {
                 collect_inline_items(&node.children, context, raw_html_spans, items);
             }
+            Node::Insertion(node) => {
+                collect_inline_items(&node.children, context, raw_html_spans, items);
+            }
             Node::Superscript(node) => {
                 collect_inline_items(&node.children, context, raw_html_spans, items);
             }
@@ -646,6 +653,14 @@ fn apply_inline_replacements<'arena>(
                 );
             }
             Node::Delete(node) => {
+                apply_inline_replacements(
+                    &mut node.children,
+                    replacements,
+                    replacement_index,
+                    context,
+                );
+            }
+            Node::Insertion(node) => {
                 apply_inline_replacements(
                     &mut node.children,
                     replacements,

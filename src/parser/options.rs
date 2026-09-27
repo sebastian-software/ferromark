@@ -63,6 +63,9 @@ pub struct ParserOptions {
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
     pub strikethrough: bool,
 
+    /// Enable `++inserted text++` spans. Off in all presets.
+    pub insertions: bool,
+
     /// Enable GFM autolinks.
     ///
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
@@ -144,7 +147,7 @@ pub struct ParserOptions {
     /// children, and on a bracketed slice for link text, image alt text,
     /// wiki-link labels, inline notes, script spans and inline JSX phrasing.
     /// Emphasis counts too, although it never recurses: pairing delimiter
-    /// runs builds `*`, `_`, `**`, `~~`, `==`, `~`, `^` and CJK emphasis
+    /// runs builds `*`, `_`, `**`, `~~`, `++`, `==`, `~`, `^` and CJK emphasis
     /// into a tree that the renderer and the [`Visit`](crate::ast::Visit)
     /// walkers do recurse over, and its depth counts the same way — the
     /// depth of the tree, so `*`×200 `a` `*`×200 is 100 levels while a run
@@ -183,6 +186,7 @@ impl Default for ParserOptions {
             line_comments: false,
             front_matter: false,
             strikethrough: false,
+            insertions: false,
             autolinks: false,
             superscript: false,
             subscript: false,
@@ -234,6 +238,7 @@ impl ParserOptions {
             line_comments: false,
             front_matter: false,
             strikethrough: true,
+            insertions: false,
             autolinks: true,
             superscript: false,
             subscript: false,

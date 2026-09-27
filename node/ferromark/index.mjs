@@ -20,6 +20,7 @@ const optionKeys = new Set([
   "tableColgroup",
   "tableColumnNames",
   "strikethrough",
+  "insertions",
   "superscript",
   "subscript",
   "taskLists",
@@ -65,7 +66,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 32 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 33 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -73,7 +74,7 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and the boolean fields (bits 1 to 26, in declaration
+ * `renderPolicy` (bit 0) and the boolean fields (bits 1 to 27, in declaration
  * order, as `unpack` numbers them) take one bit each of `set` (present) and
  * `on` (its value; `'trusted'` for `renderPolicy`). `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
@@ -132,27 +133,28 @@ class PackedOptions {
       this.flag("tableColumnNames", 1 << 5, options.tableColumnNames) &&
       this.flag("tableAttributes", 1 << 6, options.tableAttributes) &&
       this.flag("strikethrough", 1 << 7, options.strikethrough) &&
-      this.flag("superscript", 1 << 8, options.superscript) &&
-      this.flag("subscript", 1 << 9, options.subscript) &&
-      this.flag("taskLists", 1 << 10, options.taskLists) &&
-      this.flag("autolinkLiterals", 1 << 11, options.autolinkLiterals) &&
-      this.flag("disallowedRawHtml", 1 << 12, options.disallowedRawHtml) &&
-      this.flag("footnotes", 1 << 13, options.footnotes) &&
-      this.flag("highlight", 1 << 14, options.highlight) &&
-      this.flag("inlineFootnotes", 1 << 15, options.inlineFootnotes) &&
-      this.flag("allowLinkRefs", 1 << 16, options.allowLinkRefs) &&
-      this.flag("frontMatter", 1 << 17, options.frontMatter) &&
-      this.flag("headingIds", 1 << 18, options.headingIds) &&
+      this.flag("insertions", 1 << 8, options.insertions) &&
+      this.flag("superscript", 1 << 9, options.superscript) &&
+      this.flag("subscript", 1 << 10, options.subscript) &&
+      this.flag("taskLists", 1 << 11, options.taskLists) &&
+      this.flag("autolinkLiterals", 1 << 12, options.autolinkLiterals) &&
+      this.flag("disallowedRawHtml", 1 << 13, options.disallowedRawHtml) &&
+      this.flag("footnotes", 1 << 14, options.footnotes) &&
+      this.flag("highlight", 1 << 15, options.highlight) &&
+      this.flag("inlineFootnotes", 1 << 16, options.inlineFootnotes) &&
+      this.flag("allowLinkRefs", 1 << 17, options.allowLinkRefs) &&
+      this.flag("frontMatter", 1 << 18, options.frontMatter) &&
+      this.flag("headingIds", 1 << 19, options.headingIds) &&
       this.number("headingOffset", options.headingOffset) &&
       this.string("headingIdPrefix", options.headingIdPrefix) &&
-      this.flag("headingAttributes", 1 << 19, options.headingAttributes) &&
-      this.flag("math", 1 << 20, options.math) &&
-      this.flag("callouts", 1 << 21, options.callouts) &&
-      this.flag("definitionLists", 1 << 22, options.definitionLists) &&
-      this.flag("lineComments", 1 << 23, options.lineComments) &&
-      this.flag("wikiLinks", 1 << 24, options.wikiLinks) &&
-      this.flag("cjkEmphasis", 1 << 25, options.cjkEmphasis) &&
-      this.flag("mdx", 1 << 26, options.mdx) &&
+      this.flag("headingAttributes", 1 << 20, options.headingAttributes) &&
+      this.flag("math", 1 << 21, options.math) &&
+      this.flag("callouts", 1 << 22, options.callouts) &&
+      this.flag("definitionLists", 1 << 23, options.definitionLists) &&
+      this.flag("lineComments", 1 << 24, options.lineComments) &&
+      this.flag("wikiLinks", 1 << 25, options.wikiLinks) &&
+      this.flag("cjkEmphasis", 1 << 26, options.cjkEmphasis) &&
+      this.flag("mdx", 1 << 27, options.mdx) &&
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
       this.array("passes", options.passes)

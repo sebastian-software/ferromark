@@ -60,6 +60,8 @@ export interface Options {
   tableColumnNames?: boolean;
   /** Enable GFM `~~strikethrough~~`. Default: on. */
   strikethrough?: boolean;
+  /** Enable `++inserted text++`. Default: off, including the GFM profile. */
+  insertions?: boolean;
   /** Enable `^superscript^`. Default: off. */
   superscript?: boolean;
   /** Enable `~subscript~`. Default: off. */

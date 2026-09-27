@@ -216,7 +216,7 @@ the highlighter helpers below accept trusted highlighter HTML.
 
 ## Options reference
 
-Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `headingIdPrefix` and `linkBasePath` are unset.
+Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions, including `insertions`, default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `headingIdPrefix` and `linkBasePath` are unset.
 
 Unknown option names throw a `TypeError` that identifies the rejected key, so
 misspellings such as `taskList` cannot silently change rendered output.

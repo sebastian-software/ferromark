@@ -5,8 +5,8 @@
 //! single place.
 
 use crate::ast::{
-    Break, Delete, Emphasis, Highlight, Image, InlineCode, InlineMath, Link, Strong, Subscript,
-    Superscript, Text,
+    Break, Delete, Emphasis, Highlight, Image, InlineCode, InlineMath, Insertion, Link, Strong,
+    Subscript, Superscript, Text,
 };
 
 use super::HtmlRenderer;
@@ -111,6 +111,17 @@ impl HtmlRenderer {
             self.visit_inline_node(child);
         }
         self.write("</del>");
+    }
+
+    pub(in crate::renderer::html::renderer) fn render_insertion(
+        &mut self,
+        insertion: &Insertion<'_>,
+    ) {
+        self.write("<ins>");
+        for child in &insertion.children {
+            self.visit_inline_node(child);
+        }
+        self.write("</ins>");
     }
 
     pub(in crate::renderer::html::renderer) fn render_superscript(

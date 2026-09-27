@@ -118,6 +118,10 @@ impl<'a> Visit<'a> for HtmlRenderer {
         self.render_delete(delete);
     }
 
+    fn visit_insertion(&mut self, insertion: &crate::ast::Insertion<'a>) {
+        self.render_insertion(insertion);
+    }
+
     fn visit_superscript(&mut self, superscript: &Superscript<'a>) {
         self.render_superscript(superscript);
     }

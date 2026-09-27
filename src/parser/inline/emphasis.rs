@@ -1,6 +1,6 @@
-//! Emphasis, strong emphasis, GFM strikethrough, and marked text via the delimiter stack.
+//! Emphasis, strong emphasis, GFM strikethrough, inserted and marked text via the delimiter stack.
 //!
-//! During inline parsing every enabled `*`/`_`/`~`/`==` run is pushed as a plain text node
+//! During inline parsing every enabled delimiter run is pushed as a plain text node
 //! plus a [`Delimiter`] record carrying its flanking classification. Once
 //! the inline sequence is complete, [`Parser::process_emphasis`] pairs
 //! closers with openers (nearest matching opener, rule of three), wraps
@@ -23,6 +23,9 @@ pub(in crate::parser) struct Delimiter {
     remaining: usize,
     can_open: bool,
     can_close: bool,
+    /// Whether this is the first pair of an odd plus run. The markdown-it-ins
+    /// reference moves its leading literal plus after the matching closing tag.
+    extra_plus: bool,
     /// Depth of the emphasis node this run currently holds as an opener,
     /// counted in nodes below and including it, or zero while it holds
     /// none. Pairing reads it back to measure the tree it is building.
@@ -113,10 +116,91 @@ impl<'a> Parser<'a> {
             remaining: run_len,
             can_open,
             can_close,
+            extra_plus: false,
             depth: 0,
             prev,
             next: NO_DELIMITER,
         });
+    }
+
+    /// Records the `++` pairs from a plus run, following markdown-it-ins run
+    /// consumption: an odd leading plus stays literal and each remaining pair
+    /// is an independent delimiter token.
+    pub(in crate::parser) fn push_insertion_run(
+        &self,
+        content: &'a str,
+        offset: usize,
+        children: &mut Vec<'a, Node<'a>>,
+        delimiters: &mut Vec<'a, Delimiter>,
+        pos: &mut usize,
+    ) {
+        let bytes = content.as_bytes();
+        let start = *pos;
+        let run_len = Self::marker_run_len(bytes, start, b'+');
+        if run_len < 2 {
+            Self::push_text(
+                children,
+                &content[start..start + run_len],
+                offset + start,
+                offset + start + run_len,
+            );
+            *pos += run_len;
+            return;
+        }
+        let end = start + run_len;
+        let (can_open, can_close) = self.classify_run(b'+', &content[..start], &content[end..]);
+        let has_extra_plus = run_len % 2 == 1;
+        if has_extra_plus {
+            Self::push_text(children, "+", offset + start, offset + start + 1);
+            *pos += 1;
+        }
+        let mut first_pair = true;
+        while *pos < end {
+            let pair_start = *pos;
+            Self::push_text(children, "++", offset + pair_start, offset + pair_start + 2);
+            *pos += 2;
+            if !can_open && !can_close {
+                continue;
+            }
+            let index = delimiters.len();
+            let prev = match delimiters.last_mut() {
+                Some(last) => {
+                    last.next = index;
+                    index - 1
+                }
+                None => NO_DELIMITER,
+            };
+            delimiters.push(Delimiter {
+                node_index: children.len() - 1,
+                marker: b'+',
+                // Each pair is an independent token in markdown-it-ins, so
+                // the emphasis rule of three does not apply to these runs.
+                orig_len: 0,
+                remaining: 2,
+                can_open,
+                can_close,
+                extra_plus: first_pair && has_extra_plus,
+                depth: 0,
+                prev,
+                next: NO_DELIMITER,
+            });
+            first_pair = false;
+        }
+    }
+
+    /// Whether a plus run can close one of this sequence's insertion openers.
+    pub(in crate::parser) fn plus_run_closes_insertion(
+        &self,
+        content: &'a str,
+        start: usize,
+        end: usize,
+        delimiters: &[Delimiter],
+    ) -> bool {
+        self.classify_run(b'+', &content[..start], &content[end..])
+            .1
+            && delimiters.iter().any(|delimiter| {
+                delimiter.marker == b'+' && delimiter.can_open && delimiter.remaining >= 2
+            })
     }
 
     /// Flanking classification for the run between `before` and `after`.
@@ -235,7 +319,9 @@ impl<'a> Parser<'a> {
                 continue;
             };
 
-            let strikethrough = delimiters[closer_idx].marker == b'~';
+            let marker = delimiters[closer_idx].marker;
+            let strikethrough = marker == b'~';
+            let insertion = marker == b'+';
             if strikethrough && delimiters[opener_idx].remaining != delimiters[closer_idx].remaining
             {
                 // cmark-gfm consumes the delimiter records for an unequal
@@ -308,20 +394,49 @@ impl<'a> Parser<'a> {
             // Lift the nodes between the delimiters into the new emphasis
             // node and leave empty text behind, so every index stays put.
             // Text nodes emptied by earlier (inner) pairings are dropped on
-            // the way — they render as nothing. The range is never empty:
-            // two runs of the same marker cannot be adjacent children.
+            // the way — they render as nothing. A pair inside one longer plus
+            // run can have an empty range between its delimiter tokens.
+            let extra_plus_node = insertion
+                .then_some(delimiters[closer_idx].extra_plus)
+                .filter(|has_extra_plus| *has_extra_plus)
+                .and_then(|_| closer_node.checked_sub(1))
+                .filter(|index| {
+                    matches!(
+                        children.get(*index),
+                        Some(Node::Text(text))
+                            if text.value == "+"
+                                && text.span.end == children[closer_node].span().start
+                    )
+                });
+            let mut moved_plus = None;
             let mut inner = self.allocator.new_vec();
-            for slot in &mut children[opener_node + 1..closer_node] {
+            for (index, slot) in
+                (opener_node + 1..closer_node).zip(&mut children[opener_node + 1..closer_node])
+            {
                 let node = core::mem::replace(slot, empty_text());
-                if !is_empty_text(&node) {
+                if Some(index) == extra_plus_node {
+                    moved_plus = Some(node);
+                } else if !is_empty_text(&node) {
                     inner.push(node);
                 }
             }
             // The slot right after the opener takes the new node below, so
             // only a wider range leaves a placeholder behind.
             emptied |= closer_node > opener_node + 2;
-            let span = inner_span(&inner, use_delims);
-            let node = if delimiters[closer_idx].marker == b'=' {
+            let span = if insertion && inner.is_empty() {
+                Span::new(
+                    children[opener_node].span().start,
+                    children[closer_node].span().end,
+                )
+            } else {
+                inner_span(&inner, use_delims)
+            };
+            let node = if insertion {
+                Node::Insertion(self.allocator.boxed(crate::ast::Insertion {
+                    children: inner,
+                    span,
+                }))
+            } else if marker == b'=' {
                 Node::Highlight(self.allocator.boxed(crate::ast::Highlight {
                     children: inner,
                     span,
@@ -343,11 +458,17 @@ impl<'a> Parser<'a> {
                 }))
             };
             children[opener_node + 1] = node;
+            let has_moved_plus = moved_plus.is_some();
+            if let Some(plus) = moved_plus {
+                children[closer_node] = plus;
+            }
 
             // Trim the delimiter text nodes in place (they may end up
             // empty, which renders as nothing).
             emptied |= trim_text_tail(&mut children[opener_node], use_delims);
-            emptied |= trim_text_head(&mut children[closer_node], use_delims);
+            if !has_moved_plus {
+                emptied |= trim_text_head(&mut children[closer_node], use_delims);
+            }
 
             // The pair has spent `use_delims` characters, and the opener now
             // holds the node just built.
@@ -401,6 +522,7 @@ struct OpenersBottom {
     underscore: [[Option<usize>; 2]; 3],
     tilde: [[Option<usize>; 2]; 3],
     equals: [[Option<usize>; 2]; 3],
+    insertions: [[Option<usize>; 2]; 3],
 }
 
 impl OpenersBottom {
@@ -409,6 +531,7 @@ impl OpenersBottom {
             b'_' => &mut self.underscore,
             b'~' => &mut self.tilde,
             b'=' => &mut self.equals,
+            b'+' => &mut self.insertions,
             _ => &mut self.star,
         };
         &mut table[closer.orig_len % 3][usize::from(closer.can_open)]
@@ -547,7 +670,7 @@ impl Neighbors {
         let left_flanking = !self.next_ws && (!self.next_punct || self.prev_ws || self.prev_punct);
         let right_flanking = !self.prev_ws && (!self.prev_punct || self.next_ws || self.next_punct);
 
-        if matches!(marker, b'*' | b'~' | b'=') {
+        if matches!(marker, b'*' | b'~' | b'=' | b'+') {
             (left_flanking, right_flanking)
         } else {
             (

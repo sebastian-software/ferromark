@@ -186,6 +186,7 @@ fn node_children_are_inline(node: &Node<'_>) -> bool {
             | Node::Strong(_)
             | Node::Link(_)
             | Node::Delete(_)
+            | Node::Insertion(_)
             | Node::Highlight(_)
             | Node::Superscript(_)
             | Node::Subscript(_)
@@ -301,6 +302,7 @@ impl HtmlRenderer {
             Node::Image(node) => self.render_image(node),
             Node::Highlight(node) => self.render_highlight_with_hooks(node, hooks),
             Node::Delete(node) => self.render_delete_with_hooks(node, hooks),
+            Node::Insertion(node) => self.render_insertion_with_hooks(node, hooks),
             Node::Superscript(node) => self.render_superscript_with_hooks(node, hooks),
             Node::Subscript(node) => self.render_subscript_with_hooks(node, hooks),
             Node::FootnoteReference(node) => self.render_footnote_reference(node),
@@ -335,6 +337,7 @@ impl HtmlRenderer {
             Node::Image(node) => self.render_image(node),
             Node::Highlight(node) => self.render_highlight_with_hooks(node, hooks),
             Node::Delete(node) => self.render_delete_with_hooks(node, hooks),
+            Node::Insertion(node) => self.render_insertion_with_hooks(node, hooks),
             Node::Superscript(node) => self.render_superscript_with_hooks(node, hooks),
             Node::Subscript(node) => self.render_subscript_with_hooks(node, hooks),
             Node::FootnoteReference(node) => self.render_footnote_reference(node),

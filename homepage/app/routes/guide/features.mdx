@@ -21,7 +21,7 @@ CommonMark core. GFM adds pipe tables, checklists, strikethrough, and autolinks.
 - [x] Publish the docs
 - [ ] Check the examples
 
-Read the [guide](/guide). ~~Outdated advice~~
+Read the [guide](/guide). ~~Outdated advice~~ ++Updated advice++
 ```
 
 ## Front matter and heading IDs
@@ -71,8 +71,10 @@ An inline explanation.^[More context here.]
 > A detail worth remembering.
 ```
 
-Marked text and inline notes are independent options; inline notes do not require
-reference footnotes. Callouts format labeled block quotes. The application owns
+Inserted text, marked text, and inline notes are independent options; inline
+notes do not require reference footnotes. Set `insertions: true` to render
+`++...++` as semantic `<ins>` markup; the syntax is off by default and reserved
+for inserted text. Callouts format labeled block quotes. The application owns
 their styling. [Optional writing syntax](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md)
 explains defaults and edge cases.
 

@@ -132,6 +132,11 @@ pub trait Visit<'a> {
         walk_delete(self, delete);
     }
 
+    /// Visits inserted text and its children.
+    fn visit_insertion(&mut self, insertion: &Insertion<'a>) {
+        walk_insertion(self, insertion);
+    }
+
     /// Visits superscript.
     fn visit_superscript(&mut self, superscript: &Superscript<'a>) {
         walk_superscript(self, superscript);

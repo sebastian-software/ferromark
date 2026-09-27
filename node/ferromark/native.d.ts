@@ -32,6 +32,7 @@ export interface Options {
   tableColumnNames?: boolean
   tableAttributes?: boolean
   strikethrough?: boolean
+  insertions?: boolean
   superscript?: boolean
   subscript?: boolean
   taskLists?: boolean

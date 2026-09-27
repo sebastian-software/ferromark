@@ -86,4 +86,5 @@ fn is_inline_marker(byte: u8, options: u8) -> bool {
         || (options & 2 != 0 && byte == b'^')
         || (options & 4 != 0 && byte == b'$')
         || (options & 8 != 0 && byte == b'=')
+        || (options & 16 != 0 && byte == b'+')
 }

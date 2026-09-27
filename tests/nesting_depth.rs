@@ -69,7 +69,11 @@ impl<'a> Visit<'a> for EmphasisDepth {
     fn visit_node(&mut self, node: &Node<'a>) {
         let nests = matches!(
             node,
-            Node::Emphasis(_) | Node::Strong(_) | Node::Delete(_) | Node::Highlight(_)
+            Node::Emphasis(_)
+                | Node::Strong(_)
+                | Node::Delete(_)
+                | Node::Highlight(_)
+                | Node::Insertion(_)
         );
         if nests {
             self.current += 1;
@@ -138,6 +142,7 @@ fn expect_bounded(label: &str, outcome: Result<(), ParseError>) {
 fn all_options() -> ParserOptions {
     ParserOptions {
         highlight: true,
+        insertions: true,
         inline_footnotes: true,
         merged_table_cells: true,
         table_attributes: true,
@@ -483,6 +488,7 @@ fn delimiter_run_shapes(count: usize) -> Vec<(&'static str, String)> {
         ("superscript runs", mirrored("^")),
         ("subscript runs", mirrored("~")),
         ("strikethrough runs", mirrored("~~")),
+        ("insertion runs", mirrored("++")),
         (
             // East Asian punctuation on the outside, which `cjk_emphasis`
             // reclassifies so that these runs may pair at all.
@@ -493,8 +499,8 @@ fn delimiter_run_shapes(count: usize) -> Vec<(&'static str, String)> {
 }
 
 /// Runs separated by text, one level per run pair. `==` and `~~` runs are
-/// capped at two characters, so a single run cannot nest and only this
-/// shape reaches `Highlight` and `Delete` nesting.
+/// capped at their delimiter width, so a single run cannot nest and only this
+/// shape reaches `Highlight`, `Delete`, and `Insertion` nesting.
 fn nested_run_shapes(depth: usize) -> Vec<(&'static str, String)> {
     let nested = |marker: &str| {
         format!(" {marker}x").repeat(depth) + " a " + &format!("x{marker} ").repeat(depth)
@@ -503,6 +509,7 @@ fn nested_run_shapes(depth: usize) -> Vec<(&'static str, String)> {
         ("nested stars", nested("*")),
         ("nested highlight", nested("==")),
         ("nested strikethrough", nested("~~")),
+        ("nested insertions", nested("++")),
         ("nested tildes", nested("~")),
     ]
 }
@@ -603,6 +610,7 @@ fn the_emphasis_cap_counts_nesting_levels_exactly() {
     // runs, which is where `Highlight` and `Delete` nodes come from.
     for (label, options) in [
         ("nested highlight", all_options()),
+        ("nested insertions", all_options()),
         ("nested strikethrough", ParserOptions::gfm()),
         ("nested tildes", ParserOptions::gfm()),
     ] {
