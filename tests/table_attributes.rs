@@ -81,6 +81,23 @@ fn table_metadata_is_opt_in_and_requires_tables() {
 }
 
 #[test]
+fn plain_caption_attaches_when_table_extension_is_enabled() {
+    let source = "| Item | Price |\n| --- | ---: |\n| Book | 20.00 |\n\n: Current **prices**";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
+    let Node::Table(table) = &document.children[0] else {
+        panic!("expected table");
+    };
+    let attributes = table.attributes.as_ref().expect("caption metadata");
+    assert!(attributes.id.is_none());
+    assert!(attributes.classes.is_empty());
+    assert!(!attributes.caption.is_empty());
+    assert_eq!(table.span.end as usize, source.len());
+}
+
+#[test]
 fn malformed_metadata_preserves_the_following_markdown() {
     for metadata in [
         ": Caption {}",
@@ -97,7 +114,6 @@ fn malformed_metadata_preserves_the_following_markdown() {
         ":{#ok}",
         "    : Caption {#ok}",
         "\t: Caption {#ok}",
-        ": Caption without attributes",
     ] {
         let source = format!("| A | B |\n| --- | --- |\n\n{metadata}");
         let allocator = Allocator::new();

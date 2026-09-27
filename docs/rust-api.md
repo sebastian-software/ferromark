@@ -52,6 +52,11 @@ specification-oriented GFM output, and `gfm()` with `gfm()` for the convenience
 profile that keeps heading IDs, callouts, URL autolinking,
 link targets, and fence metadata cleanup. `commonmark()` pairs the same way.
 See [optional writing syntax](optional-writing.md) for marks and inline notes.
+Image IDs/classes and separate figure captions use independent
+`ParserOptions::image_attributes` and `ParserOptions::image_captions` flags.
+With `table_attributes` enabled, a nonempty plain table caption needs no
+attribute block. See [image captions](image-captions.md) and
+[table layout](table-layout.md) for syntax and attachment rules.
 
 ### String-valued renderer options
 

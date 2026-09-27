@@ -46,6 +46,10 @@ export interface Options {
   cjkEmphasis?: boolean;
   /** Recognize MDX syntax; does not compile or execute JavaScript. */
   mdx?: boolean;
+  /** Parse `{#id .class}` directly after an image. Default: off. */
+  imageAttributes?: boolean;
+  /** Attach a separate `: Caption` line to a standalone image. Default: off. */
+  imageCaptions?: boolean;
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy;
   /** Allow raw HTML in trusted output. Default: on; untrusted output always escapes it. */

@@ -9,8 +9,8 @@ use std::ops::RangeInclusive;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::ast::{
-    Document, FootnoteDefinition, FootnoteReference, Heading, Span, Visit, walk_document,
-    walk_footnote_definition, walk_heading,
+    Document, Figure, FootnoteDefinition, FootnoteReference, Heading, Image, Span, Table, Visit,
+    walk_document, walk_figure, walk_footnote_definition, walk_heading, walk_table,
 };
 use crate::renderer::{
     HeadingIdPlanner, HtmlRenderer, InvalidHeadingIdPrefix, collect_heading_text,
@@ -258,6 +258,30 @@ impl<'options> OutlineCollector<'options> {
 }
 
 impl Visit<'_> for OutlineCollector<'_> {
+    fn visit_figure(&mut self, figure: &Figure<'_>) {
+        if let Some(id) = figure.id {
+            self.id_planner.plan_into(id, &mut self.claimed_id);
+        }
+        walk_figure(self, figure);
+    }
+
+    fn visit_image(&mut self, image: &Image<'_>) {
+        if let Some(id) = image.id {
+            self.id_planner.plan_into(id, &mut self.claimed_id);
+        }
+    }
+
+    fn visit_table(&mut self, table: &Table<'_>) {
+        if let Some(id) = table
+            .attributes
+            .as_ref()
+            .and_then(|attributes| attributes.id)
+        {
+            self.id_planner.plan_into(id, &mut self.claimed_id);
+        }
+        walk_table(self, table);
+    }
+
     fn visit_heading(&mut self, heading: &Heading<'_>) {
         let level = map_heading_level(heading.depth, self.options.heading_level_offset);
         let include = self.options.level_filter.contains(&level);

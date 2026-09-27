@@ -408,6 +408,10 @@ fn transform_block_node<'arena>(
                 }
             }
         }
+        Node::Figure(node) => {
+            transform_block_node(&mut node.content, context, options, raw_html_spans);
+            transform_inline_children(&mut node.caption, context, options, raw_html_spans);
+        }
         Node::DefinitionList(node) => {
             transform_block_children(&mut node.children, context, options, raw_html_spans);
         }
@@ -595,6 +599,7 @@ fn collect_inline_items<'arena>(
             | Node::CodeBlock(_)
             | Node::MathBlock(_)
             | Node::Table(_)
+            | Node::Figure(_)
             | Node::DefinitionList(_)
             | Node::DefinitionListTerm(_)
             | Node::DefinitionListDefinition(_)
@@ -700,6 +705,7 @@ fn apply_inline_replacements<'arena>(
             | Node::Break(_)
             | Node::Image(_)
             | Node::Table(_)
+            | Node::Figure(_)
             | Node::DefinitionList(_)
             | Node::DefinitionListTerm(_)
             | Node::DefinitionListDefinition(_)

@@ -23,11 +23,14 @@ See the [v2 migration guide](../../docs/migration-v2.md) for breaking changes.
 The v2 engine uses an arena AST and retains upstream MIT attribution in `LICENSE`.
 
 Removed options `tableColumnWidths` and `indentedCodeBlocks` throw an unknown-option error. `tableColgroup`,
-`tableColumnNames`, `tableAttributes`,
+`tableColumnNames`, `tableAttributes`, `imageAttributes`, `imageCaptions`,
 `headingAttributes`, `wikiLinks`, `cjkEmphasis`, and `mdx` expose v2 features.
 Optional `highlight` (`==text==`) and `inlineFootnotes` (`^[note]`) default off.
 `allowLinkRefs` defaults on; disabling it keeps reference definitions visible.
 See [optional writing syntax](../../docs/optional-writing.md).
+See [image captions](../../docs/image-captions.md) for image suffixes and
+separate figure captions. The enabled table extension also accepts plain
+captions without attributes.
 Heading slugs and extension HTML follow v2. `linkBasePath` enables v2 site routing:
 root-absolute links, images, and raw HTML URLs use the base, and Markdown links
 become index.html routes. Highlighters receive fenced and indented code blocks.

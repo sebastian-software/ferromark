@@ -16,6 +16,8 @@ const options: Options = {
   wikiLinks: true,
   cjkEmphasis: true,
   mdx: true,
+  imageAttributes: true,
+  imageCaptions: true,
 };
 const highlighter: CodeHighlighter = {
   codeToHtml: (code, { lang, theme }) => `${lang}:${theme}:${code}`,

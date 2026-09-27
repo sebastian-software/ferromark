@@ -9,7 +9,7 @@ use crate::parser::error::ParseResult;
 struct AttributeLine<'a> {
     caption: &'a str,
     caption_offset: usize,
-    tokens: &'a str,
+    tokens: Option<&'a str>,
 }
 
 impl<'a> Parser<'a> {
@@ -39,15 +39,13 @@ impl<'a> Parser<'a> {
             return Ok(None);
         };
 
-        let mut id = None;
-        let mut classes = self.allocator.new_vec();
-        for token in line.tokens.split_whitespace() {
-            if let Some(name) = token.strip_prefix('#') {
-                id = Some(name);
-            } else if let Some(name) = token.strip_prefix('.') {
-                classes.push(name);
-            }
-        }
+        let (id, classes) = if let Some(tokens) = line.tokens {
+            // `attribute_line` has already validated this exact grammar.
+            self.parse_id_classes(tokens)
+                .unwrap_or_else(|| (None, self.allocator.new_vec()))
+        } else {
+            (None, self.allocator.new_vec())
+        };
         let caption = self.parse_inline_block(line.caption, position + line.caption_offset)?;
         self.position = next_position;
         Ok(Some(self.allocator.boxed(TableAttributes {
@@ -71,6 +69,16 @@ fn attribute_line(line: &str) -> Option<AttributeLine<'_>> {
     let content = after_colon.trim_start_matches([' ', '\t']);
     let caption_offset = line.len() - content.len();
     let content = content.trim_end_matches([' ', '\t']);
+    if !content.ends_with('}') {
+        if content.contains(['{', '}']) {
+            return None;
+        }
+        return (!content.is_empty()).then_some(AttributeLine {
+            caption: content,
+            caption_offset,
+            tokens: None,
+        });
+    }
     let without_close = content.strip_suffix('}')?;
     let open = without_close.rfind('{')?;
     let caption = &content[..open];
@@ -102,6 +110,6 @@ fn attribute_line(line: &str) -> Option<AttributeLine<'_>> {
     seen_attribute.then_some(AttributeLine {
         caption: caption.trim_end_matches([' ', '\t']),
         caption_offset,
-        tokens,
+        tokens: Some(tokens),
     })
 }

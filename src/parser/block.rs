@@ -226,7 +226,24 @@ impl<'a> Parser<'a> {
             return Ok(Some(node));
         }
 
-        if let Some(node) = self.parse_definition_list(start)? {
+        let image_caption_precedes_definition = if self.options.image_captions
+            && bytes[trimmed_start] == b'!'
+        {
+            let after_image = first_line_end.unwrap_or_else(|| scan_next_line_start(bytes, start));
+            let (line, next) = self.line_and_next(after_image);
+            let caption_start = if line.trim_matches([' ', '\t']).is_empty() {
+                next
+            } else {
+                after_image
+            };
+            caption_start < self.source.len()
+                && self.image_caption_interrupts_paragraph(start, after_image, caption_start)?
+        } else {
+            false
+        };
+        if !image_caption_precedes_definition
+            && let Some(node) = self.parse_definition_list(start)?
+        {
             return Ok(Some(node));
         }
 
@@ -295,6 +312,12 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
+            if bytes[cursor] == b':'
+                && self.image_caption_interrupts_paragraph(start, content_end, line_start)?
+            {
+                break;
+            }
+
             // Setext heading underline: while a paragraph is open this
             // takes precedence over every block start (`Foo\n---` is an
             // h2, not a paragraph followed by a thematic break), so it
@@ -360,7 +383,18 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
         let span = Span::new(start as u32, content_end as u32);
-        let children = self.parse_inline_block(content, start + leading)?;
+        let mut children = self.parse_inline_block(content, start + leading)?;
+        if self.options.image_captions
+            && children.len() == 1
+            && matches!(children.first(), Some(Node::Image(_)))
+            && let Some(image) = children.pop()
+        {
+            let attached = self.attach_image_caption(image, start)?;
+            if matches!(attached, Node::Figure(_)) {
+                return Ok(Some(attached));
+            }
+            children.push(attached);
+        }
         Ok(Some(Node::Paragraph(
             self.allocator.boxed(Paragraph { children, span }),
         )))

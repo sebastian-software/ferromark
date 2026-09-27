@@ -6,7 +6,7 @@ them disabled, including the GFM convenience and specification profiles.
 | Option | Owner | Effect |
 | --- | --- | --- |
 | `merged_table_cells` | `ParserOptions` | Adjacent closing pipes produce horizontal cell spans. |
-| `table_attributes` | `ParserOptions` | A following attribute/caption line supplies the table ID and CSS classes. |
+| `table_attributes` | `ParserOptions` | A following caption/metadata line supplies a caption and optional table ID/classes. |
 | `table_colgroup` | `HtmlRendererOptions` | Emit one `<col>` per logical column, with classes `col-1`, `col-2`, etc. |
 | `table_column_names` | `HtmlRendererOptions` | Add `col-name-<slug>` classes derived from the first row; requires `table_colgroup`. |
 
@@ -113,9 +113,9 @@ A complete CSS example is runnable with
   span is clamped to the remaining columns; excess cells are discarded and
   short rows are padded. A merged cell uses its first covered column's alignment.
 - Metadata follows the table directly or after one blank line. It must be a
-  complete line with at most three leading spaces. `: Caption {#id .class}`
-  and `: {#id .class}` are supported. The caption is inline Markdown and the
-  attribute list must contain at least one ID or class.
+  complete line with at most three leading spaces. `: Caption`,
+  `: Caption {#id .class}`, and `: {#id .class}` are supported. The caption is
+  inline Markdown. A brace list must contain at least one ID or class.
 - There may be one ID and multiple classes. Arbitrary key/value attributes,
   duplicate IDs, empty names, quotes, angle brackets, backslashes, and control
   characters in names are rejected. Invalid metadata remains ordinary Markdown.

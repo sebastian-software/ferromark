@@ -284,6 +284,7 @@ impl HtmlRenderer {
             Node::MathBlock(node) => self.render_math_block(node),
             Node::Html(node) => self.render_html(node),
             Node::Table(node) => self.render_table_with_hooks(node, hooks),
+            Node::Figure(node) => self.render_figure_with_hooks(node, hooks),
             Node::DefinitionList(node) => self.render_definition_list_with_hooks(node, hooks),
             Node::DefinitionListTerm(node) => {
                 self.render_definition_list_term_with_hooks(node, hooks);

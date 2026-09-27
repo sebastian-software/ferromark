@@ -25,6 +25,8 @@ const options = {
   tableColgroup: true,
   tableColumnNames: true,
   tableAttributes: true,
+  imageAttributes: true,
+  imageCaptions: true,
 } satisfies Options;
 
 const html = toHtml("# Notes\n\nA detail.[^1]\n\n[^1]: More context.", options);
@@ -68,6 +70,8 @@ All properties are optional. Syntax examples and output semantics live in the
 | `lineComments`      | `false`       | Omit physical-line-start source comments                               |
 | `linkBasePath`      | unset         | Enable site routing for links, images, raw HTML URLs, and .md paths    |
 | `tableAttributes`   | `false`       | Table IDs, CSS classes, and captions                                   |
+| `imageAttributes`   | `false`       | Image IDs and CSS classes                                              |
+| `imageCaptions`     | `false`       | Separate captions on standalone images                                 |
 | `tableColgroup`     | `false`       | CSS-addressable colgroup elements                                      |
 | `tableColumnNames`  | `false`       | Header-derived column classes; requires tableColgroup                  |
 | `headingAttributes` | `false`       | Explicit heading IDs and classes                                       |

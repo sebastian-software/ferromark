@@ -50,13 +50,16 @@ impl<'a> Parser<'a> {
             if bytes.get(close + 1) == Some(&b'(')
                 && let Some(target) = self.parse_link_target(content, close + 1)
             {
+                let (id, classes, end) = self.parse_image_id_classes(content, target.end);
                 children.push(Node::Image(self.allocator.boxed(Image {
                     url: target.url,
                     alt,
                     title: target.title,
-                    span: Span::new((offset + image_start) as u32, (offset + target.end) as u32),
+                    id,
+                    classes,
+                    span: Span::new((offset + image_start) as u32, (offset + end) as u32),
                 })));
-                *pos = target.end;
+                *pos = end;
                 return Ok(());
             }
 
@@ -80,29 +83,33 @@ impl<'a> Parser<'a> {
                         raw_label
                     };
                     if let Some(reference) = self.lookup_reference(key) {
+                        let (id, classes, end) =
+                            self.parse_image_id_classes(content, label_end + 1);
                         children.push(Node::Image(self.allocator.boxed(Image {
                             url: reference.url,
                             alt,
                             title: reference.title,
-                            span: Span::new(
-                                (offset + image_start) as u32,
-                                (offset + label_end + 1) as u32,
-                            ),
+                            id,
+                            classes,
+                            span: Span::new((offset + image_start) as u32, (offset + end) as u32),
                         })));
-                        *pos = label_end + 1;
+                        *pos = end;
                         return Ok(());
                     }
                 }
             }
 
             if !well_formed_reference && let Some(reference) = self.lookup_reference(raw_alt) {
+                let (id, classes, end) = self.parse_image_id_classes(content, close + 1);
                 children.push(Node::Image(self.allocator.boxed(Image {
                     url: reference.url,
                     alt,
                     title: reference.title,
-                    span: Span::new((offset + image_start) as u32, (offset + close + 1) as u32),
+                    id,
+                    classes,
+                    span: Span::new((offset + image_start) as u32, (offset + end) as u32),
                 })));
-                *pos = close + 1;
+                *pos = end;
                 return Ok(());
             }
         }

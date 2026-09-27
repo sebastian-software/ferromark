@@ -5,8 +5,8 @@
 //! glue keeps each file small while preserving the visitor behavior exactly.
 
 use crate::ast::{
-    AlignKind, BlockQuote, CodeBlock, Heading, Html, List, ListItem, MathBlock, Paragraph, Table,
-    TableCell, TableRow, ThematicBreak,
+    AlignKind, BlockQuote, CodeBlock, Figure, Heading, Html, List, ListItem, MathBlock, Paragraph,
+    Table, TableCell, TableRow, ThematicBreak,
 };
 
 use super::super::code_annotations::{normalize_code_block_language, plain_code_block_language};
@@ -381,6 +381,38 @@ impl HtmlRenderer {
         }
         self.write("</table>\n");
     }
+
+    pub(in crate::renderer::html::renderer) fn render_figure(&mut self, figure: &Figure<'_>) {
+        self.write_figure_opening(figure);
+        self.render_node(&figure.content);
+        self.write("\n<figcaption>");
+        for child in &figure.caption {
+            self.visit_inline_node(child);
+        }
+        self.write("</figcaption>\n</figure>\n");
+    }
+
+    pub(in crate::renderer::html::renderer) fn write_figure_opening(
+        &mut self,
+        figure: &Figure<'_>,
+    ) {
+        self.write("<figure");
+        if let Some(id) = figure.id {
+            self.write_explicit_element_id(id);
+        }
+        if !figure.classes.is_empty() {
+            self.write(" class=\"");
+            for (index, class_name) in figure.classes.iter().enumerate() {
+                if index > 0 {
+                    self.write(" ");
+                }
+                self.write_attribute_escaped(class_name);
+            }
+            self.write("\"");
+        }
+        self.write_source_span_attr(figure.span);
+        self.write(">\n");
+    }
     pub(in crate::renderer::html::renderer) fn visit_table_row_with_header(
         &mut self,
         row: &TableRow<'_>,
@@ -408,9 +440,7 @@ impl HtmlRenderer {
         self.write("<table");
         if let Some(attributes) = &table.attributes {
             if let Some(id) = attributes.id {
-                self.write(" id=\"");
-                self.write_attribute_escaped(id);
-                self.write("\"");
+                self.write_explicit_element_id(id);
             }
             if !attributes.classes.is_empty() {
                 self.write(" class=\"");
