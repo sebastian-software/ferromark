@@ -50,6 +50,10 @@ export interface Options {
   imageAttributes?: boolean;
   /** Attach a separate `: Caption` line to a standalone image. Default: off. */
   imageCaptions?: boolean;
+  /** Enable shared key/value attributes on headings, links, images, tables, and figures. */
+  extendedAttributes?: boolean;
+  /** Enable `[inline Markdown]{attributes}` spans. */
+  bracketedSpans?: boolean;
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy;
   /** Allow raw HTML in trusted output. Default: on; untrusted output always escapes it. */

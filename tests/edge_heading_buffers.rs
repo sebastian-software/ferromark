@@ -133,7 +133,11 @@ fn explicit_heading_ids_escape_identically_in_ids_and_permalinks() {
     let Node::Heading(heading) = &mut document.children[0] else {
         panic!("expected heading");
     };
-    heading.id = Some("日本語<&>\"'\r\n");
+    heading.attributes = Some(allocator.boxed(ferromark::ast::ElementAttributes {
+        id: Some("日本語<&>\"'\r\n"),
+        classes: allocator.new_vec(),
+        values: allocator.new_vec(),
+    }));
     let mut renderer = HtmlRenderer::with_options(HtmlRendererOptions {
         heading_permalinks: true,
         ..Default::default()

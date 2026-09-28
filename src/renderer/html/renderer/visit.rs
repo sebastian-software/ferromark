@@ -7,9 +7,9 @@
 use crate::ast::{
     BlockQuote, Break, CodeBlock, Definition, DefinitionList, DefinitionListDefinition,
     DefinitionListTerm, Delete, Document, Emphasis, FootnoteDefinition, FootnoteReference, Heading,
-    Html, Image, InlineCode, InlineMath, Link, List, ListItem, MathBlock, MdxFlowExpression,
-    MdxJsxFlowElement, MdxJsxTextElement, MdxTextExpression, MdxjsEsm, Node, Paragraph, Strong,
-    Subscript, Superscript, Table, Text, ThematicBreak, Visit,
+    Html, Image, InlineCode, InlineMath, InlineSpan, Link, List, ListItem, MathBlock,
+    MdxFlowExpression, MdxJsxFlowElement, MdxJsxTextElement, MdxTextExpression, MdxjsEsm, Node,
+    Paragraph, Strong, Subscript, Superscript, Table, Text, ThematicBreak, Visit,
 };
 
 use super::HtmlRenderer;
@@ -80,6 +80,10 @@ impl<'a> Visit<'a> for HtmlRenderer {
 
     fn visit_text(&mut self, text: &Text<'a>) {
         self.render_text(text);
+    }
+
+    fn visit_span(&mut self, span: &InlineSpan<'a>) {
+        self.render_span(span);
     }
 
     fn visit_emphasis(&mut self, emphasis: &Emphasis<'a>) {

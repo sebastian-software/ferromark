@@ -57,6 +57,10 @@ Image IDs/classes and separate figure captions use independent
 With `table_attributes` enabled, a nonempty plain table caption needs no
 attribute block. See [image captions](image-captions.md) and
 [table layout](table-layout.md) for syntax and attachment rules.
+`ParserOptions::extended_attributes` enables shared key/value suffixes on
+headings, links, images, tables, and figures; `bracketed_spans` enables native
+inline spans. Both default off. See [shared attributes](shared-attributes.md)
+for grammar, mapping, and precedence.
 
 ### String-valued renderer options
 

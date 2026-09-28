@@ -221,6 +221,12 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
                 format_node(child, source, depth + 1, out);
             }
         }
+        Node::Span(node) => {
+            line(out, depth, format_args!("Span {}", span(node.span, source)));
+            for child in &node.children {
+                format_node(child, source, depth + 1, out);
+            }
+        }
         Node::Text(t) => {
             line(
                 out,

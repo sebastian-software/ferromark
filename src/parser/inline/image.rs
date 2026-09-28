@@ -50,7 +50,7 @@ impl<'a> Parser<'a> {
             if bytes.get(close + 1) == Some(&b'(')
                 && let Some(target) = self.parse_link_target(content, close + 1)
             {
-                let (attributes, end) = self.parse_image_id_classes(content, target.end);
+                let (attributes, end) = self.parse_image_attributes(content, target.end);
                 children.push(Node::Image(self.allocator.boxed(Image {
                     url: target.url,
                     alt,
@@ -82,7 +82,7 @@ impl<'a> Parser<'a> {
                         raw_label
                     };
                     if let Some(reference) = self.lookup_reference(key) {
-                        let (attributes, end) = self.parse_image_id_classes(content, label_end + 1);
+                        let (attributes, end) = self.parse_image_attributes(content, label_end + 1);
                         children.push(Node::Image(self.allocator.boxed(Image {
                             url: reference.url,
                             alt,
@@ -97,7 +97,7 @@ impl<'a> Parser<'a> {
             }
 
             if !well_formed_reference && let Some(reference) = self.lookup_reference(raw_alt) {
-                let (attributes, end) = self.parse_image_id_classes(content, close + 1);
+                let (attributes, end) = self.parse_image_attributes(content, close + 1);
                 children.push(Node::Image(self.allocator.boxed(Image {
                     url: reference.url,
                     alt,
@@ -154,6 +154,7 @@ fn flatten_inline_text(nodes: &[Node<'_>], out: &mut crate::allocator::String<'_
             Node::Superscript(n) => flatten_inline_text(&n.children, out),
             Node::Subscript(n) => flatten_inline_text(&n.children, out),
             Node::Link(n) => flatten_inline_text(&n.children, out),
+            Node::Span(n) => flatten_inline_text(&n.children, out),
             Node::Image(n) => out.push_str(n.alt),
             Node::Break(_) => out.push('\n'),
             _ => {}

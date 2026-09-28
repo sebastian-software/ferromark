@@ -18,6 +18,8 @@ const options: Options = {
   mdx: true,
   imageAttributes: true,
   imageCaptions: true,
+  extendedAttributes: true,
+  bracketedSpans: true,
 };
 const highlighter: CodeHighlighter = {
   codeToHtml: (code, { lang, theme }) => `${lang}:${theme}:${code}`,

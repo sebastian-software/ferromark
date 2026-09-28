@@ -100,6 +100,11 @@ pub trait Visit<'a> {
     /// Visits text.
     fn visit_text(&mut self, _text: &Text<'a>) {}
 
+    /// Visits a bracketed span.
+    fn visit_span(&mut self, span: &InlineSpan<'a>) {
+        walk_span(self, span);
+    }
+
     /// Visits emphasis.
     fn visit_emphasis(&mut self, emphasis: &Emphasis<'a>) {
         walk_emphasis(self, emphasis);

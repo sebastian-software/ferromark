@@ -136,9 +136,9 @@ impl LegacyHeadings {
         self.prepare_heading_id(heading);
         self.write_prepared_heading_id(cx);
         cx.write("\"");
-        if !heading.classes.is_empty() {
+        if !heading.classes().is_empty() {
             cx.write(" class=\"");
-            for (index, class_name) in heading.classes.iter().enumerate() {
+            for (index, class_name) in heading.classes().iter().enumerate() {
                 if index > 0 {
                     cx.write(" ");
                 }
@@ -205,11 +205,11 @@ impl LegacyHeadings {
         };
         let permalink_reads_text = self.config.permalinks;
         self.heading_text_scratch.clear();
-        if permalink_reads_text || (heading.id.is_none() && single_text.is_none()) {
+        if permalink_reads_text || (heading.explicit_id().is_none() && single_text.is_none()) {
             collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
         }
 
-        if let Some(id) = heading.id {
+        if let Some(id) = heading.explicit_id() {
             self.heading_id_is_explicit = true;
             self.planner.plan_into(id, &mut self.heading_id_scratch);
             self.apply_heading_id_prefix();

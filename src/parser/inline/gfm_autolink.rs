@@ -51,6 +51,7 @@ impl<'a> Parser<'a> {
         let mut i = 0;
         while i < children.len() {
             match &mut children[i] {
+                Node::Span(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Emphasis(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Strong(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Highlight(node) => self.apply_gfm_autolinks(&mut node.children, scan),
@@ -82,6 +83,7 @@ impl<'a> Parser<'a> {
                         let link_node = Node::Link(self.allocator.boxed(Link {
                             url,
                             title: None,
+                            attributes: None,
                             children: link_children,
                             span: link_span,
                         }));

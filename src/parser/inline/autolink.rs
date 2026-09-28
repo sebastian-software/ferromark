@@ -65,6 +65,7 @@ impl<'a> Parser<'a> {
         let link = Link {
             url,
             title: None,
+            attributes: None,
             children,
             span: Span::new((offset + pos) as u32, (offset + close + 1) as u32),
         };

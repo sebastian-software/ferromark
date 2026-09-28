@@ -1,7 +1,7 @@
 //! Optional image captions, attached only to standalone image paragraphs.
 
 use crate::allocator::Vec;
-use crate::ast::{ElementAttributes, Figure, Node, Span};
+use crate::ast::{Attribute, ElementAttributes, Figure, Node, Span};
 
 use super::{Parser, attributes::caption_line};
 use crate::parser::error::ParseResult;
@@ -11,6 +11,7 @@ struct CaptionLine<'a> {
     content_offset: usize,
     id: Option<&'a str>,
     classes: Vec<'a, &'a str>,
+    values: Vec<'a, Attribute<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -65,10 +66,14 @@ impl<'a> Parser<'a> {
         if caption.is_empty() {
             return Ok(image);
         }
-        let attributes = (parsed.id.is_some() || !parsed.classes.is_empty()).then(|| {
+        let attributes = (parsed.id.is_some()
+            || !parsed.classes.is_empty()
+            || !parsed.values.is_empty())
+        .then(|| {
             self.allocator.boxed(ElementAttributes {
                 id: parsed.id,
                 classes: parsed.classes,
+                values: parsed.values,
             })
         });
         self.position = next;
@@ -82,16 +87,17 @@ impl<'a> Parser<'a> {
 
     fn parse_image_caption_line(&self, line: &'a str) -> Option<CaptionLine<'a>> {
         let parsed = caption_line(line, false)?;
-        let (id, classes) = if let Some(tokens) = parsed.tokens {
-            self.parse_id_classes(tokens)?
+        let attributes = if let Some(tokens) = parsed.tokens {
+            self.parse_attributes(tokens, self.options.extended_attributes)?
         } else {
-            (None, self.allocator.new_vec())
+            self.empty_attributes()
         };
         Some(CaptionLine {
             content: parsed.content,
             content_offset: parsed.content_offset,
-            id,
-            classes,
+            id: attributes.id,
+            classes: attributes.classes,
+            values: attributes.values,
         })
     }
 }

@@ -14,10 +14,14 @@ impl<'a> Parser<'a> {
             // caption must terminate the table; an explicit attribute block
             // is unambiguous even before another row.
             let (_, next) = self.line_and_next(position);
-            line.tokens.is_some()
+            (line.tokens.is_some()
                 || (!has_unescaped_pipe(line.content)
                     && (next >= self.source.len()
-                        || self.line_at(next).trim_matches([' ', '\t']).is_empty()))
+                        || self.line_at(next).trim_matches([' ', '\t']).is_empty())))
+                && line.tokens.is_none_or(|tokens| {
+                    self.parse_attributes(tokens, self.options.extended_attributes)
+                        .is_some()
+                })
         })
     }
 
@@ -43,19 +47,21 @@ impl<'a> Parser<'a> {
             return Ok(None);
         };
 
-        let (id, classes) = if let Some(tokens) = line.tokens {
-            let Some(parsed) = self.parse_id_classes(tokens) else {
+        let attributes = if let Some(tokens) = line.tokens {
+            let Some(parsed) = self.parse_attributes(tokens, self.options.extended_attributes)
+            else {
                 return Ok(None);
             };
             parsed
         } else {
-            (None, self.allocator.new_vec())
+            self.empty_attributes()
         };
         let caption = self.parse_inline_block(line.content, position + line.content_offset)?;
         self.position = next_position;
         Ok(Some(self.allocator.boxed(TableAttributes {
-            id,
-            classes,
+            id: attributes.id,
+            classes: attributes.classes,
+            attributes: attributes.values,
             caption,
         })))
     }

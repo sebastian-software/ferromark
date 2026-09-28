@@ -31,6 +31,7 @@ pub fn walk_node<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, node: &Node<'a>) {
         Node::DefinitionListTerm(n) => visitor.visit_definition_list_term(n),
         Node::DefinitionListDefinition(n) => visitor.visit_definition_list_definition(n),
         Node::Text(n) => visitor.visit_text(n),
+        Node::Span(n) => visitor.visit_span(n),
         Node::Emphasis(n) => visitor.visit_emphasis(n),
         Node::Strong(n) => visitor.visit_strong(n),
         Node::InlineCode(n) => visitor.visit_inline_code(n),
@@ -169,6 +170,13 @@ pub fn walk_strong<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, strong: &Strong<'
 /// Walks through a link's children.
 pub fn walk_link<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, link: &Link<'a>) {
     for child in &link.children {
+        visitor.visit_node(child);
+    }
+}
+
+/// Walks bracketed span content.
+pub fn walk_span<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, span: &InlineSpan<'a>) {
+    for child in &span.children {
         visitor.visit_node(child);
     }
 }

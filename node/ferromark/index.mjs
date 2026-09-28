@@ -17,6 +17,8 @@ const optionKeys = new Set([
   "mdx",
   "imageAttributes",
   "imageCaptions",
+  "extendedAttributes",
+  "bracketedSpans",
   "tables",
   "mergedTableCells",
   "tableColgroup",
@@ -67,7 +69,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 32 fields once, in their
+ * For an `Options` argument, napi-rs gets each field once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -75,7 +77,7 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and the boolean fields (bits 1 to 28, in declaration
+ * `renderPolicy` (bit 0) and the boolean fields (bits 1 to 30, in declaration
  * order, as `unpack` numbers them) take one bit each of `set` (present) and
  * `on` (its value; `'trusted'` for `renderPolicy`). `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
@@ -157,6 +159,8 @@ class PackedOptions {
       this.flag("mdx", 1 << 26, options.mdx) &&
       this.flag("imageAttributes", 1 << 27, options.imageAttributes) &&
       this.flag("imageCaptions", 1 << 28, options.imageCaptions) &&
+      this.flag("extendedAttributes", 1 << 29, options.extendedAttributes) &&
+      this.flag("bracketedSpans", 1 << 30, options.bracketedSpans) &&
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
       this.array("passes", options.passes)

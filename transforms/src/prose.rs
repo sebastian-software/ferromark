@@ -48,6 +48,15 @@ where
 
     for node in nodes {
         match node {
+            Node::Span(node) => {
+                visit_inline_children(
+                    &mut node.children,
+                    context,
+                    visit_link_labels,
+                    raw_html_spans,
+                    visit_text_runs,
+                )?;
+            }
             Node::Paragraph(node) => {
                 visit_inline_children(
                     &mut node.children,
@@ -287,6 +296,15 @@ where
 
     for node in nodes {
         match node {
+            Node::Span(node) => {
+                visit_inline_children(
+                    &mut node.children,
+                    context,
+                    visit_link_labels,
+                    raw_html_spans,
+                    visit_text_runs,
+                )?;
+            }
             Node::Emphasis(node) => {
                 visit_inline_children(
                     &mut node.children,
@@ -412,6 +430,9 @@ fn collect_raw_html_text_spans(
 ) {
     for node in nodes {
         match node {
+            Node::Span(node) => {
+                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+            }
             Node::Text(text) => {
                 if !open_tags.is_empty() && !text.span.is_empty() {
                     spans.push(text.span);

@@ -356,14 +356,14 @@ impl HtmlRenderer {
         let single_text = single_text_child(&heading.children);
         let permalink_reads_text = self.options.heading_permalinks;
         self.heading_text_scratch.clear();
-        if permalink_reads_text || (heading.id.is_none() && single_text.is_none()) {
+        if permalink_reads_text || (heading.explicit_id().is_none() && single_text.is_none()) {
             reserve_heading_scratch(&mut self.heading_text_scratch);
             collect_heading_text_into(&heading.children, &mut self.heading_text_scratch);
         }
 
         // The planner keeps the full emitted ID in its own storage, so neither
         // path copies the ID into a renderer buffer.
-        if let Some(id) = heading.id {
+        if let Some(id) = heading.explicit_id() {
             self.heading_id_is_explicit = true;
             let prefix = self.options.heading_id_prefix();
             self.heading_id = if prefix.is_empty() {

@@ -238,6 +238,7 @@ fn assert_node_span_indexes_source(source: &str, node: &Node<'_>) {
     match node {
         Node::Paragraph(node) => assert_all_spans_index_source(source, &node.children),
         Node::Heading(node) => assert_all_spans_index_source(source, &node.children),
+        Node::Span(node) => assert_all_spans_index_source(source, &node.children),
         Node::BlockQuote(node) => assert_all_spans_index_source(source, &node.children),
         Node::List(node) => {
             for item in &node.children {

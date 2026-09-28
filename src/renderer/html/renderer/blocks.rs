@@ -80,15 +80,18 @@ impl HtmlRenderer {
             self.write_heading_id(heading);
             self.output.push('"');
         }
-        if !heading.classes.is_empty() {
+        if !heading.classes().is_empty() {
             self.output.push_str(" class=\"");
-            for (index, class_name) in heading.classes.iter().enumerate() {
+            for (index, class_name) in heading.classes().iter().enumerate() {
                 if index > 0 {
                     self.output.push(' ');
                 }
                 self.write_attribute_escaped(class_name);
             }
             self.output.push('"');
+        }
+        if let Some(attributes) = &heading.attributes {
+            self.write_authored_attributes(&attributes.values, &["id", "class"]);
         }
         self.write_source_span_attr(heading.span);
         self.output.push('>');
@@ -412,6 +415,9 @@ impl HtmlRenderer {
                 self.write("\"");
             }
         }
+        if let Some(attributes) = &figure.attributes {
+            self.write_authored_attributes(&attributes.values, &["id", "class"]);
+        }
         self.write_source_span_attr(figure.span);
         self.write(">\n");
     }
@@ -454,6 +460,9 @@ impl HtmlRenderer {
                 }
                 self.write("\"");
             }
+        }
+        if let Some(attributes) = &table.attributes {
+            self.write_authored_attributes(&attributes.attributes, &["id", "class"]);
         }
         self.write_source_span_attr(table.span);
         self.write(">\n");

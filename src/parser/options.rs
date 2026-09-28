@@ -99,11 +99,18 @@ pub struct ParserOptions {
     /// Enable Pandoc-style heading attribute blocks.
     ///
     /// When set, a trailing `{#id .class}` block on an ATX or setext heading
-    /// becomes [`crate::ast::Heading::id`] and
-    /// [`crate::ast::Heading::classes`] instead of rendered text.
+    /// sets metadata available through [`crate::ast::Heading::explicit_id`]
+    /// and [`crate::ast::Heading::classes`] instead of rendered text.
     ///
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
     pub heading_attributes: bool,
+
+    /// Enable shared key/value attributes and suffixes on links and existing
+    /// heading, image, table, and figure attachment points.
+    pub extended_attributes: bool,
+
+    /// Enable `[inline Markdown]{attributes}` spans independently of captions.
+    pub bracketed_spans: bool,
 
     /// Enable Obsidian-style wiki links as link nodes.
     ///
@@ -199,6 +206,8 @@ impl Default for ParserOptions {
             math: false,
             definition_lists: false,
             heading_attributes: false,
+            extended_attributes: false,
+            bracketed_spans: false,
             wiki_links: false,
             cjk_emphasis: false,
             mdx: false,
@@ -252,6 +261,8 @@ impl ParserOptions {
             math: false,
             definition_lists: false,
             heading_attributes: false,
+            extended_attributes: false,
+            bracketed_spans: false,
             wiki_links: false,
             // Not part of GFM: GitHub renders these runs per CommonMark too.
             cjk_emphasis: false,
