@@ -80,19 +80,20 @@ suffixes still make the enabled option noticeably more expensive. These are
 parse-only measurements within this PR; they do not compare the disabled path
 against the base branch or measure rendering throughput.
 
-To isolate the disabled path, a separate local batch comparison used the same
-57-document corpus against the #473 base at `85f99144`, with the attribution
-option off on both sides. A common worker applied the same explicit CommonMark
-and GFM profile flags to both builds. HTML and AST outputs matched exactly.
-Three rounds used five alternating pairs of 40 ms windows:
+To isolate the disabled path after the review fixes, a local batch comparison
+used the 57-document suite against the #473 base at `f0e7983f`, with the
+attribution option off on both sides. A common compatibility worker mapped
+the same CommonMark and GFM profile flags to both builds. HTML and AST outputs
+matched exactly for every document. Three rounds used five alternating pairs
+of 40 ms windows:
 
 | Combined CommonMark/GFM batch | Base median | PR median | Change |
 | --- | ---: | ---: | ---: |
-| Fresh render | 1.058 ms | 1.059 ms | +0.117% |
-| Reused render | 1.049 ms | 1.053 ms | +0.388% |
+| Fresh render | 1.122 ms | 1.114 ms | −0.69% |
+| Reused render | 1.105 ms | 1.096 ms | −0.77% |
 
-Fresh per-round differences were −0.935%, −1.476%, and +0.117%; reused
-differences were +0.388%, −1.176%, and +0.913%. These small changes are within
+Fresh per-round differences were −2.27%, −0.49%, and −0.69%; reused
+differences were +0.07%, −1.48%, and −0.77%. These small changes are within
 local run variation, so this comparison shows no measurable default-off
 regression. The batch mode reports aggregate timings rather than per-document
-outliers.
+outliers. The raw local results are at `/private/tmp/issue468-review-results`.
