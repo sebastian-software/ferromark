@@ -50,7 +50,6 @@ export interface Options {
   callouts?: boolean
   definitionLists?: boolean
   lineComments?: boolean
-  wikiLinks?: boolean
   cjkEmphasis?: boolean
   mdx?: boolean
   imageAttributes?: boolean

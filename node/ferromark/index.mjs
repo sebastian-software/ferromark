@@ -12,7 +12,6 @@ const optionKeys = new Set([
   "allowHtml",
   "tableAttributes",
   "headingAttributes",
-  "wikiLinks",
   "cjkEmphasis",
   "mdx",
   "imageAttributes",
@@ -77,7 +76,6 @@ const packedBooleanFlags = [
   ["callouts", 1 << 21],
   ["definitionLists", 1 << 22],
   ["lineComments", 1 << 23],
-  ["wikiLinks", 1 << 24],
   ["cjkEmphasis", 1 << 25],
   ["mdx", 1 << 26],
   ["imageAttributes", 1 << 27],
@@ -127,7 +125,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 42 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 41 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -135,8 +133,8 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and 30 boolean fields (bits 1 to 30, in declaration
- * order, as `unpack` numbers them) take one bit each of `set` (present) and
+ * `renderPolicy` (bit 0) and 29 boolean fields (bits 1 to 30 without the
+ * retired bit 24, in declaration order, as `unpack` numbers them) take one bit each of `set` (present) and
  * `on` (its value; `'trusted'` for `renderPolicy`). Enabled blockquote
  * attributions, insertions, guillemet digraphs, abbreviation settings, and a
  * `preset` use the object entry so later option bits remain available.
@@ -221,7 +219,6 @@ class PackedOptions {
       this.flag("callouts", 1 << 21, options.callouts) &&
       this.flag("definitionLists", 1 << 22, options.definitionLists) &&
       this.flag("lineComments", 1 << 23, options.lineComments) &&
-      this.flag("wikiLinks", 1 << 24, options.wikiLinks) &&
       this.flag("cjkEmphasis", 1 << 25, options.cjkEmphasis) &&
       this.flag("mdx", 1 << 26, options.mdx) &&
       this.flag("imageAttributes", 1 << 27, options.imageAttributes) &&

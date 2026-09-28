@@ -125,16 +125,6 @@ pub struct ParserOptions {
     /// Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub bracketed_spans: bool,
 
-    /// Enable Obsidian-style wiki links as link nodes.
-    ///
-    /// When set, `[[target]]` and `[[target|label]]` parse as
-    /// [`crate::ast::Link`] with the raw target stored in
-    /// [`crate::ast::Link::url`]. The renderer then sees the construct
-    /// as a normal link and consumers can rewrite the target in link hooks.
-    ///
-    /// Default: `false`; not enabled by [`ParserOptions::gfm`].
-    pub wiki_links: bool,
-
     /// Preserve doubled angle brackets such as `<<Bonjour>>` as literal
     /// inline text before raw HTML and autolink parsing. An optional
     /// typography pass can convert balanced pairs to locale-specific quotes.
@@ -176,7 +166,7 @@ pub struct ParserOptions {
     /// Every construct that re-enters the parser counts one level: on a
     /// sub-source for block quotes, list items, footnote definitions and JSX
     /// children, and on a bracketed slice for link text, image alt text,
-    /// wiki-link labels, inline notes, script spans and inline JSX phrasing.
+    /// inline notes, script spans and inline JSX phrasing.
     /// Emphasis counts too, although it never recurses: pairing delimiter
     /// runs builds `*`, `_`, `**`, `~~`, `++`, `==`, `~`, `^` and CJK emphasis
     /// into a tree that the renderer and the [`Visit`](crate::ast::Visit)
@@ -229,7 +219,6 @@ impl Default for ParserOptions {
             heading_attributes: false,
             extended_attributes: false,
             bracketed_spans: false,
-            wiki_links: false,
             guillemet_digraphs: false,
             cjk_emphasis: false,
             mdx: false,
@@ -287,7 +276,6 @@ impl ParserOptions {
             heading_attributes: false,
             extended_attributes: false,
             bracketed_spans: false,
-            wiki_links: false,
             guillemet_digraphs: false,
             // Not part of GFM: GitHub renders these runs per CommonMark too.
             cjk_emphasis: false,
@@ -319,7 +307,7 @@ impl ParserOptions {
     /// table cells, image captions, block quote attributions, source-only line
     /// comments, and guillemet digraphs.
     ///
-    /// Subscript, math, wiki links, front matter, CJK emphasis, and MDX stay
+    /// Subscript, math, front matter, CJK emphasis, and MDX stay
     /// off: they change the meaning of GFM input or need downstream
     /// processing. Renderer policies are unchanged; pair this profile with
     /// [`crate::HtmlRenderer::with_abbreviations`] for technical abbreviation

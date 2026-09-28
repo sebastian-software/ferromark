@@ -55,7 +55,6 @@ fn ffm_extends_gfm_with_authoring_syntax() {
     for (name, enabled) in [
         ("subscript", ffm.subscript),
         ("math", ffm.math),
-        ("wiki_links", ffm.wiki_links),
         ("front_matter", ffm.front_matter),
         ("cjk_emphasis", ffm.cjk_emphasis),
         ("mdx", ffm.mdx),

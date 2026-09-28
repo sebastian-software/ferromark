@@ -23,7 +23,7 @@ key/value attributes, bracketed spans, source-only line comments, and
 guillemet digraphs.
 
 It excludes subscript (it would turn GFM `~text~` strikethrough into
-subscript), math and wiki links (they need downstream typesetting or routing),
+subscript), math (it needs downstream typesetting),
 front matter, CJK emphasis, and MDX. Renderer policies stay separate: the
 preset does not change sanitization, table colgroups, heading IDs, or
 typography. Guillemet digraphs therefore stay literal text until a typography

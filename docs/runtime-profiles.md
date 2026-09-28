@@ -118,7 +118,7 @@ not part of the authoring contract. Add them when they are needed. A plain-comme
 recipe could similarly use CommonMark syntax plus the same HTML policy; removing
 GFM features from an application promising GFM would change its behavior.
 
-Definition lists, math, superscript/subscript, wiki links, annotated code,
+Definition lists, math, superscript/subscript, annotated code,
 permalinks, source-span attributes, and table layout classes remain explicit
 additions. Annotations require fence metadata and the appropriate annotation
 syntax. Applications that need navigation should consume heading data through

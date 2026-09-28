@@ -284,6 +284,7 @@ impl HtmlRenderer {
         }
     }
 
+    #[inline]
     pub(in crate::renderer::html::renderer) fn render_inline_children_with_hooks<
         H: HtmlRenderHooks,
     >(
@@ -291,13 +292,22 @@ impl HtmlRenderer {
         children: &[Node<'_>],
         hooks: &mut H,
     ) {
-        if self.abbreviation_state.is_none() {
-            for child in children {
-                self.render_inline_node_with_hooks(child, hooks);
-            }
+        if self.options.abbreviations {
+            self.render_inline_children_with_hooks_and_abbreviations(children, hooks);
             return;
         }
+        for child in children {
+            self.render_inline_node_with_hooks(child, hooks);
+        }
+    }
 
+    #[cold]
+    #[inline(never)]
+    fn render_inline_children_with_hooks_and_abbreviations<H: HtmlRenderHooks>(
+        &mut self,
+        children: &[Node<'_>],
+        hooks: &mut H,
+    ) {
         self.begin_inline_abbreviation_scope();
         for (index, child) in children.iter().enumerate() {
             self.render_inline_node_with_hooks_and_boundaries(

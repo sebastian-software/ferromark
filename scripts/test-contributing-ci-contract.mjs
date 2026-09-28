@@ -201,7 +201,6 @@ test("Node native declarations follow the v2 option surface", () => {
     "tableColumnNames",
     "tableAttributes",
     "headingAttributes",
-    "wikiLinks",
     "cjkEmphasis",
     "mdx",
     "highlight",
@@ -209,7 +208,7 @@ test("Node native declarations follow the v2 option surface", () => {
     "allowLinkRefs",
   ])
     assert.ok(declarations.includes(`${name}?`));
-  for (const name of ["tableColumnWidths", "indentedCodeBlocks"])
+  for (const name of ["tableColumnWidths", "indentedCodeBlocks", "wikiLinks"])
     assert.ok(!declarations.includes(`${name}?`));
   assert.ok(!declarations.includes("CodeCallback"), "callback types must be self-contained");
 });

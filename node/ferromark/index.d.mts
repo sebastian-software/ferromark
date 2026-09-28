@@ -42,7 +42,6 @@ export type NativePassOptions =
 export interface Options {
   tableAttributes?: boolean;
   headingAttributes?: boolean;
-  wikiLinks?: boolean;
   cjkEmphasis?: boolean;
   /** Recognize MDX syntax; does not compile or execute JavaScript. */
   mdx?: boolean;

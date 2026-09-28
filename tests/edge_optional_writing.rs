@@ -224,19 +224,17 @@ fn reference_toggle_preserves_definitions_and_inline_links() {
     assert!(!html.contains("href=\"/target\""), "{html}");
 }
 #[test]
-fn reference_toggle_keeps_footnotes_wiki_links_and_nested_contexts() {
-    let source = "> [key] and [^n]\n\n[key]: /target\n\n[^n]: footnote\n\n[[wiki]]";
+fn reference_toggle_keeps_footnotes_and_nested_contexts() {
+    let source = "> [key] and [^n]\n\n[key]: /target\n\n[^n]: footnote";
     let html = render(
         source,
         ParserOptions {
             allow_link_refs: false,
-            wiki_links: true,
             ..options()
         },
     );
     assert!(html.contains("[key]"), "{html}");
     assert!(html.contains("href=\"#fn-n\""), "{html}");
-    assert!(html.contains("href=\"wiki\""), "{html}");
 }
 #[test]
 fn visitors_and_spans_cover_marks_and_lifted_notes() {

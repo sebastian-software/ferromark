@@ -85,15 +85,14 @@ especially before embedding untrusted output in a host framework that uses
 | Reference notes       | `A fact.[^source]`                 | `footnotes`                | `footnotes`                     |
 | Definition lists      | `Term` followed by `: Explanation` | `definitionLists`          | `definition_lists`              |
 | Heading IDs/classes   | `# Title {#title .section}`        | `headingAttributes`        | `heading_attributes`            |
-| Wiki links            | `[[Page]]`                         | `wikiLinks`                | `wiki_links`                    |
 | Math notation         | `$x^2$`                            | `math`                     | `math`                          |
 | Superscript/subscript | `x^2^`, `H~2~O`                    | `superscript`, `subscript` | `superscript`, `subscript`      |
 | Source metadata       | Leading `---` or `+++` block       | `frontMatter`              | `front_matter`                  |
 | Source comments       | `// note` at line start            | `lineComments`             | `line_comments`                 |
 | Alert boxes           | `> [!NOTE]`                        | `callouts`                 | `HtmlRendererOptions::callouts` |
 
-These options have separate boundaries. Math needs downstream typesetting;
-wiki links need application routing. Front matter exposes raw metadata text,
+These options have separate boundaries. Math needs downstream typesetting.
+Front matter exposes raw metadata text,
 without parsing YAML or TOML values. Subscript takes precedence over
 single-tilde strikethrough when enabled. Callouts are a renderer feature,
 enabled in Node.js and the default Rust renderer; strict Rust specification
@@ -111,7 +110,7 @@ const html = toHtml("![Logo](logo.svg)\n\n: Company logo", { preset: "ffm" });
 ```
 
 `preset: "ffm"` starts from GFM plus every syntax on this page except
-subscript, math, wiki links, front matter, and MDX, which change the meaning of
+subscript, math, front matter, and MDX, which change the meaning of
 GFM input or need downstream processing. In Node.js it also enables technical
 abbreviation markup. Individual options still override the preset, and the
 output policy (`renderPolicy`, table colgroups, typography) stays your choice.

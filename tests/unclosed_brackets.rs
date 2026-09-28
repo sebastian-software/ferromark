@@ -91,25 +91,6 @@ fn small_and_large(unit: &str, options: &ParserOptions) -> (Duration, Duration) 
 }
 
 #[test]
-fn wiki_links_do_not_scan_unclosed_double_brackets_quadratically() {
-    let options = ParserOptions {
-        wiki_links: true,
-        ..ParserOptions::default()
-    };
-
-    for unit in ["[[", "[[ ", "[[Page|Label "] {
-        let (small, large) = small_and_large(unit, &options);
-
-        let ratio = large.as_secs_f64() / small.as_secs_f64().max(1e-9);
-        assert!(
-            ratio < 8.0,
-            "{unit:?}: 128 KiB took {large:?} against {small:?} for 32 KiB (x{ratio:.1}); \
-             linear is about x4, quadratic about x16"
-        );
-    }
-}
-
-#[test]
 fn a_run_of_unclosed_brackets_costs_linear_time() {
     // Each shape reaches the guard through a different branch: a bare
     // opener, an image opener, a nested opener, a footnote-looking opener,

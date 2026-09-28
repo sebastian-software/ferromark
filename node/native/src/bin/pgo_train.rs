@@ -93,7 +93,6 @@ fn every_extension() -> CoreOptions {
     parser.math = true;
     parser.definition_lists = true;
     parser.line_comments = true;
-    parser.wiki_links = true;
     parser.cjk_emphasis = true;
     html.table_colgroup = true;
     html.table_column_names = true;
