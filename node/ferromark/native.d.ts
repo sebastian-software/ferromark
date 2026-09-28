@@ -32,7 +32,6 @@ export interface Options {
   tableColumnNames?: boolean
   tableAttributes?: boolean
   strikethrough?: boolean
-  insertions?: boolean
   superscript?: boolean
   subscript?: boolean
   taskLists?: boolean
@@ -54,6 +53,7 @@ export interface Options {
   wikiLinks?: boolean
   cjkEmphasis?: boolean
   mdx?: boolean
+  insertions?: boolean
   linkBasePath?: string
   typography?: TypographyConfig
   passes?: Array<NativePassConfig>

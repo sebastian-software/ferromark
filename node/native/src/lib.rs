@@ -67,7 +67,6 @@ pub struct Options {
     pub table_column_names: Option<bool>,
     pub table_attributes: Option<bool>,
     pub strikethrough: Option<bool>,
-    pub insertions: Option<bool>,
     pub superscript: Option<bool>,
     pub subscript: Option<bool>,
     pub task_lists: Option<bool>,
@@ -89,6 +88,7 @@ pub struct Options {
     pub wiki_links: Option<bool>,
     pub cjk_emphasis: Option<bool>,
     pub mdx: Option<bool>,
+    pub insertions: Option<bool>,
     pub link_base_path: Option<String>,
     pub typography: Option<TypographyConfig>,
     pub passes: Option<Vec<NativePassConfig>>,
@@ -131,7 +131,6 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(html.table_column_names, options.table_column_names);
         apply!(parser.table_attributes, options.table_attributes);
         apply!(parser.strikethrough, options.strikethrough);
-        apply!(parser.insertions, options.insertions);
         apply!(parser.superscript, options.superscript);
         apply!(parser.subscript, options.subscript);
         apply!(parser.task_lists, options.task_lists);
@@ -169,6 +168,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.wiki_links, options.wiki_links);
         apply!(parser.cjk_emphasis, options.cjk_emphasis);
         apply!(parser.mdx, options.mdx);
+        apply!(parser.insertions, options.insertions);
         if let Some(base) = options.link_base_path {
             // The JavaScript string is owned, so this becomes `Cow::Owned`;
             // every other renderer option keeps its borrowed default.

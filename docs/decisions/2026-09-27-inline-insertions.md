@@ -26,10 +26,19 @@ conditions, as does [markdown-it-ins](https://github.com/markdown-it/markdown-it
 Each plus run of two or more signs is split into independent `++` delimiter
 tokens; an odd run leaves one literal plus before its pairs. The rule of three
 for `*`/`_` emphasis does not apply. A single plus, unmatched delimiters, and
-invalid pairs stay literal. Insertions accept ordinary nested inline Markdown
+invalid pairs stay literal. Pair tokens from the same source run cannot match
+one another, so `a++++b` remains literal rather than creating an empty
+`<ins>`. For an odd closing run, the remaining plus follows all closing tags:
+`+++++a+++++` renders as `+<ins><ins>a</ins></ins>+`. Insertions accept
+ordinary nested inline Markdown
 and may include soft line breaks, but cannot cross paragraph or block
 boundaries. Existing escapes and protected code, math, HTML, URL, and MDX
 contexts keep their existing parsing rules.
+
+With GFM bare-URL autolinks enabled, plus pairs within the URL candidate stay
+part of the link. A closing pair exactly at a candidate's end can still close
+an insertion that opened before it. Fixtures cover both a `++` pair in the
+middle of a URL and a URL inside an insertion.
 
 Reserve `++...++` for inserted text. Its meaning is independent of content, so
 `++ctrl+c++` is an insertion even though other extensions use plus signs for
@@ -60,6 +69,10 @@ case, one-second warm-up and measurement) observed these parser times:
 
 These are local sample measurements for comparing input shapes, not a before
 and after speedup claim or a cross-machine performance guarantee.
+
+The public Rust API keeps `Node` and `ParserOptions` exhaustive. Adding
+`Node::Insertion` and `ParserOptions::insertions` therefore requires a major
+release under the existing [API policy](2026-09-17-api-surface.md#exhaustiveness).
 
 The [syntax guide](../optional-writing.md) documents defaults, edge cases,
 semantic output, and API usage.

@@ -95,6 +95,8 @@ fn insertions_use_commonmark_flanking_and_markdown_it_ins_run_consumption() {
         ("+++added++", "<p>+<ins>added</ins></p>\n"),
         ("++added+++", "<p><ins>added</ins>+</p>\n"),
         ("+++added+++", "<p>+<ins>added</ins>+</p>\n"),
+        ("a++++b", "<p>a++++b</p>\n"),
+        ("+++++a+++++", "<p>+<ins><ins>a</ins></ins>+</p>\n"),
         ("++++", "<p>++++</p>\n"),
         (r"\+\+literal\+\+", "<p>++literal++</p>\n"),
     ];
@@ -162,12 +164,45 @@ fn protected_contexts_and_untrusted_rendering_keep_their_policies() {
         autolinks: true,
         ..ParserOptions::gfm()
     };
-    let linked_url = render("https://example.com/++path++", autolinks);
+    let linked_url = render("https://example.com/++path++", autolinks.clone());
     assert!(
         linked_url.contains("href=\"https://example.com/++path++\""),
         "{linked_url}"
     );
     assert!(!linked_url.contains("<ins>"), "{linked_url}");
+
+    let closing_pair_inside_url = render("++note https://x.com/a++b", autolinks.clone());
+    assert!(
+        closing_pair_inside_url.contains("href=\"https://x.com/a++b\""),
+        "{closing_pair_inside_url}"
+    );
+    assert!(
+        !closing_pair_inside_url.contains("<ins>"),
+        "{closing_pair_inside_url}"
+    );
+
+    let url_inside_insertion = render("++a https://x.com/p++b c++", autolinks);
+    assert!(
+        url_inside_insertion.contains("<ins>a <a href=\"https://x.com/p++b\""),
+        "{url_inside_insertion}"
+    );
+    assert!(
+        url_inside_insertion.contains(" c</ins>"),
+        "{url_inside_insertion}"
+    );
+
+    let url_after_closed_insertion = render(
+        "++done++ https://x.com/foo++",
+        ParserOptions {
+            autolinks: true,
+            insertions: true,
+            ..ParserOptions::gfm()
+        },
+    );
+    assert!(
+        url_after_closed_insertion.contains("href=\"https://x.com/foo++\""),
+        "{url_after_closed_insertion}"
+    );
 
     let math_options = ParserOptions {
         insertions: true,
@@ -308,6 +343,28 @@ fn insertion_nodes_have_delimiter_spans_and_visit_their_children() {
     let mut visitor = Counter(0);
     visitor.visit_document(&document);
     assert_eq!(visitor.0, 1);
+}
+
+#[test]
+fn odd_closing_runs_keep_the_full_insertion_source_span() {
+    for (source, expected) in [("++a+++", "++a+++"), ("x++y+++ z", "++y+++")] {
+        let allocator = Allocator::new();
+        let document = Parser::with_options(&allocator, source, insertion_options())
+            .parse()
+            .unwrap();
+        let Node::Paragraph(paragraph) = &document.children[0] else {
+            panic!("expected paragraph");
+        };
+        let insertion = paragraph
+            .children
+            .iter()
+            .find_map(|node| match node {
+                Node::Insertion(insertion) => Some(insertion),
+                _ => None,
+            })
+            .expect("the syntax creates an insertion node");
+        assert_eq!(insertion.span.source_text(source), expected);
+    }
 }
 
 #[test]

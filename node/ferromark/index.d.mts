@@ -46,6 +46,8 @@ export interface Options {
   cjkEmphasis?: boolean;
   /** Recognize MDX syntax; does not compile or execute JavaScript. */
   mdx?: boolean;
+  /** Enable `++inserted text++`. Default: off, including the GFM profile. */
+  insertions?: boolean;
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy;
   /** Allow raw HTML in trusted output. Default: on; untrusted output always escapes it. */
@@ -60,8 +62,6 @@ export interface Options {
   tableColumnNames?: boolean;
   /** Enable GFM `~~strikethrough~~`. Default: on. */
   strikethrough?: boolean;
-  /** Enable `++inserted text++`. Default: off, including the GFM profile. */
-  insertions?: boolean;
   /** Enable `^superscript^`. Default: off. */
   superscript?: boolean;
   /** Enable `~subscript~`. Default: off. */

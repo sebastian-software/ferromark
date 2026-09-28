@@ -423,9 +423,6 @@ fn transform_block_node<'arena>(
         Node::MdxJsxFlowElement(node) => {
             transform_block_children(&mut node.children, context, options, raw_html_spans);
         }
-        Node::Insertion(node) => {
-            transform_inline_children(&mut node.children, context, options, raw_html_spans);
-        }
         Node::ThematicBreak(_)
         | Node::CodeBlock(_)
         | Node::MathBlock(_)
@@ -447,7 +444,8 @@ fn transform_block_node<'arena>(
         | Node::MdxJsxTextElement(_)
         | Node::MdxjsEsm(_)
         | Node::MdxFlowExpression(_)
-        | Node::MdxTextExpression(_) => {}
+        | Node::MdxTextExpression(_)
+        | Node::Insertion(_) => {}
     }
 }
 

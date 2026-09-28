@@ -222,6 +222,20 @@ fn existing_typography_and_protected_content_are_preserved() {
 }
 
 #[test]
+fn typography_transforms_text_inside_inline_insertions() {
+    let html = render_with(
+        "++\"new\"...++",
+        TypographyLanguage::English,
+        ParserOptions {
+            insertions: true,
+            ..ParserOptions::default()
+        },
+        HtmlRendererOptions::default(),
+    );
+    assert_eq!(html, "<p><ins>“new”…</ins></p>\n");
+}
+
+#[test]
 fn math_html_mdx_expressions_and_image_metadata_are_protected() {
     let source = r#"<span title="--...">--...</span> $--...$ ![alt --...](image--... "title --...") {value("--...")}"#;
     let allocator = Allocator::new();

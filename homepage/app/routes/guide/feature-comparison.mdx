@@ -88,13 +88,14 @@ footnotes. Disabling reference links preserves definitions as visible Markdown;
 inline links and images continue to work. Marked text is separate from code
 syntax highlighting. [Rust and Node examples, syntax, and defaults](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md).
 
-The writing extensions remain off by default. Existing paired measurements
-cover highlighted text and inline notes; insertion parsing has a dedicated
-Criterion benchmark for enabled, disabled, unmatched-plus, and repeated-pair
-inputs in the [decision record](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-27-inline-insertions.md).
-Disabling reference links can skip parsing work, but its benefit depends on the
-parser profile and changes the output of actual references. See the
-[measured costs and limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-optional-writing/README.md).
+The writing extensions remain off by default. Paired measurements found no
+material slowdown on representative documents with them disabled. Enabling them
+on documents without matching syntax still costs several percent, and literal
+marker-heavy inputs cost more. Disabling reference links can skip parsing work,
+but its benefit depends on the parser profile and changes the output of actual
+references. See the [measured costs and limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-optional-writing/README.md).
+Insertions have a dedicated Criterion benchmark and a base-versus-PR check of
+the default-disabled path in the [decision record](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-27-inline-insertions.md).
 
 ### Other extension policies
 

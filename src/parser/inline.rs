@@ -20,11 +20,11 @@ pub(in crate::parser) use self::marker_scan::InlineMarkerScan;
 use self::script_span::same_marker_neighbor;
 use super::line_scan::{is_line_ending_byte, line_terminator_end};
 
-#[derive(Clone, Copy)]
-struct InlineSource<'source, 'ranges> {
+struct InlineSource<'source, 'ranges, 'opener> {
     content: &'source str,
     offset: usize,
     protected_urls: &'ranges [(usize, usize)],
+    has_insertion_opener: &'opener mut bool,
 }
 
 pub(in crate::parser) use self::autolink::autolink_end;
@@ -205,6 +205,13 @@ impl<'a> Parser<'a> {
         let mut delimiters = self.allocator.new_vec();
         let mut pos = 0;
         let mut first_scan = Some(first_special);
+        let mut has_insertion_opener = false;
+        let mut source = InlineSource {
+            content,
+            offset,
+            protected_urls,
+            has_insertion_opener: &mut has_insertion_opener,
+        };
 
         while pos < content.len() {
             let start = pos;
@@ -249,11 +256,7 @@ impl<'a> Parser<'a> {
             }
 
             self.parse_inline_special(
-                InlineSource {
-                    content,
-                    offset,
-                    protected_urls,
-                },
+                &mut source,
                 &mut children,
                 &mut delimiters,
                 &mut markers,
@@ -269,17 +272,16 @@ impl<'a> Parser<'a> {
 
     fn parse_inline_special(
         &self,
-        source: InlineSource<'a, '_>,
+        source: &mut InlineSource<'a, '_, '_>,
         children: &mut Vec<'a, Node<'a>>,
         delimiters: &mut Vec<'a, emphasis::Delimiter>,
         markers: &mut InlineMarkerScan,
         pos: &mut usize,
     ) -> ParseResult<()> {
-        let InlineSource {
-            content,
-            offset,
-            protected_urls,
-        } = source;
+        let content = source.content;
+        let offset = source.offset;
+        let protected_urls = source.protected_urls;
+        let has_insertion_opener = &mut *source.has_insertion_opener;
         let bytes = content.as_bytes();
         match bytes[*pos] {
             b'\\' if *pos + 1 < content.len() && is_line_ending_byte(bytes[*pos + 1]) => {
@@ -385,11 +387,15 @@ impl<'a> Parser<'a> {
             b'+' if self.options.insertions => {
                 let run_len = Self::marker_run_len(bytes, *pos, b'+');
                 let run_end = *pos + run_len;
-                let is_protected_url = protected_urls
-                    .iter()
-                    .any(|(start, end)| *start <= *pos && run_end <= *end);
-                let closes_insertion = is_protected_url
-                    && self.plus_run_closes_insertion(content, *pos, run_end, delimiters);
+                let url_index = protected_urls.partition_point(|(_, end)| *end < run_end);
+                let protected_url = protected_urls
+                    .get(url_index)
+                    .copied()
+                    .filter(|(start, end)| *start <= *pos && run_end <= *end);
+                let is_protected_url = protected_url.is_some();
+                let closes_insertion = protected_url.is_some_and(|(_, end)| end == run_end)
+                    && *has_insertion_opener
+                    && self.plus_run_closes_insertion(content, *pos, run_end);
                 if is_protected_url && !closes_insertion {
                     Self::push_text(
                         children,
@@ -399,7 +405,8 @@ impl<'a> Parser<'a> {
                     );
                     *pos = run_end;
                 } else {
-                    self.push_insertion_run(content, offset, children, delimiters, pos);
+                    *has_insertion_opener |=
+                        self.push_insertion_run(content, offset, children, delimiters, pos);
                 }
             }
             b'~' if self.options.subscript && !same_marker_neighbor(bytes, *pos, b'~') => {
