@@ -70,6 +70,29 @@ case, one-second warm-up and measurement) observed these parser times:
 These are local sample measurements for comparing input shapes, not a before
 and after speedup claim or a cross-machine performance guarantee.
 
+A paired base-versus-PR comparison checked the default-disabled path on
+`0bd64f49` and `91a02048` with Rust 1.95.0, fat LTO, and
+`-C target-cpu=generic` on macOS ARM64. The 120 cases comprised 57 broad
+inputs, the same 57 with bare-URL autolinks, and six authored insertion-shaped
+diagnostics. Three rounds each used three paired 40 ms windows. HTML and AST
+output matched exactly for every case. Ratios below are baseline time divided
+by candidate time, so values below one mean the candidate was slower:
+
+| Case group | Cases | Fresh | Parse-only |
+| --- | ---: | ---: | ---: |
+| All default-off inputs | 120 | 0.9979 | 0.9879 |
+| Broad inputs | 57 | 0.9956 | 0.9864 |
+| Bare-URL autolink inputs | 57 | 0.9993 | 0.9882 |
+| Insertion-shaped diagnostics | 6 | 1.0064 | 1.0000 |
+| Same-commit A/A control | 120 | 1.0010 | 0.9979 |
+
+The default-off change measured 0.2% slower in fresh rendering and 1.2% slower
+in parse-only mode. The A/A fresh rounds ranged from 0.999 to 1.001, so fresh
+rendering stayed within that A/A spread. The A/A parse-only rounds ranged from
+0.996 to 0.999, so the 1.2% parse-only difference was larger than this run's
+measured variation. These local paired samples describe this host and corpus;
+they are not a cross-machine guarantee.
+
 The public Rust API keeps `Node` and `ParserOptions` exhaustive. Adding
 `Node::Insertion` and `ParserOptions::insertions` therefore requires a major
 release under the existing [API policy](2026-09-17-api-surface.md#exhaustiveness).

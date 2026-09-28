@@ -94,8 +94,10 @@ on documents without matching syntax still costs several percent, and literal
 marker-heavy inputs cost more. Disabling reference links can skip parsing work,
 but its benefit depends on the parser profile and changes the output of actual
 references. See the [measured costs and limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-optional-writing/README.md).
-Insertions have a dedicated Criterion benchmark and a base-versus-PR check of
-the default-disabled path in the [decision record](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-27-inline-insertions.md).
+Insertions have a dedicated Criterion benchmark. A 120-input base-versus-PR
+check with insertions disabled measured 0.2% slower fresh rendering and 1.2%
+slower parse-only; the same-commit A/A stayed within 0.1% fresh and 0.4%
+parse-only. See the [measurement details](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-27-inline-insertions.md).
 
 ### Other extension policies
 
