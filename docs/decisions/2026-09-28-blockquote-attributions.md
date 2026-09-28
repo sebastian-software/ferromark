@@ -23,17 +23,18 @@ It does not generate a `<cite>` element or a `cite` URL attribute.
 
 The line must be outside the quote and in the same parsed parent container. The
 parser attaches to the nearest nested quote and accepts no gap larger than one
-blank line. An outdented source after a quote in a list item ends the lazy list
-continuation and stays outside the item; an indented source can attach inside
-it. Ordinary lazy list text is unchanged. A trailing valid attribute block
+blank line. An outdented source after a quote in a list item remains lazy
+continuation inside the quote; an indented source can attach inside the item.
+This also preserves a following list item in the same list. A trailing valid attribute block
 targets the figure. Empty and attribute-only captions, escaped colons, and
 malformed attribute blocks do not create a figure. The attribution option
-leaves callout handling unchanged: the parser excludes recognized callout
-markers even when the HTML renderer has
+leaves callout handling unchanged: the parser checks the parsed quote paragraph
+and excludes recognized callout markers even when nested or the HTML renderer has
 `callouts` disabled. An unrecognized `[!…]` marker remains an ordinary quote
 and can receive an attribution. Definition lists continue to win when the next
 block begins with a term. With the option off, CommonMark lazy continuation is
 unchanged.
+An empty quote does not receive a figure.
 
 The existing `Figure` AST shape carries the quote, caption, figure ID/classes,
 shared key/value attributes when `extended_attributes` is enabled, and an

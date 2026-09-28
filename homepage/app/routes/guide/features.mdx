@@ -111,7 +111,8 @@ renderer does not add a `<cite>` element or a `cite` URL. IDs and classes in
 the suffix apply to the figure. The shown example needs only the attribution
 option. Key/value entries such as `lang=en` also require
 `extended_attributes` (Rust) or `extendedAttributes` (Node.js). The option is off
-by default, so ordinary lazy continuations keep CommonMark behavior. See
+by default. An outdented `: source` after a quote in a list stays lazy text
+inside that list; indent it to attach. See
 [syntax, boundaries, and examples](https://github.com/sebastian-software/ferromark/blob/main/docs/blockquote-attributions.md).
 Recognized callout markers do not receive attributions, even when callout
 rendering is disabled.

@@ -198,7 +198,10 @@ fn source_line_must_be_outside_quote_and_adjacent_in_same_container() {
     );
     let list_quote = render("- > Excerpt\n: Jane", true);
     assert!(!list_quote.contains("<figcaption>"), "{list_quote}");
-    assert!(list_quote.ends_with("<p>: Jane</p>\n"), "{list_quote}");
+    assert!(
+        list_quote.contains("<p>Excerpt\n: Jane</p>"),
+        "{list_quote}"
+    );
     let lazy_list_quote = render("- > Excerpt\nlazy continuation\n: Jane", true);
     assert!(
         !lazy_list_quote.contains("<figcaption>"),
@@ -209,7 +212,7 @@ fn source_line_must_be_outside_quote_and_adjacent_in_same_container() {
         "{lazy_list_quote}"
     );
     assert!(
-        lazy_list_quote.ends_with("<p>: Jane</p>\n"),
+        lazy_list_quote.contains("lazy continuation\n: Jane"),
         "{lazy_list_quote}"
     );
     let ordinary_list_colon = render("- item\n: Jane", true);
@@ -373,4 +376,61 @@ fn raw_html_math_and_mdx_inside_quotes_keep_their_boundaries() {
     assert!(mdx.starts_with("<figure>\n<blockquote>"), "{mdx}");
     assert!(mdx.contains("Chart"), "{mdx}");
     assert!(mdx.contains("<figcaption>Jane</figcaption>"), "{mdx}");
+}
+
+#[test]
+fn nested_callouts_keep_lazy_continuation_and_lists_stay_whole() {
+    for source in [
+        "- > [!NOTE]\n  > Body\n: Jane",
+        "> > [!NOTE]\n> > Body\n: Jane",
+    ] {
+        let enabled = render(source, true);
+        assert_eq!(enabled, render(source, false), "{source:?}");
+        assert!(enabled.contains("Body\n: Jane"), "{enabled}");
+        assert!(!enabled.contains("<figure"), "{enabled}");
+    }
+
+    let source = "* > q\n: Jane\n* next";
+    let enabled = render(source, true);
+    assert_eq!(enabled, render(source, false));
+    assert_eq!(enabled.matches("<ul>").count(), 1, "{enabled}");
+    assert!(enabled.contains("q\n: Jane"), "{enabled}");
+}
+
+#[test]
+fn callout_decision_uses_parsed_content() {
+    for source in [
+        "> &#91;!NOTE]\n> Body\n\n: Jane",
+        "> &#x5b;!NOTE]\n> Body\n\n: Jane",
+        "> &lbrack;!NOTE]\n> Body\n\n: Jane",
+    ] {
+        let html = render(source, true);
+        assert!(html.contains("ox-callout--note"), "{source:?}: {html}");
+        assert!(!html.contains("<figure"), "{source:?}: {html}");
+    }
+
+    for source in [
+        ">     [!NOTE]\n\n: Jane",
+        ">     [!NOTE]\n: Jane",
+        "> [!NOTE]: /x\n\n: Jane",
+        "> [!NOTE]: /x\n: Jane",
+        "> [!NOTE]\n> ===\n\n: Jane",
+        "> [!NOTE]\n> ===\n: Jane",
+        "[!note]: /u\n\n> [!NOTE]\n> Body\n\n: Jane",
+        "[!note]: /u\n\n> [!NOTE]\n> Body\n: Jane",
+    ] {
+        let html = render(source, true);
+        assert!(html.contains("<figure>"), "{source:?}: {html}");
+        assert!(
+            html.contains("<figcaption>Jane</figcaption>"),
+            "{source:?}: {html}"
+        );
+    }
+}
+
+#[test]
+fn empty_quote_cannot_receive_attribution() {
+    let html = render(">\n: Jane", true);
+    assert!(!html.contains("<figure"), "{html}");
+    assert!(html.contains("<p>: Jane</p>"), "{html}");
 }

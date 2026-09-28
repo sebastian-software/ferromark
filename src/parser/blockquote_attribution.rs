@@ -23,7 +23,10 @@ impl<'a> Parser<'a> {
         immediate: Option<AttributionLine<'a>>,
         is_callout: bool,
     ) -> ParseResult<Node<'a>> {
-        if !self.options.blockquote_attributions || is_callout {
+        if !self.options.blockquote_attributions
+            || is_callout
+            || matches!(&quote, Node::BlockQuote(block) if block.children.is_empty())
+        {
             return Ok(quote);
         }
 

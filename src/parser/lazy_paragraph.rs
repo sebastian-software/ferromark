@@ -29,6 +29,8 @@
 
 use memchr::{memchr, memmem};
 
+use crate::callout::source_starts_with_callout;
+
 use super::Parser;
 use super::ParserOptions;
 use super::html::HtmlBlockStart;
@@ -74,6 +76,9 @@ pub(super) struct OpenParagraph {
     /// Container markers for the open paragraph. Lazy lines without markers
     /// inherit these markers, including a surrounding block quote.
     paragraph_markers: Markers,
+    /// Source-level callout predictor for the innermost open paragraph.
+    /// The parsed AST remains authoritative when attaching a figure.
+    paragraph_callout: bool,
     /// How many bytes of the container's collected text have been observed.
     observed: usize,
 }
@@ -108,8 +113,8 @@ impl OpenParagraph {
         self.paragraph_open
     }
 
-    pub(super) fn paragraph_inside_block_quote(&self) -> bool {
-        self.paragraph_open && self.paragraph_markers.quotes > 0
+    pub(super) fn paragraph_is_callout(&self) -> bool {
+        self.paragraph_open && self.paragraph_callout
     }
 
     /// Leaves the collected text up to `len` unobserved. A line comment the
@@ -126,6 +131,7 @@ impl OpenParagraph {
             self.html = None;
         }
         self.paragraph_open = false;
+        self.paragraph_callout = false;
         self.table = None;
         self.header = None;
     }
@@ -234,6 +240,7 @@ impl OpenParagraph {
             {
                 self.header = None;
                 self.paragraph_open = false;
+                self.paragraph_callout = false;
                 self.table = Some(markers);
                 return;
             }
@@ -250,6 +257,9 @@ impl OpenParagraph {
         if options.blockquote_attributions
             && (markers != Markers::default() || !self.paragraph_open)
         {
+            if markers != self.paragraph_markers || !self.paragraph_open {
+                self.paragraph_callout = source_starts_with_callout(trimmed);
+            }
             self.paragraph_markers = markers;
         }
         self.paragraph_open = true;
@@ -263,12 +273,14 @@ impl OpenParagraph {
 
     fn close_paragraph(&mut self) {
         self.paragraph_open = false;
+        self.paragraph_callout = false;
         self.table = None;
         self.header = None;
     }
 
     fn continue_table(&mut self, markers: Markers) {
         self.paragraph_open = false;
+        self.paragraph_callout = false;
         self.table = Some(markers);
         self.header = None;
     }

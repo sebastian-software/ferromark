@@ -1,5 +1,5 @@
 use crate::ast::{BlockQuote, Node, Span};
-use crate::callout::CalloutKind;
+use crate::callout::detect_callout;
 
 use super::Parser;
 use super::lazy_paragraph::OpenParagraph;
@@ -34,7 +34,7 @@ impl<'a> Parser<'a> {
         let mut lazy_lines = rustc_hash::FxHashSet::default();
         let mut source_map = SourceMap::default();
         let mut immediate_attribution = None;
-        let mut callout_marker = None;
+        let mut confirmed_callout = None;
 
         loop {
             if self.position >= bytes.len() {
@@ -129,8 +129,27 @@ impl<'a> Parser<'a> {
                 // Advance past this line (and the trailing newline if any).
                 self.position = line_next;
             } else if self.options.blockquote_attributions
-                && !Self::cached_callout_marker(&mut callout_marker, &inner)
+                && !self
+                    .lazy_lines
+                    .as_ref()
+                    .is_some_and(|lines| lines.contains(&(line_start as u32)))
                 && let Some(parsed) = self.parse_blockquote_attribution_line(line)
+                && {
+                    open_paragraph.catch_up(&inner, &self.options);
+                    if !open_paragraph.paragraph_is_callout() {
+                        true
+                    } else {
+                        let is_callout = if let Some(value) = confirmed_callout {
+                            value
+                        } else {
+                            let value =
+                                self.parsed_callout_in_quote(&inner, &lazy_lines, &source_map)?;
+                            confirmed_callout = Some(value);
+                            value
+                        };
+                        !is_callout
+                    }
+                }
             {
                 // Eligible source lines are outside the quote even when
                 // CommonMark would otherwise treat them as a lazy paragraph
@@ -175,10 +194,10 @@ impl<'a> Parser<'a> {
             source_map.remap_node_spans(child);
         }
 
+        let is_callout = self.options.blockquote_attributions
+            && matches!(children.first(), Some(Node::Paragraph(paragraph)) if detect_callout(paragraph).is_some());
         let span = Span::new(start as u32, self.position as u32);
         let quote = Node::BlockQuote(self.allocator.boxed(BlockQuote { children, span }));
-        let is_callout = self.options.blockquote_attributions
-            && callout_marker.unwrap_or_else(|| Self::starts_with_callout_marker(inner_str));
         Ok(Some(self.attach_blockquote_attribution(
             quote,
             start,
@@ -187,16 +206,36 @@ impl<'a> Parser<'a> {
         )?))
     }
 
-    fn cached_callout_marker(cache: &mut Option<bool>, source: &str) -> bool {
-        *cache.get_or_insert_with(|| Self::starts_with_callout_marker(source))
+    /// A marker-shaped source line can become a heading, link definition, or
+    /// resolved link. Probe only when an eligible immediate attribution meets
+    /// such a line; the root parser already has document-wide definitions.
+    fn parsed_callout_in_quote(
+        &self,
+        inner: &str,
+        lazy_lines: &rustc_hash::FxHashSet<u32>,
+        source_map: &SourceMap,
+    ) -> ParseResult<bool> {
+        let source = self.allocator.alloc_str(inner);
+        let document = self
+            .sub_parser_with_source_map(source, lazy_lines.clone(), source_map)
+            .parse()
+            .map_err(|error| error.remapped(source_map))?;
+        Ok(Self::parsed_callout_at_open_end(&document.children))
     }
 
-    fn starts_with_callout_marker(source: &str) -> bool {
-        source
-            .lines()
-            .find(|line| !whitespace::is_blank(line))
-            .and_then(|line| CalloutKind::parse_marker(whitespace::trim_start(line)))
-            .is_some()
+    fn parsed_callout_at_open_end(children: &[Node<'_>]) -> bool {
+        match children.last() {
+            Some(Node::Paragraph(paragraph)) => detect_callout(paragraph).is_some(),
+            Some(Node::BlockQuote(quote)) => {
+                matches!(quote.children.first(), Some(Node::Paragraph(paragraph)) if detect_callout(paragraph).is_some())
+                    || Self::parsed_callout_at_open_end(&quote.children)
+            }
+            Some(Node::List(list)) => list
+                .children
+                .last()
+                .is_some_and(|item| Self::parsed_callout_at_open_end(&item.children)),
+            _ => false,
+        }
     }
 
     /// Lines that must not lazily continue a block quote paragraph even

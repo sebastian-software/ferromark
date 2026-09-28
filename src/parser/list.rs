@@ -320,17 +320,6 @@ impl<'a> Parser<'a> {
             if !paragraph_open {
                 break;
             }
-            if self.options.blockquote_attributions
-                && open_paragraph.paragraph_inside_block_quote()
-                && self
-                    .parse_blockquote_attribution_line(continuation_line)
-                    .is_some()
-            {
-                // A column-zero source line would be lazy continuation of
-                // this list item, but attribution belongs to the quote's
-                // parent container. Let the outer parser handle it.
-                break;
-            }
             let source = item_source
                 .get_or_insert_with(|| self.init_list_item_source(item, consumed_newline));
             // Keep the lazy line's own indentation: the sub-parse then

@@ -30,14 +30,19 @@ indent the source to keep it inside the item:
   : Jane
 ```
 
-An outdented `: Jane` remains outside that item and does not attach. Ordinary
-list text retains lazy continuation. The source is one line. A larger gap,
+An outdented `: Jane` lazily continues the quote in its list item and does not
+attach. This keeps the list intact when another item follows. The source is
+one line. A larger gap,
 escaped colon, empty source, attribute-only source, or malformed trailing
 attribute block does not create a figure. A recognized
-`[!NOTE]`-style marker keeps the quote out of attribution parsing, including
-when the HTML renderer has `callouts` disabled. Unrecognized markers remain
+`[!NOTE]`-style marker in the parsed quote paragraph keeps the quote out of
+attribution parsing, including when nested in a list or another quote and when
+the HTML renderer has `callouts` disabled. Entity-encoded opening brackets are
+recognized too. Code, headings, link definitions, and resolved links are not
+callout markers. Unrecognized markers remain
 ordinary quote text and may receive an attribution. A following definition
 list keeps its normal parse.
+An empty quote cannot receive an attribution.
 Fenced and indented code, raw HTML, math, and MDX inside the quote retain their
 normal parsing boundaries.
 
