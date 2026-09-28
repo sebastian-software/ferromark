@@ -376,7 +376,6 @@ test("selects the musl optional package on Alpine-style Linux", () => {
 test("maps every supported native platform and rejects unsupported targets", () => {
   const targets = [
     ["darwin", "arm64", undefined, "darwin-arm64"],
-    ["darwin", "x64", undefined, "darwin-x64"],
     ["linux", "arm64", "gnu", "linux-arm64-gnu"],
     ["linux", "arm64", "musl", "linux-arm64-musl"],
     ["linux", "x64", "gnu", "linux-x64-gnu"],
@@ -394,6 +393,7 @@ test("maps every supported native platform and rejects unsupported targets", () 
     /ferromark does not support linux\/riscv64/,
   );
   assert.throws(() => nativeTarget("freebsd", "x64"), /ferromark does not support freebsd\/x64/);
+  assert.throws(() => nativeTarget("darwin", "x64"), /ferromark does not support darwin\/x64/);
 });
 
 /** Loader helper contents on a system without a musl loader. */
@@ -899,7 +899,6 @@ function currentNativeTarget() {
       : `${process.platform}-${process.arch}`;
   const targets = {
     "darwin-arm64": "darwin-arm64",
-    "darwin-x64": "darwin-x64",
     "linux-arm64-gnu": "linux-arm64-gnu",
     "linux-arm64-musl": "linux-arm64-musl",
     "linux-x64-gnu": "linux-x64-gnu",
