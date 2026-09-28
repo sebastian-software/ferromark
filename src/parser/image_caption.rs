@@ -14,35 +14,6 @@ struct CaptionLine<'a> {
 }
 
 impl<'a> Parser<'a> {
-    /// Definition-list parsing runs before paragraph parsing. Look through a
-    /// possible multiline image only when both extensions are enabled, so an
-    /// eligible caption wins without reparsing ordinary image paragraphs.
-    pub(super) fn image_caption_precedes_definition_list(
-        &self,
-        start: usize,
-        mut position: usize,
-    ) -> ParseResult<bool> {
-        while position < self.source.len() {
-            let (line, next) = self.line_and_next(position);
-            if self.parse_image_caption_line(line).is_some() {
-                return self.image_caption_interrupts_paragraph(start, position, position);
-            }
-            if line.trim_matches([' ', '\t']).is_empty() {
-                if next >= self.source.len() {
-                    return Ok(false);
-                }
-                let (following, _) = self.line_and_next(next);
-                return if self.parse_image_caption_line(following).is_some() {
-                    self.image_caption_interrupts_paragraph(start, position, next)
-                } else {
-                    Ok(false)
-                };
-            }
-            position = next;
-        }
-        Ok(false)
-    }
-
     /// Before ending a paragraph on an immediate `: Caption` line, verify
     /// that the paragraph is exactly one image. Other prose keeps CommonMark
     /// lazy continuation behavior even with the extension enabled.

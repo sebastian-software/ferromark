@@ -226,18 +226,7 @@ impl<'a> Parser<'a> {
             return Ok(Some(node));
         }
 
-        let image_caption_precedes_definition = if self.options.image_captions
-            && self.options.definition_lists
-            && bytes[trimmed_start] == b'!'
-        {
-            let after_image = first_line_end.unwrap_or_else(|| scan_next_line_start(bytes, start));
-            self.image_caption_precedes_definition_list(start, after_image)?
-        } else {
-            false
-        };
-        if !image_caption_precedes_definition
-            && let Some(node) = self.parse_definition_list(start)?
-        {
+        if let Some(node) = self.parse_definition_list(start)? {
             return Ok(Some(node));
         }
 
@@ -282,8 +271,9 @@ impl<'a> Parser<'a> {
         };
         self.position = content_end;
         let mut first_line_comment = None;
-        // Once a paragraph is not a single image, appending more lines cannot
-        // make it one. Avoid reparsing an ever-growing prefix for every `:`.
+        // Avoid reparsing an ever-growing prefix for every `:`. A later line
+        // can close an unfinished multiline image; that rare shape remains a
+        // paragraph after an earlier caption-like line was ruled out.
         let mut caption_ruled_out = false;
 
         loop {
