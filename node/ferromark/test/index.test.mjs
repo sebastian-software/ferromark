@@ -24,6 +24,39 @@ test("renders Markdown through the native binding", () => {
   assert.equal(toHtml("# Hello"), '<h1 id="hello">Hello</h1>\n');
 });
 
+test("supports opt-in insertions across the public Node rendering API", () => {
+  const source = "~~old~~ ++new **bold**++";
+  const expected = "<p><del>old</del> <ins>new <strong>bold</strong></ins></p>\n";
+  const options = { insertions: true };
+  const highlighter = { codeToHtml: () => "<pre><code>unused</code></pre>\n" };
+
+  assert.equal(toHtml(source), "<p><del>old</del> ++new <strong>bold</strong>++</p>\n");
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(
+    toHtml("++<script>alert(1)</script>++", options),
+    "<p><ins>&lt;script&gt;alert(1)&lt;/script&gt;</ins></p>\n",
+  );
+  assert.equal(toHtmlBuffer(source, options).toString("utf8"), expected);
+  assert.equal(transform(source, options).html, expected);
+  assert.equal(new Renderer(options).toHtml(source), expected);
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "test" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "test" }, options).html,
+    expected,
+  );
+  assert.equal(
+    toHtml("https://example.com/++path++", { insertions: true, autolinkLiterals: true }),
+    '<p><a href="https://example.com/++path++">https://example.com/++path++</a></p>\n',
+  );
+  assert.equal(
+    toHtml("# ++Good news++", { insertions: true }).trim(),
+    '<h1 id="good-news"><ins>Good news</ins></h1>',
+  );
+  assert.deepEqual(transform("# ++Good news++", options).headings, [
+    { level: 1, id: "good-news", text: "Good news" },
+  ]);
+});
+
 test("renders UTF-8 HTML directly into Node.js Buffers", () => {
   const expected = '<h1 id="grüße">Grüße</h1>\n';
   const output = toHtmlBuffer("# Grüße");
@@ -35,6 +68,140 @@ test("renders UTF-8 HTML directly into Node.js Buffers", () => {
   const reusedOutput = renderer.toHtmlBuffer("# Grüße");
   assert.ok(Buffer.isBuffer(reusedOutput));
   assert.equal(reusedOutput.toString("utf8"), "<h1>Grüße</h1>\n");
+});
+
+test("block quote attributions are opt-in and render as figure captions", () => {
+  const source = "> Excerpt\n: Jane **Doe** [profile](https://example.org)";
+  const options = { blockquoteAttributions: true };
+  const expected =
+    '<figure>\n<blockquote>\n<p>Excerpt</p>\n</blockquote>\n\n<figcaption>Jane <strong>Doe</strong> <a href="https://example.org">profile</a></figcaption>\n</figure>\n';
+
+  assert.equal(
+    toHtml(source),
+    '<blockquote>\n<p>Excerpt\n: Jane <strong>Doe</strong> <a href="https://example.org">profile</a></p>\n</blockquote>\n',
+  );
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(toHtmlBuffer(source, options).toString(), expected);
+  assert.equal(transform(source, options).html, expected);
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    expected,
+  );
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(renderer.toHtmlBuffer(source).toString(), expected);
+});
+
+test("block quote attribution uses shared figure attributes and untrusted rendering", () => {
+  const source =
+    "> Excerpt\n: Jane <script>alert(1)</script> [unsafe](javascript:alert(1)) {#source .byline lang=en tracking-category=quote}";
+  const options = { blockquoteAttributions: true, extendedAttributes: true };
+  const html = toHtml(source, options);
+
+  assert.match(
+    html,
+    /<figure id="source" class="byline" lang="en" data-tracking-category="quote">/,
+  );
+  assert.match(html, /<figcaption>Jane &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>/);
+  assert.doesNotMatch(html, /href="javascript:/);
+  assert.equal(transform(source, options).html, html);
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), html);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    html,
+  );
+  assert.equal(new Renderer(options).toHtml(source), html);
+});
+
+test("image attributes and separate captions work through every rendering entry point", () => {
+  const source = '![Alt](image.svg "Title"){.diagram}\n\n: A **caption** {#figure .wide}';
+  const options = { imageAttributes: true, imageCaptions: true };
+  const expected =
+    '<figure id="figure" class="wide">\n<img src="image.svg" alt="Alt" title="Title" class="diagram">\n<figcaption>A <strong>caption</strong></figcaption>\n</figure>\n';
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(toHtmlBuffer(source, options).toString(), expected);
+  assert.equal(transform(source, options).html, expected);
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    expected,
+  );
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(renderer.toHtmlBuffer(source).toString(), expected);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(
+    toHtml(source),
+    '<p><img src="image.svg" alt="Alt" title="Title">{.diagram}</p>\n<p>: A <strong>caption</strong> {#figure .wide}</p>\n',
+  );
+});
+
+test("image and figure IDs agree with transformed heading metadata", () => {
+  const source = "![Alt](a.svg){#shared}\n: Caption {#shared}\n\n# Heading {#shared}";
+  const result = transform(source, {
+    imageAttributes: true,
+    imageCaptions: true,
+    headingAttributes: true,
+  });
+  assert.match(result.html, /<figure id="shared">/);
+  assert.match(result.html, /<img src="a.svg" alt="Alt" id="shared-1">/);
+  assert.match(result.html, /<h1 id="shared-2">Heading<\/h1>/);
+  assert.equal(result.headings[0].id, "shared-2");
+});
+
+test("shared attributes and bracketed spans work through every public entry point", () => {
+  const source = '[Product **offer**]{.product lang=en sku="A-17"}';
+  const options = { extendedAttributes: true, bracketedSpans: true };
+  const expected =
+    '<p><span class="product" lang="en" data-sku="A-17">Product <strong>offer</strong></span></p>\n';
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(toHtmlBuffer(source, options).toString(), expected);
+  assert.equal(transform(source, options).html, expected);
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    expected,
+  );
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(renderer.toHtmlBuffer(source).toString(), expected);
+  assert.equal(
+    toHtml(source),
+    "<p>[Product <strong>offer</strong>]{.product lang=en sku=&quot;A-17&quot;}</p>\n",
+  );
+});
+
+test("untrusted shared attributes cannot emit active HTML names", () => {
+  const source =
+    '[Item]{style="position:fixed" name=config srcset="javascript:bad" target=_blank lang=de}';
+  const html = toHtml(source, { bracketedSpans: true });
+  assert.match(html, / data-style="position:fixed"/);
+  assert.match(html, / data-name="config"/);
+  assert.match(html, / data-srcset="javascript:bad"/);
+  assert.match(html, / data-target="_blank"/);
+  assert.match(html, / lang="de"/);
+  assert.doesNotMatch(html, /<span[^>]* style=/);
+  assert.doesNotMatch(html, /<span[^>]* srcset=/);
+  assert.match(
+    toHtml(source, { bracketedSpans: true, renderPolicy: "trusted" }),
+    / style="position:fixed"/,
+  );
+});
+
+test("span IDs share heading metadata collision planning", () => {
+  const result = transform("[Item]{#shared sku=x}\n\n# Heading {#shared}", {
+    extendedAttributes: true,
+    bracketedSpans: true,
+  });
+  assert.match(result.html, /<span id="shared" data-sku="x">Item<\/span>/);
+  assert.match(result.html, /<h1 id="shared-1">Heading<\/h1>/);
+  assert.equal(result.headings[0].id, "shared-1");
 });
 
 test("applies optional locale-aware typography across the public Node API", () => {
@@ -86,6 +253,38 @@ test("supports the new reviewed European typography profiles", () => {
   }
 });
 
+test("preserves guillemet digraphs and maps them with the selected typography language", () => {
+  const source = "Il a dit <<Bonjour *tout le monde*>>.";
+  const parserOption = { guillemetDigraphs: true };
+  assert.notEqual(
+    toHtml("Il a dit <<Bonjour>>.", { renderPolicy: "trusted" }),
+    toHtml("Il a dit <<Bonjour>>.", { ...parserOption, renderPolicy: "trusted" }),
+  );
+  assert.equal(
+    toHtml(source, { ...parserOption, renderPolicy: "trusted" }),
+    "<p>Il a dit &lt;&lt;Bonjour <em>tout le monde</em>&gt;&gt;.</p>\n",
+  );
+
+  for (const [language, expected] of [
+    ["fr", "« Bonjour <em>tout le monde</em> »"],
+    ["da", "»Bonjour <em>tout le monde</em>«"],
+    ["en", "“Bonjour <em>tout le monde</em>”"],
+  ]) {
+    assert.equal(
+      toHtml(source, { ...parserOption, typography: { language } }),
+      `<p>Il a dit ${expected}.</p>\n`,
+      language,
+    );
+  }
+
+  const result = transform("# <<Bonjour>>", {
+    ...parserOption,
+    typography: { language: "fr" },
+  });
+  assert.equal(result.html, '<h1 id="bonjour">« Bonjour »</h1>\n');
+  assert.deepEqual(result.headings, [{ level: 1, id: "bonjour", text: "« Bonjour »" }]);
+});
+
 test("runs ordered GitHub, emoji, and typography passes across the public Node API", () => {
   const markdown = 'Issue #42 :rocket: :woman_technologist: :heart: "quoted" -- done...';
   const options = {
@@ -110,6 +309,49 @@ test("runs ordered GitHub, emoji, and typography passes across the public Node A
   const renderer = new Renderer(options);
   assert.equal(renderer.toHtml(markdown), expected);
   assert.equal(renderer.toHtmlBuffer(markdown).toString("utf8"), expected);
+});
+
+test("guillemet option reaches typography in legacy and ordered pass pipelines", () => {
+  const markdown = "<< Bonjour >>";
+  const expected = "<p>« Bonjour »</p>\n";
+  assert.equal(
+    toHtml(markdown, {
+      guillemetDigraphs: true,
+      typography: { language: "fr" },
+    }),
+    expected,
+  );
+  assert.equal(
+    toHtml(markdown, {
+      guillemetDigraphs: true,
+      passes: [{ kind: "typography", language: "fr" }],
+    }),
+    expected,
+  );
+  assert.equal(
+    toHtml("<<outer <<inner>> end>>", {
+      guillemetDigraphs: true,
+      typography: { language: "en" },
+    }),
+    "<p>“outer ‘inner’ end”</p>\n",
+  );
+  assert.equal(
+    toHtml("<<hello\nworld>>", {
+      guillemetDigraphs: true,
+      typography: { language: "en" },
+    }),
+    "<p>“hello\nworld”</p>\n",
+  );
+  assert.equal(
+    toHtml("<<Foo />>", { guillemetDigraphs: true, mdx: true }),
+    "<p>&lt;&lt;Foo /&gt;&gt;</p>\n",
+  );
+  const urlHtml = toHtml("<<[https://example.com](https://example.com)>>", {
+    guillemetDigraphs: true,
+    typography: { language: "en" },
+  });
+  assert.match(urlHtml, /href="https:\/\/example\.com"/);
+  assert.doesNotMatch(urlHtml, /href="[^"]*[“”]/);
 });
 
 test("validates ordered transform pass configuration", () => {
@@ -376,7 +618,6 @@ test("selects the musl optional package on Alpine-style Linux", () => {
 test("maps every supported native platform and rejects unsupported targets", () => {
   const targets = [
     ["darwin", "arm64", undefined, "darwin-arm64"],
-    ["darwin", "x64", undefined, "darwin-x64"],
     ["linux", "arm64", "gnu", "linux-arm64-gnu"],
     ["linux", "arm64", "musl", "linux-arm64-musl"],
     ["linux", "x64", "gnu", "linux-x64-gnu"],
@@ -394,6 +635,7 @@ test("maps every supported native platform and rejects unsupported targets", () 
     /ferromark does not support linux\/riscv64/,
   );
   assert.throws(() => nativeTarget("freebsd", "x64"), /ferromark does not support freebsd\/x64/);
+  assert.throws(() => nativeTarget("darwin", "x64"), /ferromark does not support darwin\/x64/);
 });
 
 /** Loader helper contents on a system without a musl loader. */
@@ -899,7 +1141,6 @@ function currentNativeTarget() {
       : `${process.platform}-${process.arch}`;
   const targets = {
     "darwin-arm64": "darwin-arm64",
-    "darwin-x64": "darwin-x64",
     "linux-arm64-gnu": "linux-arm64-gnu",
     "linux-arm64-musl": "linux-arm64-musl",
     "linux-x64-gnu": "linux-x64-gnu",

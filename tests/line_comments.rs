@@ -337,8 +337,8 @@ fn setext_comment_boundaries_preserve_attributes_and_original_spans() {
                 };
                 assert_eq!(document.children.len(), 1);
                 assert_eq!(heading.depth, 2);
-                assert_eq!(heading.id, Some("topic"));
-                assert_eq!(heading.classes.as_slice(), &["wide"]);
+                assert_eq!(heading.explicit_id(), Some("topic"));
+                assert_eq!(heading.classes(), &["wide"]);
                 assert_eq!(heading.span.end as usize, source.len());
                 assert_eq!(
                     first_strong_span(&document).source_text(&source),

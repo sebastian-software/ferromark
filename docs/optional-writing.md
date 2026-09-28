@@ -1,19 +1,21 @@
 # Optional writing syntax and reference links
 
-`ParserOptions::highlight` and `ParserOptions::inline_footnotes` default to
-`false` in every preset. `ParserOptions::allow_link_refs` defaults to `true`.
-Node exposes the same switches as `highlight`, `inlineFootnotes`, and
-`allowLinkRefs` on all rendering entry points, including `Renderer` and hooks.
+`ParserOptions::highlight`, `ParserOptions::insertions`, and
+`ParserOptions::inline_footnotes` default to `false` in every preset.
+`ParserOptions::allow_link_refs` defaults to `true`. Node exposes these
+switches as `highlight`, `insertions`, `inlineFootnotes`, and `allowLinkRefs`
+on all rendering entry points, including `Renderer` and hooks.
 
 ## Configure the Rust parser
 
 ```rust
 use ferromark::{Allocator, HtmlRenderer, Parser, ParserOptions};
 
-let source = "This is ==important==^[An explanatory *note*.].";
+let source = "This is ==important==, ++new++^[An explanatory *note*.].";
 let allocator = Allocator::for_source_len(source.len());
 let options = ParserOptions {
     highlight: true,
+    insertions: true,
     inline_footnotes: true,
     ..ParserOptions::default()
 };
@@ -24,6 +26,41 @@ let html = HtmlRenderer::new().render(&document);
 Use `..ParserOptions::gfm_spec()` to retain GFM parsing options instead. Set
 `allow_link_refs: false` separately when reference syntax should remain visible.
 The source and allocator must outlive the parsed document.
+
+## Inserted text
+
+```js
+import { toHtml } from 'ferromark'
+
+toHtml('The timeout is ~~30 seconds~~ ++60 seconds++.', { insertions: true })
+// <p>The timeout is <del>30 seconds</del> <ins>60 seconds</ins>.</p>\n
+```
+
+The option is off by default, including in CommonMark/GFM profiles and Node's
+defaults. When enabled, `++...++` parses its body as ordinary inline Markdown
+and renders a semantic `<ins>` element. Emphasis, links, code, and other inline
+features can appear inside it. A single plus and an unmatched delimiter remain
+literal. Delimiters use CommonMark-style whitespace and punctuation flanking;
+an odd run leaves one literal plus outside the remaining pairs. On a
+close-only odd run, that plus follows the closing insertion tags, matching the
+[markdown-it-ins reference](https://github.com/markdown-it/markdown-it-ins).
+Soft line breaks may occur inside an insertion, but it cannot cross a paragraph
+or block boundary. Escapes, code, math payloads, HTML tags/attributes, URLs,
+link destinations, and MDX payloads keep their own parsing rules.
+
+With GFM autolinks enabled, `http://`, `https://`, and `ftp://` URL candidates
+keep `++` inside their link text. A pair exactly at a scheme URL's end can close
+an insertion opened before it. Fuzzy email and `www.` autolinks are created
+after inline parsing, so their plus delimiters remain active insertion syntax.
+
+The `++...++` notation is reserved for inserted text: `++ctrl+c++` is an
+insertion regardless of its contents, not keyboard markup. This extension needs
+no transforms package.
+
+The public AST adds `Node::Insertion` and `Insertion`, with inline children and
+a delimiter-inclusive source span. `Visit::visit_insertion` and
+`walk_insertion` visit those children. Heading IDs and `transform()` metadata
+use the inserted words without the delimiters.
 
 ## Marked text
 

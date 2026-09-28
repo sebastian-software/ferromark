@@ -43,8 +43,10 @@ pub use error::{ParseError, ParseErrorKind, ParseResult};
 use crate::allocator::Allocator;
 use crate::ast::{Document, Span};
 
+mod attributes;
 mod block;
 mod block_quote;
+mod blockquote_attribution;
 mod byte_class;
 mod cursor;
 mod definition_list;
@@ -53,6 +55,7 @@ mod fenced_code;
 mod footnote;
 mod front_matter;
 mod html;
+mod image_caption;
 mod indented_code;
 mod inline;
 mod inline_footnote;

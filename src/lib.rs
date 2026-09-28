@@ -22,6 +22,7 @@ pub mod outline;
 pub mod parser;
 pub mod renderer;
 
+mod callout;
 mod convenience;
 
 pub use allocator::Allocator;

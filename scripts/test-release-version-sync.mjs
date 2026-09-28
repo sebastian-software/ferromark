@@ -100,7 +100,7 @@ const platformName = Object.keys(inputs.platforms).sort()[0];
 describe("release version sync", () => {
   it("keeps every published version in step", () => {
     validate(inputs);
-    assert.equal(Object.keys(inputs.platforms).length, 8);
+    assert.equal(Object.keys(inputs.platforms).length, 7);
   });
 
   it("rejects a lockfile specifier that pins a version", () => {

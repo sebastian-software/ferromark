@@ -29,6 +29,7 @@ fn children_of<'a, 'b: 'a>(node: &'a Node<'b>) -> Option<&'a [Node<'b>]> {
         Node::Emphasis(n) => Some(&n.children),
         Node::Strong(n) => Some(&n.children),
         Node::Delete(n) => Some(&n.children),
+        Node::Insertion(n) => Some(&n.children),
         Node::Link(n) => Some(&n.children),
         Node::BlockQuote(n) => Some(&n.children),
         _ => None,

@@ -81,6 +81,67 @@ fn table_metadata_is_opt_in_and_requires_tables() {
 }
 
 #[test]
+fn plain_caption_attaches_when_table_extension_is_enabled() {
+    let source = "| Item | Price |\n| --- | ---: |\n| Book | 20.00 |\n\n: Current **prices**";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
+    let Node::Table(table) = &document.children[0] else {
+        panic!("expected table");
+    };
+    let attributes = table.attributes.as_ref().expect("caption metadata");
+    assert!(attributes.id.is_none());
+    assert!(attributes.classes.is_empty());
+    assert!(!attributes.caption.is_empty());
+    assert_eq!(table.span.end as usize, source.len());
+}
+
+#[test]
+fn a_colon_prefixed_pipe_row_does_not_end_the_table() {
+    for row in [": ratio | 2 |", ": ratio \\| 2", ": note"] {
+        let source = format!("| k | v |\n| - | - |\n| a | 1 |\n{row}\n| b | 3 |");
+        let allocator = Allocator::new();
+        let document = Parser::with_options(&allocator, &source, options())
+            .parse()
+            .unwrap();
+        let Node::Table(table) = &document.children[0] else {
+            panic!("expected table");
+        };
+        assert_eq!(table.children.len(), 4, "{row}");
+        assert!(table.attributes.is_none(), "{row}");
+        assert_eq!(document.children.len(), 1, "{row}");
+    }
+}
+
+#[test]
+fn table_ids_claim_document_identifiers_before_later_tables_and_headings() {
+    let source = "| A |\n| - |\n| x |\n: {#shared}\n\n| A |\n| - |\n| y |\n: {#shared}\n\n# Heading {#shared}";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(
+        &allocator,
+        source,
+        ParserOptions {
+            table_attributes: true,
+            heading_attributes: true,
+            ..ParserOptions::gfm()
+        },
+    )
+    .parse()
+    .unwrap();
+    let html = ferromark::HtmlRenderer::new().render(&document);
+    assert!(html.contains("<table id=\"shared\">"), "{html}");
+    assert!(html.contains("<table id=\"shared-1\">"), "{html}");
+    assert!(html.contains("<h1 id=\"shared-2\">"), "{html}");
+    assert_eq!(
+        document.outline(&ferromark::OutlineOptions::default())[0]
+            .id
+            .as_deref(),
+        Some("shared-2")
+    );
+}
+
+#[test]
 fn malformed_metadata_preserves_the_following_markdown() {
     for metadata in [
         ": Caption {}",
@@ -97,7 +158,6 @@ fn malformed_metadata_preserves_the_following_markdown() {
         ":{#ok}",
         "    : Caption {#ok}",
         "\t: Caption {#ok}",
-        ": Caption without attributes",
     ] {
         let source = format!("| A | B |\n| --- | --- |\n\n{metadata}");
         let allocator = Allocator::new();

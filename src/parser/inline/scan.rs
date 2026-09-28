@@ -75,8 +75,9 @@ const HIGH_NIBBLE: [u8; 16] = [
 /// The optional bytes use otherwise-unused intersections: `$` gets bit 0x40
 /// at (high 2, low 4), `^` gets bit 0x80 at (high 5, low E), and `{` reuses
 /// the existing `~` bit at (high 7, low B). These choices avoid admitting any
-/// cross-product byte. `=` shares the `<` bit at (high 3, low D).
-/// Sixteen precomputed pairs let each scan use only the
+/// cross-product byte. `=` shares the `<` bit at (high 3, low D), while `+`
+/// reuses the `!`/`&`/`*` bit at (high 2, low B).
+/// Thirty-two precomputed pairs let each scan use only the
 /// enabled extension markers; disabled bytes never need retry filtering.
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
@@ -96,11 +97,14 @@ const fn marker_tables(options: u8) -> ([u8; 16], [u8; 16]) {
     if options & 8 != 0 {
         low[13] |= 0x04; // `=` shares the high nibble of `<`.
     }
+    if options & 16 != 0 {
+        low[11] |= 0x02; // `+` shares the `!`/`&`/`*` high-nibble bit.
+    }
     (low, high)
 }
 
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
-const OPTION_TABLES: [([u8; 16], [u8; 16]); 16] = [
+const OPTION_TABLES: [([u8; 16], [u8; 16]); 32] = [
     marker_tables(0),
     marker_tables(1),
     marker_tables(2),
@@ -117,12 +121,28 @@ const OPTION_TABLES: [([u8; 16], [u8; 16]); 16] = [
     marker_tables(13),
     marker_tables(14),
     marker_tables(15),
+    marker_tables(16),
+    marker_tables(17),
+    marker_tables(18),
+    marker_tables(19),
+    marker_tables(20),
+    marker_tables(21),
+    marker_tables(22),
+    marker_tables(23),
+    marker_tables(24),
+    marker_tables(25),
+    marker_tables(26),
+    marker_tables(27),
+    marker_tables(28),
+    marker_tables(29),
+    marker_tables(30),
+    marker_tables(31),
 ];
 
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 #[inline]
 fn selected_marker_tables(options: u8) -> (&'static [u8; 16], &'static [u8; 16]) {
-    let tables = &OPTION_TABLES[(options & 15) as usize];
+    let tables = &OPTION_TABLES[(options & 31) as usize];
     (&tables.0, &tables.1)
 }
 
@@ -196,6 +216,7 @@ pub(super) const INLINE_MARKER_MDX: u8 = 1 << 0;
 pub(super) const INLINE_MARKER_SUPERSCRIPT: u8 = 1 << 1;
 pub(super) const INLINE_MARKER_HIGHLIGHT: u8 = 1 << 3;
 pub(super) const INLINE_MARKER_MATH: u8 = 1 << 2;
+pub(super) const INLINE_MARKER_INSERTIONS: u8 = 1 << 4;
 
 /// Find the next core marker or enabled extension marker.
 ///

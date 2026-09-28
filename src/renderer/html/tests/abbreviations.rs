@@ -219,6 +219,43 @@ fn ordinary_and_hook_rendering_share_adjacent_text_boundaries() {
 }
 
 #[test]
+fn spans_insertions_and_figure_captions_share_abbreviation_boundaries() {
+    let allocator = Allocator::new();
+    let options = ParserOptions {
+        bracketed_spans: true,
+        insertions: true,
+        image_captions: true,
+        blockquote_attributions: true,
+        ..ParserOptions::default()
+    };
+    let source = concat!(
+        "++API++ [JSON]{.term}\n\n",
+        "![Diagram](diagram.svg)\n\n: The API diagram\n\n",
+        "> Quote\n\n: CLI docs\n",
+    );
+    let document = Parser::with_options(&allocator, source, options)
+        .parse()
+        .unwrap();
+    let html = renderer(BTreeMap::new()).render(&document);
+    let mut hooks = NoHtmlRenderHooks;
+
+    assert_eq!(
+        renderer(BTreeMap::new()).render_with_hooks(&document, &mut hooks),
+        html
+    );
+    assert!(
+        html.contains("<ins><abbr title=\"Application Programming Interface\">API</abbr></ins>"),
+        "{html}"
+    );
+    assert!(html.contains("<span class=\"term\"><abbr"), "{html}");
+    assert!(
+        html.contains("<figcaption>The <abbr title=\"Application Programming Interface\">API</abbr> diagram</figcaption>"),
+        "{html}"
+    );
+    assert!(html.contains("<figcaption><abbr"), "{html}");
+}
+
+#[test]
 fn inline_html_state_is_scoped_and_skipped_when_sanitizing_or_rendering_blocks() {
     let cases = [
         (

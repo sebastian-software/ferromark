@@ -69,9 +69,16 @@ const fields = [
   ["wikiLinks", "boolean"],
   ["cjkEmphasis", "boolean"],
   ["mdx", "boolean"],
+  ["imageAttributes", "boolean"],
+  ["imageCaptions", "boolean"],
+  ["extendedAttributes", "boolean"],
+  ["bracketedSpans", "boolean"],
   ["linkBasePath", "string"],
   ["typography", "object"],
   ["passes", "array"],
+  ["blockquoteAttributions", "boolean"],
+  ["insertions", "boolean"],
+  ["guillemetDigraphs", "boolean"],
   ["autoAbbreviations", "boolean"],
   ["abbreviations", "record"],
 ];
@@ -96,7 +103,11 @@ const probe = [
   "| merged ||",
   ": Caption {#table-id .wide}",
   "",
-  "~~strike~~ x^2^ H~2~O ==mark== ^[inline note] www.example.com $x$",
+  "![Logo](logo.svg){.tiny}",
+  "",
+  ": A visible caption",
+  "",
+  "~~strike~~ ++added++ x^2^ H~2~O ==mark== ^[inline note] www.example.com $x$",
   "",
   "- [x] done",
   "",
@@ -109,6 +120,9 @@ const probe = [
   "> [!NOTE]",
   "> Callout.",
   "",
+  "> A quoted passage.",
+  ": Jane Doe",
+  "",
   "Term",
   ": Definition",
   "",
@@ -117,6 +131,7 @@ const probe = [
   "A**強調。**B and :rocket:.",
   "API HTTP GraphQL XYZ",
   '"A quote" -- it\'s fine...',
+  "<<guillemet>>",
   "",
   "<Component />",
   "",
@@ -913,6 +928,51 @@ test("routes options through the packed entries", (t) => {
   for (const entry of routed) {
     assertPacked(entry, spies);
     assertObjectPath(entry, spies);
+    const [object, packed] = entry.natives;
+    spies.reset();
+    entry.facade(probe, { blockquoteAttributions: false });
+    assert.deepEqual(
+      [spies.count(packed), spies.count(object)],
+      [1, 0],
+      `${entry.name} keeps disabled attribution packed`,
+    );
+    spies.reset();
+    entry.facade(probe, { blockquoteAttributions: true });
+    assert.deepEqual(
+      [spies.count(packed), spies.count(object)],
+      [0, 1],
+      `${entry.name} routes enabled attribution through the object entry`,
+    );
+    const [, rebuilt] = spies.args(object);
+    assert.equal(Object.getPrototypeOf(rebuilt), null);
+    assert.equal(rebuilt.blockquoteAttributions, true);
+  }
+});
+
+test("routes enabled guillemet parsing through the object entries", (t) => {
+  const routed = entries.filter(({ natives }) => natives);
+  const spies = spyOn(
+    t,
+    routed.flatMap(({ natives }) => natives),
+  );
+  for (const entry of routed) {
+    const [object, packed] = entry.natives;
+    spies.reset();
+    entry.facade(probe, {
+      renderPolicy: "trusted",
+      superscript: false,
+      guillemetDigraphs: true,
+    });
+    assert.deepEqual([spies.count(packed), spies.count(object)], [0, 1], `${entry.name} enabled`);
+    const [, rebuilt] = spies.args(object);
+    assert.equal(Object.getPrototypeOf(rebuilt), null, `${entry.name} object prototype`);
+    assert.equal(rebuilt.renderPolicy, "trusted", `${entry.name} renderPolicy`);
+    assert.equal(rebuilt.superscript, false, `${entry.name} false flag`);
+    assert.equal(rebuilt.guillemetDigraphs, true, `${entry.name} guillemet flag`);
+
+    spies.reset();
+    entry.facade(probe, { guillemetDigraphs: false });
+    assert.deepEqual([spies.count(packed), spies.count(object)], [1, 0], `${entry.name} disabled`);
   }
 });
 

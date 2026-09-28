@@ -88,9 +88,16 @@ pub struct Options {
     pub wiki_links: Option<bool>,
     pub cjk_emphasis: Option<bool>,
     pub mdx: Option<bool>,
+    pub image_attributes: Option<bool>,
+    pub image_captions: Option<bool>,
+    pub extended_attributes: Option<bool>,
+    pub bracketed_spans: Option<bool>,
     pub link_base_path: Option<String>,
     pub typography: Option<TypographyConfig>,
     pub passes: Option<Vec<NativePassConfig>>,
+    pub blockquote_attributions: Option<bool>,
+    pub insertions: Option<bool>,
+    pub guillemet_digraphs: Option<bool>,
     pub auto_abbreviations: Option<bool>,
     pub abbreviations: Option<HashMap<String, Option<String>>>,
 }
@@ -171,6 +178,16 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.wiki_links, options.wiki_links);
         apply!(parser.cjk_emphasis, options.cjk_emphasis);
         apply!(parser.mdx, options.mdx);
+        apply!(parser.image_attributes, options.image_attributes);
+        apply!(parser.image_captions, options.image_captions);
+        apply!(parser.extended_attributes, options.extended_attributes);
+        apply!(parser.bracketed_spans, options.bracketed_spans);
+        apply!(
+            parser.blockquote_attributions,
+            options.blockquote_attributions
+        );
+        apply!(parser.insertions, options.insertions);
+        apply!(parser.guillemet_digraphs, options.guillemet_digraphs);
         if let Some(base) = options.link_base_path {
             // The JavaScript string is owned, so this becomes `Cow::Owned`;
             // every other renderer option keeps its borrowed default.
@@ -201,7 +218,8 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             let language = language
                 .parse::<TypographyLanguage>()
                 .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-            let mut resolved = TypographyOptions::new(language);
+            let mut resolved =
+                TypographyOptions::new(language).with_guillemet_digraphs(parser.guillemet_digraphs);
             if let Some(enabled) = config.dashes {
                 resolved = resolved.with_dashes(enabled);
             }
@@ -212,7 +230,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         }
         if let Some(configs) = pass_configs {
             for (index, config) in configs.into_iter().enumerate() {
-                append_native_pass(&mut pipeline, config, index)?;
+                append_native_pass(&mut pipeline, config, index, parser.guillemet_digraphs)?;
             }
         }
     }
@@ -231,6 +249,7 @@ fn append_native_pass(
     pipeline: &mut TransformPipeline,
     config: NativePassConfig,
     index: usize,
+    guillemet_digraphs: bool,
 ) -> Result<()> {
     let option = |name: &str| format!("passes[{index}].{name}");
     let kind = config.kind.ok_or_else(|| {
@@ -260,7 +279,8 @@ fn append_native_pass(
             let language = language
                 .parse::<TypographyLanguage>()
                 .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-            let mut options = TypographyOptions::new(language);
+            let mut options =
+                TypographyOptions::new(language).with_guillemet_digraphs(guillemet_digraphs);
             if let Some(enabled) = config.dashes {
                 options = options.with_dashes(enabled);
             }
@@ -560,11 +580,20 @@ impl Metadata {
 }
 
 impl<'a> Visit<'a> for Metadata {
+    fn visit_node(&mut self, node: &Node<'a>) {
+        if !matches!(node, Node::Heading(_))
+            && let Some(id) = node.explicit_element_id()
+        {
+            let _ = self.id_planner.plan(id);
+        }
+        ferromark::ast::walk_node(self, node);
+    }
+
     fn visit_heading(&mut self, heading: &ferromark::ast::Heading<'a>) {
         let text = ferromark::collect_heading_text(&heading.children);
         let id = if self.heading_ids {
             let base = heading
-                .id
+                .explicit_id()
                 .map_or_else(|| ferromark::slugify_heading(&text), str::to_owned);
             let mut requested = self.heading_id_prefix.clone();
             requested.push_str(&base);

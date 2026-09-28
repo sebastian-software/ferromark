@@ -4,7 +4,7 @@ The `ferromark` core crate publishes to crates.io. The optional
 `ferromark-transforms` crate shares its version and depends on that core. The
 publish workflow sends the core first and then the extension. Before the
 extension's first release, crates.io Trusted Publishing must be configured for
-the new crate. The npm facade and eight native platform
+the new crate. The npm facade and seven native platform
 packages share the root product version. The Node development workspace and
 `ferromark-node` binding crate remain private. Allocator, AST, parser and
 renderer are modules inside the core library; consumers can use them
@@ -25,7 +25,7 @@ repository root package, and the release follows the organization's
    tag and the GitHub release, and sets `releases_created`.
 4. The currently gated jobs in the same workflow run from that tag. They gate on Release
    Please alone, so the crates.io publication and the native addon pipeline start
-   in parallel: the core crate goes to crates.io while the eight native addons are
+   in parallel: the core crate goes to crates.io while the seven native addons are
    built, assembled, verified and published to npm, sidecars before the facade,
    and the published versions are confirmed on the registry.
 
@@ -223,7 +223,7 @@ else from outside the core archive.
 ## The pre-merge rehearsal
 
 Because merging publishes, `ci.yml` is where a release is proven. On every pull
-request it builds all eight native addons with profile-guided optimization,
+request it builds all seven native addons with profile-guided optimization,
 runs the runtime tests on the six same-architecture targets, inspects the two
 cross-compiled musl builds and loads the x64 one on Alpine, assembles the nine
 npm packages, checks their contents, performs a clean installation on Linux x64

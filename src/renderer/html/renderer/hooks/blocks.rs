@@ -1,9 +1,22 @@
-use crate::ast::{BlockQuote, Heading, List, ListItem, Node, Paragraph};
+use crate::ast::{BlockQuote, Figure, Heading, List, ListItem, Node, Paragraph};
+use crate::callout::detect_callout;
 
 use super::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks};
 use crate::renderer::html::renderer::HtmlRenderer;
 
 impl HtmlRenderer {
+    pub(in crate::renderer::html::renderer) fn render_figure_with_hooks<H: HtmlRenderHooks>(
+        &mut self,
+        figure: &Figure<'_>,
+        hooks: &mut H,
+    ) {
+        self.write_figure_opening(figure);
+        self.render_node_with_hooks(&figure.content, hooks);
+        self.write("\n<figcaption>");
+        self.render_inline_children_with_hooks(&figure.caption, hooks);
+        self.write("</figcaption>\n</figure>\n");
+    }
+
     pub(in crate::renderer::html::renderer) fn render_paragraph_with_hooks<H: HtmlRenderHooks>(
         &mut self,
         paragraph: &Paragraph<'_>,
@@ -30,15 +43,18 @@ impl HtmlRenderer {
             self.write_heading_id(heading);
             self.output.push('"');
         }
-        if !heading.classes.is_empty() {
+        if !heading.classes().is_empty() {
             self.write(" class=\"");
-            for (index, class_name) in heading.classes.iter().enumerate() {
+            for (index, class_name) in heading.classes().iter().enumerate() {
                 if index > 0 {
                     self.output.push(' ');
                 }
                 self.write_attribute_escaped(class_name);
             }
             self.output.push('"');
+        }
+        if let Some(attributes) = &heading.attributes {
+            self.write_authored_attributes(&attributes.values, &["id", "class"]);
         }
         self.write_source_span_attr(heading.span);
         self.write(">");
@@ -118,7 +134,7 @@ impl HtmlRenderer {
         let Some(Node::Paragraph(first_paragraph)) = block_quote.children.first() else {
             return false;
         };
-        let Some((kind, consumed_chars)) = Self::detect_callout(first_paragraph) else {
+        let Some((kind, consumed_chars)) = detect_callout(first_paragraph) else {
             return false;
         };
 

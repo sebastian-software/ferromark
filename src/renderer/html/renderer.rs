@@ -5,6 +5,7 @@
 //! This keeps the public constructor/render path visible without forcing unrelated
 //! rendering rules into one large file.
 
+mod attributes;
 mod blocks;
 mod callout;
 mod code_block;
@@ -415,10 +416,12 @@ impl HtmlRenderer {
             Node::MathBlock(node) => self.render_math_block(node),
             Node::Html(node) => self.render_html(node),
             Node::Table(node) => self.render_table(node),
+            Node::Figure(node) => self.render_figure(node),
             Node::DefinitionList(node) => self.render_definition_list(node),
             Node::DefinitionListTerm(node) => self.render_definition_list_term(node),
             Node::DefinitionListDefinition(node) => self.render_definition_list_definition(node),
             Node::Text(node) => self.render_text(node),
+            Node::Span(node) => self.render_span(node),
             Node::Emphasis(node) => self.render_emphasis(node),
             Node::Strong(node) => self.render_strong(node),
             Node::InlineCode(node) => self.render_inline_code(node),
@@ -428,6 +431,7 @@ impl HtmlRenderer {
             Node::Image(node) => self.render_image(node),
             Node::Highlight(node) => self.render_highlight(node),
             Node::Delete(node) => self.render_delete(node),
+            Node::Insertion(node) => self.render_insertion(node),
             Node::Superscript(node) => self.render_superscript(node),
             Node::Subscript(node) => self.render_subscript(node),
             Node::FootnoteReference(node) => self.render_footnote_reference(node),

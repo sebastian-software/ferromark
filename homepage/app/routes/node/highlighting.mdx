@@ -15,14 +15,14 @@ also accepts a compatible synchronous highlighter.
 ## Install and initialize
 
 ```sh
-npm install ferromark ferriki
+npm install ferromark @ferriki/core
 ```
 
 Create the highlighter once and reuse it. Load the languages and theme your
 content needs:
 
 ````js
-import { createHighlighter } from "ferriki";
+import { createHighlighter } from "@ferriki/core";
 import { toHtmlWithHighlighter } from "ferromark";
 
 const highlighter = await createHighlighter({

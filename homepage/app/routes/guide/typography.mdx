@@ -26,6 +26,37 @@ Supported language codes are `cs`, `da`, `de`, `en`, `es`, `fi`, `fr`, `it`,
 `nb`, `nl`, `pl`, `pt`, `ru`, `sv`, and `uk`. Set `dashes: false` or
 `ellipses: false` to disable either conversion independently.
 
+## ASCII guillemet digraphs
+
+If authors cannot easily type `«` and `»`, enable `guillemetDigraphs` while
+parsing and choose a language for typography:
+
+```js
+const html = toHtml("Il a dit <<Bonjour>>.", {
+  guillemetDigraphs: true,
+  typography: { language: "fr" },
+});
+```
+
+This renders `« Bonjour »`. Danish uses `»Bonjour«`; English uses `“Bonjour”`.
+The parser option is off by default and only preserves doubled angle brackets
+as text. Typography converts balanced pairs; unmatched markers and longer runs
+stay literal. Code, math, and raw HTML content stay protected; a pair can enclose
+inline HTML tags without changing them. ASCII spaces and tabs directly inside a
+pair are trimmed in full. Balanced pairs always mean quotes when enabled,
+including `a << b and c >> d`; use code spans or leave the option off for a
+balanced shift expression. An unpaired `a << b` remains literal. If a bare URL
+starts just after the opener or ends just before the closer, including padding
+or punctuation that would otherwise be trimmed, the pair stays literal so a
+generated quote cannot become part of the link destination; the URL may still
+be linked.
+
+For portable Markdown, prefer `"Bonjour"` with an explicit language such as
+`typography: { language: "fr" }`. That does not require `guillemetDigraphs`.
+
+In Rust, enable `ParserOptions::guillemet_digraphs` and also call
+`TypographyOptions::with_guillemet_digraphs(true)` on the typography pass.
+
 ## Rust
 
 The optional `ferromark-transforms` crate provides `TypographyPass` for the

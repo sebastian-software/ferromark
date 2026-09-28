@@ -2,12 +2,12 @@
 
 Ferromark can accept highlighted code from a Rust render hook without changing
 its parser or default renderer. This is the Ferromark side of [issue #393].
-[Ferriki PR #128] supplies the reusable, N-API-free Rust highlighter and a
-[reference adapter] using this hook. The default Ferromark crate has no Ferriki
+The [`ferriki` crate] (0.4.0 and later) supplies the reusable, N-API-free Rust
+highlighter and a [reference adapter] using this hook. The default Ferromark crate has no Ferriki
 dependency.
 
 [issue #393]: https://github.com/sebastian-software/ferromark/issues/393
-[Ferriki PR #128]: https://github.com/sebastian-software/ferriki/pull/128
+[`ferriki` crate]: https://crates.io/crates/ferriki
 [reference adapter]: https://github.com/sebastian-software/ferriki/blob/main/docs/rust-api.md#ferromark-adapter-contract
 
 ## Contract

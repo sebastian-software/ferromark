@@ -326,6 +326,11 @@ fn collect_node_text(node: &Node<'_>, text: &mut String) {
                 collect_node_text(child, text);
             }
         }
+        Node::Insertion(value) => {
+            for child in &value.children {
+                collect_node_text(child, text);
+            }
+        }
         Node::Superscript(value) => {
             for child in &value.children {
                 collect_node_text(child, text);
@@ -337,6 +342,11 @@ fn collect_node_text(node: &Node<'_>, text: &mut String) {
             }
         }
         Node::Link(value) => {
+            for child in &value.children {
+                collect_node_text(child, text);
+            }
+        }
+        Node::Span(value) => {
             for child in &value.children {
                 collect_node_text(child, text);
             }
@@ -511,10 +521,12 @@ fn node_has_permalink_marker(node: &Node<'_>, prefix: &str, id: &str) -> bool {
                 || heading_has_permalink_marker(&link.children, prefix, id)
         }
         Node::Html(html) => html_has_header_anchor(html.value),
+        Node::Span(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Emphasis(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Strong(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Highlight(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Delete(value) => heading_has_permalink_marker(&value.children, prefix, id),
+        Node::Insertion(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Superscript(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Subscript(value) => heading_has_permalink_marker(&value.children, prefix, id),
         _ => false,

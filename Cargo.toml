@@ -70,6 +70,18 @@ name = "tables"
 harness = false
 
 [[bench]]
+name = "image_captions"
+harness = false
+
+[[bench]]
+name = "shared_attributes"
+harness = false
+
+[[bench]]
+name = "blockquote_attributions"
+harness = false
+
+[[bench]]
 name = "table_pipes"
 harness = false
 
@@ -87,6 +99,10 @@ harness = false
 
 [[bench]]
 name = "abbreviations"
+harness = false
+
+[[bench]]
+name = "insertions"
 harness = false
 
 [workspace]

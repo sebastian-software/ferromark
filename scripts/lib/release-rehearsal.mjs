@@ -20,7 +20,7 @@ export const maintenanceHistory = [
   "chore(deps): refresh the pinned toolchain",
 ];
 
-/** The eight native sidecar directories, read from the workspace itself. */
+/** The seven native sidecar directories, read from the workspace itself. */
 export function nativeTargets() {
   return readdirSync(resolve(root, "node/ferromark/npm")).sort();
 }
@@ -76,7 +76,7 @@ export async function proposeRelease(files, history) {
         sha: "a".repeat(40),
       };
     },
-    // The `extra-files` glob for the eight native manifests resolves against
+    // The `extra-files` glob for the seven native manifests resolves against
     // the known file set rather than against a branch on GitHub.
     async findFilesByGlobAndRef(glob, _ref, prefix) {
       const pattern = new RegExp(
@@ -206,7 +206,7 @@ export function validateRelease(files, expectedVersion) {
   const main = json("node/ferromark/package.json");
   const pnpm = parseYaml(files.get("node/pnpm-lock.yaml"));
   assert.equal(main.version, expectedVersion, "npm facade version");
-  assert.equal(Object.keys(main.optionalDependencies).length, 8, "Eight native packages");
+  assert.equal(Object.keys(main.optionalDependencies).length, 7, "Seven native packages");
   for (const [name, reference] of Object.entries(main.optionalDependencies)) {
     const target = name.replace(/^ferromark-/, "");
     // The sidecar reference carries no version at all, which is what keeps the

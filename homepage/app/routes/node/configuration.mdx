@@ -19,17 +19,23 @@ spelling mistakes cannot silently change your output.
 import { type Options, toHtml } from "ferromark";
 
 const options = {
+  insertions: true,
   frontMatter: true,
   headingIds: true,
   footnotes: true,
   tableColgroup: true,
   tableColumnNames: true,
   tableAttributes: true,
+  imageAttributes: true,
+  imageCaptions: true,
+  extendedAttributes: true,
+  bracketedSpans: true,
+  blockquoteAttributions: true,
   autoAbbreviations: true,
   abbreviations: { API: "Application Programming Interface", GraphQL: "", README: null },
 } satisfies Options;
 
-const html = toHtml("# Notes\n\nA detail.[^1]\n\n[^1]: More context.", options);
+const html = toHtml("# Notes\n\nAn ++important++ detail.[^1]\n\n[^1]: More context.", options);
 ```
 
 Omitted values use the package defaults. There are no named preset constructors
@@ -49,42 +55,49 @@ the feature. Empty override keys are ignored. See the
 All properties are optional. Syntax examples and output semantics live in the
 [shared Markdown guide](/guide/features).
 
-| Option              | Default       | Purpose                                                                |
-| ------------------- | ------------- | ---------------------------------------------------------------------- |
-| `renderPolicy`      | `'untrusted'` | Escape raw HTML and check URL schemes; `'trusted'` permits passthrough |
-| `allowHtml`         | `true`        | Permit raw HTML in trusted output; false escapes it                    |
-| `allowLinkRefs`     | `true`        | Resolve reference-style links                                          |
-| `tables`            | `true`        | GFM pipe tables                                                        |
-| `mergedTableCells`  | `false`       | Horizontal cell spans; requires `tables`                               |
-| `strikethrough`     | `true`        | Double-tilde strikethrough                                             |
-| `highlight`         | `false`       | Highlight markup                                                       |
-| `superscript`       | `false`       | Superscript markup                                                     |
-| `subscript`         | `false`       | Subscript markup                                                       |
-| `taskLists`         | `true`        | Task-list checkboxes                                                   |
-| `autolinkLiterals`  | `false`       | Bare URL, www, and email links                                         |
-| `disallowedRawHtml` | `true`        | GFM tag filter in trusted mode                                         |
-| `footnotes`         | `false`       | Reference footnotes                                                    |
-| `inlineFootnotes`   | `false`       | Inline footnotes                                                       |
-| `frontMatter`       | `false`       | Extract leading YAML/TOML-style front matter                           |
-| `headingIds`        | `true`        | Generate heading IDs                                                   |
-| `headingOffset`     | `0`           | Shift rendered heading levels; results clamp to h1–h6                  |
-| `headingIdPrefix`   | unset         | Prefix heading IDs and permalink fragments; letters, digits, `_`, `-`  |
-| `math`              | `false`       | Inline and display math markup                                         |
-| `callouts`          | `true`        | GitHub-style note/warning callouts                                     |
-| `definitionLists`   | `false`       | Terms and descriptions                                                 |
-| `lineComments`      | `false`       | Omit physical-line-start source comments                               |
-| `linkBasePath`      | unset         | Enable site routing for links, images, raw HTML URLs, and .md paths    |
-| `tableAttributes`   | `false`       | Table IDs, CSS classes, and captions                                   |
-| `tableColgroup`     | `false`       | CSS-addressable colgroup elements                                      |
-| `tableColumnNames`  | `false`       | Header-derived column classes; requires tableColgroup                  |
-| `headingAttributes` | `false`       | Explicit heading IDs and classes                                       |
-| `wikiLinks`         | `false`       | Wiki-link syntax                                                       |
-| `cjkEmphasis`       | `false`       | CJK emphasis rules                                                     |
-| `mdx`               | `false`       | MDX syntax capture and static island output                            |
-| `typography`        | unset         | Optional language-aware prose punctuation transform                    |
-| `passes`            | unset         | Ordered GitHub-reference, emoji-shortcode, and typography transforms   |
-| `autoAbbreviations` | `false`       | Wrap uppercase technical terms in `<abbr>` markup                      |
-| `abbreviations`     | empty         | Exact titles, bare-wrapper overrides, or `null` suppressions           |
+| Option                   | Default       | Purpose                                                                |
+| ------------------------ | ------------- | ---------------------------------------------------------------------- |
+| `renderPolicy`           | `'untrusted'` | Escape raw HTML and check URL schemes; `'trusted'` permits passthrough |
+| `allowHtml`              | `true`        | Permit raw HTML in trusted output; false escapes it                    |
+| `allowLinkRefs`          | `true`        | Resolve reference-style links                                          |
+| `tables`                 | `true`        | GFM pipe tables                                                        |
+| `mergedTableCells`       | `false`       | Horizontal cell spans; requires `tables`                               |
+| `strikethrough`          | `true`        | Double-tilde strikethrough                                             |
+| `insertions`             | `false`       | Double-plus inserted text rendered as `<ins>`                          |
+| `highlight`              | `false`       | Highlight markup                                                       |
+| `superscript`            | `false`       | Superscript markup                                                     |
+| `subscript`              | `false`       | Subscript markup                                                       |
+| `taskLists`              | `true`        | Task-list checkboxes                                                   |
+| `autolinkLiterals`       | `false`       | Bare URL, www, and email links                                         |
+| `disallowedRawHtml`      | `true`        | GFM tag filter in trusted mode                                         |
+| `footnotes`              | `false`       | Reference footnotes                                                    |
+| `inlineFootnotes`        | `false`       | Inline footnotes                                                       |
+| `frontMatter`            | `false`       | Extract leading YAML/TOML-style front matter                           |
+| `headingIds`             | `true`        | Generate heading IDs                                                   |
+| `headingOffset`          | `0`           | Shift rendered heading levels; results clamp to h1–h6                  |
+| `headingIdPrefix`        | unset         | Prefix heading IDs and permalink fragments; letters, digits, `_`, `-`  |
+| `math`                   | `false`       | Inline and display math markup                                         |
+| `callouts`               | `true`        | GitHub-style note/warning callouts                                     |
+| `definitionLists`        | `false`       | Terms and descriptions                                                 |
+| `lineComments`           | `false`       | Omit physical-line-start source comments                               |
+| `linkBasePath`           | unset         | Enable site routing for links, images, raw HTML URLs, and .md paths    |
+| `tableAttributes`        | `false`       | Table IDs, CSS classes, and captions                                   |
+| `imageAttributes`        | `false`       | Image IDs and CSS classes                                              |
+| `imageCaptions`          | `false`       | Separate captions on standalone images                                 |
+| `blockquoteAttributions` | `false`       | Visible sources after block quotes                                     |
+| `extendedAttributes`     | `false`       | Shared key/value suffixes on links, images, headings, tables, figures  |
+| `bracketedSpans`         | `false`       | Native `[text]{attributes}` inline spans                               |
+| `tableColgroup`          | `false`       | CSS-addressable colgroup elements                                      |
+| `tableColumnNames`       | `false`       | Header-derived column classes; requires tableColgroup                  |
+| `headingAttributes`      | `false`       | Explicit heading IDs and classes                                       |
+| `wikiLinks`              | `false`       | Wiki-link syntax                                                       |
+| `cjkEmphasis`            | `false`       | CJK emphasis rules                                                     |
+| `mdx`                    | `false`       | MDX syntax capture and static island output                            |
+| `guillemetDigraphs`      | `false`       | Preserve `<<…>>` for locale-aware typography                           |
+| `typography`             | unset         | Optional language-aware prose punctuation transform                    |
+| `passes`                 | unset         | Ordered GitHub-reference, emoji-shortcode, and typography transforms   |
+| `autoAbbreviations`      | `false`       | Wrap uppercase technical terms in `<abbr>` markup                      |
+| `abbreviations`          | empty         | Exact titles, bare-wrapper overrides, or `null` suppressions           |
 
 Use `passes` when you need more than one transform or need to control their
 order. Its entries use `kind: "githubReferences"` (with an explicit

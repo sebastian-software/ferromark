@@ -35,8 +35,8 @@ fn heading_attributes_default_off_stay_literal() {
 
     match &doc.children[0] {
         Node::Heading(heading) => {
-            assert_eq!(heading.id, None);
-            assert!(heading.classes.is_empty());
+            assert_eq!(heading.explicit_id(), None);
+            assert!(heading.classes().is_empty());
             assert_eq!(
                 first_text_in_nodes(heading.children.iter()),
                 Some("Custom identifier {#custom-heading-id .highlight}")
@@ -60,11 +60,8 @@ fn heading_attributes_parse_id_classes_and_strip_text() {
 
     match &doc.children[0] {
         Node::Heading(heading) => {
-            assert_eq!(heading.id, Some("custom-heading-id"));
-            assert_eq!(
-                heading.classes.iter().copied().collect::<Vec<_>>(),
-                ["highlight", "wide"]
-            );
+            assert_eq!(heading.explicit_id(), Some("custom-heading-id"));
+            assert_eq!(heading.classes().to_vec(), ["highlight", "wide"]);
             assert_eq!(
                 first_text_in_nodes(heading.children.iter()),
                 Some("Custom identifier")
@@ -89,8 +86,8 @@ fn heading_attributes_leave_unusable_blocks_as_prose() {
 
         match &doc.children[0] {
             Node::Heading(heading) => {
-                assert_eq!(heading.id, None);
-                assert!(heading.classes.is_empty());
+                assert_eq!(heading.explicit_id(), None);
+                assert!(heading.classes().is_empty());
                 assert!(
                     first_text_in_nodes(heading.children.iter()).is_some_and(|text| {
                         text == "A sentence {like this}" || text == "A sentence {}"
@@ -117,11 +114,8 @@ fn heading_attributes_apply_to_setext_headings() {
     match &doc.children[0] {
         Node::Heading(heading) => {
             assert_eq!(heading.depth, 2);
-            assert_eq!(heading.id, Some("custom-heading-id"));
-            assert_eq!(
-                heading.classes.iter().copied().collect::<Vec<_>>(),
-                ["highlight"]
-            );
+            assert_eq!(heading.explicit_id(), Some("custom-heading-id"));
+            assert_eq!(heading.classes().to_vec(), ["highlight"]);
             assert_eq!(
                 first_text_in_nodes(heading.children.iter()),
                 Some("Custom identifier")

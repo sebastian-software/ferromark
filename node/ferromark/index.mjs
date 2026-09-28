@@ -15,6 +15,12 @@ const optionKeys = new Set([
   "wikiLinks",
   "cjkEmphasis",
   "mdx",
+  "imageAttributes",
+  "imageCaptions",
+  "extendedAttributes",
+  "bracketedSpans",
+  "blockquoteAttributions",
+  "insertions",
   "tables",
   "mergedTableCells",
   "tableColgroup",
@@ -40,60 +46,50 @@ const optionKeys = new Set([
   "linkBasePath",
   "typography",
   "passes",
+  "guillemetDigraphs",
   "autoAbbreviations",
   "abbreviations",
 ]);
 
-// Bit numbers and names in `PackedOptions.flag`, in native field order. The
-// abbreviation opt-in and map stay on the object path and do not use bit 27.
-const packedBooleanKeys = [
-  undefined,
-  "allowHtml",
-  "tables",
-  "mergedTableCells",
-  "tableColgroup",
-  "tableColumnNames",
-  "tableAttributes",
-  "strikethrough",
-  "superscript",
-  "subscript",
-  "taskLists",
-  "autolinkLiterals",
-  "disallowedRawHtml",
-  "footnotes",
-  "highlight",
-  "inlineFootnotes",
-  "allowLinkRefs",
-  "frontMatter",
-  "headingIds",
-  "headingAttributes",
-  "math",
-  "callouts",
-  "definitionLists",
-  "lineComments",
-  "wikiLinks",
-  "cjkEmphasis",
-  "mdx",
+/** @type {Array<[string, number]>} */
+const packedBooleanFlags = [
+  ["allowHtml", 1 << 1],
+  ["tables", 1 << 2],
+  ["mergedTableCells", 1 << 3],
+  ["tableColgroup", 1 << 4],
+  ["tableColumnNames", 1 << 5],
+  ["tableAttributes", 1 << 6],
+  ["strikethrough", 1 << 7],
+  ["superscript", 1 << 8],
+  ["subscript", 1 << 9],
+  ["taskLists", 1 << 10],
+  ["autolinkLiterals", 1 << 11],
+  ["disallowedRawHtml", 1 << 12],
+  ["footnotes", 1 << 13],
+  ["highlight", 1 << 14],
+  ["inlineFootnotes", 1 << 15],
+  ["allowLinkRefs", 1 << 16],
+  ["frontMatter", 1 << 17],
+  ["headingIds", 1 << 18],
+  ["headingAttributes", 1 << 19],
+  ["math", 1 << 20],
+  ["callouts", 1 << 21],
+  ["definitionLists", 1 << 22],
+  ["lineComments", 1 << 23],
+  ["wikiLinks", 1 << 24],
+  ["cjkEmphasis", 1 << 25],
+  ["mdx", 1 << 26],
+  ["imageAttributes", 1 << 27],
+  ["imageCaptions", 1 << 28],
+  ["extendedAttributes", 1 << 29],
+  ["bracketedSpans", 1 << 30],
 ];
 
-/**
- * @param {Record<string, unknown>} options Destination object.
- * @param {number} set Configured bit mask.
- * @param {number} on Enabled bit mask.
- */
-function addPackedBooleanOptions(options, set, on) {
-  for (let bit = 1; bit < packedBooleanKeys.length; bit++) {
-    const mask = 1 << bit;
-    const key = packedBooleanKeys[bit];
-    if (set & mask && key !== undefined) {
-      options[key] = Boolean(on & mask);
-    }
+/** @param {{ set: number, on: number }} packed Parsed flags. @param {object} target Rebuilt object. */
+function copyPackedBooleanFlags(packed, target) {
+  for (const [key, bit] of packedBooleanFlags) {
+    if (packed.set & bit) Reflect.set(target, key, Boolean(packed.on & bit));
   }
-}
-
-/** @param {Record<string, unknown>} options Destination object. @param {string} key Field name. @param {unknown} value Field value. */
-function addOptionalOption(options, key, value) {
-  if (value !== undefined) options[key] = value;
 }
 
 /** @param {import('./index.mjs').Options | null | undefined} options Options to validate. */
@@ -119,7 +115,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 34 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 41 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -127,14 +123,15 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and the 26 packed boolean fields (bits 1 to 26, in
- * declaration order, as `unpack` numbers them) take one bit each of `set`
- * (present) and `on` (its value; `'trusted'` for `renderPolicy`).
- * `headingOffset`, `headingIdPrefix`, `linkBasePath`, `typography` and `passes`
- * keep their values. The facade keeps a normalized object snapshot alongside the packed
- * values. It uses the existing object entry only when an abbreviation option
- * is enabled or supplied, leaving the default packed path and its flag bits
- * unchanged.
+ * `renderPolicy` (bit 0) and 30 boolean fields (bits 1 to 30, in declaration
+ * order, as `unpack` numbers them) take one bit each of `set` (present) and
+ * `on` (its value; `'trusted'` for `renderPolicy`). Enabled blockquote
+ * attributions, insertions, guillemet digraphs, and abbreviation settings use
+ * the object entry so later option bits remain available.
+ * `headingOffset`,
+ * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
+ * values. The native side rebuilds `Options` and resolves it with the code the
+ * object path runs, so later checks and their errors are shared.
  *
  * napi-rs builds each conversion error from the value itself. For a value it
  * would reject, `rejected` holds a null-prototype object with just that field,
@@ -155,17 +152,14 @@ class PackedOptions {
   typography;
   /** @type {import('./index.mjs').NativePassOptions[] | null | undefined} */
   passes;
-  /** @type {import('./index.mjs').Options | undefined} */
-  nativeOptions;
-  useObjectOptions = false;
-  /** @type {boolean | undefined} */
-  autoAbbreviations;
   /** @type {Record<string, string | null> | undefined} */
   abbreviations;
   /** @type {import('./index.mjs').Options | undefined} */
   rejected;
   /** @type {string | undefined} */
   unknownPolicy;
+  /** @type {string[]} Enabled boolean fields that have no packed bit. */
+  objectPathFlags = [];
 
   /** @param {import('./index.mjs').Options} options Validated options. */
   constructor(options) {
@@ -173,9 +167,6 @@ class PackedOptions {
       // napi-rs converts any string for `renderPolicy`, and only rejects an
       // unknown one after it has read every field.
       this.reject("renderPolicy", this.unknownPolicy);
-    }
-    if (this.rejected === undefined && this.useObjectOptions) {
-      this.nativeOptions = this.nativeOptionsSnapshot();
     }
   }
 
@@ -219,10 +210,17 @@ class PackedOptions {
       this.flag("wikiLinks", 1 << 24, options.wikiLinks) &&
       this.flag("cjkEmphasis", 1 << 25, options.cjkEmphasis) &&
       this.flag("mdx", 1 << 26, options.mdx) &&
+      this.flag("imageAttributes", 1 << 27, options.imageAttributes) &&
+      this.flag("imageCaptions", 1 << 28, options.imageCaptions) &&
+      this.flag("extendedAttributes", 1 << 29, options.extendedAttributes) &&
+      this.flag("bracketedSpans", 1 << 30, options.bracketedSpans) &&
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
       this.array("passes", options.passes) &&
-      this.boolean("autoAbbreviations", options.autoAbbreviations) &&
+      this.objectFlag("blockquoteAttributions", options.blockquoteAttributions) &&
+      this.objectFlag("insertions", options.insertions) &&
+      this.objectFlag("guillemetDigraphs", options.guillemetDigraphs) &&
+      this.objectFlag("autoAbbreviations", options.autoAbbreviations) &&
       this.record("abbreviations", options.abbreviations)
     );
   }
@@ -256,16 +254,41 @@ class PackedOptions {
     return true;
   }
 
-  /** @param {"autoAbbreviations"} key Feature field. @param {unknown} value Its value. */
-  boolean(key, value) {
+  /**
+   * Reads a boolean field that has no packed bit. Only `true` needs the object
+   * entry; absent or `false` keeps the packed path and its bit allocation.
+   * @param {string} key Field name. @param {unknown} value Field value.
+   */
+  objectFlag(key, value) {
     if (typeof value !== "boolean") {
       return value === undefined || this.reject(key, value);
     }
-    this.autoAbbreviations = value;
     if (value) {
-      this.useObjectOptions = true;
+      this.objectPathFlags.push(key);
     }
     return true;
+  }
+
+  /** Whether an enabled field requires the object-taking native entry. */
+  get requiresObjectPath() {
+    return this.objectPathFlags.length > 0 || this.abbreviations !== undefined;
+  }
+
+  /** Rebuilds values already read once, without repeating caller getters. */
+  toObjectOptions() {
+    const result = Object.create(null);
+    if (this.set & 1) {
+      result.renderPolicy = this.on & 1 ? "trusted" : "untrusted";
+    }
+    copyPackedBooleanFlags(this, result);
+    if (this.headingOffset !== undefined) result.headingOffset = this.headingOffset;
+    if (this.headingIdPrefix !== undefined) result.headingIdPrefix = this.headingIdPrefix;
+    if (this.linkBasePath !== undefined) result.linkBasePath = this.linkBasePath;
+    if (this.typography !== undefined) result.typography = this.typography;
+    if (this.passes !== undefined) result.passes = this.passes;
+    if (this.abbreviations !== undefined) result.abbreviations = this.abbreviations;
+    for (const key of this.objectPathFlags) result[key] = true;
+    return result;
   }
 
   /** @param {"headingOffset"} key Field name. @param {unknown} value Field value. */
@@ -327,25 +350,7 @@ class PackedOptions {
       return this.reject(key, Object.fromEntries(entries));
     }
     this.abbreviations = /** @type {Record<string, string | null>} */ (abbreviations);
-    this.useObjectOptions = true;
     return true;
-  }
-
-  /** @returns {import('./index.mjs').Options} Snapshot converted from the packed state. */
-  nativeOptionsSnapshot() {
-    const options = Object.create(null);
-    if (this.set & 1) {
-      options.renderPolicy = this.on & 1 ? "trusted" : "untrusted";
-    }
-    addPackedBooleanOptions(options, this.set, this.on);
-    addOptionalOption(options, "headingOffset", this.headingOffset);
-    addOptionalOption(options, "headingIdPrefix", this.headingIdPrefix);
-    addOptionalOption(options, "linkBasePath", this.linkBasePath);
-    addOptionalOption(options, "typography", this.typography);
-    addOptionalOption(options, "passes", this.passes);
-    addOptionalOption(options, "autoAbbreviations", this.autoAbbreviations);
-    addOptionalOption(options, "abbreviations", this.abbreviations);
-    return options;
   }
 
   /** @param {string} key Field name. @param {unknown} value Rejected value. @returns {false} Always. */
@@ -392,8 +397,8 @@ function packOptions(options) {
   const packed = new PackedOptions(options);
   return (
     packed.rejected ??
-    (packed.useObjectOptions
-      ? packed.nativeOptions
+    (packed.requiresObjectPath
+      ? packed.toObjectOptions()
       : [
           packed.set,
           packed.on,

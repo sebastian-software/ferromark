@@ -7,7 +7,6 @@
 
 mod abbreviation;
 mod autolink;
-mod callout;
 mod code_annotations;
 mod escape;
 mod heading;
