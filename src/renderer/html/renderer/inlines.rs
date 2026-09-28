@@ -5,8 +5,8 @@
 //! single place.
 
 use crate::ast::{
-    Break, Delete, Emphasis, Highlight, Image, InlineCode, InlineMath, InlineSpan, Link, Strong,
-    Subscript, Superscript, Text,
+    Break, Delete, Emphasis, Highlight, Image, InlineCode, InlineMath, InlineSpan, Insertion, Link,
+    Strong, Subscript, Superscript, Text,
 };
 
 use super::HtmlRenderer;
@@ -18,17 +18,13 @@ impl HtmlRenderer {
 
     pub(in crate::renderer::html::renderer) fn render_emphasis(&mut self, emphasis: &Emphasis<'_>) {
         self.write("<em>");
-        for child in &emphasis.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&emphasis.children);
         self.write("</em>");
     }
 
     pub(in crate::renderer::html::renderer) fn render_strong(&mut self, strong: &Strong<'_>) {
         self.write("<strong>");
-        for child in &strong.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&strong.children);
         self.write("</strong>");
     }
 
@@ -62,9 +58,7 @@ impl HtmlRenderer {
         // may contain literal URLs that we must not wrap in a nested <a>.
         let prev_in_link = self.in_link;
         self.in_link = true;
-        for child in &link.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&link.children);
         self.in_link = prev_in_link;
         self.write("</a>");
     }
@@ -120,9 +114,7 @@ impl HtmlRenderer {
 
     pub(in crate::renderer::html::renderer) fn render_span(&mut self, span: &InlineSpan<'_>) {
         self.write_span_open(span);
-        for child in &span.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&span.children);
         self.write("</span>");
     }
 
@@ -151,18 +143,23 @@ impl HtmlRenderer {
         highlight: &Highlight<'_>,
     ) {
         self.write("<mark>");
-        for child in &highlight.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&highlight.children);
         self.write("</mark>");
     }
 
     pub(in crate::renderer::html::renderer) fn render_delete(&mut self, delete: &Delete<'_>) {
         self.write("<del>");
-        for child in &delete.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&delete.children);
         self.write("</del>");
+    }
+
+    pub(in crate::renderer::html::renderer) fn render_insertion(
+        &mut self,
+        insertion: &Insertion<'_>,
+    ) {
+        self.write("<ins>");
+        self.render_inline_children(&insertion.children);
+        self.write("</ins>");
     }
 
     pub(in crate::renderer::html::renderer) fn render_superscript(
@@ -170,9 +167,7 @@ impl HtmlRenderer {
         superscript: &Superscript<'_>,
     ) {
         self.write("<sup>");
-        for child in &superscript.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&superscript.children);
         self.write("</sup>");
     }
 
@@ -181,9 +176,7 @@ impl HtmlRenderer {
         subscript: &Subscript<'_>,
     ) {
         self.write("<sub>");
-        for child in &subscript.children {
-            self.visit_inline_node(child);
-        }
+        self.render_inline_children(&subscript.children);
         self.write("</sub>");
     }
 }

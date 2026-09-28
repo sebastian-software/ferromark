@@ -21,12 +21,26 @@ fn render_with(
     parser_options: ParserOptions,
     renderer_options: HtmlRendererOptions,
 ) -> String {
+    render_with_options(
+        source,
+        TypographyOptions::new(language),
+        parser_options,
+        renderer_options,
+    )
+}
+
+fn render_with_options(
+    source: &str,
+    typography_options: TypographyOptions,
+    parser_options: ParserOptions,
+    renderer_options: HtmlRendererOptions,
+) -> String {
     let allocator = Allocator::new();
     let mut document = Parser::with_options(&allocator, source, parser_options)
         .parse()
         .unwrap();
     let context = TransformContext::new(&allocator, source, &renderer_options);
-    let mut pass = TypographyPass::new(TypographyOptions::new(language));
+    let mut pass = TypographyPass::new(typography_options);
     pass.apply(&mut document, &context).unwrap();
     HtmlRenderer::with_options(renderer_options).render(&document)
 }
@@ -151,6 +165,306 @@ fn quotes_pair_across_inline_markup_and_nest_by_locale() {
 }
 
 #[test]
+fn guillemet_digraphs_use_the_selected_locale_and_pair_across_inline_markup() {
+    let source = "<<Bonjour *tout le monde*>>";
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    for (language, expected) in [
+        (
+            TypographyLanguage::French,
+            "<p>« Bonjour <em>tout le monde</em> »</p>\n",
+        ),
+        (
+            TypographyLanguage::Danish,
+            "<p>»Bonjour <em>tout le monde</em>«</p>\n",
+        ),
+        (
+            TypographyLanguage::English,
+            "<p>“Bonjour <em>tout le monde</em>”</p>\n",
+        ),
+    ] {
+        assert_eq!(
+            render_with_options(
+                source,
+                TypographyOptions::new(language).with_guillemet_digraphs(true),
+                parser_options.clone(),
+                HtmlRendererOptions::default(),
+            ),
+            expected,
+            "language: {}",
+            language.as_str()
+        );
+    }
+}
+
+#[test]
+fn guillemet_digraph_transform_is_separately_opt_in() {
+    assert!(!TypographyOptions::new(TypographyLanguage::French).guillemet_digraphs());
+    assert!(
+        TypographyOptions::new(TypographyLanguage::French)
+            .with_guillemet_digraphs(true)
+            .guillemet_digraphs()
+    );
+
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    assert_eq!(
+        render_with(
+            "<<Bonjour>>",
+            TypographyLanguage::French,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>&lt;&lt;Bonjour&gt;&gt;</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "<<Bonjour>>",
+            TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true),
+            parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>« Bonjour »</p>\n"
+    );
+}
+
+#[test]
+fn spaced_guillemets_trim_all_ascii_padding_and_pair_balanced_markers() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    let typography_options =
+        TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true);
+    assert_eq!(
+        render_with_options(
+            "<< Bonjour >>",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>« Bonjour »</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "a << b and c >> d",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>a «\u{202f}b and c\u{202f}» d</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "Il a dit << Bonjour >> et il part.",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>Il a dit «\u{202f}Bonjour\u{202f}» et il part.</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "Le mot << oui >> est court.",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>Le mot «\u{202f}oui\u{202f}» est court.</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "Il a dit << Bonjour >> 3 fois.",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>Il a dit «\u{202f}Bonjour\u{202f}» 3 fois.</p>\n"
+    );
+    for source in ["<<>>", "<< >>", "<<\t  \t>>"] {
+        assert_eq!(
+            render_with_options(
+                source,
+                typography_options,
+                parser_options.clone(),
+                HtmlRendererOptions::default(),
+            ),
+            format!(
+                "<p>{}</p>\n",
+                source.replace('<', "&lt;").replace('>', "&gt;")
+            ),
+            "source: {source:?}"
+        );
+    }
+    assert_eq!(
+        render_with_options(
+            "<<  Bonjour \t >>",
+            typography_options,
+            parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>«\u{202f}Bonjour\u{202f}»</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "a << b and c >> d",
+            TypographyOptions::new(TypographyLanguage::French),
+            ParserOptions::default(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>a &lt;&lt; b and c &gt;&gt; d</p>\n"
+    );
+}
+
+#[test]
+fn nested_guillemets_and_soft_breaks_keep_quote_context() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    let typography_options =
+        TypographyOptions::new(TypographyLanguage::English).with_guillemet_digraphs(true);
+    for (source, expected) in [
+        ("<<outer <<inner>> end>>", "<p>“outer ‘inner’ end”</p>\n"),
+        ("<<hello\nworld>>", "<p>“hello\nworld”</p>\n"),
+    ] {
+        assert_eq!(
+            render_with_options(
+                source,
+                typography_options,
+                parser_options.clone(),
+                HtmlRendererOptions::default(),
+            ),
+            expected,
+            "source: {source:?}"
+        );
+    }
+}
+
+#[test]
+fn adjacent_bare_url_is_not_rewritten_into_a_renderer_link_destination() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    assert_eq!(
+        render_with_options(
+            "<<https://example.com>>",
+            TypographyOptions::new(TypographyLanguage::English).with_guillemet_digraphs(true),
+            parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>&lt;&lt;<a href=\"https://example.com\" target=\"_blank\" rel=\"noopener noreferrer\">https://example.com</a>&gt;&gt;</p>\n"
+    );
+}
+
+#[test]
+fn bare_urls_near_a_closer_stay_outside_generated_quote_links() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    for (source, language, url) in [
+        (
+            "<<voir https://exemple.fr>> ici",
+            TypographyLanguage::French,
+            "https://exemple.fr",
+        ),
+        (
+            "<<voir https://exemple.fr >> ici",
+            TypographyLanguage::French,
+            "https://exemple.fr",
+        ),
+        (
+            "<< https://exemple.fr >>",
+            TypographyLanguage::French,
+            "https://exemple.fr",
+        ),
+        (
+            "<<see https://example.com.>> here",
+            TypographyLanguage::English,
+            "https://example.com",
+        ),
+        (
+            "<<see (https://example.com)>>",
+            TypographyLanguage::English,
+            "https://example.com",
+        ),
+    ] {
+        let html = render_with_options(
+            source,
+            TypographyOptions::new(language).with_guillemet_digraphs(true),
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        );
+        assert!(html.contains(&format!("href=\"{url}")), "{html}");
+        assert!(html.contains("&lt;&lt;"), "{html}");
+        assert!(html.contains("&gt;&gt;"), "{html}");
+        assert!(!html.contains("%E2%80"), "{html}");
+    }
+}
+
+#[test]
+fn balanced_guillemets_can_enclose_inline_raw_html() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    assert_eq!(
+        render_with_options(
+            "<<Bonjour <em>monde</em>>>!",
+            TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true),
+            parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>«\u{202f}Bonjour <em>monde</em>\u{202f}»!</p>\n"
+    );
+}
+
+#[test]
+fn unmatched_escaped_and_protected_digraphs_stay_literal() {
+    let options = ParserOptions {
+        guillemet_digraphs: true,
+        math: true,
+        ..ParserOptions::default()
+    };
+    for (source, expected) in [
+        ("<<unmatched", "<p>&lt;&lt;unmatched</p>\n"),
+        ("Bonjour>>", "<p>Bonjour&gt;&gt;</p>\n"),
+        (
+            r#"\"escaped\" and <<Bonjour>>"#,
+            "<p>&quot;escaped&quot; and « Bonjour »</p>\n",
+        ),
+        ("<<<Bonjour>>>", "<p>&lt;&lt;&lt;Bonjour&gt;&gt;&gt;</p>\n"),
+        (r"\<\<escaped\>\>", "<p>&lt;&lt;escaped&gt;&gt;</p>\n"),
+        (
+            "&lt;&lt;entity&gt;&gt; &LT;&LT;uppercase&GT;&GT;",
+            "<p>&lt;&lt;entity&gt;&gt; &lt;&lt;uppercase&gt;&gt;</p>\n",
+        ),
+        ("<<`code`>>", "<p>&lt;&lt;<code>code</code>&gt;&gt;</p>\n"),
+        (
+            "$<<math>>$",
+            "<p><span class=\"ox-math ox-math-inline\" data-ox-tex=\"&lt;&lt;math&gt;&gt;\"><math><mtext>&lt;&lt;math&gt;&gt;</mtext></math></span></p>\n",
+        ),
+    ] {
+        assert_eq!(
+            render_with_options(
+                source,
+                TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true),
+                options.clone(),
+                HtmlRendererOptions::default(),
+            ),
+            expected,
+            "source: {source:?}"
+        );
+    }
+}
+
+#[test]
 fn symmetric_authored_quotes_close_before_the_next_quote_pair() {
     assert_eq!(
         render("”already” and \"new\".", TypographyLanguage::Swedish),
@@ -218,6 +532,47 @@ fn existing_typography_and_protected_content_are_preserved() {
     assert!(
         html.contains("href=\"/a--b...c\" title=\"--...\""),
         "{html}"
+    );
+}
+
+#[test]
+fn typography_transforms_text_inside_inline_insertions() {
+    let html = render_with(
+        "++\"new\"...++",
+        TypographyLanguage::English,
+        ParserOptions {
+            insertions: true,
+            ..ParserOptions::default()
+        },
+        HtmlRendererOptions::default(),
+    );
+    assert_eq!(html, "<p><ins>“new”…</ins></p>\n");
+}
+
+#[test]
+fn guillemet_digraphs_pair_inside_insertions_spans_and_figure_captions() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        insertions: true,
+        bracketed_spans: true,
+        image_captions: true,
+        ..ParserOptions::default()
+    };
+    let render = |source: &str| {
+        render_with_options(
+            source,
+            TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true),
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        )
+    };
+    assert_eq!(
+        render("++<<Bonjour>>++ and [<<Salut>>]{.greeting}"),
+        "<p><ins>«\u{202f}Bonjour\u{202f}»</ins> and <span class=\"greeting\">«\u{202f}Salut\u{202f}»</span></p>\n"
+    );
+    assert!(
+        render("![Logo](logo.svg)\n\n: <<Bonjour>>")
+            .contains("<figcaption>«\u{202f}Bonjour\u{202f}»</figcaption>")
     );
 }
 

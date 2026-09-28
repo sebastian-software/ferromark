@@ -75,6 +75,9 @@ pub struct ParserOptions {
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
     pub strikethrough: bool,
 
+    /// Enable `++inserted text++` spans. Off in all presets.
+    pub insertions: bool,
+
     /// Enable GFM autolinks.
     ///
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
@@ -126,6 +129,12 @@ pub struct ParserOptions {
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
     pub wiki_links: bool,
 
+    /// Preserve doubled angle brackets such as `<<Bonjour>>` as literal
+    /// inline text before raw HTML and autolink parsing. An optional
+    /// typography pass can convert balanced pairs to locale-specific quotes.
+    /// Default: `false`, including all presets.
+    pub guillemet_digraphs: bool,
+
     /// Recognize emphasis whose delimiters sit against East Asian punctuation.
     ///
     /// CommonMark decides whether a `*`/`_` run may open or close from the
@@ -163,7 +172,7 @@ pub struct ParserOptions {
     /// children, and on a bracketed slice for link text, image alt text,
     /// wiki-link labels, inline notes, script spans and inline JSX phrasing.
     /// Emphasis counts too, although it never recurses: pairing delimiter
-    /// runs builds `*`, `_`, `**`, `~~`, `==`, `~`, `^` and CJK emphasis
+    /// runs builds `*`, `_`, `**`, `~~`, `++`, `==`, `~`, `^` and CJK emphasis
     /// into a tree that the renderer and the [`Visit`](crate::ast::Visit)
     /// walkers do recurse over, and its depth counts the same way — the
     /// depth of the tree, so `*`×200 `a` `*`×200 is 100 levels while a run
@@ -205,6 +214,7 @@ impl Default for ParserOptions {
             line_comments: false,
             front_matter: false,
             strikethrough: false,
+            insertions: false,
             autolinks: false,
             superscript: false,
             subscript: false,
@@ -214,6 +224,7 @@ impl Default for ParserOptions {
             extended_attributes: false,
             bracketed_spans: false,
             wiki_links: false,
+            guillemet_digraphs: false,
             cjk_emphasis: false,
             mdx: false,
             // Not `0`: an unbounded parse of hostile input overflows the
@@ -261,6 +272,7 @@ impl ParserOptions {
             line_comments: false,
             front_matter: false,
             strikethrough: true,
+            insertions: false,
             autolinks: true,
             superscript: false,
             subscript: false,
@@ -270,6 +282,7 @@ impl ParserOptions {
             extended_attributes: false,
             bracketed_spans: false,
             wiki_links: false,
+            guillemet_digraphs: false,
             // Not part of GFM: GitHub renders these runs per CommonMark too.
             cjk_emphasis: false,
             mdx: false,

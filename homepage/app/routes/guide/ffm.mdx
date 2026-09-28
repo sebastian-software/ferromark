@@ -8,9 +8,9 @@ order: 5
 FFM is the name for Ferromark's opt-in authoring syntax on top of CommonMark and
 GFM. It groups features for publishing richer documents without requiring a new
 file format. Enable each feature separately; there is no `ffm` preset.
-Caption, attribution, table layout, marked text, inline notes, and bracketed
-spans are off in Node.js defaults and every Rust preset. Other features have
-their own defaults.
+Caption, attribution, table layout, marked text, inserted text, inline notes,
+bracketed spans, guillemet digraphs, and technical abbreviations are off in
+Node.js defaults and every Rust preset. Other features have their own defaults.
 Keep unused syntax disabled to avoid its parsing cost.
 
 For standard Markdown, start with [CommonMark and GFM](/guide/features). For
@@ -59,14 +59,16 @@ hooks for columns. Set column widths in CSS. See the
 
 ```text
 This is ==important==.^[An explanatory note.]
+We ++added this sentence++ in the second edition.
 
 The French [C’est la vie]{lang=fr} fits here.
 [Documentation](https://example.org){.external hreflang=en}
 ```
 
 `highlight` renders `==...==` as `<mark>`; `inlineFootnotes` /
-`inline_footnotes` turns `^[...]` into a footnote. These options are independent
-of code highlighting and reference footnotes. `bracketedSpans` /
+`inline_footnotes` turns `^[...]` into a footnote, and `insertions` renders
+`++...++` as semantic `<ins>` markup. These options are independent of code
+highlighting, strikethrough, and reference footnotes. `bracketedSpans` /
 `bracketed_spans` enables `[text]{...}`. `extendedAttributes` /
 `extended_attributes` enables key/value attributes on spans, links, headings,
 tables, images, and figures. Basic ID/class suffixes also have their own
@@ -115,14 +117,36 @@ add work even when a document does not use it; the
 [runtime profiles](/guide/workflow-benchmarks) and linked feature reports
 provide measurements.
 
-## Related extensions in review
+## Language-aware quotes
 
-Three independent PRs add adjacent capabilities. Until they merge, use their
-branches to try them:
+```text
+Il a dit <<Bonjour>> avant de partir.
+```
 
-- [Inserted text](https://github.com/sebastian-software/ferromark/pull/474): `++new text++` renders as `<ins>` with `insertions: true` (Node.js) or `ParserOptions::insertions` (Rust).
-- [ASCII guillemet digraphs](https://github.com/sebastian-software/ferromark/pull/472): `<<Bonjour>>` needs `guillemetDigraphs` / `guillemet_digraphs` and an explicit-language typography pass.
-- [Technical abbreviations](https://github.com/sebastian-software/ferromark/pull/475): renderer-generated `<abbr>` markup uses `autoAbbreviations: true` in Node.js or an abbreviation-enabled Rust renderer; it adds no Markdown syntax.
+`guillemetDigraphs` / `guillemet_digraphs` keeps doubled angle brackets as text
+instead of reading them as raw HTML or autolinks. A typography pass with an
+explicit language then turns balanced pairs into that language's primary
+quotation marks, for example `« Bonjour »` in French or `„Bonjour“` in German. Unbalanced, escaped,
+and protected markers, URLs, and shift expressions stay literal. For portable
+input, write straight quotes and select a typography language instead. See the
+[typography guide](/guide/typography).
+
+## Technical abbreviations
+
+```text
+The API returns JSON over HTTP.
+```
+
+Technical abbreviation markup adds no Markdown syntax. Set `autoAbbreviations`
+in Node.js, or use `HtmlRenderer::with_abbreviations` in Rust, to wrap complete
+uppercase technical terms in semantic `<abbr>` markup. A small built-in
+dictionary supplies common titles; unknown candidates receive a bare wrapper.
+The `abbreviations` map (Rust: `AbbreviationOptions::overrides`) adds a
+mixed-case term, changes a title, or suppresses a false positive with `null`
+(Rust: `None`). Matching runs during rendering, so the parsed AST and heading
+metadata stay unchanged. Code, math, raw HTML, MDX attributes, URLs, link
+destinations, and image alternative text are never wrapped. See the
+[API, token boundaries, and known limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/abbreviations.md).
 
 [Typography](/guide/typography) transforms punctuation after parsing, and
 [MDX](/guide/mdx) captures component syntax for downstream integration. Their

@@ -56,6 +56,10 @@ export interface Options {
   bracketedSpans?: boolean;
   /** Attach a separate `: Author` line after a block quote. Default: off. */
   blockquoteAttributions?: boolean;
+  /** Enable `++inserted text++`. Default: off, including the GFM profile. */
+  insertions?: boolean;
+  /** Preserve `<<…>>` as inline text and allow typography to map balanced pairs. Default: off. */
+  guillemetDigraphs?: boolean;
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy;
   /** Allow raw HTML in trusted output. Default: on; untrusted output always escapes it. */
@@ -114,6 +118,14 @@ export interface Options {
   typography?: TypographyOptions;
   /** Run native transform passes in the given order. Cannot be combined with `typography`. */
   passes?: NativePassOptions[];
+  /** Wrap complete uppercase technical terms in `<abbr>` markup. Default: off. */
+  autoAbbreviations?: boolean;
+  /**
+   * Exact, case-sensitive abbreviation overrides. A nonempty string sets the
+   * escaped title, an empty string wraps without a title, and null suppresses
+   * wrapping. Supplying this map does not enable autoAbbreviations.
+   */
+  abbreviations?: Record<string, string | null>;
 }
 
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging

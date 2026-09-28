@@ -9,6 +9,7 @@ use std::fmt::{Display, Write as _};
 use crate::ast::{Heading, Node, Span};
 use smallvec::SmallVec;
 
+use super::super::abbreviation::write_abbreviations_into_with_boundaries;
 use super::super::autolink::find_autolink_match;
 use super::super::escape::{
     write_attribute_escaped_into, write_escaped_into, write_url_escaped_into,
@@ -18,6 +19,34 @@ use super::super::heading::{
     single_text_child,
 };
 use super::{HtmlRenderer, reserve_heading_scratch};
+
+pub(super) fn adjacent_text_boundary_before(children: &[Node<'_>], index: usize) -> Option<char> {
+    for child in children[..index].iter().rev() {
+        match child {
+            Node::Text(text) => {
+                if let Some(character) = text.value.chars().next_back() {
+                    return Some(character);
+                }
+            }
+            _ => break,
+        }
+    }
+    None
+}
+
+pub(super) fn adjacent_text_boundary_after(children: &[Node<'_>], index: usize) -> Option<char> {
+    for child in children.iter().skip(index + 1) {
+        match child {
+            Node::Text(text) => {
+                if let Some(character) = text.value.chars().next() {
+                    return Some(character);
+                }
+            }
+            _ => break,
+        }
+    }
+    None
+}
 
 impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn write(&mut self, s: &str) {
@@ -219,6 +248,18 @@ impl HtmlRenderer {
         }
     }
 
+    /// Writes inline HTML and tracks only its surrounding inline container
+    /// when abbreviation matching is enabled. Block HTML is deliberately
+    /// emitted by `write_html_value` without changing this state.
+    pub(in crate::renderer::html::renderer) fn write_inline_html_value(&mut self, value: &str) {
+        // Keep text inside authored tags untouched even when those tags are
+        // escaped by sanitization or disallowed-HTML filtering. The scope is
+        // reset at the end of this inline container, so an unclosed tag cannot
+        // affect later paragraphs or headings.
+        self.update_raw_html_depth(value);
+        self.write_html_value(value);
+    }
+
     /// Writes an inline text value, replacing its soft breaks.
     ///
     /// A soft break is a line ending inside inline content: the newline that
@@ -234,10 +275,211 @@ impl HtmlRenderer {
     /// and writing the configured value are the same thing.
     #[inline]
     pub(in crate::renderer::html::renderer) fn write_inline_text(&mut self, value: &str) {
-        if self.options.custom_soft_break {
+        self.write_inline_text_with_boundaries(value, None, None);
+    }
+
+    #[inline]
+    pub(in crate::renderer::html::renderer) fn write_inline_text_with_boundaries(
+        &mut self,
+        value: &str,
+        before: Option<char>,
+        after: Option<char>,
+    ) {
+        let abbreviations_enabled = self
+            .abbreviation_state
+            .as_ref()
+            .is_some_and(|state| state.raw_html_depth == 0 && state.mdx_depth == 0);
+        if abbreviations_enabled {
+            if self.options.custom_soft_break {
+                self.write_inline_text_with_abbreviations_and_soft_breaks(value, before, after);
+            } else {
+                self.write_inline_text_run_with_abbreviations(value, before, after);
+            }
+        } else if self.options.custom_soft_break {
             self.write_inline_text_with_soft_breaks(value);
         } else {
             self.write_inline_text_run(value);
+        }
+    }
+
+    #[inline(never)]
+    fn write_inline_text_with_abbreviations_and_soft_breaks(
+        &mut self,
+        value: &str,
+        before: Option<char>,
+        after: Option<char>,
+    ) {
+        let mut start = 0;
+        for (index, line) in value.split('\n').enumerate() {
+            if index > 0 {
+                self.output.push_str(self.options.soft_break());
+            }
+            let line_before = (start == 0).then_some(before).flatten();
+            let end = start + line.len();
+            let line_after = (end == value.len()).then_some(after).flatten();
+            self.write_inline_text_run_with_abbreviations(line, line_before, line_after);
+            start = end + 1;
+        }
+    }
+
+    /// Applies abbreviation recognition only to prose around renderer URLs.
+    ///
+    /// A URL match is written as one link, so no generated abbreviation can
+    /// enter its visible URL text or its destination.
+    fn write_inline_text_run_with_abbreviations(
+        &mut self,
+        value: &str,
+        before: Option<char>,
+        after: Option<char>,
+    ) {
+        let Some(state) = self.abbreviation_state.as_ref() else {
+            self.write_inline_text_run(value);
+            return;
+        };
+        let matcher = &state.matcher;
+        let bytes = value.as_bytes();
+        let index = &state.url_index;
+        if !index.may_match(bytes) {
+            write_abbreviations_into_with_boundaries(
+                &mut self.output,
+                value,
+                matcher,
+                before,
+                after,
+            );
+            return;
+        }
+
+        let patterns = state
+            .url_patterns
+            .iter()
+            .map(String::as_str)
+            .collect::<SmallVec<[&str; 4]>>();
+        let out = &mut self.output;
+        let mut cursor = 0usize;
+        let mut before_segment = before;
+        while cursor < bytes.len() {
+            let Some((match_start, url_end)) = find_autolink_match(value, cursor, &patterns, index)
+            else {
+                break;
+            };
+            if match_start > cursor {
+                write_abbreviations_into_with_boundaries(
+                    out,
+                    &value[cursor..match_start],
+                    matcher,
+                    before_segment,
+                    value[match_start..].chars().next(),
+                );
+            }
+            let url = &value[match_start..url_end];
+            let should_link = !self.in_link
+                && self.autolink_index.is_some()
+                && self.options.autolink_patterns().iter().any(|pattern| {
+                    url.get(..pattern.len())
+                        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(pattern))
+                });
+            if should_link {
+                out.push_str("<a href=\"");
+                write_url_escaped_into(out, url);
+                out.push('"');
+                if self.options.autolink_target_blank {
+                    out.push_str(" target=\"_blank\" rel=\"noopener noreferrer\"");
+                }
+                out.push('>');
+                write_escaped_into(out, url);
+                out.push_str("</a>");
+            } else {
+                write_escaped_into(out, url);
+            }
+            before_segment = value[..url_end].chars().next_back();
+            cursor = url_end;
+        }
+        if cursor < bytes.len() {
+            write_abbreviations_into_with_boundaries(
+                out,
+                &value[cursor..],
+                matcher,
+                before_segment,
+                after,
+            );
+        }
+    }
+
+    /// Tracks trusted raw HTML elements so their contents remain authored.
+    fn update_raw_html_depth(&mut self, html: &str) {
+        let Some(state) = self.abbreviation_state.as_mut() else {
+            return;
+        };
+        let bytes = html.as_bytes();
+        let mut cursor = 0usize;
+        while cursor < bytes.len() {
+            if bytes[cursor..].starts_with(b"<!--") {
+                if let Some(end) = html[cursor + 4..].find("-->") {
+                    cursor += 4 + end + 3;
+                    continue;
+                }
+                break;
+            }
+            if bytes[cursor] != b'<' {
+                cursor += 1;
+                continue;
+            }
+
+            let mut name_start = cursor + 1;
+            let closing = bytes.get(name_start) == Some(&b'/');
+            if closing {
+                name_start += 1;
+            }
+            let mut name_end = name_start;
+            while bytes.get(name_end).is_some_and(|byte| {
+                byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b':' | b'_')
+            }) {
+                name_end += 1;
+            }
+            let Some(name) = bytes.get(name_start..name_end).filter(|name| {
+                !name.is_empty()
+                    && matches!(
+                        bytes.get(name_end),
+                        Some(b'>')
+                            | Some(b'/')
+                            | Some(b' ')
+                            | Some(b'\t')
+                            | Some(b'\n')
+                            | Some(b'\r')
+                    )
+            }) else {
+                cursor += 1;
+                continue;
+            };
+
+            let mut end = name_end;
+            let mut quote = None;
+            while let Some(byte) = bytes.get(end).copied() {
+                match (quote, byte) {
+                    (Some(current), value) if current == value => quote = None,
+                    (None, b'\'' | b'"') => quote = Some(byte),
+                    (None, b'>') => break,
+                    _ => {}
+                }
+                end += 1;
+            }
+            if end >= bytes.len() {
+                break;
+            }
+
+            if closing {
+                state.raw_html_depth = state.raw_html_depth.saturating_sub(1);
+            } else if !is_void_html_tag(name)
+                && bytes[name_end..end]
+                    .iter()
+                    .rev()
+                    .find(|byte| !byte.is_ascii_whitespace())
+                    .is_none_or(|byte| *byte != b'/')
+            {
+                state.raw_html_depth = state.raw_html_depth.saturating_add(1);
+            }
+            cursor = end + 1;
         }
     }
 
@@ -281,8 +523,54 @@ impl HtmlRenderer {
             // `write_escaped_into` call thanks to the early boolean checks in
             // `write_inline_text`.
             Node::Text(text) => self.write_inline_text(text.value),
-            Node::Html(html) => self.write_html_value(html.value),
+            Node::Html(html) => self.write_inline_html_value(html.value),
             _ => self.render_node(node),
+        }
+    }
+
+    /// Visits inline children while treating adjacent plain text as one token
+    /// stream for abbreviation boundary checks.
+    pub(in crate::renderer::html::renderer) fn render_inline_children(
+        &mut self,
+        children: &[Node<'_>],
+    ) {
+        if self.abbreviation_state.is_none() {
+            for child in children {
+                self.visit_inline_node(child);
+            }
+            return;
+        }
+
+        self.begin_inline_abbreviation_scope();
+        for (index, child) in children.iter().enumerate() {
+            if let Node::Text(text) = child {
+                self.write_inline_text_with_boundaries(
+                    text.value,
+                    adjacent_text_boundary_before(children, index),
+                    adjacent_text_boundary_after(children, index),
+                );
+            } else {
+                self.visit_inline_node(child);
+            }
+        }
+        self.end_inline_abbreviation_scope();
+    }
+
+    pub(in crate::renderer::html::renderer) fn begin_inline_abbreviation_scope(&mut self) {
+        if let Some(state) = self.abbreviation_state.as_mut() {
+            if state.inline_depth == 0 {
+                state.raw_html_depth = 0;
+            }
+            state.inline_depth = state.inline_depth.saturating_add(1);
+        }
+    }
+
+    pub(in crate::renderer::html::renderer) fn end_inline_abbreviation_scope(&mut self) {
+        if let Some(state) = self.abbreviation_state.as_mut() {
+            state.inline_depth = state.inline_depth.saturating_sub(1);
+            if state.inline_depth == 0 {
+                state.raw_html_depth = 0;
+            }
         }
     }
 
@@ -385,6 +673,27 @@ impl HtmlRenderer {
             self.heading_id_planner.claim_slug_with_prefix(prefix, text)
         };
     }
+}
+
+fn is_void_html_tag(name: &[u8]) -> bool {
+    [
+        b"area".as_slice(),
+        b"base",
+        b"br",
+        b"col",
+        b"embed",
+        b"hr",
+        b"img",
+        b"input",
+        b"link",
+        b"meta",
+        b"param",
+        b"source",
+        b"track",
+        b"wbr",
+    ]
+    .iter()
+    .any(|void| name.eq_ignore_ascii_case(void))
 }
 
 #[cfg(test)]

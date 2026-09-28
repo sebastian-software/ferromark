@@ -85,6 +85,30 @@ const literalReferences = toHtml("[name]\n\n[name]: /target", {
 highlighter helpers. Inline notes do not require `footnotes: true`. Their output
 uses v2's existing footnote markup. Marked text does not enable code highlighting.
 
+## Optional technical abbreviation markup
+
+Set `autoAbbreviations: true` to wrap complete uppercase technical terms in
+`<abbr>` elements. Known terms use a built-in title; unknown candidates receive
+a bare wrapper. Use `abbreviations` to add an exact mixed-case term, provide a
+custom title, force a bare wrapper with `""`, or suppress a false positive with
+`null`. The map does not enable matching on its own.
+
+```js
+import { Renderer } from "ferromark";
+
+const renderer = new Renderer({
+  autoAbbreviations: true,
+  abbreviations: { API: "Custom expansion", GraphQL: "", README: null },
+});
+const html = renderer.toHtml("API and GraphQL appear in the README.");
+```
+
+The matcher is built once for the renderer. It processes prose inside emphasis
+and link labels while leaving code, math, raw HTML, MDX attributes, URLs,
+destinations, and image alt text alone. It does not change `transform()` heading
+metadata. See the [technical abbreviation guide](../../docs/abbreviations.md)
+for matching boundaries, the initial built-in dictionary, and limitations.
+
 ## Optional typography
 
 Typography is an explicit post-parse pass. Set `typography.language` to one of
@@ -231,7 +255,7 @@ the highlighter helpers below accept trusted highlighter HTML.
 
 ## Options reference
 
-Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `headingIdPrefix` and `linkBasePath` are unset.
+Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions, including `insertions` and `autoAbbreviations`, default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `headingIdPrefix` and `linkBasePath` are unset.
 
 Unknown option names throw a `TypeError` that identifies the rejected key, so
 misspellings such as `taskList` cannot silently change rendered output.
@@ -261,10 +285,10 @@ Bytes can: a `Uint8Array` of more than 4,294,967,295 bytes throws a
 
 ## Syntax highlighting with Ferriki
 
-An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter plugs into the code-block renderer without coupling the two native cores:
+An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter (`npm install @ferriki/core`) plugs into the code-block renderer without coupling the two native cores:
 
 ````js
-import { createHighlighter } from "ferriki";
+import { createHighlighter } from "@ferriki/core";
 import { toHtmlWithHighlighter } from "ferromark";
 
 const highlighter = await createHighlighter({
@@ -318,7 +342,7 @@ load fails:
 | Message or environment                       | Resolution                                                                                                                                                                                                                                                                                                                                                       |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Node.js below 22.12                          | Upgrade to Node.js 22.12 or newer; this is the package's declared engine requirement and the first Node 22 release with unflagged `require(esm)` support.                                                                                                                                                                                                        |
-| Unsupported platform or architecture         | Use macOS, Windows, or glibc/musl Linux on x64 or arm64.                                                                                                                                                                                                                                                                                                         |
+| Unsupported platform or architecture         | Use macOS on Apple Silicon, Windows, or glibc/musl Linux on x64 or arm64.                                                                                                                                                                                                                                                                                        |
 | `could not load the optional native package` | Reinstall without `--omit=optional` and verify that your lockfile includes Ferromark's package for the current platform.                                                                                                                                                                                                                                         |
 | `ERR_DLOPEN_FAILED`                          | Read the wrapped loader message for the exact binary and platform. On GNU Linux, verify glibc 2.17 or newer and required shared libraries; on Windows, install or repair the Microsoft Visual C++ Redistributable; on macOS, check architecture, OS compatibility, quarantine, and code-signing policy. The original loader error is available as `error.cause`. |
 

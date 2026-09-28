@@ -141,6 +141,7 @@ pub struct TypographyOptions {
     language: TypographyLanguage,
     dashes: bool,
     ellipses: bool,
+    guillemet_digraphs: bool,
 }
 
 impl TypographyOptions {
@@ -154,6 +155,7 @@ impl TypographyOptions {
             language,
             dashes: true,
             ellipses: true,
+            guillemet_digraphs: false,
         }
     }
 
@@ -168,6 +170,16 @@ impl TypographyOptions {
     #[must_use]
     pub const fn with_ellipses(mut self, enabled: bool) -> Self {
         self.ellipses = enabled;
+        self
+    }
+
+    /// Enables conversion of parser-preserved `<<…>>` digraphs.
+    ///
+    /// The parser's `guillemet_digraphs` option must also be enabled so the
+    /// enclosed text is available to this pass.
+    #[must_use]
+    pub const fn with_guillemet_digraphs(mut self, enabled: bool) -> Self {
+        self.guillemet_digraphs = enabled;
         self
     }
 
@@ -187,6 +199,12 @@ impl TypographyOptions {
     #[must_use]
     pub const fn ellipses(self) -> bool {
         self.ellipses
+    }
+
+    /// Returns whether `<<…>>` digraphs are converted by this pass.
+    #[must_use]
+    pub const fn guillemet_digraphs(self) -> bool {
+        self.guillemet_digraphs
     }
 }
 
@@ -219,12 +237,21 @@ impl TransformPass for TypographyPass {
         context: &TransformContext<'arena>,
     ) -> Result<(), BoxError> {
         let raw_html_spans = raw_html_text_spans(document, true);
-        transform_block_children(
-            &mut document.children,
-            context,
-            self.options,
-            &raw_html_spans,
-        );
+        if self.options.guillemet_digraphs {
+            transform_block_children::<true>(
+                &mut document.children,
+                context,
+                self.options,
+                &raw_html_spans,
+            );
+        } else {
+            transform_block_children::<false>(
+                &mut document.children,
+                context,
+                self.options,
+                &raw_html_spans,
+            );
+        }
         Ok(())
     }
 }
@@ -236,7 +263,27 @@ enum InlineItem<'arena> {
         escaped: Vec<Range<usize>>,
     },
     Boundary,
+    HtmlBoundary,
     SoftBreak,
+}
+
+#[derive(Clone, Copy)]
+struct GuillemetToken {
+    offset: usize,
+    kind: GuillemetTokenKind,
+}
+
+#[derive(Clone, Copy)]
+enum GuillemetTokenKind {
+    Opening,
+    Closing,
+    TrimPadding,
+}
+
+#[derive(Clone, Copy)]
+struct PendingGuillemet {
+    item: usize,
+    offset: usize,
 }
 
 #[derive(Default)]
@@ -301,6 +348,7 @@ impl QuoteState {
         None
     }
 
+    #[inline]
     fn observe_authored_quote(
         &mut self,
         character: char,
@@ -347,7 +395,7 @@ impl QuoteState {
     }
 }
 
-fn transform_block_children<'arena>(
+fn transform_block_children<'arena, const GUILLEMET_DIGRAPHS: bool>(
     nodes: &mut [Node<'arena>],
     context: &TransformContext<'arena>,
     options: TypographyOptions,
@@ -361,15 +409,25 @@ fn transform_block_children<'arena>(
             while cursor < nodes.len() && is_inline_node(&nodes[cursor]) {
                 cursor += 1;
             }
-            transform_inline_children(&mut nodes[start..cursor], context, options, raw_html_spans);
+            transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                &mut nodes[start..cursor],
+                context,
+                options,
+                raw_html_spans,
+            );
         } else {
-            transform_block_node(&mut nodes[cursor], context, options, raw_html_spans);
+            transform_block_node::<GUILLEMET_DIGRAPHS>(
+                &mut nodes[cursor],
+                context,
+                options,
+                raw_html_spans,
+            );
             cursor += 1;
         }
     }
 }
 
-fn transform_block_node<'arena>(
+fn transform_block_node<'arena, const GUILLEMET_DIGRAPHS: bool>(
     node: &mut Node<'arena>,
     context: &TransformContext<'arena>,
     options: TypographyOptions,
@@ -377,28 +435,58 @@ fn transform_block_node<'arena>(
 ) {
     match node {
         Node::Span(node) => {
-            transform_inline_children(&mut node.children, context, options, raw_html_spans);
+            transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::Paragraph(node) => {
-            transform_inline_children(&mut node.children, context, options, raw_html_spans);
+            transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::Heading(node) => {
-            transform_inline_children(&mut node.children, context, options, raw_html_spans);
+            transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::BlockQuote(node) => {
-            transform_block_children(&mut node.children, context, options, raw_html_spans);
+            transform_block_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::List(node) => {
             for item in &mut node.children {
-                transform_block_children(&mut item.children, context, options, raw_html_spans);
+                transform_block_children::<GUILLEMET_DIGRAPHS>(
+                    &mut item.children,
+                    context,
+                    options,
+                    raw_html_spans,
+                );
             }
         }
         Node::ListItem(node) => {
-            transform_block_children(&mut node.children, context, options, raw_html_spans);
+            transform_block_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::Table(node) => {
             if let Some(attributes) = &mut node.attributes {
-                transform_inline_children(
+                transform_inline_children::<GUILLEMET_DIGRAPHS>(
                     &mut attributes.caption,
                     context,
                     options,
@@ -407,28 +495,68 @@ fn transform_block_node<'arena>(
             }
             for row in &mut node.children {
                 for cell in &mut row.children {
-                    transform_inline_children(&mut cell.children, context, options, raw_html_spans);
+                    transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                        &mut cell.children,
+                        context,
+                        options,
+                        raw_html_spans,
+                    );
                 }
             }
         }
         Node::Figure(node) => {
-            transform_block_node(&mut node.content, context, options, raw_html_spans);
-            transform_inline_children(&mut node.caption, context, options, raw_html_spans);
+            transform_block_node::<GUILLEMET_DIGRAPHS>(
+                &mut node.content,
+                context,
+                options,
+                raw_html_spans,
+            );
+            transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.caption,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::DefinitionList(node) => {
-            transform_block_children(&mut node.children, context, options, raw_html_spans);
+            transform_block_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::DefinitionListTerm(node) => {
-            transform_inline_children(&mut node.children, context, options, raw_html_spans);
+            transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::DefinitionListDefinition(node) => {
-            transform_block_children(&mut node.children, context, options, raw_html_spans);
+            transform_block_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::FootnoteDefinition(node) => {
-            transform_block_children(&mut node.children, context, options, raw_html_spans);
+            transform_block_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::MdxJsxFlowElement(node) => {
-            transform_block_children(&mut node.children, context, options, raw_html_spans);
+            transform_block_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
         }
         Node::ThematicBreak(_)
         | Node::CodeBlock(_)
@@ -451,7 +579,8 @@ fn transform_block_node<'arena>(
         | Node::MdxJsxTextElement(_)
         | Node::MdxjsEsm(_)
         | Node::MdxFlowExpression(_)
-        | Node::MdxTextExpression(_) => {}
+        | Node::MdxTextExpression(_)
+        | Node::Insertion(_) => {}
     }
 }
 
@@ -469,6 +598,7 @@ fn is_inline_node(node: &Node<'_>) -> bool {
             | Node::Image(_)
             | Node::Highlight(_)
             | Node::Delete(_)
+            | Node::Insertion(_)
             | Node::Superscript(_)
             | Node::Subscript(_)
             | Node::FootnoteReference(_)
@@ -478,15 +608,27 @@ fn is_inline_node(node: &Node<'_>) -> bool {
     )
 }
 
-fn transform_inline_children<'arena>(
+fn transform_inline_children<'arena, const GUILLEMET_DIGRAPHS: bool>(
     nodes: &mut [Node<'arena>],
     context: &TransformContext<'arena>,
     options: TypographyOptions,
     raw_html_spans: &[Span],
 ) {
     let mut items = Vec::new();
-    collect_inline_items(nodes, context, raw_html_spans, &mut items);
+    let mut protected_urls = Vec::new();
+    collect_inline_items::<GUILLEMET_DIGRAPHS>(
+        nodes,
+        context,
+        raw_html_spans,
+        &mut items,
+        &mut protected_urls,
+    );
     let next_after = next_char_after_items(&items);
+    let guillemet_tokens = if GUILLEMET_DIGRAPHS {
+        matched_guillemet_tokens(&items, &protected_urls)
+    } else {
+        Vec::new()
+    };
     let mut state = QuoteState::default();
     let mut replacements = Vec::new();
 
@@ -496,7 +638,8 @@ fn transform_inline_children<'arena>(
                 value,
                 protected,
                 escaped,
-            } => replacements.push(transform_text(
+                ..
+            } => replacements.push(transform_text::<GUILLEMET_DIGRAPHS>(
                 value,
                 protected,
                 escaped,
@@ -505,8 +648,15 @@ fn transform_inline_children<'arena>(
                 index,
                 &mut state,
                 options,
+                if GUILLEMET_DIGRAPHS {
+                    &guillemet_tokens[index]
+                } else {
+                    &[]
+                },
             )),
             InlineItem::Boundary => state.reset(),
+            InlineItem::HtmlBoundary if GUILLEMET_DIGRAPHS => {}
+            InlineItem::HtmlBoundary => state.reset(),
             InlineItem::SoftBreak => state.previous = Some(' '),
         }
     }
@@ -515,14 +665,316 @@ fn transform_inline_children<'arena>(
     apply_inline_replacements(nodes, &replacements, &mut replacement_index, context);
 }
 
-fn collect_inline_items<'arena>(
+/// Finds complete `<<` / `>>` pairs across ordinary inline text nodes.
+/// Protected nodes and URL ranges split quote context; raw HTML tags are
+/// transparent so a pair can enclose ordinary inline HTML.
+fn matched_guillemet_tokens(
+    items: &[InlineItem<'_>],
+    protected_urls: &[Option<Vec<Range<usize>>>],
+) -> Vec<Vec<GuillemetToken>> {
+    let mut tokens: Vec<Vec<GuillemetToken>> = (0..items.len()).map(|_| Vec::new()).collect();
+    let mut pending = Vec::new();
+
+    for (item_index, item) in items.iter().enumerate() {
+        let InlineItem::Text {
+            value,
+            protected,
+            escaped,
+            ..
+        } = item
+        else {
+            match item {
+                InlineItem::Boundary => pending.clear(),
+                InlineItem::HtmlBoundary | InlineItem::SoftBreak => {}
+                InlineItem::Text { .. } => unreachable!(),
+            }
+            continue;
+        };
+
+        let bytes = value.as_bytes();
+        let mut offset = 0;
+        while offset < bytes.len() {
+            let (marker, opening) = match bytes[offset] {
+                b'<' => (b'<', true),
+                b'>' => (b'>', false),
+                _ => {
+                    offset += next_char_at(value, offset).map_or(1, |(_, width)| width);
+                    continue;
+                }
+            };
+            if is_exact_doubled_marker(bytes, offset, marker)
+                && !is_blocked(offset, protected, escaped)
+                && !is_blocked(offset + 1, protected, escaped)
+            {
+                if opening {
+                    // A marker directly in front of an autolink stays
+                    // literal; otherwise the generated closing quote can
+                    // be emitted as part of the link destination.
+                    if !is_protected_immediately_after(items, item_index, offset + 2) {
+                        pending.push(PendingGuillemet {
+                            item: item_index,
+                            offset,
+                        });
+                    }
+                } else if let Some(open) = pending.pop()
+                    && has_guillemet_content(items, open.item, open.offset + 2, item_index, offset)
+                    && !is_url_protected_near_closer(items, protected_urls, item_index, offset)
+                {
+                    tokens[open.item].push(GuillemetToken {
+                        offset: open.offset,
+                        kind: GuillemetTokenKind::Opening,
+                    });
+                    tokens[item_index].push(GuillemetToken {
+                        offset,
+                        kind: GuillemetTokenKind::Closing,
+                    });
+                    for (padding_item, padding_offset) in
+                        next_ascii_padding_locations(items, open.item, open.offset + 2)
+                    {
+                        tokens[padding_item].push(GuillemetToken {
+                            offset: padding_offset,
+                            kind: GuillemetTokenKind::TrimPadding,
+                        });
+                    }
+                    for (padding_item, padding_offset) in
+                        previous_ascii_padding_locations(items, item_index, offset)
+                    {
+                        tokens[padding_item].push(GuillemetToken {
+                            offset: padding_offset,
+                            kind: GuillemetTokenKind::TrimPadding,
+                        });
+                    }
+                }
+                offset += 2;
+            } else {
+                offset += 1;
+            }
+        }
+    }
+
+    for item_tokens in &mut tokens {
+        item_tokens.sort_unstable_by_key(|token| token.offset);
+    }
+    tokens
+}
+
+fn has_guillemet_content(
+    items: &[InlineItem<'_>],
+    opening_item: usize,
+    opening_content: usize,
+    closing_item: usize,
+    closing_offset: usize,
+) -> bool {
+    for (index, item) in items
+        .iter()
+        .enumerate()
+        .take(closing_item + 1)
+        .skip(opening_item)
+    {
+        match item {
+            InlineItem::Text { value, .. } => {
+                let start = if index == opening_item {
+                    opening_content
+                } else {
+                    0
+                };
+                let end = if index == closing_item {
+                    closing_offset
+                } else {
+                    value.len()
+                };
+                if value.get(start..end).is_some_and(|content| {
+                    content.chars().any(|character| !character.is_whitespace())
+                }) {
+                    return true;
+                }
+            }
+            InlineItem::Boundary | InlineItem::SoftBreak => return true,
+            InlineItem::HtmlBoundary => {}
+        }
+    }
+    false
+}
+
+fn is_ascii_padding(byte: Option<u8>) -> bool {
+    matches!(byte, Some(b' ' | b'\t'))
+}
+
+fn next_ascii_padding_locations(
+    items: &[InlineItem<'_>],
+    item_index: usize,
+    offset: usize,
+) -> Vec<(usize, usize)> {
+    let mut locations = Vec::new();
+    let mut index = item_index;
+    let mut cursor = offset;
+    while let Some(item) = items.get(index) {
+        match item {
+            InlineItem::Text {
+                value,
+                protected,
+                escaped,
+                ..
+            } => {
+                while cursor < value.len()
+                    && is_ascii_padding(value.as_bytes().get(cursor).copied())
+                    && !is_blocked(cursor, protected, escaped)
+                {
+                    locations.push((index, cursor));
+                    cursor += 1;
+                }
+                if cursor < value.len() {
+                    return locations;
+                }
+                index += 1;
+                cursor = 0;
+            }
+            InlineItem::Boundary | InlineItem::HtmlBoundary | InlineItem::SoftBreak => {
+                return locations;
+            }
+        }
+    }
+    locations
+}
+
+fn previous_ascii_padding_locations(
+    items: &[InlineItem<'_>],
+    item_index: usize,
+    offset: usize,
+) -> Vec<(usize, usize)> {
+    let mut locations = Vec::new();
+    let mut index = item_index;
+    let mut cursor = offset;
+    loop {
+        match items.get(index) {
+            Some(InlineItem::Text {
+                value,
+                protected,
+                escaped,
+                ..
+            }) => {
+                let mut end = cursor.min(value.len());
+                while let Some((start, character)) = value[..end].char_indices().next_back() {
+                    if !character.is_ascii()
+                        || !is_ascii_padding(Some(character as u8))
+                        || is_blocked(start, protected, escaped)
+                    {
+                        return locations;
+                    }
+                    locations.push((index, start));
+                    end = start;
+                }
+                let Some(previous) = index.checked_sub(1) else {
+                    return locations;
+                };
+                index = previous;
+                cursor = usize::MAX;
+            }
+            Some(InlineItem::Boundary | InlineItem::HtmlBoundary | InlineItem::SoftBreak)
+            | None => {
+                return locations;
+            }
+        }
+    }
+}
+
+fn is_protected_immediately_after(
+    items: &[InlineItem<'_>],
+    item_index: usize,
+    offset: usize,
+) -> bool {
+    if let Some(InlineItem::Text {
+        value,
+        protected,
+        escaped,
+        ..
+    }) = items.get(item_index)
+        && offset < value.len()
+    {
+        return is_blocked(offset, protected, escaped);
+    }
+    let mut index = item_index + 1;
+    while let Some(item) = items.get(index) {
+        match item {
+            InlineItem::Text {
+                value,
+                protected,
+                escaped,
+                ..
+            } => {
+                if value.is_empty() {
+                    index += 1;
+                    continue;
+                }
+                return is_blocked(0, protected, escaped);
+            }
+            InlineItem::Boundary | InlineItem::HtmlBoundary | InlineItem::SoftBreak => {
+                return false;
+            }
+        }
+    }
+    false
+}
+
+fn is_url_protected_near_closer(
+    items: &[InlineItem<'_>],
+    protected_urls_by_item: &[Option<Vec<Range<usize>>>],
+    item_index: usize,
+    offset: usize,
+) -> bool {
+    let mut index = item_index;
+    let mut cursor = offset;
+    loop {
+        match items.get(index) {
+            Some(InlineItem::Text { value, .. }) => {
+                let mut end = cursor.min(value.len());
+                while let Some((start, character)) = value[..end].char_indices().next_back() {
+                    if protected_urls_by_item
+                        .get(index)
+                        .and_then(Option::as_deref)
+                        .unwrap_or_default()
+                        .iter()
+                        .any(|range| range.start <= start && start < range.end)
+                    {
+                        return true;
+                    }
+                    if !(character.is_ascii()
+                        && (character.is_ascii_punctuation()
+                            || is_ascii_padding(Some(character as u8))))
+                    {
+                        return false;
+                    }
+                    end = start;
+                }
+                let Some(previous) = index.checked_sub(1) else {
+                    return false;
+                };
+                index = previous;
+                cursor = usize::MAX;
+            }
+            Some(InlineItem::Boundary | InlineItem::HtmlBoundary | InlineItem::SoftBreak)
+            | None => return false,
+        }
+    }
+}
+
+fn is_exact_doubled_marker(bytes: &[u8], offset: usize, marker: u8) -> bool {
+    bytes.get(offset..offset + 2) == Some(&[marker, marker])
+        && (offset == 0 || bytes[offset - 1] != marker)
+        && bytes.get(offset + 2) != Some(&marker)
+}
+
+fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
     nodes: &[Node<'arena>],
     context: &TransformContext<'arena>,
     raw_html_spans: &[Span],
     items: &mut Vec<InlineItem<'arena>>,
+    protected_urls_by_item: &mut Vec<Option<Vec<Range<usize>>>>,
 ) {
     let mut protected_by_node: Vec<Vec<Range<usize>>> =
         (0..nodes.len()).map(|_| Vec::new()).collect();
+    let mut protected_urls_by_node =
+        GUILLEMET_DIGRAPHS.then(|| (0..nodes.len()).map(|_| Vec::new()).collect::<Vec<_>>());
 
     for run in text_runs(nodes) {
         let node_range = run.node_range();
@@ -530,8 +982,11 @@ fn collect_inline_items<'arena>(
         let is_raw_html = raw_html_spans
             .iter()
             .any(|span| run_span.start < span.end && span.start < run_span.end);
+        let protected_urls = GUILLEMET_DIGRAPHS.then(|| run.protected_url_ranges(context));
         let protected = if is_raw_html {
             std::iter::once(0..run.value().len()).collect()
+        } else if let Some(protected_urls) = &protected_urls {
+            protected_urls.clone()
         } else {
             run.protected_url_ranges(context)
         };
@@ -549,6 +1004,17 @@ fn collect_inline_items<'arena>(
                     protected_by_node[node_index].push(start - byte_cursor..end - byte_cursor);
                 }
             }
+            if let (Some(protected_urls), Some(protected_by_node)) =
+                (&protected_urls, &mut protected_urls_by_node)
+            {
+                for range in protected_urls {
+                    let start = range.start.max(byte_cursor);
+                    let end = range.end.min(segment_end);
+                    if start < end {
+                        protected_by_node[node_index].push(start - byte_cursor..end - byte_cursor);
+                    }
+                }
+            }
             byte_cursor = segment_end;
         }
     }
@@ -556,46 +1022,134 @@ fn collect_inline_items<'arena>(
     for (index, node) in nodes.iter().enumerate() {
         match node {
             Node::Span(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
-            Node::Text(text) => items.push(InlineItem::Text {
-                value: text.value,
-                protected: std::mem::take(&mut protected_by_node[index]),
-                escaped: escaped_source_ranges(context.source(), text.span, text.value),
-            }),
+            Node::Text(text) => {
+                let protected_urls = protected_urls_by_node
+                    .as_mut()
+                    .map(|protected| std::mem::take(&mut protected[index]));
+                items.push(InlineItem::Text {
+                    value: text.value,
+                    protected: std::mem::take(&mut protected_by_node[index]),
+                    escaped: escaped_source_ranges::<GUILLEMET_DIGRAPHS>(
+                        context.source(),
+                        text.span,
+                        text.value,
+                    ),
+                });
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(protected_urls);
+                }
+            }
             Node::Emphasis(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
             Node::Strong(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
             Node::Highlight(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
             Node::Delete(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
+            }
+            Node::Insertion(node) => {
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
             Node::Superscript(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
             Node::Subscript(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
             Node::MdxJsxTextElement(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
             Node::Link(node) if is_url_label(node.url, &node.children) => {
                 items.push(InlineItem::Boundary);
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(None);
+                }
             }
             Node::Link(node) => {
-                collect_inline_items(&node.children, context, raw_html_spans, items);
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
             }
-            Node::Break(_) => items.push(InlineItem::SoftBreak),
+            Node::Break(_) => {
+                items.push(InlineItem::SoftBreak);
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(None);
+                }
+            }
+            Node::Html(_) => {
+                items.push(InlineItem::HtmlBoundary);
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(None);
+                }
+            }
             Node::InlineCode(_)
             | Node::InlineMath(_)
             | Node::Image(_)
             | Node::FootnoteReference(_)
-            | Node::Html(_)
             | Node::MdxTextExpression(_)
             | Node::ThematicBreak(_)
             | Node::Paragraph(_)
@@ -614,7 +1168,12 @@ fn collect_inline_items<'arena>(
             | Node::FootnoteDefinition(_)
             | Node::MdxJsxFlowElement(_)
             | Node::MdxjsEsm(_)
-            | Node::MdxFlowExpression(_) => items.push(InlineItem::Boundary),
+            | Node::MdxFlowExpression(_) => {
+                items.push(InlineItem::Boundary);
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(None);
+                }
+            }
         }
     }
 }
@@ -666,6 +1225,14 @@ fn apply_inline_replacements<'arena>(
                 );
             }
             Node::Delete(node) => {
+                apply_inline_replacements(
+                    &mut node.children,
+                    replacements,
+                    replacement_index,
+                    context,
+                );
+            }
+            Node::Insertion(node) => {
                 apply_inline_replacements(
                     &mut node.children,
                     replacements,
@@ -750,12 +1317,13 @@ fn next_char_after_items(items: &[InlineItem<'_>]) -> Vec<Option<char>> {
                 value,
                 protected,
                 escaped,
+                ..
             } => match first_context_char(value, protected, escaped) {
                 ContextChar::Char(character) => next = Some(character),
                 ContextChar::Empty => {}
                 ContextChar::Boundary => next = None,
             },
-            InlineItem::Boundary => next = None,
+            InlineItem::Boundary | InlineItem::HtmlBoundary => next = None,
             InlineItem::SoftBreak => next = Some(' '),
         }
     }
@@ -787,7 +1355,7 @@ fn first_context_char(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn transform_text(
+fn transform_text<const GUILLEMET_DIGRAPHS: bool>(
     value: &str,
     protected: &[Range<usize>],
     escaped: &[Range<usize>],
@@ -796,16 +1364,26 @@ fn transform_text(
     item_index: usize,
     state: &mut QuoteState,
     options: TypographyOptions,
+    guillemet_tokens: &[GuillemetToken],
 ) -> Option<String> {
     let mut result = String::with_capacity(value.len());
     let mut offset = 0;
     let mut protected_index = 0;
     let mut escaped_index = 0;
+    let mut guillemet_index = 0;
     let mut changed = false;
 
     while offset < value.len() {
         advance_range_index(protected, &mut protected_index, offset);
         advance_range_index(escaped, &mut escaped_index, offset);
+        if GUILLEMET_DIGRAPHS {
+            while guillemet_tokens
+                .get(guillemet_index)
+                .is_some_and(|token| token.offset < offset)
+            {
+                guillemet_index += 1;
+            }
+        }
 
         if let Some(range) = protected.get(protected_index)
             && range.start <= offset
@@ -832,6 +1410,46 @@ fn transform_text(
             state.observe(&value[offset..character_end]);
             offset = character_end;
             continue;
+        }
+
+        if GUILLEMET_DIGRAPHS
+            && let Some(token) = guillemet_tokens.get(guillemet_index)
+            && token.offset == offset
+        {
+            match token.kind {
+                GuillemetTokenKind::TrimPadding => {
+                    if is_ascii_padding(value.as_bytes().get(offset).copied()) {
+                        offset += 1;
+                        changed = true;
+                    }
+                    guillemet_index += 1;
+                    continue;
+                }
+                GuillemetTokenKind::Opening | GuillemetTokenKind::Closing => {
+                    let replacement = if matches!(token.kind, GuillemetTokenKind::Opening) {
+                        let primary = state.stack.last().is_none_or(|frame| !frame.primary);
+                        state.stack.push(QuoteFrame {
+                            source: '<',
+                            primary,
+                        });
+                        quote_marks(options.language(), primary).open
+                    } else {
+                        let frame = state
+                            .stack
+                            .iter()
+                            .rposition(|frame| frame.source == '<')
+                            .map(|index| state.stack.remove(index));
+                        quote_marks(options.language(), frame.is_none_or(|frame| frame.primary))
+                            .close
+                    };
+                    result.push_str(replacement);
+                    state.observe(replacement);
+                    offset += 2;
+                    guillemet_index += 1;
+                    changed = true;
+                    continue;
+                }
+            }
         }
 
         let next = next_context_char(
@@ -1024,12 +1642,13 @@ fn next_context_char(
                 value,
                 protected,
                 escaped,
+                ..
             } => match first_context_char(value, protected, escaped) {
                 ContextChar::Char(character) => return Some(character),
                 ContextChar::Empty => index += 1,
                 ContextChar::Boundary => return None,
             },
-            InlineItem::Boundary => return None,
+            InlineItem::Boundary | InlineItem::HtmlBoundary => return None,
             InlineItem::SoftBreak => return Some(' '),
         }
     }
@@ -1267,7 +1886,11 @@ fn has_unit_after(
     })
 }
 
-fn escaped_source_ranges(source: &str, span: Span, value: &str) -> Vec<Range<usize>> {
+fn escaped_source_ranges<const GUILLEMET_DIGRAPHS: bool>(
+    source: &str,
+    span: Span,
+    value: &str,
+) -> Vec<Range<usize>> {
     let Some(raw) = source.get(span.start as usize..span.end as usize) else {
         return Vec::new();
     };
@@ -1277,7 +1900,8 @@ fn escaped_source_ranges(source: &str, span: Span, value: &str) -> Vec<Range<usi
     while raw_offset < raw.len() {
         if raw[raw_offset..].starts_with('\\')
             && let Some((character, width)) = next_char_at(raw, raw_offset + 1)
-            && matches!(character, '\'' | '"')
+            && (matches!(character, '\'' | '"')
+                || (GUILLEMET_DIGRAPHS && matches!(character, '<' | '>')))
             && character.is_ascii_punctuation()
         {
             raw_quotes.push((character, true));
@@ -1287,7 +1911,8 @@ fn escaped_source_ranges(source: &str, span: Span, value: &str) -> Vec<Range<usi
 
         if raw[raw_offset..].starts_with('&')
             && let Some((character, end)) = entity_at(raw, raw_offset)
-            && matches!(character, '\'' | '"')
+            && (matches!(character, '\'' | '"')
+                || (GUILLEMET_DIGRAPHS && matches!(character, '<' | '>')))
         {
             raw_quotes.push((character, true));
             raw_offset = end;
@@ -1295,7 +1920,9 @@ fn escaped_source_ranges(source: &str, span: Span, value: &str) -> Vec<Range<usi
         }
 
         if let Some((character, width)) = next_char_at(raw, raw_offset) {
-            if matches!(character, '\'' | '"') {
+            if matches!(character, '\'' | '"')
+                || (GUILLEMET_DIGRAPHS && matches!(character, '<' | '>'))
+            {
                 raw_quotes.push((character, false));
             }
             raw_offset += width;
@@ -1304,12 +1931,13 @@ fn escaped_source_ranges(source: &str, span: Span, value: &str) -> Vec<Range<usi
         }
     }
 
-    let mut text_quotes = Vec::new();
-    for (offset, character) in value.char_indices() {
-        if matches!(character, '\'' | '"') {
-            text_quotes.push((offset, character));
-        }
-    }
+    let text_quotes: Vec<_> = value
+        .char_indices()
+        .filter(|(_, character)| {
+            matches!(character, '\'' | '"')
+                || (GUILLEMET_DIGRAPHS && matches!(character, '<' | '>'))
+        })
+        .collect();
 
     if raw_quotes.len() != text_quotes.len()
         || raw_quotes
@@ -1352,6 +1980,8 @@ fn entity_at(value: &str, start: usize) -> Option<(char, usize)> {
         match name {
             "quot" => '"',
             "apos" => '\'',
+            "lt" | "LT" => '<',
+            "gt" | "GT" => '>',
             _ => return None,
         }
     };

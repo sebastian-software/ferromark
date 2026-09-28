@@ -161,6 +161,7 @@ class TransformArchive(unittest.TestCase):
             "/src",
             "/tests",
             "/examples",
+            "/benches",
             "/data",
             "/README.md",
         ]

@@ -7,13 +7,15 @@
 //! used as a library target, so sharing the source file is what keeps the
 //! trained configuration from drifting away from the shipped one.
 
-use ferromark::{HtmlRendererOptions, ParserOptions};
+use ferromark::{AbbreviationOptions, HtmlRendererOptions, ParserOptions};
 use ferromark_transforms::TransformPipeline;
 
 /// A resolved parser and renderer pair, as every addon entry point uses it.
 pub struct CoreOptions {
     pub parser: ParserOptions,
     pub html: HtmlRendererOptions,
+    pub auto_abbreviations: bool,
+    pub abbreviations: AbbreviationOptions,
     pub heading_level_offset: i32,
     pub heading_id_prefix: String,
     pub pipeline: TransformPipeline,
@@ -35,6 +37,8 @@ pub fn addon_defaults() -> CoreOptions {
     CoreOptions {
         parser,
         html,
+        auto_abbreviations: false,
+        abbreviations: AbbreviationOptions::default(),
         heading_level_offset: 0,
         heading_id_prefix: String::new(),
         pipeline: TransformPipeline::new(),

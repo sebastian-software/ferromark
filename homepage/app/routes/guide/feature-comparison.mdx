@@ -19,53 +19,55 @@ It covers the native cores from the benchmark, with **v2 updated to the current
 local core**; these are not the options enabled during timing.
 [Exact versions, source references, and scope](https://github.com/sebastian-software/ferromark/blob/main/docs/feature-matrix.md).
 
-| Feature / what it does                                             |    Ferromark v1    | Ferromark v2 | OX-Content |  pulldown-cmark  |        md4c        |     Bun native     |
-| ------------------------------------------------------------------ | :----------------: | :----------: | :--------: | :--------------: | :----------------: | :----------------: |
-| **CommonMark — everyday Markdown**                                 |                    |              |            |                  |                    |                    |
-| Headings — `# Title` through `###### Title`                        |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Paragraphs and line breaks                                         |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Bold and italic — `**bold**`, `*italic*`                           |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Numbered, bulleted, and nested lists                               |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Block quotes — `> quoted text`                                     |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Horizontal separators — `---`                                      |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Links, images, and reusable reference links                        |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Inline code, fenced code blocks, and indented code                 |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Raw HTML inside Markdown — `<details>…</details>`                  |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| **GFM — GitHub-style extensions**                                  |                    |              |            |                  |                    |                    |
-| Tables with left/center/right column alignment                     |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Checklists — `- [x] done`, `- [ ] pending`                         |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Crossed-out text — `~~removed~~`                                   |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
-| Single-tilde crossed-out text — `~removed~`                        |         —          |      ✓       |     —      |        ✓         |         ✓          |         ✓          |
-| Turn bare URLs/emails into links — `www.example.com`               |         ✓          |      ✓       |     ✓      |        —         |         ✓          |         ✓          |
-| GFM HTML tag filter — filter its specified tag list                |         ✓          |      ✓       |     ✓      |        —         |         —          |         ✓          |
-| **Writing extras — beyond CommonMark/GFM**                         |                    |              |            |                  |                    |                    |
-| Reference footnotes — `[^note]` plus a definition                  |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         —          |
-| Inline footnotes — `^[note written here]`                          |         ✓          |      ✓       |     —      |        —         |         —          |         —          |
-| Definition lists — a term followed by `: explanation`              |         ✓          |      ✓       |     ✓      |        ✓         |         —          |         —          |
-| Math notation — `$x^2$`, `$$…$$`                                   |       Syntax       |    Syntax    |   Syntax   |      Syntax      |       Syntax       |       Syntax       |
-| Superscript — `x^2^`                                               |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         —          |
-| Subscript — `H~2~O`                                                |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         —          |
-| Highlighted text — `==important==`                                 |         ✓          |      ✓       |     —      |        —         |         ✓          |         —          |
-| Wiki links — `[[Page]]`                                            |         —          |      ✓       |     ✓      |        ✓         |     Custom tag     |     Custom tag     |
-| Smart punctuation — curly quotes and ellipses                      |         —          |      —       |     ✓      |        ✓         |         —          |         —          |
-| Extract frontmatter — metadata between `---` or `+++`              |         ✓          |      ✓       |     —      |        ✓         |         —          |         —          |
-| Source-only line comments — hide `// note` lines from HTML         |         ✓          |      ✓       |     —      |        —         |         —          |         —          |
-| **Table layout — beyond GFM**                                      |                    |              |            |                  |                    |                    |
-| Merged table cells — one cell spans several columns                |         ✓          |      ✓       |     —      |        —         |         —          |         —          |
-| Numeric column-width hints — proportions from delimiter dashes     |         ✓          |      —       |     —      |        —         |         —          |         —          |
-| Table IDs/classes — style a whole table with CSS                   |         —          |      ✓       |     —      |        —         |         —          |         —          |
-| Table captions — a label with inline Markdown formatting           |         —          |      ✓       |     —      |        —         |         —          |         —          |
-| Column classes for CSS widths — `col-1`, `col-2`, etc.             |         —          |      ✓       |     —      |        —         |         —          |         —          |
-| Column names from headers — “Netto Preis” → `col-name-netto-preis` |         —          |      ✓       |     —      |        —         |         —          |         —          |
-| **Documentation and navigation**                                   |                    |              |            |                  |                    |                    |
-| Automatic heading IDs — link directly to a section                 |         ✓          |      ✓       |     ✓      |        —         |         —          |         ✓          |
-| Explicit heading IDs/classes — `# Title {#id .class}`              |         —          |      ✓       |     ✓      |        ✓         |         —          |         —          |
-| Alert boxes — `> [!NOTE]`, `> [!WARNING]`                          |         ✓          |      ✓       |     ✓      |        ✓         |         ✓          |         —          |
-| **MDX — components and expressions mixed with Markdown**           |                    |              |            |                  |                    |                    |
-| Recognize JSX, `{expressions}`, and imports/exports                |      Limited       |   Limited    |  Limited   |        —         |         —          |         —          |
-| **Application integration**                                        |                    |              |            |                  |                    |                    |
-| Inspect/transform the parsed document                              |       Events       |  Tree (AST)  | Tree (AST) |      Events      |     Callbacks      |     Callbacks      |
-| Customize generated output                                         | Code hook / events |  HTML hooks  | HTML hooks | Event transforms | Renderer callbacks | Renderer callbacks |
+| Feature / what it does                                             |    Ferromark v1    | Ferromark v2  | OX-Content |  pulldown-cmark  |        md4c        |     Bun native     |
+| ------------------------------------------------------------------ | :----------------: | :-----------: | :--------: | :--------------: | :----------------: | :----------------: |
+| **CommonMark — everyday Markdown**                                 |                    |               |            |                  |                    |                    |
+| Headings — `# Title` through `###### Title`                        |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Paragraphs and line breaks                                         |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Bold and italic — `**bold**`, `*italic*`                           |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Numbered, bulleted, and nested lists                               |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Block quotes — `> quoted text`                                     |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Horizontal separators — `---`                                      |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Links, images, and reusable reference links                        |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Inline code, fenced code blocks, and indented code                 |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Raw HTML inside Markdown — `<details>…</details>`                  |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| **GFM — GitHub-style extensions**                                  |                    |               |            |                  |                    |                    |
+| Tables with left/center/right column alignment                     |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Checklists — `- [x] done`, `- [ ] pending`                         |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Crossed-out text — `~~removed~~`                                   |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         ✓          |
+| Single-tilde crossed-out text — `~removed~`                        |         —          |       ✓       |     —      |        ✓         |         ✓          |         ✓          |
+| Turn bare URLs/emails into links — `www.example.com`               |         ✓          |       ✓       |     ✓      |        —         |         ✓          |         ✓          |
+| GFM HTML tag filter — filter its specified tag list                |         ✓          |       ✓       |     ✓      |        —         |         —          |         ✓          |
+| **Writing extras — beyond CommonMark/GFM**                         |                    |               |            |                  |                    |                    |
+| Reference footnotes — `[^note]` plus a definition                  |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         —          |
+| Inline footnotes — `^[note written here]`                          |         ✓          |       ✓       |     —      |        —         |         —          |         —          |
+| Definition lists — a term followed by `: explanation`              |         ✓          |       ✓       |     ✓      |        ✓         |         —          |         —          |
+| Math notation — `$x^2$`, `$$…$$`                                   |       Syntax       |    Syntax     |   Syntax   |      Syntax      |       Syntax       |       Syntax       |
+| Superscript — `x^2^`                                               |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         —          |
+| Subscript — `H~2~O`                                                |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         —          |
+| Highlighted text — `==important==`                                 |         ✓          |       ✓       |     —      |        —         |         ✓          |         —          |
+| Inserted text — `++added++` (opt-in)                               |         —          |       ✓       |     —      |        —         |         —          |         —          |
+| Wiki links — `[[Page]]`                                            |         —          |       ✓       |     ✓      |        ✓         |     Custom tag     |     Custom tag     |
+| Smart punctuation — curly quotes and ellipses                      |         —          |       —       |     ✓      |        ✓         |         —          |         —          |
+| ASCII guillemet digraphs — `<<quote>>` with locale typography      |         —          | Opt-in parser |     —      |        —         |         —          |         —          |
+| Extract frontmatter — metadata between `---` or `+++`              |         ✓          |       ✓       |     —      |        ✓         |         —          |         —          |
+| Source-only line comments — hide `// note` lines from HTML         |         ✓          |       ✓       |     —      |        —         |         —          |         —          |
+| **Table layout — beyond GFM**                                      |                    |               |            |                  |                    |                    |
+| Merged table cells — one cell spans several columns                |         ✓          |       ✓       |     —      |        —         |         —          |         —          |
+| Numeric column-width hints — proportions from delimiter dashes     |         ✓          |       —       |     —      |        —         |         —          |         —          |
+| Table IDs/classes — style a whole table with CSS                   |         —          |       ✓       |     —      |        —         |         —          |         —          |
+| Table captions — a label with inline Markdown formatting           |         —          |       ✓       |     —      |        —         |         —          |         —          |
+| Column classes for CSS widths — `col-1`, `col-2`, etc.             |         —          |       ✓       |     —      |        —         |         —          |         —          |
+| Column names from headers — “Netto Preis” → `col-name-netto-preis` |         —          |       ✓       |     —      |        —         |         —          |         —          |
+| **Documentation and navigation**                                   |                    |               |            |                  |                    |                    |
+| Automatic heading IDs — link directly to a section                 |         ✓          |       ✓       |     ✓      |        —         |         —          |         ✓          |
+| Explicit heading IDs/classes — `# Title {#id .class}`              |         —          |       ✓       |     ✓      |        ✓         |         —          |         —          |
+| Alert boxes — `> [!NOTE]`, `> [!WARNING]`                          |         ✓          |       ✓       |     ✓      |        ✓         |         ✓          |         —          |
+| **MDX — components and expressions mixed with Markdown**           |                    |               |            |                  |                    |                    |
+| Recognize JSX, `{expressions}`, and imports/exports                |      Limited       |    Limited    |  Limited   |        —         |         —          |         —          |
+| **Application integration**                                        |                    |               |            |                  |                    |                    |
+| Inspect/transform the parsed document                              |       Events       |  Tree (AST)   | Tree (AST) |      Events      |     Callbacks      |     Callbacks      |
+| Customize generated output                                         | Code hook / events |  HTML hooks   | HTML hooks | Event transforms | Renderer callbacks | Renderer callbacks |
 
 Math support preserves formula notation; an application supplies mathematical
 typesetting. “Custom tag” wiki links also need application-side routing/rendering.
@@ -80,6 +82,7 @@ subscript compete for the same syntax; enabling subscript gives it priority.
 | Behavior                                                     | Rust `ParserOptions`      | Node option              | Default |
 | ------------------------------------------------------------ | ------------------------- | ------------------------ | ------- |
 | `==marked text==` renders as `<mark>`                        | `highlight`               | `highlight`              | `false` |
+| `++inserted text++` renders as `<ins>`                       | `insertions`              | `insertions`             | `false` |
 | `^[inline note]` creates a footnote                          | `inline_footnotes`        | `inlineFootnotes`        | `false` |
 | Resolve full, collapsed, and shortcut reference links/images | `allow_link_refs`         | `allowLinkRefs`          | `true`  |
 | Image ID and class suffixes                                  | `image_attributes`        | `imageAttributes`        | `false` |
@@ -93,12 +96,19 @@ footnotes. Disabling reference links preserves definitions as visible Markdown;
 inline links and images continue to work. Marked text is separate from code
 syntax highlighting. [Rust and Node examples, syntax, and defaults](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md).
 
-The writing extensions remain off by default. Paired measurements found no
-material slowdown on representative documents with them disabled. Enabling them
-on documents without matching syntax still costs several percent, and literal
+The existing highlight and inline-note measurements found no material slowdown
+on representative documents with those options disabled. Enabling them on
+documents without matching syntax still costs several percent, and literal
 marker-heavy inputs cost more. Disabling reference links can skip parsing work,
 but its benefit depends on the parser profile and changes the output of actual
 references. See the [measured costs and limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-optional-writing/README.md).
+
+Insertions have a separate default-off measurement. A 120-input base-versus-PR
+comparison found identical HTML and AST output; fresh rendering measured 0.4%
+slower and parse-only 1.3% slower. The same-binary control varied from 0.7%
+slower to 2.1% faster parse-only as host load increased, so the small difference
+is noisy. The disabled parser path is not byte-for-byte identical to `main`.
+See the [measurement details](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-27-inline-insertions.md).
 
 ### Other extension policies
 

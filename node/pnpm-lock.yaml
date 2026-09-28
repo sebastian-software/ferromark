@@ -44,9 +44,6 @@ importers:
       ferromark-darwin-arm64:
         specifier: workspace:*
         version: link:npm/darwin-arm64
-      ferromark-darwin-x64:
-        specifier: workspace:*
-        version: link:npm/darwin-x64
       ferromark-linux-arm64-gnu:
         specifier: workspace:*
         version: link:npm/linux-arm64-gnu
@@ -67,8 +64,6 @@ importers:
         version: link:npm/win32-x64-msvc
 
   ferromark/npm/darwin-arm64: {}
-
-  ferromark/npm/darwin-x64: {}
 
   ferromark/npm/linux-arm64-gnu: {}
 

@@ -77,6 +77,10 @@ const fields = [
   ["typography", "object"],
   ["passes", "array"],
   ["blockquoteAttributions", "boolean"],
+  ["insertions", "boolean"],
+  ["guillemetDigraphs", "boolean"],
+  ["autoAbbreviations", "boolean"],
+  ["abbreviations", "record"],
 ];
 const keys = fields.map(([key]) => key);
 
@@ -103,7 +107,7 @@ const probe = [
   "",
   ": A visible caption",
   "",
-  "~~strike~~ x^2^ H~2~O ==mark== ^[inline note] www.example.com $x$",
+  "~~strike~~ ++added++ x^2^ H~2~O ==mark== ^[inline note] www.example.com $x$",
   "",
   "- [x] done",
   "",
@@ -125,7 +129,9 @@ const probe = [
   "// line comment",
   "",
   "A**強調。**B and :rocket:.",
+  "API HTTP GraphQL XYZ",
   '"A quote" -- it\'s fine...',
+  "<<guillemet>>",
   "",
   "<Component />",
   "",
@@ -315,7 +321,7 @@ function declaredFields() {
     .filter((line) => line.trim() !== "" && !/^\s*(?:\/\*\*|\*)/.test(line))
     .map((line) => {
       const member =
-        /^ {2}(\w+)\?: (boolean|number|string|TypographyConfig|Array<NativePassConfig>)$/.exec(
+        /^ {2}(\w+)\?: (boolean|number|string|TypographyConfig|Array<NativePassConfig>|Record<string, string \| undefined \| null>)$/.exec(
           line,
         );
       assert.ok(member, `unexpected Options member in native.d.ts: ${line}`);
@@ -323,7 +329,9 @@ function declaredFields() {
         ? "object"
         : member[2].startsWith("Array<NativePassConfig>")
           ? "array"
-          : member[2];
+          : member[2].startsWith("Record<")
+            ? "record"
+            : member[2];
       return [member[1], type];
     });
 }
@@ -367,6 +375,7 @@ test("the packed path gets every declared field once, in declaration order", () 
               string: "",
               object: { language: "en" },
               array: [],
+              record: { API: "Application Programming Interface" },
             }[type],
       ]),
     );
@@ -387,10 +396,16 @@ test("the packed path gets every declared field once, in declaration order", () 
 test("the probe document shows every option", () => {
   // `allowHtml` and `disallowedRawHtml` only matter for trusted rendering,
   // and `tableColumnNames` only with a colgroup.
-  const bases = [{}, { renderPolicy: "trusted" }, { tableColgroup: true }];
+  const bases = [
+    {},
+    { renderPolicy: "trusted" },
+    { tableColgroup: true },
+    { autoAbbreviations: true },
+  ];
   const choices = {
     typography: [{ language: "en" }, { language: "ru", dashes: false, ellipses: false }],
     passes: [[{ kind: "emojiShortcodes" }]],
+    abbreviations: [{ API: "Custom title" }, { XYZ: null }, { GraphQL: "" }],
     headingIdPrefix: ["", "p-"],
     headingOffset: [0, 1],
     linkBasePath: ["", "/docs"],
@@ -435,6 +450,7 @@ test("packs every field at once", () => {
       string: "",
       object: { language: "en" },
       array: [],
+      record: { API: "Application Programming Interface" },
     }[type];
   }
   all.renderPolicy = "trusted";
@@ -455,6 +471,7 @@ const validValues = {
   string: ["", "docs-", "/docs", "/docs/"],
   object: [{ language: "en" }, { language: "fr" }],
   array: [[], [{ kind: "emojiShortcodes" }], [{ kind: "typography", language: "en" }]],
+  record: [{ API: "Application Programming Interface" }, { XYZ: null }, { GraphQL: "" }],
 };
 
 /** Half the fields set, mostly to valid values and sometimes to any value. */
@@ -929,6 +946,33 @@ test("routes options through the packed entries", (t) => {
     const [, rebuilt] = spies.args(object);
     assert.equal(Object.getPrototypeOf(rebuilt), null);
     assert.equal(rebuilt.blockquoteAttributions, true);
+  }
+});
+
+test("routes enabled guillemet parsing through the object entries", (t) => {
+  const routed = entries.filter(({ natives }) => natives);
+  const spies = spyOn(
+    t,
+    routed.flatMap(({ natives }) => natives),
+  );
+  for (const entry of routed) {
+    const [object, packed] = entry.natives;
+    spies.reset();
+    entry.facade(probe, {
+      renderPolicy: "trusted",
+      superscript: false,
+      guillemetDigraphs: true,
+    });
+    assert.deepEqual([spies.count(packed), spies.count(object)], [0, 1], `${entry.name} enabled`);
+    const [, rebuilt] = spies.args(object);
+    assert.equal(Object.getPrototypeOf(rebuilt), null, `${entry.name} object prototype`);
+    assert.equal(rebuilt.renderPolicy, "trusted", `${entry.name} renderPolicy`);
+    assert.equal(rebuilt.superscript, false, `${entry.name} false flag`);
+    assert.equal(rebuilt.guillemetDigraphs, true, `${entry.name} guillemet flag`);
+
+    spies.reset();
+    entry.facade(probe, { guillemetDigraphs: false });
+    assert.deepEqual([spies.count(packed), spies.count(object)], [1, 0], `${entry.name} disabled`);
   }
 });
 

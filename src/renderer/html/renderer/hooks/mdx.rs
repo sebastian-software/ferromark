@@ -55,6 +55,16 @@ impl HtmlRenderer {
         };
 
         let previous_child_html = self.in_mdx_island_children;
+        let previous_abbreviation_depth = self
+            .abbreviation_state
+            .as_ref()
+            .map(|state| state.mdx_depth)
+            .unwrap_or_default();
+        if name.eq_ignore_ascii_case("abbr")
+            && let Some(state) = self.abbreviation_state.as_mut()
+        {
+            state.mdx_depth = state.mdx_depth.saturating_add(1);
+        }
         self.in_mdx_island_children = false;
         self.output.push('<');
         self.output.push_str(tag);
@@ -83,6 +93,9 @@ impl HtmlRenderer {
         self.output.push_str(tag);
         self.output.push('>');
         self.in_mdx_island_children = previous_child_html;
+        if let Some(state) = self.abbreviation_state.as_mut() {
+            state.mdx_depth = previous_abbreviation_depth;
+        }
         if block {
             self.output.push('\n');
         }
@@ -94,12 +107,12 @@ impl HtmlRenderer {
         block: bool,
         hooks: &mut H,
     ) {
-        for child in children {
-            if block {
+        if block {
+            for child in children {
                 self.render_node_with_hooks(child, hooks);
-            } else {
-                self.render_inline_node_with_hooks(child, hooks);
             }
+        } else {
+            self.render_inline_children_with_hooks(children, hooks);
         }
     }
 }

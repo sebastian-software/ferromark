@@ -41,6 +41,7 @@ pub fn walk_node<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, node: &Node<'a>) {
         Node::Image(n) => visitor.visit_image(n),
         Node::Highlight(n) => visitor.visit_highlight(n),
         Node::Delete(n) => visitor.visit_delete(n),
+        Node::Insertion(n) => visitor.visit_insertion(n),
         Node::Superscript(n) => visitor.visit_superscript(n),
         Node::Subscript(n) => visitor.visit_subscript(n),
         Node::FootnoteReference(n) => visitor.visit_footnote_reference(n),
@@ -191,6 +192,13 @@ pub fn walk_highlight<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, highlight: &Hi
 /// Walks through strikethrough children.
 pub fn walk_delete<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, delete: &Delete<'a>) {
     for child in &delete.children {
+        visitor.visit_node(child);
+    }
+}
+
+/// Walks through insertion children.
+pub fn walk_insertion<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, insertion: &Insertion<'a>) {
+    for child in &insertion.children {
         visitor.visit_node(child);
     }
 }

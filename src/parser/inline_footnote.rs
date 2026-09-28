@@ -194,6 +194,11 @@ impl<'a> Parser<'a> {
                     self.lift_inline_note(child, definitions, next_id, explicit);
                 }
             }
+            Node::Insertion(n) => {
+                for child in &mut n.children {
+                    self.lift_inline_note(child, definitions, next_id, explicit);
+                }
+            }
             Node::Superscript(n) => {
                 for child in &mut n.children {
                     self.lift_inline_note(child, definitions, next_id, explicit);

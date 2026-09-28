@@ -59,7 +59,7 @@ test("rejects development versions and malformed release versions", () => {
 
 test("orders the native archives before the facade and names the channel", (t) => {
   const { distTag, archives: ordered } = releaseArchives(archives(t), facade);
-  assert.equal(ordered.length, 9);
+  assert.equal(ordered.length, 8);
   assert.equal(distTag, releaseChannel(facade.version).tag);
   assert.ok(ordered.at(-1).endsWith(`/ferromark-${facade.version}.tgz`));
   for (const archive of ordered.slice(0, -1)) {
@@ -91,7 +91,7 @@ test("hands npm publish local tarball paths, never a GitHub shorthand", (t) => {
   const directory = archives(t);
   const { archives: ordered } = releaseArchives(directory, facade);
   const args = publishArguments(ordered, join(directory, ".."));
-  assert.equal(args.length, 9);
+  assert.equal(args.length, 8);
   for (const arg of args) {
     // `artifacts/name.tgz` would be read as the shorthand `owner/repo`.
     assert.match(arg, /^\.\/[^/]+\/[^/]+\.tgz$/, arg);

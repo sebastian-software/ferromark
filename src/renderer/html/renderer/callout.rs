@@ -29,8 +29,12 @@ impl HtmlRenderer {
         // may emit the separating newline as its own Text node) is part of
         // the marker line, not body content.
         let mut before_body = true;
+        let abbreviations_enabled = self.abbreviation_state.is_some();
+        if abbreviations_enabled {
+            self.begin_inline_abbreviation_scope();
+        }
 
-        for child in &paragraph.children {
+        for (index, child) in paragraph.children.iter().enumerate() {
             match child {
                 Node::Text(text) if skip_chars > 0 || before_body => {
                     let mut value = text.value;
@@ -47,7 +51,29 @@ impl HtmlRenderer {
                         continue;
                     }
                     before_body = false;
-                    self.write_inline_text(value);
+                    if abbreviations_enabled {
+                        let skipped_prefix = text.value.len() - value.len();
+                        let before = if skipped_prefix > 0 {
+                            text.value[..skipped_prefix].chars().next_back()
+                        } else {
+                            super::write::adjacent_text_boundary_before(&paragraph.children, index)
+                        };
+                        self.write_inline_text_with_boundaries(
+                            value,
+                            before,
+                            super::write::adjacent_text_boundary_after(&paragraph.children, index),
+                        );
+                    } else {
+                        self.write_inline_text(value);
+                    }
+                }
+                Node::Text(text) if abbreviations_enabled => {
+                    before_body = false;
+                    self.write_inline_text_with_boundaries(
+                        text.value,
+                        super::write::adjacent_text_boundary_before(&paragraph.children, index),
+                        super::write::adjacent_text_boundary_after(&paragraph.children, index),
+                    );
                 }
                 _ => {
                     before_body = false;
@@ -57,6 +83,9 @@ impl HtmlRenderer {
                     self.visit_inline_node(child);
                 }
             }
+        }
+        if abbreviations_enabled {
+            self.end_inline_abbreviation_scope();
         }
         self.autolink_index = autolink_index;
 

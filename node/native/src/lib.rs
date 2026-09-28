@@ -10,8 +10,8 @@ use std::collections::HashMap;
 use crate::input::Utf8Input;
 use crate::options::{CoreOptions, addon_defaults};
 use ferromark::{
-    Allocator, HeadingIdPlanner, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks,
-    HtmlRenderer, Parser, ParserOptions,
+    AbbreviationOptions, Allocator, HeadingIdPlanner, HtmlRenderContext, HtmlRenderControl,
+    HtmlRenderHooks, HtmlRenderer, Parser, ParserOptions,
     ast::{Node, Visit},
 };
 use ferromark_transforms::{
@@ -96,12 +96,18 @@ pub struct Options {
     pub typography: Option<TypographyConfig>,
     pub passes: Option<Vec<NativePassConfig>>,
     pub blockquote_attributions: Option<bool>,
+    pub insertions: Option<bool>,
+    pub guillemet_digraphs: Option<bool>,
+    pub auto_abbreviations: Option<bool>,
+    pub abbreviations: Option<HashMap<String, Option<String>>>,
 }
 
 fn core_options(options: Option<Options>) -> Result<CoreOptions> {
     let CoreOptions {
         mut parser,
         mut html,
+        mut auto_abbreviations,
+        mut abbreviations,
         mut heading_level_offset,
         mut heading_id_prefix,
         mut pipeline,
@@ -180,11 +186,19 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             parser.blockquote_attributions,
             options.blockquote_attributions
         );
+        apply!(parser.insertions, options.insertions);
+        apply!(parser.guillemet_digraphs, options.guillemet_digraphs);
         if let Some(base) = options.link_base_path {
             // The JavaScript string is owned, so this becomes `Cow::Owned`;
             // every other renderer option keeps its borrowed default.
             html.base_url = base.into();
             html.convert_md_links = true;
+        }
+        if let Some(enabled) = options.auto_abbreviations {
+            auto_abbreviations = enabled;
+        }
+        if let Some(overrides) = options.abbreviations {
+            abbreviations.overrides = overrides.into_iter().collect();
         }
         let typography_config = options.typography;
         let pass_configs = options.passes;
@@ -204,7 +218,8 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             let language = language
                 .parse::<TypographyLanguage>()
                 .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-            let mut resolved = TypographyOptions::new(language);
+            let mut resolved =
+                TypographyOptions::new(language).with_guillemet_digraphs(parser.guillemet_digraphs);
             if let Some(enabled) = config.dashes {
                 resolved = resolved.with_dashes(enabled);
             }
@@ -215,13 +230,15 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         }
         if let Some(configs) = pass_configs {
             for (index, config) in configs.into_iter().enumerate() {
-                append_native_pass(&mut pipeline, config, index)?;
+                append_native_pass(&mut pipeline, config, index, parser.guillemet_digraphs)?;
             }
         }
     }
     Ok(CoreOptions {
         parser,
         html,
+        auto_abbreviations,
+        abbreviations,
         heading_level_offset,
         heading_id_prefix,
         pipeline,
@@ -232,6 +249,7 @@ fn append_native_pass(
     pipeline: &mut TransformPipeline,
     config: NativePassConfig,
     index: usize,
+    guillemet_digraphs: bool,
 ) -> Result<()> {
     let option = |name: &str| format!("passes[{index}].{name}");
     let kind = config.kind.ok_or_else(|| {
@@ -261,7 +279,8 @@ fn append_native_pass(
             let language = language
                 .parse::<TypographyLanguage>()
                 .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-            let mut options = TypographyOptions::new(language);
+            let mut options =
+                TypographyOptions::new(language).with_guillemet_digraphs(guillemet_digraphs);
             if let Some(enabled) = config.dashes {
                 options = options.with_dashes(enabled);
             }
@@ -402,10 +421,14 @@ impl Renderer {
     pub fn new(options: Option<Options>) -> Result<Self> {
         let options = core_options(options)?;
         let html_options = (!options.pipeline.is_empty()).then(|| options.html.clone());
-        let html = HtmlRenderer::with_options(options.html)
-            .with_heading_level_offset(options.heading_level_offset)
-            .try_with_heading_id_prefix(options.heading_id_prefix)
-            .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+        let html = build_html_renderer(
+            options.html,
+            options.auto_abbreviations,
+            options.abbreviations,
+        )
+        .with_heading_level_offset(options.heading_level_offset)
+        .try_with_heading_id_prefix(options.heading_id_prefix)
+        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
         Ok(Self {
             allocator: Allocator::new(),
             parser: options.parser,
@@ -666,10 +689,14 @@ fn render_document(
         .front_matter
         .as_ref()
         .map(|front| front.value.to_owned());
-    let mut renderer = HtmlRenderer::with_options(options.html)
-        .with_heading_level_offset(options.heading_level_offset)
-        .try_with_heading_id_prefix(options.heading_id_prefix)
-        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+    let mut renderer = build_html_renderer(
+        options.html,
+        options.auto_abbreviations,
+        options.abbreviations,
+    )
+    .with_heading_level_offset(options.heading_level_offset)
+    .try_with_heading_id_prefix(options.heading_id_prefix)
+    .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
     let html = if let Some(callback) = callback {
         let mut hooks = CallbackRenderer {
             callback,
@@ -688,6 +715,18 @@ fn render_document(
         headings: metadata.headings,
         front_matter,
     })
+}
+
+fn build_html_renderer(
+    html: ferromark::HtmlRendererOptions,
+    auto_abbreviations: bool,
+    abbreviations: AbbreviationOptions,
+) -> HtmlRenderer {
+    if auto_abbreviations {
+        HtmlRenderer::with_options_and_abbreviations(html, abbreviations)
+    } else {
+        HtmlRenderer::with_options(html)
+    }
 }
 
 #[napi(catch_unwind)]

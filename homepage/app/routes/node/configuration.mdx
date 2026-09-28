@@ -19,6 +19,7 @@ spelling mistakes cannot silently change your output.
 import { type Options, toHtml } from "ferromark";
 
 const options = {
+  insertions: true,
   frontMatter: true,
   headingIds: true,
   footnotes: true,
@@ -30,9 +31,11 @@ const options = {
   extendedAttributes: true,
   bracketedSpans: true,
   blockquoteAttributions: true,
+  autoAbbreviations: true,
+  abbreviations: { API: "Application Programming Interface", GraphQL: "", README: null },
 } satisfies Options;
 
-const html = toHtml("# Notes\n\nA detail.[^1]\n\n[^1]: More context.", options);
+const html = toHtml("# Notes\n\nAn ++important++ detail.[^1]\n\n[^1]: More context.", options);
 ```
 
 Omitted values use the package defaults. There are no named preset constructors
@@ -41,6 +44,11 @@ and email detection to the default GFM extensions, set `autolinkLiterals: true`.
 Typography is also explicit: set `typography: { language: "en" }` (or another
 supported language) to run the built-in post-parse typography pass. It is off
 when omitted and never detects or switches languages.
+`autoAbbreviations` adds optional render-time `<abbr>` markup for technical
+terms. Its exact override map can set titles, force a bare wrapper with an empty
+string, or suppress a term with `null`; supplying the map alone does not enable
+the feature. Empty override keys are ignored. See the
+[technical abbreviation guide](/guide/ffm#technical-abbreviations).
 
 ## Option reference
 
@@ -56,6 +64,7 @@ All properties are optional. Syntax examples and output semantics live in the
 | `tables`                 | `true`        | GFM pipe tables                                                        |
 | `mergedTableCells`       | `false`       | Horizontal cell spans; requires `tables`                               |
 | `strikethrough`          | `true`        | Double-tilde strikethrough                                             |
+| `insertions`             | `false`       | Double-plus inserted text rendered as `<ins>`                          |
 | `highlight`              | `false`       | Highlight markup                                                       |
 | `superscript`            | `false`       | Superscript markup                                                     |
 | `subscript`              | `false`       | Subscript markup                                                       |
@@ -85,8 +94,11 @@ All properties are optional. Syntax examples and output semantics live in the
 | `wikiLinks`              | `false`       | Wiki-link syntax                                                       |
 | `cjkEmphasis`            | `false`       | CJK emphasis rules                                                     |
 | `mdx`                    | `false`       | MDX syntax capture and static island output                            |
+| `guillemetDigraphs`      | `false`       | Preserve `<<…>>` for locale-aware typography                           |
 | `typography`             | unset         | Optional language-aware prose punctuation transform                    |
 | `passes`                 | unset         | Ordered GitHub-reference, emoji-shortcode, and typography transforms   |
+| `autoAbbreviations`      | `false`       | Wrap uppercase technical terms in `<abbr>` markup                      |
+| `abbreviations`          | empty         | Exact titles, bare-wrapper overrides, or `null` suppressions           |
 
 Use `passes` when you need more than one transform or need to control their
 order. Its entries use `kind: "githubReferences"` (with an explicit

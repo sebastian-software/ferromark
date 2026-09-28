@@ -4,6 +4,7 @@
 //! to scan: this module owns only user-supplied configuration and lightweight enums.
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 use super::autolink::AutolinkMatcher;
 
@@ -222,12 +223,33 @@ pub struct HtmlRendererOptions {
     pub table_column_names: bool,
 }
 
+/// Options for the opt-in technical abbreviation renderer.
+///
+/// Pass this value to [`super::renderer::HtmlRenderer::with_abbreviations`],
+/// the [`super::renderer::HtmlRenderer::with_options_and_abbreviations`]
+/// constructor, or [`crate::to_html_with_options_and_abbreviations`] to
+/// annotate eligible uppercase terms with `<abbr>` markup. The separate type
+/// keeps the frozen [`HtmlRendererOptions`] struct source-compatible. It is
+/// non-exhaustive so future settings can be added without changing the default
+/// construction pattern.
+///
+/// An absent key uses a built-in expansion when available, then falls back to
+/// the uppercase-token heuristic. `Some(nonempty)` supplies a title,
+/// `Some("")` requests a bare wrapper, and `None` suppresses the exact
+/// case-sensitive term.
+#[derive(Debug, Clone, Default)]
+#[non_exhaustive]
+pub struct AbbreviationOptions {
+    /// Caller overrides keyed by the exact source token.
+    pub overrides: BTreeMap<String, Option<String>>,
+}
+
 const DEFAULT_SOFT_BREAK: &str = "\n";
 const DEFAULT_HARD_BREAK: &str = "<br>\n";
 const DEFAULT_BASE_URL: &str = "/";
 const DEFAULT_SOURCE_PATH: &str = "";
 const DEFAULT_CODE_ANNOTATION_META_KEY: &str = "annotate";
-const DEFAULT_AUTOLINK_PATTERNS: &[Cow<'static, str>] =
+pub(super) const DEFAULT_AUTOLINK_PATTERNS: &[Cow<'static, str>] =
     &[Cow::Borrowed("http://"), Cow::Borrowed("https://")];
 
 /// Internal form of [`HtmlRendererOptions`], holding only what rendering reads.

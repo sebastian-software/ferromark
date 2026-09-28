@@ -270,7 +270,6 @@ jobs:
       matrix:
         include:
           - { os: macos-latest, rust_target: aarch64-apple-darwin, artifact: darwin-arm64, runtime_test: true, pgo: true }
-          - { os: macos-15-intel, rust_target: x86_64-apple-darwin, artifact: darwin-x64, runtime_test: true, pgo: true }
           - { os: ubuntu-24.04-arm, rust_target: aarch64-unknown-linux-gnu, artifact: linux-arm64-gnu, runtime_test: true, pgo: true }
           - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-gnu, artifact: linux-x64-gnu, runtime_test: true, pgo: true }
           - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-musl, artifact: linux-x64-musl, runtime_test: false, pgo: true }
