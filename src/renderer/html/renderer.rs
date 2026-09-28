@@ -223,6 +223,8 @@ impl HtmlRenderer {
                 patterns.push(default.clone());
             }
         }
+        self.options.abbreviations = true;
+        self.options.special_inline_text = true;
         self.abbreviation_state = Some(Box::new(AbbreviationState {
             matcher,
             url_index: FirstByteIndex::from_patterns(&patterns),
@@ -347,7 +349,9 @@ impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn prepare_render(&mut self, document: &Document<'_>) {
         self.output.clear();
         self.in_mdx_island_children = false;
-        if let Some(state) = self.abbreviation_state.as_mut() {
+        if self.options.abbreviations
+            && let Some(state) = self.abbreviation_state.as_mut()
+        {
             state.raw_html_depth = 0;
             state.mdx_depth = 0;
             state.inline_depth = 0;
