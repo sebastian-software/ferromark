@@ -1,5 +1,6 @@
 //! Optional, render-time recognition of technical abbreviations.
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use crate::renderer::html::escape::write_attribute_escaped_into;
@@ -50,8 +51,8 @@ const BUILT_INS: &[(&str, &str)] = &[
 
 #[derive(Debug)]
 pub(super) struct Entry {
-    term: String,
-    title: Option<String>,
+    term: Cow<'static, str>,
+    title: Option<Cow<'static, str>>,
     suppressed: bool,
     is_override: bool,
 }
@@ -64,7 +65,7 @@ pub(super) struct AbbreviationMatcher {
     /// candidate to terms that can actually match its first byte.
     first_byte_ranges: [usize; 257],
     /// Exact built-in/override lookup for the heuristic fallback.
-    exact_terms: FxHashMap<String, usize>,
+    exact_terms: FxHashMap<Cow<'static, str>, usize>,
 }
 
 /// The match action borrowed from a reusable dictionary entry.
@@ -81,18 +82,21 @@ impl AbbreviationMatcher {
         let mut entries = BUILT_INS
             .iter()
             .map(|(term, title)| Entry {
-                term: (*term).to_string(),
-                title: Some((*title).to_string()),
+                term: Cow::Borrowed(term),
+                title: Some(Cow::Borrowed(title)),
                 suppressed: false,
                 is_override: false,
             })
             .collect::<Vec<_>>();
 
         for (term, title) in overrides {
+            if term.is_empty() {
+                continue;
+            }
             entries.push(Entry {
-                term,
+                term: Cow::Owned(term),
                 suppressed: title.is_none(),
-                title: title.filter(|value| !value.is_empty()),
+                title: title.filter(|value| !value.is_empty()).map(Cow::Owned),
                 is_override: true,
             });
         }
@@ -157,7 +161,7 @@ impl AbbreviationMatcher {
         }
 
         for entry in &self.entries[range] {
-            if !text[start..].starts_with(&entry.term) {
+            if !text[start..].starts_with(entry.term.as_ref()) {
                 continue;
             }
             let end = start + entry.term.len();

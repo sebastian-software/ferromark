@@ -347,6 +347,7 @@ impl HtmlRenderer {
             .collect::<SmallVec<[&str; 4]>>();
         let out = &mut self.output;
         let mut cursor = 0usize;
+        let mut before_segment = before;
         while cursor < bytes.len() {
             let Some((match_start, url_end)) = find_autolink_match(value, cursor, &patterns, index)
             else {
@@ -357,8 +358,8 @@ impl HtmlRenderer {
                     out,
                     &value[cursor..match_start],
                     matcher,
-                    (cursor == 0).then_some(before).flatten(),
-                    None,
+                    before_segment,
+                    value[match_start..].chars().next(),
                 );
             }
             let url = &value[match_start..url_end];
@@ -381,10 +382,17 @@ impl HtmlRenderer {
             } else {
                 write_escaped_into(out, url);
             }
+            before_segment = value[..url_end].chars().next_back();
             cursor = url_end;
         }
         if cursor < bytes.len() {
-            write_abbreviations_into_with_boundaries(out, &value[cursor..], matcher, None, after);
+            write_abbreviations_into_with_boundaries(
+                out,
+                &value[cursor..],
+                matcher,
+                before_segment,
+                after,
+            );
         }
     }
 

@@ -62,19 +62,31 @@ fn allocations<T>(work: impl FnOnce() -> T) -> (T, u64) {
 }
 
 #[test]
-fn disabled_renderer_build_does_not_change_its_allocation_count() {
+fn disabled_renderer_construction_allocates_nothing_for_abbreviations() {
     drop(black_box(HtmlRenderer::new()));
-    drop(black_box(HtmlRenderer::with_options(
-        HtmlRendererOptions::default(),
-    )));
+    let (renderer, construction_allocations) = allocations(|| black_box(HtmlRenderer::new()));
+    drop(renderer);
 
-    let (plain, plain_allocations) = allocations(|| black_box(HtmlRenderer::new()));
-    drop(plain);
-    let (configured, configured_allocations) =
-        allocations(|| black_box(HtmlRenderer::with_options(HtmlRendererOptions::default())));
-    drop(configured);
+    assert_eq!(
+        construction_allocations, 0,
+        "the default renderer must not build abbreviation state"
+    );
+}
 
-    assert_eq!(configured_allocations, plain_allocations);
+#[test]
+fn built_in_matcher_construction_stays_within_its_allocation_budget() {
+    drop(black_box(
+        HtmlRenderer::new().with_abbreviations(AbbreviationOptions::default()),
+    ));
+    let (renderer, construction_allocations) = allocations(|| {
+        black_box(HtmlRenderer::new().with_abbreviations(AbbreviationOptions::default()))
+    });
+    drop(renderer);
+
+    assert!(
+        construction_allocations < 32,
+        "built-in matcher setup should not allocate once per built-in term or title; got {construction_allocations} allocations"
+    );
 }
 
 #[test]

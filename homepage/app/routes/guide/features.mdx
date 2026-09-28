@@ -98,7 +98,7 @@ provides common titles;
 unknown candidates can receive a bare wrapper, and an exact override map can
 add a mixed-case term, change a title, or suppress a false positive. Processing
 runs during rendering, so it leaves the parsed AST and heading metadata
-unchanged.
+unchanged. Empty override keys are ignored.
 
 Code, math, raw HTML, MDX attributes, URLs and link destinations, and image alt
 text stay outside generated wrappers. Markdown link labels and emphasized prose

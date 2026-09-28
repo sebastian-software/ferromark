@@ -121,11 +121,9 @@ pub struct HtmlRenderer {
     /// duration of the body and putting it back afterwards, so the per-render
     /// `is_some()` gate keeps its exact meaning.
     autolink_index: Option<FirstByteIndex>,
-    /// Optional, longest-term-first technical abbreviation matcher. It is
-    /// built once with the renderer so repeated documents share its dictionary.
-    /// State used only by opt-in technical abbreviation rendering. Keeping it
-    /// behind one pointer avoids growing every default renderer with the
-    /// dictionary and URL scanner fields.
+    /// Optional state for technical abbreviation rendering. It is built once
+    /// for opted-in renderers and boxed so default renderers carry only a
+    /// pointer-sized `None` instead of the matcher and URL scanner data.
     abbreviation_state: Option<Box<AbbreviationState>>,
 }
 

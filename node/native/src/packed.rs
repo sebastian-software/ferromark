@@ -30,21 +30,21 @@
 //! The entries are private to the facade. napi-rs declares them in the
 //! generated `native.d.ts`, but the package types in `index.d.mts` do not.
 
+use napi::bindgen_prelude::{Buffer, FnArgs, Function, Result};
+use napi::{Env, JsString};
+use napi_derive::napi;
+
 use crate::input::Utf8Input;
 use crate::{
     NativePassConfig, Options, TransformResult, TypographyConfig, core_options, html_buffer,
     js_string, render_document, render_one_shot,
 };
-use napi::bindgen_prelude::{Buffer, FnArgs, Function, Result};
-use napi::{Env, JsString};
-use napi_derive::napi;
 
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
 ///
 /// The bit numbers follow the declaration order of [`Options`], skipping the
 /// five fields that pass through unpacked. Abbreviation options use the object
 /// entry point so they do not consume scarce packed flag bits.
-#[allow(clippy::too_many_arguments)]
 pub fn unpack(
     set: u32,
     on: u32,
@@ -102,7 +102,6 @@ pub fn unpack(
 /// defaults as well: every bit of `set` is clear, so [`unpack`] ignores `on`
 /// and leaves every field unset, and `core_options` changes nothing for
 /// unset fields.
-#[allow(clippy::too_many_arguments)]
 fn unpack_present(
     set: u32,
     on: u32,

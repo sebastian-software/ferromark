@@ -419,7 +419,6 @@ impl Renderer {
     }
 
     /// Internal to the `ferromark` facade: the constructor with packed options.
-    #[allow(clippy::too_many_arguments)]
     #[napi(factory, catch_unwind, js_name = "withPackedOptions")]
     pub fn with_packed_options(
         set: u32,

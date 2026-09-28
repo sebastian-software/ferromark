@@ -77,6 +77,27 @@ fn overrides_keep_missing_empty_and_suppressed_entries_distinct() {
 }
 
 #[test]
+fn empty_override_keys_do_not_break_dictionary_matching() {
+    let allocator = Allocator::new();
+    let source = "API and HTTP/2 and UTF-8 Ab";
+    let document = Parser::new(&allocator, source).parse().unwrap();
+    let overrides = BTreeMap::from([
+        (String::new(), Some("unused".to_string())),
+        ("Ab".to_string(), Some("Custom term".to_string())),
+    ]);
+
+    assert_eq!(
+        renderer(overrides).render(&document),
+        concat!(
+            "<p><abbr title=\"Application Programming Interface\">API</abbr> and ",
+            "<abbr title=\"Hypertext Transfer Protocol, version 2\">HTTP/2</abbr> and ",
+            "<abbr title=\"Unicode Transformation Format, 8-bit\">UTF-8</abbr> ",
+            "<abbr title=\"Custom term\">Ab</abbr></p>\n"
+        )
+    );
+}
+
+#[test]
 fn automatic_tokens_obey_case_unicode_identifier_digit_and_plural_boundaries() {
     let allocator = Allocator::new();
     let source = "API API2 APIs API-like xAPI APIx \\_API API\\_ ÄAPI APIÄ A";
@@ -147,6 +168,31 @@ fn link_labels_are_prose_but_url_text_and_destinations_are_preserved() {
             "https://API.example/API</a> https://API.example/API</p>\n"
         )
     );
+}
+
+#[test]
+fn custom_terms_use_the_character_at_the_autolink_start_as_their_boundary() {
+    let allocator = Allocator::new();
+    let source = "éweb:example.org";
+    let document = Parser::new(&allocator, source).parse().unwrap();
+    let html_options = HtmlRendererOptions {
+        autolink_urls: true,
+        autolink_patterns: vec!["web:".into()].into(),
+        ..HtmlRendererOptions::default()
+    };
+    let plain = HtmlRenderer::with_options(html_options.clone()).render(&document);
+    let annotated = HtmlRenderer::with_options_and_abbreviations(
+        html_options,
+        options(BTreeMap::from([("é".to_string(), Some("E".to_string()))])),
+    )
+    .render(&document);
+
+    assert_eq!(annotated, plain);
+    assert!(
+        annotated.contains("<a href=\"web:example.org\""),
+        "{annotated}"
+    );
+    assert!(!annotated.contains("<abbr"), "{annotated}");
 }
 
 #[test]
@@ -227,6 +273,50 @@ fn callout_urls_remain_unlinked_when_abbreviations_are_enabled() {
         annotated
             .ends_with("<p><abbr title=\"Application Programming Interface\">API</abbr></p>\n")
     );
+}
+
+#[test]
+fn callout_rendering_matches_hooks_around_raw_html_and_text_boundaries() {
+    let source = concat!(
+        "> [!NOTE]\n> <span>*API*</span>\n\n",
+        "> [!TIP]\n> x\\_API &Auml;API\n"
+    );
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let mut ordinary = renderer(BTreeMap::new());
+    let plain = ordinary.render(&document);
+    let mut hooked = renderer(BTreeMap::new());
+    let mut hooks = NoHtmlRenderHooks;
+    let with_hooks = hooked.render_with_hooks(&document, &mut hooks);
+
+    assert_eq!(plain, with_hooks);
+    assert!(plain.contains("<span><em>API</em></span>"), "{plain}");
+    assert!(plain.contains("x_API ÄAPI"), "{plain}");
+    assert!(!plain.contains("<abbr"), "{plain}");
+
+    let sanitized_options = HtmlRendererOptions {
+        sanitize: true,
+        ..HtmlRendererOptions::default()
+    };
+    let mut ordinary = HtmlRenderer::with_options_and_abbreviations(
+        sanitized_options.clone(),
+        AbbreviationOptions::default(),
+    );
+    let plain = ordinary.render(&document);
+    let mut hooked = HtmlRenderer::with_options_and_abbreviations(
+        sanitized_options,
+        AbbreviationOptions::default(),
+    );
+    let with_hooks = hooked.render_with_hooks(&document, &mut hooks);
+
+    assert_eq!(plain, with_hooks);
+    assert!(
+        plain.contains("&lt;span&gt;<em>API</em>&lt;/span&gt;"),
+        "{plain}"
+    );
+    assert!(!plain.contains("<abbr"), "{plain}");
 }
 
 #[test]

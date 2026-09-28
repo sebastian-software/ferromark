@@ -93,6 +93,8 @@ attribute.
 | Empty string | Wrap without a `title`, overriding a built-in title |
 | `null` | Leave the exact term as plain text, even if the heuristic or built-in dictionary recognizes it |
 
+Empty override keys are ignored because they cannot name a token.
+
 Rust uses the non-exhaustive `AbbreviationOptions` type with an
 `overrides: BTreeMap<String, Option<String>>` field; create it with
 `AbbreviationOptions::default()` and set that field. `Some("")` means a bare
