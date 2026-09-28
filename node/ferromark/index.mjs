@@ -7,6 +7,53 @@ import { linuxLibc, nativeTarget as resolveNativeTarget } from "./native-target.
 
 const require = createRequire(import.meta.url);
 
+/** @type {Array<[string, number]>} */
+const packedBooleanFlagsBeforeHeadingOffsets = [
+  ["allowHtml", 1 << 1],
+  ["tables", 1 << 2],
+  ["mergedTableCells", 1 << 3],
+  ["tableColgroup", 1 << 4],
+  ["tableColumnNames", 1 << 5],
+  ["tableAttributes", 1 << 6],
+  ["strikethrough", 1 << 7],
+  ["superscript", 1 << 8],
+  ["subscript", 1 << 9],
+  ["taskLists", 1 << 10],
+  ["autolinkLiterals", 1 << 11],
+  ["disallowedRawHtml", 1 << 12],
+  ["footnotes", 1 << 13],
+  ["highlight", 1 << 14],
+  ["inlineFootnotes", 1 << 15],
+  ["allowLinkRefs", 1 << 16],
+  ["frontMatter", 1 << 17],
+  ["headingIds", 1 << 18],
+];
+
+/** @type {Array<[string, number]>} */
+const packedBooleanFlagsAfterHeadingOffsets = [
+  ["headingAttributes", 1 << 19],
+  ["math", 1 << 20],
+  ["callouts", 1 << 21],
+  ["definitionLists", 1 << 22],
+  ["lineComments", 1 << 23],
+  ["wikiLinks", 1 << 24],
+  ["cjkEmphasis", 1 << 25],
+  ["mdx", 1 << 26],
+];
+
+/**
+ * @param {Record<string, unknown>} options Target options object.
+ * @param {{ set: number, on: number }} packed Parsed bitmasks.
+ * @param {Array<[string, number]>} flags Option names and their bits.
+ */
+function copyPackedBooleanFlags(options, packed, flags) {
+  for (const [key, bit] of flags) {
+    if (packed.set & bit) {
+      options[key] = Boolean(packed.on & bit);
+    }
+  }
+}
+
 const optionKeys = new Set([
   "renderPolicy",
   "allowHtml",
@@ -249,43 +296,13 @@ class PackedOptions {
   /** @returns {import('./index.mjs').Options} Plain values for the native object path. */
   asNativeOptions() {
     const options = Object.create(null);
-    /** @param {string} key @param {number} bit */
-    const flag = (key, bit) => {
-      if (this.set & bit) {
-        options[key] = Boolean(this.on & bit);
-      }
-    };
     if (this.set & 1) {
       options.renderPolicy = this.on & 1 ? "trusted" : "untrusted";
     }
-    flag("allowHtml", 1 << 1);
-    flag("tables", 1 << 2);
-    flag("mergedTableCells", 1 << 3);
-    flag("tableColgroup", 1 << 4);
-    flag("tableColumnNames", 1 << 5);
-    flag("tableAttributes", 1 << 6);
-    flag("strikethrough", 1 << 7);
-    flag("superscript", 1 << 8);
-    flag("subscript", 1 << 9);
-    flag("taskLists", 1 << 10);
-    flag("autolinkLiterals", 1 << 11);
-    flag("disallowedRawHtml", 1 << 12);
-    flag("footnotes", 1 << 13);
-    flag("highlight", 1 << 14);
-    flag("inlineFootnotes", 1 << 15);
-    flag("allowLinkRefs", 1 << 16);
-    flag("frontMatter", 1 << 17);
-    flag("headingIds", 1 << 18);
+    copyPackedBooleanFlags(options, this, packedBooleanFlagsBeforeHeadingOffsets);
     if (this.headingOffset !== undefined) options.headingOffset = this.headingOffset;
     if (this.headingIdPrefix !== undefined) options.headingIdPrefix = this.headingIdPrefix;
-    flag("headingAttributes", 1 << 19);
-    flag("math", 1 << 20);
-    flag("callouts", 1 << 21);
-    flag("definitionLists", 1 << 22);
-    flag("lineComments", 1 << 23);
-    flag("wikiLinks", 1 << 24);
-    flag("cjkEmphasis", 1 << 25);
-    flag("mdx", 1 << 26);
+    copyPackedBooleanFlags(options, this, packedBooleanFlagsAfterHeadingOffsets);
     options.insertions = true;
     if (this.linkBasePath !== undefined) options.linkBasePath = this.linkBasePath;
     if (this.typography !== undefined) options.typography = this.typography;
