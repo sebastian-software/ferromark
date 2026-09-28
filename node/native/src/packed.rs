@@ -1,6 +1,6 @@
 //! Private entry points that take `Options` in packed form.
 //!
-//! napi-rs converts an `Options` argument field by field. For each of the 41
+//! napi-rs converts an `Options` argument field by field. For each of the 40
 //! fields, present or not, it calls `napi_get_named_property`, which creates
 //! the property key from a C string and runs an uncached property lookup, and
 //! then `napi_typeof`. That costs more per call than rendering a small
@@ -8,8 +8,9 @@
 //! JavaScript, where V8 caches them, and passes the result to these entries as
 //! plain arguments:
 //!
-//! - `set` and `on` hold one bit each for `renderPolicy` and 30 boolean fields,
-//!   numbered in their declaration order in [`Options`]. A bit in `set` marks
+//! - `set` and `on` hold one bit each for `renderPolicy` and 29 boolean fields,
+//!   numbered in their declaration order in [`Options`]. Bit 24 stays unused
+//!   since wiki links were removed, so the later bits keep their numbers. A bit in `set` marks
 //!   the field as present, and the same bit in `on` holds its value. For
 //!   `renderPolicy`, a set value bit means `'trusted'`. Enabled blockquote
 //!   attributions and insertions use the object-taking entry, as do
@@ -89,7 +90,6 @@ pub fn unpack(
         callouts: flag(21),
         definition_lists: flag(22),
         line_comments: flag(23),
-        wiki_links: flag(24),
         cjk_emphasis: flag(25),
         mdx: flag(26),
         image_attributes: flag(27),

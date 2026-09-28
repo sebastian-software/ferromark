@@ -6,7 +6,7 @@
 //! a hundred-level list followed by a hundred thousand blank lines — 100 KB
 //! of input — held four hundred megabytes of source maps. And several inline
 //! scans walked to the end of the content once per opener: image alt text,
-//! reference labels, inline notes, wiki links, the trailing-punctuation trim
+//! reference labels, inline notes, the trailing-punctuation trim
 //! of a GFM autolink, and the retired delimiters an unequal strikethrough
 //! pair leaves behind, so 128 KB of one of those shapes took seconds.
 //!
@@ -264,26 +264,6 @@ fn inline_note_openers_scale_linearly() {
 }
 
 #[test]
-fn wiki_link_openers_scale_linearly() {
-    let options = ParserOptions {
-        wiki_links: true,
-        ..ParserOptions::default()
-    };
-    for (label, shape) in [
-        (
-            "single brackets",
-            (|n: usize| "[".repeat(n) + "a]") as fn(usize) -> String,
-        ),
-        ("double brackets", |n: usize| "[[".repeat(n / 2) + "]"),
-        ("spaced double brackets", |n: usize| {
-            "[[a ".repeat(n / 4) + "]"
-        }),
-    ] {
-        assert_linear(label, &shape(8_000), &shape(32_000), &options);
-    }
-}
-
-#[test]
 fn autolink_trailing_punctuation_scales_linearly() {
     let options = ParserOptions::gfm();
     let parens = |n: usize| "http://x.com/".to_owned() + &")".repeat(n);
@@ -338,14 +318,6 @@ fn the_shapes_still_render_as_before() {
             ParserOptions::default()
         ),
         "<p><a href=\"/b\">a</a> [a][<a href=\"/b\">b</a>] <a href=\"/x\">x</a></p>\n"
-    );
-    let wiki = ParserOptions {
-        wiki_links: true,
-        ..ParserOptions::default()
-    };
-    assert_eq!(
-        render("[[Page]] [[a|b]] [[x", wiki),
-        "<p><a href=\"Page\">Page</a> <a href=\"a\">b</a> [[x</p>\n"
     );
     assert_eq!(
         render(

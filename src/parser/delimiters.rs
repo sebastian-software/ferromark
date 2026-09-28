@@ -112,37 +112,6 @@ impl<'a> Parser<'a> {
         window.found && window.hi < end
     }
 
-    /// Reports whether `]]` occurs at or after `from` in `content`.
-    ///
-    /// The wiki-link scan walks to the end of the content to find that
-    /// nothing closes a `[[`, so a run of unclosed openers paid one walk each
-    /// — `[`×n `a]` cost 8 s at 128 KB with wiki links on. The position of
-    /// the last closer settles it for every opener in the slice at once,
-    /// which is the bound [`Self::has_closer_from`] carries for the plain
-    /// closers.
-    pub(super) fn has_wiki_closer_from(&self, content: &'a str, from: usize) -> bool {
-        let key = (content.as_ptr() as usize, content.len());
-
-        let cached = self
-            .extension_memos()
-            .wiki_closer
-            .borrow()
-            .get(&key)
-            .copied();
-        let last = if let Some(last) = cached {
-            last
-        } else {
-            let last = memchr::memmem::rfind(content.as_bytes(), b"]]");
-            self.extension_memos()
-                .wiki_closer
-                .borrow_mut()
-                .insert(key, last);
-            last
-        };
-
-        last.is_some_and(|last| last >= from)
-    }
-
     /// Scans a bracketed region and returns the index of the `]` that closes
     /// it, or `content.len()` when the brackets never balance, together with
     /// whether an unescaped `[` occurred inside the region. Callers use that

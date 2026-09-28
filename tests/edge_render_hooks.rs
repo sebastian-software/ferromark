@@ -408,7 +408,6 @@ fn highlighter_fallback_preserves_extended_documents_and_reused_state() {
                         subscript: true,
                         definition_lists: true,
                         heading_attributes: true,
-                        wiki_links: true,
                         merged_table_cells: true,
                         table_attributes: true,
                         ..ParserOptions::gfm()

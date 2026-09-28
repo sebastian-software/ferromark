@@ -84,15 +84,14 @@ especially before embedding untrusted output in a host framework that uses
 | Reference notes       | `A fact.[^source]`                 | `footnotes`                | `footnotes`                     |
 | Definition lists      | `Term` followed by `: Explanation` | `definitionLists`          | `definition_lists`              |
 | Heading IDs/classes   | `# Title {#title .section}`        | `headingAttributes`        | `heading_attributes`            |
-| Wiki links            | `[[Page]]`                         | `wikiLinks`                | `wiki_links`                    |
 | Math notation         | `$x^2$`                            | `math`                     | `math`                          |
 | Superscript/subscript | `x^2^`, `H~2~O`                    | `superscript`, `subscript` | `superscript`, `subscript`      |
 | Source metadata       | Leading `---` or `+++` block       | `frontMatter`              | `front_matter`                  |
 | Source comments       | `// note` at line start            | `lineComments`             | `line_comments`                 |
 | Alert boxes           | `> [!NOTE]`                        | `callouts`                 | `HtmlRendererOptions::callouts` |
 
-These options have separate boundaries. Math needs downstream typesetting;
-wiki links need application routing. Front matter exposes raw metadata text,
+These options have separate boundaries. Math needs downstream typesetting.
+Front matter exposes raw metadata text,
 without parsing YAML or TOML values. Subscript takes precedence over
 single-tilde strikethrough when enabled. Callouts are a renderer feature,
 enabled in Node.js and the default Rust renderer; strict Rust specification

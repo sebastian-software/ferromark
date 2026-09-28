@@ -15,7 +15,6 @@ use crate::ast::{InlineSpan, Link, Node, Span};
 use super::Parser;
 use crate::parser::error::{ParseErrorKind, ParseResult};
 use crate::parser::inline::InlineMarkerScan;
-use crate::parser::short_scan;
 
 impl<'a> Parser<'a> {
     /// Parses the bracket at `pos` and reports whether it appended a link
@@ -53,15 +52,6 @@ impl<'a> Parser<'a> {
             Self::push_text(children, "[", offset + link_start, offset + link_start + 1);
             *pos = link_start + 1;
             return Ok(false);
-        }
-
-        if self.options.wiki_links
-            && bytes.get(link_start + 1) == Some(&b'[')
-            && let Some((link, end)) = self.try_parse_wiki_link(content, offset, link_start)?
-        {
-            children.push(link);
-            *pos = end;
-            return Ok(true);
         }
 
         *pos += 1;
@@ -261,8 +251,7 @@ impl<'a> Parser<'a> {
             return Ok(None);
         };
         // This walk answered what the probe would have been asked, so the
-        // probe never has to ask it again — of this text, or of the same
-        // bytes reached as a wiki-link label.
+        // probe never has to ask it again for this text.
         self.remember_probe_verdict(link_text, made_link);
 
         if !made_link && let Some(resolved) = self.resolve_link(content, close, link_text) {
@@ -410,84 +399,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn try_parse_wiki_link(
-        &self,
-        content: &'a str,
-        offset: usize,
-        link_start: usize,
-    ) -> ParseResult<Option<(Node<'a>, usize)>> {
-        if !self.has_wiki_closer_from(content, link_start + 2) {
-            return Ok(None);
-        }
-        let Some(close) = Self::scan_wiki_link_close(content.as_bytes(), link_start + 2) else {
-            return Ok(None);
-        };
-        let (inner, inner_offset) =
-            trim_with_offset(&content[link_start + 2..close], link_start + 2);
-        if inner.is_empty() {
-            return Ok(None);
-        }
-
-        let (target_part, label_part, label_part_offset) =
-            split_wiki_link_inner(inner, inner_offset);
-        let (target, target_offset) = trim_with_offset(target_part, inner_offset);
-        if target.is_empty() {
-            return Ok(None);
-        }
-
-        let (label, label_offset) = if let Some(label_part) = label_part {
-            let (label, label_offset) = trim_with_offset(label_part, label_part_offset);
-            if label.is_empty() {
-                (target, target_offset)
-            } else {
-                (label, label_offset)
-            }
-        } else {
-            (target, target_offset)
-        };
-
-        let mut label_nodes = None;
-        // A link label is short enough that the probe stays off the vector
-        // path: nested-bracket candidates are rare, but every link pays it.
-        if short_scan::find(b'[', label.as_bytes()).is_some()
-            && self.probe_link_text(label, offset + label_offset, &mut label_nodes)?
-        {
-            return Ok(None);
-        }
-
-        let children = match label_nodes.take() {
-            Some(nodes) => nodes,
-            None => self.parse_inline(label, offset + label_offset)?,
-        };
-        Ok(Some((
-            Node::Link(self.allocator.boxed(Link {
-                url: target,
-                title: None,
-                attributes: None,
-                children,
-                span: Span::new((offset + link_start) as u32, (offset + close + 2) as u32),
-            })),
-            close + 2,
-        )))
-    }
-
-    fn scan_wiki_link_close(bytes: &[u8], mut cursor: usize) -> Option<usize> {
-        while cursor + 1 < bytes.len() {
-            match bytes[cursor] {
-                b'\\' => {
-                    cursor += 2;
-                }
-                b'`' => {
-                    cursor = Self::closed_code_span_end(bytes, cursor)
-                        .unwrap_or_else(|| cursor.saturating_add(1));
-                }
-                b']' if bytes[cursor + 1] == b']' => return Some(cursor),
-                _ => cursor += 1,
-            }
-        }
-        None
-    }
-
     /// The verdict a probe has already reached for these exact bytes, if
     /// any. Bracket text is parsed in place only when there is none, so a
     /// text the probe has judged keeps taking the path it took before.
@@ -550,24 +461,6 @@ struct ResolvedLink<'a> {
     title: Option<&'a str>,
     /// Byte index in the inline content just past the link's last byte.
     end: usize,
-}
-
-fn split_wiki_link_inner(inner: &str, offset: usize) -> (&str, Option<&str>, usize) {
-    if let Some((target, label)) = inner.split_once('|') {
-        (target, Some(label), offset + target.len() + 1)
-    } else {
-        (inner, None, offset)
-    }
-}
-
-#[allow(
-    clippy::disallowed_methods,
-    reason = "wiki-link trimming is extension syntax, not a block boundary"
-)]
-fn trim_with_offset(value: &str, offset: usize) -> (&str, usize) {
-    let trimmed_start = value.trim_start();
-    let leading = value.len() - trimmed_start.len();
-    (trimmed_start.trim_end(), offset + leading)
 }
 
 /// Does any node in the tree contain a link?

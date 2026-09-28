@@ -7,7 +7,7 @@
 //! test binary — which is the point.
 //!
 //! The inline cases are the ones from issue #349: link text, image alt
-//! text, wiki-link labels and inline notes re-enter inline parsing once per
+//! text and inline notes re-enter inline parsing once per
 //! bracket level, which used to be uncounted. 16 KB of `[` aborted an 8 MB
 //! stack and 2 KB aborted a 1 MB one, so the sizes here are deliberately
 //! larger than anything that used to survive.
@@ -153,7 +153,6 @@ fn all_options() -> ParserOptions {
         math: true,
         definition_lists: true,
         heading_attributes: true,
-        wiki_links: true,
         cjk_emphasis: true,
         mdx: true,
         ..ParserOptions::gfm()
@@ -180,7 +179,7 @@ fn inline_shapes(depth: usize) -> Vec<(&'static str, String)> {
             "^[".repeat(depth) + "a" + &"]".repeat(depth),
         ),
         (
-            "wiki labels",
+            "double brackets",
             "[[".repeat(depth) + "a" + &"]]".repeat(depth),
         ),
     ]
@@ -352,12 +351,9 @@ fn deeply_nested_inline_brackets_fail_closed() {
 
 #[test]
 fn deeply_nested_inline_brackets_stay_bounded_with_every_extension() {
-    // Two of these shapes parse to a document with every extension on:
-    // `wiki_links` consumes `[[...]]` up to the first `]]`, so the label it
-    // hands to inline parsing holds openers with nothing to close them and
-    // nothing nests. Both outcomes are fine — the property under test is
-    // that a 40 KB document settles one way or the other instead of
-    // aborting the process.
+    // Some shapes parse to a document and others hit the cap. Both outcomes
+    // are fine — the property under test is that a 40 KB document settles
+    // one way or the other instead of aborting the process.
     for (label, source) in inline_shapes(INLINE_OVER_LIMIT) {
         assert_bounded(&format!("all options: {label}"), &source, all_options());
     }

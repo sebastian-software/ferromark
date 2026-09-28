@@ -75,8 +75,9 @@ rendering policies or identical edge cases across libraries.
   supply the desired formula presentation.
 - **Wiki links:** md4c and Bun produce `<x-wikilink>` elements. Their recognition
   of `[[Page]]` does not by itself supply page routing or turn it into a normal
-  navigable HTML link. V2 and OX emit link nodes; pulldown-cmark exposes a wiki
-  link event and HTML rendering.
+  navigable HTML link. OX emits link nodes; pulldown-cmark exposes a wiki link
+  event and HTML rendering. Ferromark removed its opt-in wiki links in 3.0;
+  applications can resolve `[[Page]]` in a transform or link hook instead.
 - **Frontmatter:** recognizing a delimited metadata block is separate from
   parsing YAML/TOML into typed values. The table credits extraction/recognition,
   not semantic metadata deserialization. V2 extracts a single block only at the

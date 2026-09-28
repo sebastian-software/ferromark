@@ -3,7 +3,8 @@
 Version 3.0 introduces Ferromark Flavored Markdown (FFM): opt-in syntax for
 figures, quote attributions, shared attributes, bracketed spans, inserted text,
 and guillemet digraphs, plus opt-in technical abbreviation markup. Every new
-option is off by default. Documents render as before unless you enable one.
+option is off by default. Documents render as before unless you enable one;
+the only removal is the opt-in wiki link syntax.
 
 The major version comes from the Rust API. The Node.js options only gain new
 fields.
@@ -48,6 +49,10 @@ fn describe(heading: &Heading<'_>) {
 `TableAttributes` gains `attributes` for key/value entries. Code that builds
 these nodes by hand must set the new fields.
 
+**Wiki links removed.** `ParserOptions::wiki_links` is gone; `[[Page]]` is
+plain text in every profile. Resolve wiki-style links in your own text
+transform if you need them.
+
 **Abbreviations.** `HtmlRendererOptions` is unchanged. Automatic `<abbr>`
 markup uses the separate, non-exhaustive `AbbreviationOptions` with
 `HtmlRenderer::with_abbreviations`, `HtmlRenderer::with_options_and_abbreviations`,
@@ -58,7 +63,8 @@ or `to_html_with_options_and_abbreviations`.
 Existing option objects keep working. The new fields are `imageAttributes`,
 `imageCaptions`, `blockquoteAttributions`, `extendedAttributes`,
 `bracketedSpans`, `insertions`, `guillemetDigraphs`, `autoAbbreviations`, and
-`abbreviations`. The macOS package now ships for Apple Silicon only; Intel Macs
+`abbreviations`. The `wikiLinks` option is removed; passing it throws an
+unknown-option `TypeError`. The macOS package now ships for Apple Silicon only; Intel Macs
 are no longer supported.
 
 ## Transforms
