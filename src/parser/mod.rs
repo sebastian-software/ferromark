@@ -197,14 +197,6 @@ struct ExtensionMemos<'a> {
     /// and again through the block-start probe, and the scan walks to the
     /// end of the source to report that there is none.
     math_block_close: std::cell::Cell<Option<(usize, usize)>>,
-
-    /// Memoized position of the last `]]` in a content slice, keyed like
-    /// `link_probe_cache`: the wiki-link scan's counterpart to
-    /// `has_closer_from`.
-    /// A `[[` with no `]]` after it walks to the end of the content to find
-    /// that out, so a run of them cost one walk each; one search answers for
-    /// every opener in the slice.
-    wiki_closer: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
 }
 
 /// A memo table allocated in the arena on first use, so a parser that never
@@ -242,8 +234,8 @@ pub struct Parser<'a> {
 
     /// Inline contexts currently open above this one.
     ///
-    /// Link text, image alt text, wiki-link labels, script spans and inline
-    /// JSX phrasing all re-enter [`Self::parse_inline`] on the same parser,
+    /// Link text, image alt text, script spans and inline JSX phrasing all
+    /// re-enter [`Self::parse_inline`] on the same parser,
     /// so this counts what `nesting_depth` cannot: inline parsing never
     /// builds a sub-parser. Inline parsing runs behind `&self`, hence the
     /// cell. See `inline::Parser::enter_inline` for the bound itself.
@@ -370,9 +362,9 @@ pub struct Parser<'a> {
     /// from three words of parser state instead of a hash of the slice.
     closer_windows: [std::cell::Cell<delimiters::CloserWindow>; delimiters::CLOSER_SLOTS],
 
-    /// The memo tables of the opt-in scans — MDX, math and wiki links —
-    /// allocated in the arena the first time one of them is consulted, so a
-    /// parse that never enables them carries one pointer for all nine.
+    /// The memo tables of the opt-in scans — MDX and math — allocated in the
+    /// arena the first time one of them is consulted, so a parse that never
+    /// enables them carries one pointer for all eight.
     extension_memos: std::cell::OnceCell<crate::allocator::Box<'a, ExtensionMemos<'a>>>,
 
     /// The last `[scanned_from, blank_line)` window found while bounding a

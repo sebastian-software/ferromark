@@ -13,7 +13,6 @@ const options: Options = {
   headingAttributes: true,
   headingOffset: 1,
   headingIdPrefix: "docs-",
-  wikiLinks: true,
   cjkEmphasis: true,
   mdx: true,
   imageAttributes: true,

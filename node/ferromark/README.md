@@ -25,7 +25,7 @@ The v2 engine uses an arena AST and retains upstream MIT attribution in `LICENSE
 Removed options `tableColumnWidths` and `indentedCodeBlocks` throw an unknown-option error. `tableColgroup`,
 `tableColumnNames`, `tableAttributes`, `imageAttributes`, `imageCaptions`,
 `extendedAttributes`, `bracketedSpans`, `blockquoteAttributions`,
-`headingAttributes`, `wikiLinks`, `cjkEmphasis`, and `mdx` expose v2 features.
+`headingAttributes`, `cjkEmphasis`, and `mdx` expose v2 features.
 Optional `highlight` (`==text==`) and `inlineFootnotes` (`^[note]`) default off.
 `allowLinkRefs` defaults on; disabling it keeps reference definitions visible.
 See [optional writing syntax](../../docs/optional-writing.md).
