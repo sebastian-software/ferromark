@@ -12,6 +12,7 @@ export default [
   route("guide/correctness", "routes/guide/correctness.mdx"),
   route("guide/feature-comparison", "routes/guide/feature-comparison.mdx"),
   route("guide/features", "routes/guide/features.mdx"),
+  route("guide/ffm", "routes/guide/ffm.mdx"),
   route("guide/getting-started", "routes/guide/getting-started.mdx"),
   route("guide/mdx", "routes/guide/mdx.mdx"),
   route("guide/mdx-examples", "routes/guide/mdx-examples.mdx"),

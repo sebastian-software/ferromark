@@ -5,15 +5,15 @@ order: 4
 
 # Markdown Syntax
 
-Ferromark supports CommonMark, GFM extensions, and opt-in publishing syntax.
-Enable features in [Rust](/rust/configuration) or [Node.js](/node/configuration).
-The [feature comparison](/guide/feature-comparison) records the reviewed capability
-inventory; [correctness checks](/guide/correctness) describe tested conformance.
+Ferromark parses CommonMark and GFM. Choose the syntax your authors need in
+[Rust](/rust/configuration) or [Node.js](/node/configuration), then choose an
+independent [HTML trust policy](/guide/rendering).
 
 ## Everyday Markdown and GFM
 
-Headings, paragraphs, lists, links, emphasis, images, and fenced code form the
-CommonMark core. GFM adds pipe tables, checklists, strikethrough, and autolinks.
+CommonMark covers headings, paragraphs, lists, links, emphasis, images, and
+code. GFM adds pipe tables, task lists, strikethrough, and autolinks. Ferromark
+checks its output against the [CommonMark and GFM examples](/guide/correctness).
 
 ```text
 # Release notes
@@ -24,146 +24,14 @@ CommonMark core. GFM adds pipe tables, checklists, strikethrough, and autolinks.
 Read the [guide](/guide/getting-started). ~~Outdated advice~~ ++Updated advice++
 ```
 
-## Front matter and heading IDs
+## Publishing syntax
 
-```text
----
-title: Release notes
-draft: true
----
+[Ferromark Flavored Markdown (FFM)](/guide/ffm) collects the opt-in syntax for
+captions, attributed quotes, styled tables, inline spans, notes, and other
+publishing needs. Its guide shows authored examples, the options that recognize
+them, and links to the detailed rules. Enable only the extensions your content
+uses; there is no single FFM switch.
 
-# Installation
-```
-
-Enable front-matter extraction to receive the exact text between leading `---`
-or `+++` delimiters. The engine does not parse YAML/TOML values. Headings can
-receive automatic IDs; optional heading attributes support explicit IDs/classes.
-See [front-matter boundaries](https://github.com/sebastian-software/ferromark/blob/main/docs/front-matter.md).
-
-## Tables you can style
-
-```text
-| Item | Net | Tax |
-| :--- | ---: | ---: |
-| Book | 20.00 | 1.40 |
-| Gift | Included ||
-
-: Prices *today* {#prices .price-list}
-```
-
-With table spans enabled, adjacent closing pipes merge horizontal cells. Table
-attributes attach the ID and classes to the table; a caption also works without
-attributes. Generated colgroups expose positional classes such as `col-1` and optional
-header-derived classes such as `col-name-net`. Set widths in CSS. Delimiter dash
-counts do not produce numeric width hints in v2.
-
-See [table syntax, options, and CSS](https://github.com/sebastian-software/ferromark/blob/main/docs/table-layout.md).
-
-## Images with separate captions
-
-```text
-![Three components connected by arrows](pipeline.svg "Browser title"){.diagram}
-
-: The **processing pipeline** {#pipeline .figure-wide}
-```
-
-Enable image attributes and captions separately. The image suffix styles
-`<img>`; the caption suffix styles `<figure>`. The image description remains
-alternative text, and the quoted title remains the HTML `title` attribute.
-A caption can omit attributes and follows a standalone image immediately or
-after one blank line. [Image syntax and boundaries](https://github.com/sebastian-software/ferromark/blob/main/docs/image-captions.md)
-also cover references, linked images, and containers.
-
-## Inline spans and shared attributes
-
-```text
-Das französische [C’est la vie]{lang=fr} trifft es gut.
-
-[Product **offer**]{.product sku="A-17" tracking-category=offer}
-
-[Documentation](https://example.org){.external hreflang=en}
-```
-
-Enable bracketed spans and shared key/value attributes separately. The span
-keeps nested Markdown; `lang` and `hreflang` remain HTML attributes, while
-custom `sku` and `tracking-category` become `data-sku` and
-`data-tracking-category` in HTML. The same grammar attaches to headings,
-tables, images, figure captions, and links. [Syntax and mapping rules](https://github.com/sebastian-software/ferromark/blob/main/docs/shared-attributes.md)
-describe duplicate keys and Markdown-owned values.
-With untrusted rendering, active names such as `style`, `srcset`, and `name`
-also become `data-*` attributes. Host frameworks may assign behavior to some
-`data-*` names, so filter authored attributes before embedding untrusted output
-in pages that use those frameworks.
-
-## Block quotes with visible attributions
-
-```text
-> A memorable passage.
-: Jane Doe, **author** {#source .byline}
-```
-
-Enable `blockquote_attributions` in Rust or `blockquoteAttributions` in Node.js.
-The source line sits outside the quote and becomes a visible `<figcaption>` in a
-`<figure>` around the original block quote. Put it directly after the quote or
-leave one blank line. Inside a list, indent the source to keep it in the same
-item as the quote. Inline links and reference links work as usual; the
-renderer does not add a `<cite>` element or a `cite` URL. IDs and classes in
-the suffix apply to the figure. The shown example needs only the attribution
-option. Key/value entries such as `lang=en` also require
-`extended_attributes` (Rust) or `extendedAttributes` (Node.js). The option is off
-by default. An outdented `: source` after a quote in a list stays lazy text
-inside that list; indent it to attach. See
-[syntax, boundaries, and examples](https://github.com/sebastian-software/ferromark/blob/main/docs/blockquote-attributions.md).
-Recognized callout markers do not receive attributions, even when callout
-rendering is disabled.
-
-## Notes, marks, and callouts
-
-```text
-This is ==important==. A reference note.[^detail]
-An inline explanation.^[More context here.]
-
-[^detail]: The longer explanation.
-
-> [!NOTE]
-> A detail worth remembering.
-```
-
-Inserted text, marked text, and inline notes are independent options; inline
-notes do not require reference footnotes. Set `insertions: true` to render
-`++...++` as semantic `<ins>` markup; the syntax is off by default and reserved
-for inserted text. Callouts format labeled block quotes. The application owns
-their styling. [Optional writing syntax](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md)
-explains defaults and edge cases.
-
-## Other extensions
-
-Definition lists, math notation, superscript, subscript, line comments, and MDX
-syntax are configurable. The opt-in `guillemetDigraphs` parser option
-preserves `<<…>>` so locale-aware typography can turn balanced pairs into
-language-specific quotes. For portable input, use straight quotes and select a
-typography language explicitly. Math notation needs downstream typesetting.
-When subscript is enabled it takes priority
-over single-tilde strikethrough. Smart punctuation is outside the core.
-
-Line comments omit physical source lines beginning with `//` after at most three
-spaces; code and HTML blocks stay literal. [Line-comment rules](https://github.com/sebastian-software/ferromark/blob/main/docs/line-comments.md)
-describe source-position behavior. [MDX boundaries](/guide/mdx) distinguish syntax
-capture from compilation.
-
-## Technical abbreviation markup
-
-Use `HtmlRenderer::with_abbreviations` or
-`HtmlRenderer::with_options_and_abbreviations` in Rust, or set
-`autoAbbreviations` in Node.js, to add semantic `<abbr>` markup to complete
-uppercase technical terms. The feature is opt-in. A small built-in dictionary
-provides common titles;
-unknown candidates can receive a bare wrapper, and an exact override map can
-add a mixed-case term, change a title, or suppress a false positive. Processing
-runs during rendering, so it leaves the parsed AST and heading metadata
-unchanged. Empty override keys are ignored.
-
-Code, math, raw HTML, MDX attributes, URLs and link destinations, and image alt
-text stay outside generated wrappers. Markdown link labels and emphasized prose
-remain eligible. See the [API, token-boundary rules, and known
-limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/abbreviations.md).
+The [feature comparison](/guide/feature-comparison) lists capabilities across
+engines. [MDX boundaries](/guide/mdx) and [optional typography](/guide/typography)
+have their own guides.

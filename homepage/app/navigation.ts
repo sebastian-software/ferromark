@@ -34,6 +34,7 @@ export const documentationSections = [
       ["Choose a quick start", "/guide/quick-start"],
       ["Markdown configuration", "/guide/configuration"],
       ["Markdown syntax", "/guide/features"],
+      ["Ferromark Flavored Markdown", "/guide/ffm"],
       ["Pipeline concepts", "/guide/pipelines"],
       ["Rendering and trust", "/guide/rendering"],
       ["MDX boundaries", "/guide/mdx"],
@@ -50,6 +51,7 @@ export const documentationSections = [
 
 export const sharedConcepts = [
   ["Markdown syntax", "/guide/features"],
+  ["FFM extensions", "/guide/ffm"],
   ["Rendering and trust", "/guide/rendering"],
   ["Pipeline concepts", "/guide/pipelines"],
   ["Benchmarks", "/guide/benchmarks"],

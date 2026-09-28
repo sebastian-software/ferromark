@@ -1,11 +1,12 @@
-# Ferromark v2
+# Ferromark v3
 
 **Markdown, ready for the work ahead.**
 
 Ferromark turns Markdown into HTML for documentation sites, publishing tools,
 and applications. A fast Rust engine with an arena-allocated document tree,
-CommonMark correctness, and practical publishing features. Use the Rust crate
-or its native Node.js bindings.
+CommonMark correctness, and practical publishing features. Ferromark Flavored
+Markdown adds opt-in syntax for richer documents. Use the Rust crate or its
+native Node.js bindings.
 
 <!-- x-release-please-start-version -->
 
@@ -15,8 +16,10 @@ or its native Node.js bindings.
 
 <!-- x-release-please-end-version -->
 
-**V2 is a breaking upgrade from v1.** Read the [changelog](CHANGELOG.md) and the
-[migration guide](docs/migration-v2.md) before upgrading.
+**V3 is a breaking upgrade of the Rust API.** Documents render as before unless
+you enable a new option. Read the [changelog](CHANGELOG.md) and the
+[v3 upgrade notes](docs/migration-v3.md); coming from v1, start with the
+[v2 migration guide](docs/migration-v2.md).
 
 ## Why Ferromark
 
@@ -33,6 +36,9 @@ fine until an author added one more footnote.
 - **Cover everyday publishing needs.** Front matter, heading IDs, footnotes,
   callouts, and inline tables of contents support real documents. Table classes,
   captions, merged cells, and named columns give CSS control over layout.
+- **Write richer Markdown.** Ferromark Flavored Markdown adds image captions,
+  quote attributions, attributes and inline spans, inserted text, and technical
+  abbreviations. Each feature is opt-in, so unused syntax stays out of the way.
 - **Keep rendering fast.** Arena allocation, reusable buffers, specialized byte
   scans, and SIMD reduce parser and renderer work. You can inspect or transform
   the document tree before rendering it.
@@ -48,6 +54,7 @@ on Apple Silicon (Apple M1 Pro, fresh parser state, 2026-09-24). On Linux x86-64
 <!-- /native-benchmarks -->
 
 [Syntax and features](https://ferromark.dev/guide/features),
+[Ferromark Flavored Markdown](https://ferromark.dev/guide/ffm),
 [correctness and limits](https://ferromark.dev/guide/correctness),
 and [measured comparisons](https://ferromark.dev/guide/benchmarks)
 explain the details and trade-offs.
