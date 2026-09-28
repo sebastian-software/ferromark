@@ -61,6 +61,10 @@ attribute block. See [image captions](image-captions.md) and
 headings, links, images, tables, and figures; `bracketed_spans` enables native
 inline spans. Both default off. See [shared attributes](shared-attributes.md)
 for grammar, mapping, and precedence.
+`ParserOptions::blockquote_attributions` attaches one source line to a block
+quote as a `<figcaption>`; it defaults off. See
+[block quote attributions](blockquote-attributions.md) for syntax, attributes,
+and attachment rules.
 
 ### String-valued renderer options
 

@@ -1,4 +1,5 @@
 use crate::ast::{BlockQuote, Figure, Heading, List, ListItem, Node, Paragraph};
+use crate::callout::detect_callout;
 
 use super::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks};
 use crate::renderer::html::renderer::HtmlRenderer;
@@ -139,7 +140,7 @@ impl HtmlRenderer {
         let Some(Node::Paragraph(first_paragraph)) = block_quote.children.first() else {
             return false;
         };
-        let Some((kind, consumed_chars)) = Self::detect_callout(first_paragraph) else {
+        let Some((kind, consumed_chars)) = detect_callout(first_paragraph) else {
             return false;
         };
 

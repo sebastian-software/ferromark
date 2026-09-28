@@ -37,6 +37,53 @@ test("renders UTF-8 HTML directly into Node.js Buffers", () => {
   assert.equal(reusedOutput.toString("utf8"), "<h1>Grüße</h1>\n");
 });
 
+test("block quote attributions are opt-in and render as figure captions", () => {
+  const source = "> Excerpt\n: Jane **Doe** [profile](https://example.org)";
+  const options = { blockquoteAttributions: true };
+  const expected =
+    '<figure>\n<blockquote>\n<p>Excerpt</p>\n</blockquote>\n\n<figcaption>Jane <strong>Doe</strong> <a href="https://example.org">profile</a></figcaption>\n</figure>\n';
+
+  assert.equal(
+    toHtml(source),
+    '<blockquote>\n<p>Excerpt\n: Jane <strong>Doe</strong> <a href="https://example.org">profile</a></p>\n</blockquote>\n',
+  );
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(toHtmlBuffer(source, options).toString(), expected);
+  assert.equal(transform(source, options).html, expected);
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    expected,
+  );
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(renderer.toHtmlBuffer(source).toString(), expected);
+});
+
+test("block quote attribution uses shared figure attributes and untrusted rendering", () => {
+  const source =
+    "> Excerpt\n: Jane <script>alert(1)</script> [unsafe](javascript:alert(1)) {#source .byline lang=en tracking-category=quote}";
+  const options = { blockquoteAttributions: true, extendedAttributes: true };
+  const html = toHtml(source, options);
+
+  assert.match(
+    html,
+    /<figure id="source" class="byline" lang="en" data-tracking-category="quote">/,
+  );
+  assert.match(html, /<figcaption>Jane &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>/);
+  assert.doesNotMatch(html, /href="javascript:/);
+  assert.equal(transform(source, options).html, html);
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), html);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    html,
+  );
+  assert.equal(new Renderer(options).toHtml(source), html);
+});
+
 test("image attributes and separate captions work through every rendering entry point", () => {
   const source = '![Alt](image.svg "Title"){.diagram}\n\n: A **caption** {#figure .wide}';
   const options = { imageAttributes: true, imageCaptions: true };

@@ -60,6 +60,7 @@ export interface Options {
   linkBasePath?: string
   typography?: TypographyConfig
   passes?: Array<NativePassConfig>
+  blockquoteAttributions?: boolean
 }
 
 export declare function toHtml(markdown: string | Uint8Array, options?: Options | undefined | null): string

@@ -24,13 +24,14 @@ The v2 engine uses an arena AST and retains upstream MIT attribution in `LICENSE
 
 Removed options `tableColumnWidths` and `indentedCodeBlocks` throw an unknown-option error. `tableColgroup`,
 `tableColumnNames`, `tableAttributes`, `imageAttributes`, `imageCaptions`,
-`extendedAttributes`, `bracketedSpans`,
+`extendedAttributes`, `bracketedSpans`, `blockquoteAttributions`,
 `headingAttributes`, `wikiLinks`, `cjkEmphasis`, and `mdx` expose v2 features.
 Optional `highlight` (`==text==`) and `inlineFootnotes` (`^[note]`) default off.
 `allowLinkRefs` defaults on; disabling it keeps reference definitions visible.
 See [optional writing syntax](../../docs/optional-writing.md).
 See [image captions](../../docs/image-captions.md) for image suffixes and
-separate figure captions. The enabled table extension also accepts plain
+separate figure captions, and [block quote attributions](../../docs/blockquote-attributions.md)
+for visible quote sources. The enabled table extension also accepts plain
 captions without attributes.
 See [shared attributes](../../docs/shared-attributes.md) for bracketed spans,
 key/value metadata, and automatic `data-*` mapping.
