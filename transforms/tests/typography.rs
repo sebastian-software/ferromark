@@ -201,6 +201,13 @@ fn guillemet_digraphs_use_the_selected_locale_and_pair_across_inline_markup() {
 
 #[test]
 fn guillemet_digraph_transform_is_separately_opt_in() {
+    assert!(!TypographyOptions::new(TypographyLanguage::French).guillemet_digraphs());
+    assert!(
+        TypographyOptions::new(TypographyLanguage::French)
+            .with_guillemet_digraphs(true)
+            .guillemet_digraphs()
+    );
+
     let parser_options = ParserOptions {
         guillemet_digraphs: true,
         ..ParserOptions::default()
@@ -226,7 +233,7 @@ fn guillemet_digraph_transform_is_separately_opt_in() {
 }
 
 #[test]
-fn spaced_guillemets_trim_ascii_padding_and_leave_shift_expressions_literal() {
+fn spaced_guillemets_trim_all_ascii_padding_and_pair_balanced_markers() {
     let parser_options = ParserOptions {
         guillemet_digraphs: true,
         ..ParserOptions::default()
@@ -246,7 +253,67 @@ fn spaced_guillemets_trim_ascii_padding_and_leave_shift_expressions_literal() {
         render_with_options(
             "a << b and c >> d",
             typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>a «\u{202f}b and c\u{202f}» d</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "Il a dit << Bonjour >> et il part.",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>Il a dit «\u{202f}Bonjour\u{202f}» et il part.</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "Le mot << oui >> est court.",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>Le mot «\u{202f}oui\u{202f}» est court.</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "Il a dit << Bonjour >> 3 fois.",
+            typography_options,
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        ),
+        "<p>Il a dit «\u{202f}Bonjour\u{202f}» 3 fois.</p>\n"
+    );
+    for source in ["<< >>", "<<\t  \t>>"] {
+        assert_eq!(
+            render_with_options(
+                source,
+                typography_options,
+                parser_options.clone(),
+                HtmlRendererOptions::default(),
+            ),
+            format!(
+                "<p>{}</p>\n",
+                source.replace('<', "&lt;").replace('>', "&gt;")
+            ),
+            "source: {source:?}"
+        );
+    }
+    assert_eq!(
+        render_with_options(
+            "<<  Bonjour \t >>",
+            typography_options,
             parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>«\u{202f}Bonjour\u{202f}»</p>\n"
+    );
+    assert_eq!(
+        render_with_options(
+            "a << b and c >> d",
+            TypographyOptions::new(TypographyLanguage::French),
+            ParserOptions::default(),
             HtmlRendererOptions::default(),
         ),
         "<p>a &lt;&lt; b and c &gt;&gt; d</p>\n"
@@ -292,6 +359,64 @@ fn adjacent_bare_url_is_not_rewritten_into_a_renderer_link_destination() {
             HtmlRendererOptions::default(),
         ),
         "<p>&lt;&lt;<a href=\"https://example.com\" target=\"_blank\" rel=\"noopener noreferrer\">https://example.com</a>&gt;&gt;</p>\n"
+    );
+}
+
+#[test]
+fn bare_urls_near_a_closer_stay_outside_generated_quote_links() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    for (source, language, url) in [
+        (
+            "<<voir https://exemple.fr >> ici",
+            TypographyLanguage::French,
+            "https://exemple.fr",
+        ),
+        (
+            "<< https://exemple.fr >>",
+            TypographyLanguage::French,
+            "https://exemple.fr",
+        ),
+        (
+            "<<see https://example.com.>> here",
+            TypographyLanguage::English,
+            "https://example.com",
+        ),
+        (
+            "<<see (https://example.com)>>",
+            TypographyLanguage::English,
+            "https://example.com",
+        ),
+    ] {
+        let html = render_with_options(
+            source,
+            TypographyOptions::new(language).with_guillemet_digraphs(true),
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        );
+        assert!(html.contains(&format!("href=\"{url}")), "{html}");
+        assert!(html.contains("&lt;&lt;"), "{html}");
+        assert!(html.contains("&gt;&gt;"), "{html}");
+        assert!(!html.contains("%E2%80"), "{html}");
+    }
+}
+
+#[test]
+fn balanced_guillemets_can_enclose_inline_raw_html() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        ..ParserOptions::default()
+    };
+    assert_eq!(
+        render_with_options(
+            "<<Bonjour <em>monde</em>>>!",
+            TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true),
+            parser_options,
+            HtmlRendererOptions::default(),
+        ),
+        "<p>«\u{202f}Bonjour <em>monde</em>\u{202f}»!</p>\n"
     );
 }
 

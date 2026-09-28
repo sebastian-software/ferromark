@@ -76,6 +76,13 @@ independently. The
 are documented separately. The parser and renderer never run this pass unless
 the caller adds it.
 
+To convert ASCII guillemet digraphs, enable both
+`ParserOptions::guillemet_digraphs` and
+`TypographyOptions::with_guillemet_digraphs(true)`. Balanced `<<…>>` pairs
+then use the selected language's primary quotation marks; unmatched markers
+stay literal. This pass option is off by default, so ordinary typography runs
+do no guillemet pairing work.
+
 ## GitHub references
 
 `GitHubReferencesPass` links an explicit supported subset of GitHub references.

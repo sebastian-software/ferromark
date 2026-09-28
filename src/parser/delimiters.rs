@@ -312,10 +312,14 @@ impl<'a> Parser<'a> {
                     }
                 }
                 b'<' => {
-                    let angle_run = Self::marker_run_len(bytes, at, b'<');
-                    if guillemet_digraphs && angle_run >= 2 {
-                        at += angle_run;
-                    } else if let Some(end) = super::inline::autolink_end(content, at) {
+                    if guillemet_digraphs {
+                        let angle_run = Self::marker_run_len(bytes, at, b'<');
+                        if angle_run >= 2 {
+                            at += angle_run;
+                            continue;
+                        }
+                    }
+                    if let Some(end) = super::inline::autolink_end(content, at) {
                         at = end;
                     } else if let Some((_, end)) = Parser::parse_inline_html(content, at, 0) {
                         at = end;

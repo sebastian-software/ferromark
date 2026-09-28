@@ -14,6 +14,9 @@
 //!   `renderPolicy`, a set value bit means `'trusted'`.
 //! - `headingOffset`, `headingIdPrefix`, `linkBasePath`, `typography`, and
 //!   `passes` pass through as read, and `undefined` stands for an absent field.
+//! - `guillemetDigraphs` has no packed bit or passthrough argument. When true,
+//!   the facade uses the existing object entry; when absent or false, it keeps
+//!   the packed path.
 //!
 //! [`unpack`] rebuilds the `Options` value napi-rs would have produced from
 //! the object. Each entry then runs the same code as its public counterpart,
@@ -41,7 +44,9 @@ use crate::{
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
 ///
 /// The bit numbers follow the declaration order of [`Options`], skipping the
-/// five fields that pass through unpacked.
+/// five value fields that pass through unpacked. `guillemet_digraphs` is
+/// omitted here because the facade routes its enabled case through the object
+/// entry and leaves the disabled case on the existing packed path.
 pub fn unpack(
     set: u32,
     on: u32,

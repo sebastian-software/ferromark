@@ -91,16 +91,19 @@ French produces `« Bonjour »`, Danish produces `»Bonjour«`, and English
 produces `“Bonjour”`. Only exact pairs of two opening and two closing angle
 brackets are converted. Unmatched markers and longer runs stay literal.
 Escaped or entity-authored brackets remain literal; code, math, and raw HTML
-remain protected. A single spaced marker such as `a << b` stays literal. When
-both markers have ASCII padding and the pair sits between word or numeric
-operands, as in `a << b and c >> d`, the ambiguous shift-like text stays
-literal. In French, a standalone `<< Bonjour >>` absorbs its ASCII padding and
-renders as `« Bonjour »`.
+remain protected. ASCII spaces and tabs directly inside a pair are trimmed in
+full before the language's spacing is applied, so `<<  Bonjour  >>` renders as
+`« Bonjour »` in French. Balanced markers are always interpreted as quotes
+when the option is enabled, including `a << b and c >> d`; use code spans or
+leave the option off for a balanced shift expression. An unpaired expression
+such as `a << b` remains literal.
 
-When a renderer auto-links bare URLs, URLs immediately next to a marker pair
-keep the ASCII markers while the URL can still become a link. This prevents a
-generated quote from becoming part of the link destination. Put a Markdown link
-inside a digraph pair when the link must remain explicitly clickable.
+When a bare URL begins immediately after an opening marker or ends directly
+before a closing marker (including ASCII padding or punctuation that would be
+trimmed), the pair stays literal while the URL can still become a link. This
+prevents a generated quote from becoming part of the link destination. Put a
+Markdown link inside a digraph pair when the link must remain explicitly
+clickable.
 
 For portable Markdown, prefer ordinary quotes and select a language explicitly,
 for example `"Bonjour"` with `typography: { language: "fr" }`. That does not
@@ -110,8 +113,9 @@ require the parser option.
 
 Quote context can span ordinary inline markup such as emphasis and link labels.
 The pass leaves code, math, raw HTML, MDX expressions and module payloads,
-image metadata, link destinations and titles unchanged. It protects bare URLs
-using the same renderer URL matcher supplied to `TransformContext`; URL
+image metadata, link destinations and titles unchanged. A guillemet pair can
+enclose inline raw HTML tags while preserving the tag markup. It protects bare
+URLs using the same renderer URL matcher supplied to `TransformContext`; URL
 recognition is work done only when this optional pass runs. Escaped and
 entity-authored straight quotes stay straight. Protected regions and block
 transitions end quote pairing.

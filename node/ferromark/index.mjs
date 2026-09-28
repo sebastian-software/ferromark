@@ -103,7 +103,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 34 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 33 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -111,9 +111,12 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and the boolean fields (bits 1 to 26, in declaration
- * order, as `unpack` numbers them) take one bit each of `set` (present) and
- * `on` (its value; `'trusted'` for `renderPolicy`). `headingOffset`,
+ * `renderPolicy` (bit 0) and the 26 packed boolean fields (bits 1 to 26, in
+ * declaration order, as `unpack` numbers them) take one bit each of `set`
+ * (present) and `on` (its value; `'trusted'` for `renderPolicy`). The
+ * `guillemetDigraphs` field is read in declaration order but has no packed
+ * bit: `true` routes through the existing object entry, while absent or
+ * `false` leaves the packed path unchanged. `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
  * values. The native side rebuilds `Options` and resolves it with the code the
  * object path runs, so later checks and their errors are shared.
@@ -235,9 +238,8 @@ class PackedOptions {
       return value === undefined || this.reject("guillemetDigraphs", value);
     }
     if (value) {
-      // Bit 27 is reserved for other opt-in parser flags. Keep the packed
-      // signature stable and use the already-supported object entry only for
-      // this uncommon enabled case.
+      // Keep the packed ABI unchanged; only the enabled case needs the object
+      // entry to carry this option to the native parser and typography pass.
       this.requiresObjectPath = true;
     }
     return true;

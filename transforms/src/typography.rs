@@ -200,6 +200,12 @@ impl TypographyOptions {
     pub const fn ellipses(self) -> bool {
         self.ellipses
     }
+
+    /// Returns whether `<<…>>` digraphs are converted by this pass.
+    #[must_use]
+    pub const fn guillemet_digraphs(self) -> bool {
+        self.guillemet_digraphs
+    }
 }
 
 /// A pass that applies explicit language-aware typography to prose text.
@@ -257,6 +263,7 @@ enum InlineItem<'arena> {
         escaped: Vec<Range<usize>>,
     },
     Boundary,
+    HtmlBoundary,
     SoftBreak,
 }
 
@@ -277,7 +284,6 @@ enum GuillemetTokenKind {
 struct PendingGuillemet {
     item: usize,
     offset: usize,
-    padded: bool,
 }
 
 #[derive(Default)]
@@ -342,6 +348,7 @@ impl QuoteState {
         None
     }
 
+    #[inline]
     fn observe_authored_quote(
         &mut self,
         character: char,
@@ -583,10 +590,17 @@ fn transform_inline_children<'arena, const GUILLEMET_DIGRAPHS: bool>(
     raw_html_spans: &[Span],
 ) {
     let mut items = Vec::new();
-    collect_inline_items::<GUILLEMET_DIGRAPHS>(nodes, context, raw_html_spans, &mut items);
+    let mut protected_urls = Vec::new();
+    collect_inline_items::<GUILLEMET_DIGRAPHS>(
+        nodes,
+        context,
+        raw_html_spans,
+        &mut items,
+        &mut protected_urls,
+    );
     let next_after = next_char_after_items(&items);
     let guillemet_tokens = if GUILLEMET_DIGRAPHS {
-        matched_guillemet_tokens(&items)
+        matched_guillemet_tokens(&items, &protected_urls)
     } else {
         Vec::new()
     };
@@ -599,6 +613,7 @@ fn transform_inline_children<'arena, const GUILLEMET_DIGRAPHS: bool>(
                 value,
                 protected,
                 escaped,
+                ..
             } => replacements.push(transform_text::<GUILLEMET_DIGRAPHS>(
                 value,
                 protected,
@@ -615,6 +630,8 @@ fn transform_inline_children<'arena, const GUILLEMET_DIGRAPHS: bool>(
                 },
             )),
             InlineItem::Boundary => state.reset(),
+            InlineItem::HtmlBoundary if GUILLEMET_DIGRAPHS => {}
+            InlineItem::HtmlBoundary => state.reset(),
             InlineItem::SoftBreak => state.previous = Some(' '),
         }
     }
@@ -624,9 +641,12 @@ fn transform_inline_children<'arena, const GUILLEMET_DIGRAPHS: bool>(
 }
 
 /// Finds complete `<<` / `>>` pairs across ordinary inline text nodes.
-/// Protected nodes and URL ranges split quote context in the same way as the
-/// rest of the typography pass; soft line breaks remain inside a paragraph.
-fn matched_guillemet_tokens(items: &[InlineItem<'_>]) -> Vec<Vec<GuillemetToken>> {
+/// Protected nodes and URL ranges split quote context; raw HTML tags are
+/// transparent so a pair can enclose ordinary inline HTML.
+fn matched_guillemet_tokens(
+    items: &[InlineItem<'_>],
+    protected_urls: &[Option<Vec<Range<usize>>>],
+) -> Vec<Vec<GuillemetToken>> {
     let mut tokens: Vec<Vec<GuillemetToken>> = (0..items.len()).map(|_| Vec::new()).collect();
     let mut pending = Vec::new();
 
@@ -635,10 +655,13 @@ fn matched_guillemet_tokens(items: &[InlineItem<'_>]) -> Vec<Vec<GuillemetToken>
             value,
             protected,
             escaped,
+            ..
         } = item
         else {
-            if matches!(item, InlineItem::Boundary) {
-                pending.clear();
+            match item {
+                InlineItem::Boundary => pending.clear(),
+                InlineItem::HtmlBoundary | InlineItem::SoftBreak => {}
+                InlineItem::Text { .. } => unreachable!(),
             }
             continue;
         };
@@ -658,11 +681,6 @@ fn matched_guillemet_tokens(items: &[InlineItem<'_>]) -> Vec<Vec<GuillemetToken>
                 && !is_blocked(offset, protected, escaped)
                 && !is_blocked(offset + 1, protected, escaped)
             {
-                let padding_location = if opening {
-                    next_ascii_padding_location(items, item_index, offset + 2)
-                } else {
-                    previous_ascii_padding_location(items, item_index, offset)
-                };
                 if opening {
                     // A marker directly in front of an autolink stays
                     // literal; otherwise the generated closing quote can
@@ -671,66 +689,35 @@ fn matched_guillemet_tokens(items: &[InlineItem<'_>]) -> Vec<Vec<GuillemetToken>
                         pending.push(PendingGuillemet {
                             item: item_index,
                             offset,
-                            padded: padding_location.is_some(),
                         });
                     }
-                } else if let Some(open) = pending.pop() {
-                    let InlineItem::Text {
-                        value: open_value,
-                        protected: open_protected,
-                        escaped: open_escaped,
-                    } = &items[open.item]
-                    else {
-                        continue;
-                    };
-                    // Spaced digraphs are useful for French typography, but
-                    // the shape `a << b and c >> d` is also a common shift
-                    // expression. Leave that ambiguous pair as literal text.
-                    let looks_like_shift = open.padded
-                        && padding_location.is_some()
-                        && previous_context_char(
-                            open_value,
-                            open.offset,
-                            open_protected,
-                            open_escaped,
-                            items,
-                            open.item,
-                        )
-                        .is_some_and(char::is_alphanumeric)
-                        && next_non_whitespace_context_char(
-                            value,
-                            offset + 2,
-                            protected,
-                            escaped,
-                            items,
-                            item_index,
-                        )
-                        .is_some_and(char::is_alphanumeric);
-                    if !looks_like_shift
-                        && !is_protected_immediately_before(items, item_index, offset)
+                } else if let Some(open) = pending.pop()
+                    && has_guillemet_content(items, open.item, open.offset + 2, item_index, offset)
+                    && !is_url_protected_near_closer(items, protected_urls, item_index, offset)
+                {
+                    tokens[open.item].push(GuillemetToken {
+                        offset: open.offset,
+                        kind: GuillemetTokenKind::Opening,
+                    });
+                    tokens[item_index].push(GuillemetToken {
+                        offset,
+                        kind: GuillemetTokenKind::Closing,
+                    });
+                    for (padding_item, padding_offset) in
+                        next_ascii_padding_locations(items, open.item, open.offset + 2)
                     {
-                        tokens[open.item].push(GuillemetToken {
-                            offset: open.offset,
-                            kind: GuillemetTokenKind::Opening,
+                        tokens[padding_item].push(GuillemetToken {
+                            offset: padding_offset,
+                            kind: GuillemetTokenKind::TrimPadding,
                         });
-                        tokens[item_index].push(GuillemetToken {
-                            offset,
-                            kind: GuillemetTokenKind::Closing,
+                    }
+                    for (padding_item, padding_offset) in
+                        previous_ascii_padding_locations(items, item_index, offset)
+                    {
+                        tokens[padding_item].push(GuillemetToken {
+                            offset: padding_offset,
+                            kind: GuillemetTokenKind::TrimPadding,
                         });
-                        if let Some((padding_item, padding_offset)) =
-                            next_ascii_padding_location(items, open.item, open.offset + 2)
-                        {
-                            tokens[padding_item].push(GuillemetToken {
-                                offset: padding_offset,
-                                kind: GuillemetTokenKind::TrimPadding,
-                            });
-                        }
-                        if let Some((padding_item, padding_offset)) = padding_location {
-                            tokens[padding_item].push(GuillemetToken {
-                                offset: padding_offset,
-                                kind: GuillemetTokenKind::TrimPadding,
-                            });
-                        }
                     }
                 }
                 offset += 2;
@@ -746,86 +733,124 @@ fn matched_guillemet_tokens(items: &[InlineItem<'_>]) -> Vec<Vec<GuillemetToken>
     tokens
 }
 
+fn has_guillemet_content(
+    items: &[InlineItem<'_>],
+    opening_item: usize,
+    opening_content: usize,
+    closing_item: usize,
+    closing_offset: usize,
+) -> bool {
+    for (index, item) in items
+        .iter()
+        .enumerate()
+        .take(closing_item + 1)
+        .skip(opening_item)
+    {
+        match item {
+            InlineItem::Text { value, .. } => {
+                let start = if index == opening_item {
+                    opening_content
+                } else {
+                    0
+                };
+                let end = if index == closing_item {
+                    closing_offset
+                } else {
+                    value.len()
+                };
+                if value.get(start..end).is_some_and(|content| {
+                    content.chars().any(|character| !character.is_whitespace())
+                }) {
+                    return true;
+                }
+            }
+            InlineItem::Boundary | InlineItem::SoftBreak => return true,
+            InlineItem::HtmlBoundary => {}
+        }
+    }
+    false
+}
+
 fn is_ascii_padding(byte: Option<u8>) -> bool {
     matches!(byte, Some(b' ' | b'\t'))
 }
 
-fn next_ascii_padding_location(
+fn next_ascii_padding_locations(
     items: &[InlineItem<'_>],
     item_index: usize,
     offset: usize,
-) -> Option<(usize, usize)> {
-    if let Some(InlineItem::Text {
-        value,
-        protected,
-        escaped,
-    }) = items.get(item_index)
-        && offset < value.len()
-    {
-        return (is_ascii_padding(value.as_bytes().get(offset).copied())
-            && !is_blocked(offset, protected, escaped))
-        .then_some((item_index, offset));
-    }
-    let mut index = item_index + 1;
+) -> Vec<(usize, usize)> {
+    let mut locations = Vec::new();
+    let mut index = item_index;
+    let mut cursor = offset;
     while let Some(item) = items.get(index) {
         match item {
             InlineItem::Text {
                 value,
                 protected,
                 escaped,
+                ..
             } => {
-                if value.is_empty() {
-                    index += 1;
-                    continue;
+                while cursor < value.len()
+                    && is_ascii_padding(value.as_bytes().get(cursor).copied())
+                    && !is_blocked(cursor, protected, escaped)
+                {
+                    locations.push((index, cursor));
+                    cursor += 1;
                 }
-                return (is_ascii_padding(value.as_bytes().first().copied())
-                    && !is_blocked(0, protected, escaped))
-                .then_some((index, 0));
+                if cursor < value.len() {
+                    return locations;
+                }
+                index += 1;
+                cursor = 0;
             }
-            InlineItem::Boundary | InlineItem::SoftBreak => return None,
+            InlineItem::Boundary | InlineItem::HtmlBoundary | InlineItem::SoftBreak => {
+                return locations;
+            }
         }
     }
-    None
+    locations
 }
 
-fn previous_ascii_padding_location(
+fn previous_ascii_padding_locations(
     items: &[InlineItem<'_>],
     item_index: usize,
     offset: usize,
-) -> Option<(usize, usize)> {
-    if let Some(InlineItem::Text {
-        value,
-        protected,
-        escaped,
-    }) = items.get(item_index)
-        && offset > 0
-    {
-        let (start, character) = value[..offset].char_indices().next_back()?;
-        return (character.is_ascii()
-            && is_ascii_padding(Some(character as u8))
-            && !is_blocked(start, protected, escaped))
-        .then_some((item_index, start));
-    }
+) -> Vec<(usize, usize)> {
+    let mut locations = Vec::new();
     let mut index = item_index;
-    while let Some(previous) = index.checked_sub(1) {
-        match items.get(previous)? {
-            InlineItem::Text {
+    let mut cursor = offset;
+    loop {
+        match items.get(index) {
+            Some(InlineItem::Text {
                 value,
                 protected,
                 escaped,
-            } => {
-                if let Some((start, character)) = value.char_indices().next_back() {
-                    return (character.is_ascii()
-                        && is_ascii_padding(Some(character as u8))
-                        && !is_blocked(start, protected, escaped))
-                    .then_some((previous, start));
+                ..
+            }) => {
+                let mut end = cursor.min(value.len());
+                while let Some((start, character)) = value[..end].char_indices().next_back() {
+                    if !character.is_ascii()
+                        || !is_ascii_padding(Some(character as u8))
+                        || is_blocked(start, protected, escaped)
+                    {
+                        return locations;
+                    }
+                    locations.push((index, start));
+                    end = start;
                 }
+                let Some(previous) = index.checked_sub(1) else {
+                    return locations;
+                };
+                index = previous;
+                cursor = usize::MAX;
             }
-            InlineItem::Boundary | InlineItem::SoftBreak => return None,
+            Some(InlineItem::Boundary | InlineItem::HtmlBoundary | InlineItem::SoftBreak)
+            | None => {
+                return locations;
+            }
         }
-        index = previous;
     }
-    None
 }
 
 fn is_protected_immediately_after(
@@ -837,6 +862,7 @@ fn is_protected_immediately_after(
         value,
         protected,
         escaped,
+        ..
     }) = items.get(item_index)
         && offset < value.len()
     {
@@ -849,6 +875,7 @@ fn is_protected_immediately_after(
                 value,
                 protected,
                 escaped,
+                ..
             } => {
                 if value.is_empty() {
                     index += 1;
@@ -856,128 +883,54 @@ fn is_protected_immediately_after(
                 }
                 return is_blocked(0, protected, escaped);
             }
-            InlineItem::Boundary | InlineItem::SoftBreak => return false,
+            InlineItem::Boundary | InlineItem::HtmlBoundary | InlineItem::SoftBreak => {
+                return false;
+            }
         }
     }
     false
 }
 
-fn is_protected_immediately_before(
+fn is_url_protected_near_closer(
     items: &[InlineItem<'_>],
+    protected_urls_by_item: &[Option<Vec<Range<usize>>>],
     item_index: usize,
     offset: usize,
 ) -> bool {
-    if let Some(InlineItem::Text { protected, .. }) = items.get(item_index)
-        && offset > 0
-    {
-        return is_blocked(offset - 1, protected, &[]);
-    }
     let mut index = item_index;
-    while let Some(previous) = index.checked_sub(1) {
-        match items.get(previous) {
-            Some(InlineItem::Text {
-                value, protected, ..
-            }) => {
-                if let Some((start, _)) = value.char_indices().next_back() {
-                    return is_blocked(start, protected, &[]);
+    let mut cursor = offset;
+    loop {
+        match items.get(index) {
+            Some(InlineItem::Text { value, .. }) => {
+                let mut end = cursor.min(value.len());
+                while let Some((start, character)) = value[..end].char_indices().next_back() {
+                    if protected_urls_by_item
+                        .get(index)
+                        .and_then(Option::as_deref)
+                        .unwrap_or_default()
+                        .iter()
+                        .any(|range| range.start <= start && start < range.end)
+                    {
+                        return true;
+                    }
+                    if !(character.is_ascii()
+                        && (character.is_ascii_punctuation()
+                            || is_ascii_padding(Some(character as u8))))
+                    {
+                        return false;
+                    }
+                    end = start;
                 }
+                let Some(previous) = index.checked_sub(1) else {
+                    return false;
+                };
+                index = previous;
+                cursor = usize::MAX;
             }
-            Some(InlineItem::Boundary | InlineItem::SoftBreak) | None => return false,
-        }
-        index = previous;
-    }
-    false
-}
-
-fn previous_context_char(
-    value: &str,
-    offset: usize,
-    protected: &[Range<usize>],
-    escaped: &[Range<usize>],
-    items: &[InlineItem<'_>],
-    item_index: usize,
-) -> Option<char> {
-    if offset > 0 {
-        for (start, character) in value[..offset].char_indices().rev() {
-            if is_blocked(start, protected, escaped) {
-                return None;
-            }
-            if !character.is_whitespace() {
-                return Some(character);
-            }
+            Some(InlineItem::Boundary | InlineItem::HtmlBoundary | InlineItem::SoftBreak)
+            | None => return false,
         }
     }
-
-    let mut index = item_index;
-    while let Some(item) = index
-        .checked_sub(1)
-        .and_then(|previous| items.get(previous))
-    {
-        match item {
-            InlineItem::Text {
-                value,
-                protected,
-                escaped,
-            } => {
-                for (start, character) in value.char_indices().rev() {
-                    if is_blocked(start, protected, escaped) {
-                        return None;
-                    }
-                    if !character.is_whitespace() {
-                        return Some(character);
-                    }
-                }
-            }
-            InlineItem::Boundary => return None,
-            InlineItem::SoftBreak => {}
-        }
-        index -= 1;
-    }
-    None
-}
-
-fn next_non_whitespace_context_char(
-    value: &str,
-    offset: usize,
-    protected: &[Range<usize>],
-    escaped: &[Range<usize>],
-    items: &[InlineItem<'_>],
-    item_index: usize,
-) -> Option<char> {
-    if offset < value.len() {
-        for (relative, character) in value[offset..].char_indices() {
-            let start = offset + relative;
-            if is_blocked(start, protected, escaped) {
-                return None;
-            }
-            if !character.is_whitespace() {
-                return Some(character);
-            }
-        }
-    }
-    let mut index = item_index + 1;
-    while let Some(item) = items.get(index) {
-        match item {
-            InlineItem::Text {
-                value,
-                protected,
-                escaped,
-            } => {
-                for (start, character) in value.char_indices() {
-                    if is_blocked(start, protected, escaped) {
-                        return None;
-                    }
-                    if !character.is_whitespace() {
-                        return Some(character);
-                    }
-                }
-            }
-            InlineItem::Boundary => return None,
-            InlineItem::SoftBreak => {}
-        }
-        index += 1;
-    }
-    None
 }
 
 fn is_exact_doubled_marker(bytes: &[u8], offset: usize, marker: u8) -> bool {
@@ -991,9 +944,12 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
     context: &TransformContext<'arena>,
     raw_html_spans: &[Span],
     items: &mut Vec<InlineItem<'arena>>,
+    protected_urls_by_item: &mut Vec<Option<Vec<Range<usize>>>>,
 ) {
     let mut protected_by_node: Vec<Vec<Range<usize>>> =
         (0..nodes.len()).map(|_| Vec::new()).collect();
+    let mut protected_urls_by_node =
+        GUILLEMET_DIGRAPHS.then(|| (0..nodes.len()).map(|_| Vec::new()).collect::<Vec<_>>());
 
     for run in text_runs(nodes) {
         let node_range = run.node_range();
@@ -1001,8 +957,11 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
         let is_raw_html = raw_html_spans
             .iter()
             .any(|span| run_span.start < span.end && span.start < run_span.end);
+        let protected_urls = GUILLEMET_DIGRAPHS.then(|| run.protected_url_ranges(context));
         let protected = if is_raw_html {
             std::iter::once(0..run.value().len()).collect()
+        } else if let Some(protected_urls) = &protected_urls {
+            protected_urls.clone()
         } else {
             run.protected_url_ranges(context)
         };
@@ -1020,27 +979,47 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     protected_by_node[node_index].push(start - byte_cursor..end - byte_cursor);
                 }
             }
+            if let (Some(protected_urls), Some(protected_by_node)) =
+                (&protected_urls, &mut protected_urls_by_node)
+            {
+                for range in protected_urls {
+                    let start = range.start.max(byte_cursor);
+                    let end = range.end.min(segment_end);
+                    if start < end {
+                        protected_by_node[node_index].push(start - byte_cursor..end - byte_cursor);
+                    }
+                }
+            }
             byte_cursor = segment_end;
         }
     }
 
     for (index, node) in nodes.iter().enumerate() {
         match node {
-            Node::Text(text) => items.push(InlineItem::Text {
-                value: text.value,
-                protected: std::mem::take(&mut protected_by_node[index]),
-                escaped: escaped_source_ranges::<GUILLEMET_DIGRAPHS>(
-                    context.source(),
-                    text.span,
-                    text.value,
-                ),
-            }),
+            Node::Text(text) => {
+                let protected_urls = protected_urls_by_node
+                    .as_mut()
+                    .map(|protected| std::mem::take(&mut protected[index]));
+                items.push(InlineItem::Text {
+                    value: text.value,
+                    protected: std::mem::take(&mut protected_by_node[index]),
+                    escaped: escaped_source_ranges::<GUILLEMET_DIGRAPHS>(
+                        context.source(),
+                        text.span,
+                        text.value,
+                    ),
+                });
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(protected_urls);
+                }
+            }
             Node::Emphasis(node) => {
                 collect_inline_items::<GUILLEMET_DIGRAPHS>(
                     &node.children,
                     context,
                     raw_html_spans,
                     items,
+                    protected_urls_by_item,
                 );
             }
             Node::Strong(node) => {
@@ -1049,6 +1028,7 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     context,
                     raw_html_spans,
                     items,
+                    protected_urls_by_item,
                 );
             }
             Node::Highlight(node) => {
@@ -1057,6 +1037,7 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     context,
                     raw_html_spans,
                     items,
+                    protected_urls_by_item,
                 );
             }
             Node::Delete(node) => {
@@ -1065,6 +1046,7 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     context,
                     raw_html_spans,
                     items,
+                    protected_urls_by_item,
                 );
             }
             Node::Superscript(node) => {
@@ -1073,6 +1055,7 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     context,
                     raw_html_spans,
                     items,
+                    protected_urls_by_item,
                 );
             }
             Node::Subscript(node) => {
@@ -1081,6 +1064,7 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     context,
                     raw_html_spans,
                     items,
+                    protected_urls_by_item,
                 );
             }
             Node::MdxJsxTextElement(node) => {
@@ -1089,10 +1073,14 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     context,
                     raw_html_spans,
                     items,
+                    protected_urls_by_item,
                 );
             }
             Node::Link(node) if is_url_label(node.url, &node.children) => {
                 items.push(InlineItem::Boundary);
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(None);
+                }
             }
             Node::Link(node) => {
                 collect_inline_items::<GUILLEMET_DIGRAPHS>(
@@ -1100,14 +1088,25 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     context,
                     raw_html_spans,
                     items,
+                    protected_urls_by_item,
                 );
             }
-            Node::Break(_) => items.push(InlineItem::SoftBreak),
+            Node::Break(_) => {
+                items.push(InlineItem::SoftBreak);
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(None);
+                }
+            }
+            Node::Html(_) => {
+                items.push(InlineItem::HtmlBoundary);
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(None);
+                }
+            }
             Node::InlineCode(_)
             | Node::InlineMath(_)
             | Node::Image(_)
             | Node::FootnoteReference(_)
-            | Node::Html(_)
             | Node::MdxTextExpression(_)
             | Node::ThematicBreak(_)
             | Node::Paragraph(_)
@@ -1125,7 +1124,12 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
             | Node::FootnoteDefinition(_)
             | Node::MdxJsxFlowElement(_)
             | Node::MdxjsEsm(_)
-            | Node::MdxFlowExpression(_) => items.push(InlineItem::Boundary),
+            | Node::MdxFlowExpression(_) => {
+                items.push(InlineItem::Boundary);
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(None);
+                }
+            }
         }
     }
 }
@@ -1252,12 +1256,13 @@ fn next_char_after_items(items: &[InlineItem<'_>]) -> Vec<Option<char>> {
                 value,
                 protected,
                 escaped,
+                ..
             } => match first_context_char(value, protected, escaped) {
                 ContextChar::Char(character) => next = Some(character),
                 ContextChar::Empty => {}
                 ContextChar::Boundary => next = None,
             },
-            InlineItem::Boundary => next = None,
+            InlineItem::Boundary | InlineItem::HtmlBoundary => next = None,
             InlineItem::SoftBreak => next = Some(' '),
         }
     }
@@ -1576,12 +1581,13 @@ fn next_context_char(
                 value,
                 protected,
                 escaped,
+                ..
             } => match first_context_char(value, protected, escaped) {
                 ContextChar::Char(character) => return Some(character),
                 ContextChar::Empty => index += 1,
                 ContextChar::Boundary => return None,
             },
-            InlineItem::Boundary => return None,
+            InlineItem::Boundary | InlineItem::HtmlBoundary => return None,
             InlineItem::SoftBreak => return Some(' '),
         }
     }

@@ -41,12 +41,15 @@ const html = toHtml("Il a dit <<Bonjour>>.", {
 This renders `« Bonjour »`. Danish uses `»Bonjour«`; English uses `“Bonjour”`.
 The parser option is off by default and only preserves doubled angle brackets
 as text. Typography converts balanced pairs; unmatched markers and longer runs
-stay literal. Code, math, and raw HTML stay protected. Standalone French
-`<< Bonjour >>` absorbs its ASCII padding. A padded pair between word or number
-operands, such as `a << b and c >> d`, stays literal because it is ambiguous
-with a shift expression. In renderers that auto-link bare URLs, a URL
-immediately next to guillemet markers keeps the ASCII markers so generated
-quotes cannot become part of the link destination; the URL may still be linked.
+stay literal. Code, math, and raw HTML content stay protected; a pair can enclose
+inline HTML tags without changing them. ASCII spaces and tabs directly inside a
+pair are trimmed in full. Balanced pairs always mean quotes when enabled,
+including `a << b and c >> d`; use code spans or leave the option off for a
+balanced shift expression. An unpaired `a << b` remains literal. If a bare URL
+starts just after the opener or ends just before the closer, including padding
+or punctuation that would otherwise be trimmed, the pair stays literal so a
+generated quote cannot become part of the link destination; the URL may still
+be linked.
 
 For portable Markdown, prefer `"Bonjour"` with an explicit language such as
 `typography: { language: "fr" }`. That does not require `guillemetDigraphs`.
