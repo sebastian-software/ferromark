@@ -47,6 +47,7 @@ impl ForwardScan {
 pub(in crate::parser) struct InlineMarkerScan {
     optional: u8,
     notes_only: bool,
+    pub(super) has_insertion_opener: bool,
     scan: ForwardScan,
 }
 
@@ -71,6 +72,7 @@ impl InlineMarkerScan {
         Self {
             optional,
             notes_only: options.inline_footnotes && !options.superscript,
+            has_insertion_opener: false,
             scan: ForwardScan::new(),
         }
     }
@@ -161,6 +163,7 @@ mod tests {
                     let mut scan = InlineMarkerScan {
                         optional: options,
                         notes_only: false,
+                        has_insertion_opener: false,
                         scan: ForwardScan::new(),
                     };
                     assert_eq!(
@@ -184,6 +187,7 @@ mod tests {
                         let mut scan = InlineMarkerScan {
                             optional: options,
                             notes_only: false,
+                            has_insertion_opener: false,
                             scan: ForwardScan::new(),
                         };
                         assert_eq!(
@@ -205,6 +209,7 @@ mod tests {
             let mut scan = InlineMarkerScan {
                 optional: options,
                 notes_only: false,
+                has_insertion_opener: false,
                 scan: ForwardScan::new(),
             };
             for from in 0..=bytes.len() {
