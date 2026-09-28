@@ -1,7 +1,8 @@
 # Optional writing syntax and reference links
 
 `ParserOptions::highlight`, `ParserOptions::insertions`, and
-`ParserOptions::inline_footnotes` default to `false` in every preset.
+`ParserOptions::inline_footnotes` default to `false` in every preset except
+`ParserOptions::ffm()`, which enables all three.
 `ParserOptions::allow_link_refs` defaults to `true`. Node exposes these
 switches as `highlight`, `insertions`, `inlineFootnotes`, and `allowLinkRefs`
 on all rendering entry points, including `Renderer` and hooks.

@@ -1,8 +1,8 @@
 # Source-only line comments
 
 `ParserOptions::line_comments` adds Ferromark v1's `//` comment convention to
-Markdown. It is off by default and in every preset, including CommonMark, GFM,
-and MDX. It requires no renderer option or Cargo feature.
+Markdown. It is off by default and in the CommonMark, GFM, and MDX presets;
+`ParserOptions::ffm()` enables it. It requires no renderer option or Cargo feature.
 The [v1 regression cases](https://github.com/sebastian-software/ferromark/blob/143ec2ce151d87d2a3d804a048014afc97733ae0/tests/line_comment_tests.rs)
 provide the original behavior reference.
 

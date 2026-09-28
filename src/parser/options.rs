@@ -10,10 +10,10 @@ pub struct ParserOptions {
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
     pub footnotes: bool,
 
-    /// Enable `==highlighted text==`. Off in all presets.
+    /// Enable `==highlighted text==`. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub highlight: bool,
 
-    /// Enable Pandoc-style `^[inline notes]`. Off in all presets.
+    /// Enable Pandoc-style `^[inline notes]`. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     /// Independent of reference footnotes; nested inline notes stay literal.
     pub inline_footnotes: bool,
 
@@ -36,32 +36,33 @@ pub struct ParserOptions {
     ///
     /// Adjacent closing pipes determine the span: `||` spans two columns.
     /// Whitespace between pipes preserves an explicit empty cell. Requires
-    /// [`Self::tables`]. Default: `false`, including all presets.
+    /// [`Self::tables`]. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub merged_table_cells: bool,
 
     /// Enable table IDs, CSS classes, and optional inline captions.
     ///
     /// A following `: Caption {#id .class}` or `: {#id .class}` line attaches
     /// metadata to the table. Only IDs and classes are accepted. Requires
-    /// [`Self::tables`]. Default: `false`, including all presets.
+    /// [`Self::tables`]. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub table_attributes: bool,
 
     /// Parse `{#id .class}` directly after inline or reference images.
-    /// Independent of image captions. Default: `false`.
+    /// Independent of image captions. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub image_attributes: bool,
 
     /// Attach one `: Caption` line to a standalone image as a figure.
-    /// Independent of image attributes. Default: `false`.
+    /// Independent of image attributes. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub image_captions: bool,
 
     /// Attach one colon-prefixed attribution line after a block quote as a
-    /// figure caption. Independent of image captions. Default: false.
+    /// figure caption. Independent of image captions. Default: `false`;
+    /// [`ParserOptions::ffm`] sets this to `true`.
     pub blockquote_attributions: bool,
 
     /// Omit source-only physical lines beginning with `//` after at most
     /// three ASCII spaces. Comments do not introduce a paragraph break.
     /// Explicit container prefixes, code blocks, and raw HTML remain literal.
-    /// Default: `false`, including all presets.
+    /// Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub line_comments: bool,
 
     /// Extract `---` (YAML) or `+++` (TOML) front matter at the document start,
@@ -75,7 +76,7 @@ pub struct ParserOptions {
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
     pub strikethrough: bool,
 
-    /// Enable `++inserted text++` spans. Off in all presets.
+    /// Enable `++inserted text++` spans. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub insertions: bool,
 
     /// Enable GFM autolinks.
@@ -86,6 +87,7 @@ pub struct ParserOptions {
     /// Enable superscript spans such as `^x^`.
     ///
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
+    /// [`ParserOptions::ffm`] sets this to `true`.
     pub superscript: bool,
 
     /// Enable subscript spans such as `~x~`.
@@ -101,6 +103,7 @@ pub struct ParserOptions {
     /// Enable PHP Markdown Extra / mdBook-style definition lists as AST nodes.
     ///
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
+    /// [`ParserOptions::ffm`] sets this to `true`.
     pub definition_lists: bool,
 
     /// Enable Pandoc-style heading attribute blocks.
@@ -110,13 +113,16 @@ pub struct ParserOptions {
     /// and [`crate::ast::Heading::classes`] instead of rendered text.
     ///
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
+    /// [`ParserOptions::ffm`] sets this to `true`.
     pub heading_attributes: bool,
 
     /// Enable shared key/value attributes and suffixes on links and existing
     /// heading, image, table, and figure attachment points.
+    /// Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub extended_attributes: bool,
 
     /// Enable `[inline Markdown]{attributes}` spans independently of captions.
+    /// Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub bracketed_spans: bool,
 
     /// Enable Obsidian-style wiki links as link nodes.
@@ -132,7 +138,7 @@ pub struct ParserOptions {
     /// Preserve doubled angle brackets such as `<<Bonjour>>` as literal
     /// inline text before raw HTML and autolink parsing. An optional
     /// typography pass can convert balanced pairs to locale-specific quotes.
-    /// Default: `false`, including all presets.
+    /// Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub guillemet_digraphs: bool,
 
     /// Recognize emphasis whose delimiters sit against East Asian punctuation.
@@ -301,6 +307,41 @@ impl ParserOptions {
             inline_footnotes: false,
             allow_link_refs: true,
             footnotes: false,
+            ..Self::gfm()
+        }
+    }
+
+    /// Creates the Ferromark Flavored Markdown (FFM) parser profile.
+    ///
+    /// FFM is [`Self::gfm`] plus Ferromark's opt-in authoring syntax: marked
+    /// and inserted text, inline notes, superscript, definition lists, heading,
+    /// table, image, and shared key/value attributes, bracketed spans, merged
+    /// table cells, image captions, block quote attributions, source-only line
+    /// comments, and guillemet digraphs.
+    ///
+    /// Subscript, math, wiki links, front matter, CJK emphasis, and MDX stay
+    /// off: they change the meaning of GFM input or need downstream
+    /// processing. Renderer policies are unchanged; pair this profile with
+    /// [`crate::HtmlRenderer::with_abbreviations`] for technical abbreviation
+    /// markup and with a typography pass to convert guillemet digraphs.
+    #[must_use]
+    pub fn ffm() -> Self {
+        Self {
+            highlight: true,
+            inline_footnotes: true,
+            merged_table_cells: true,
+            table_attributes: true,
+            image_attributes: true,
+            image_captions: true,
+            blockquote_attributions: true,
+            line_comments: true,
+            insertions: true,
+            superscript: true,
+            definition_lists: true,
+            heading_attributes: true,
+            extended_attributes: true,
+            bracketed_spans: true,
+            guillemet_digraphs: true,
             ..Self::gfm()
         }
     }

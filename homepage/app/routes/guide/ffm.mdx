@@ -7,11 +7,12 @@ order: 5
 
 FFM is the name for Ferromark's opt-in authoring syntax on top of CommonMark and
 GFM. It groups features for publishing richer documents without requiring a new
-file format. Enable each feature separately; there is no `ffm` preset.
-Caption, attribution, table layout, marked text, inserted text, inline notes,
-bracketed spans, guillemet digraphs, and technical abbreviations are off in
-Node.js defaults and every Rust preset. Other features have their own defaults.
-Keep unused syntax disabled to avoid its parsing cost.
+file format. Turn them all on with the `ffm` preset, or enable each feature
+separately. Caption, attribution, table layout, marked text, inserted text,
+inline notes, bracketed spans, guillemet digraphs, and technical abbreviations
+are off in Node.js defaults and in every Rust preset except `ffm()`. Other
+features have their own defaults. Keep unused syntax disabled to avoid its
+parsing cost.
 
 For standard Markdown, start with [CommonMark and GFM](/guide/features). For
 option defaults and HTML trust, see [Node.js](/node/configuration),
@@ -100,6 +101,32 @@ profiles disable them. Other defaults are listed in the configuration guides.
 See [front matter](https://github.com/sebastian-software/ferromark/blob/main/docs/front-matter.md),
 [line comments](https://github.com/sebastian-software/ferromark/blob/main/docs/line-comments.md),
 and the [feature comparison](/guide/feature-comparison) for further details.
+
+## Use the preset
+
+```ts
+import { toHtml } from "ferromark";
+
+const html = toHtml("![Logo](logo.svg)\n\n: Company logo", { preset: "ffm" });
+```
+
+`preset: "ffm"` starts from GFM plus every syntax on this page except
+subscript, math, wiki links, front matter, and MDX, which change the meaning of
+GFM input or need downstream processing. In Node.js it also enables technical
+abbreviation markup. Individual options still override the preset, and the
+output policy (`renderPolicy`, table colgroups, typography) stays your choice.
+
+The preset trades speed for convenience. On documents that use none of its
+syntax, parsing takes 10–55% longer than with GFM alone, mostly for definition
+lists; abbreviation markup adds render time in proportion to the prose. Enable
+individual features when a document needs only a few. The
+[preset decision](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-28-ffm-preset.md)
+lists the measured cost of each option.
+
+In Rust, `ParserOptions::ffm()` selects the same syntax. Pair it with
+`HtmlRendererOptions::gfm()` and, for abbreviations,
+`HtmlRenderer::with_abbreviations(AbbreviationOptions::default())`. Guillemet
+digraphs only become quotes when a typography pass with a language runs.
 
 ## Enable a small dialect
 
