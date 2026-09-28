@@ -96,4 +96,5 @@ alternating process cycles. Medians on the same arm64 Mac were:
 
 These are descriptive local timings, not a cross-machine guarantee. The
 within-build Criterion target exercises parsing only. The adversarial
-caption-like paragraph has a scaling regression test.
+caption-like paragraph and repeated image/block starts with definition lists
+enabled have scaling regression tests.

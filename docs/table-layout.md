@@ -27,6 +27,9 @@ can also be used with ordinary GFM tables and without table attributes.
 
 The last cell spans the Net and Tax columns. The caption becomes a `<caption>`;
 the attributes belong to `<table id="prices" class="price-list">`.
+A caption without an attribute block must be the last table line or be followed
+by a blank line. A colon-prefixed line in the middle of a table remains a data
+row, including when it contains an escaped pipe.
 Enabling `table_colgroup` emits this before the table head, after any caption:
 
 ```html

@@ -34,8 +34,9 @@ and `class=` merge into the same AST ID/class fields as shorthand tokens.
 Classes accumulate in source order; the last explicit ID wins, and the last
 value for a repeated key wins. Unlike the older ID/class-only extension,
 repeated IDs are valid when the full grammar is enabled.
-Inline suffix recognition reads at most 512 bytes after the opening brace and
-accepts at most 64 tokens; longer blocks remain literal. This bound prevents
+Inline suffix recognition reads at most 512 bytes after the opening brace.
+Every extended attribute block accepts at most 64 tokens; longer blocks remain
+literal. These bounds prevent
 repeated malformed openers from repeatedly scanning a long paragraph.
 
 The AST stores original custom keys without an HTML-specific prefix.
@@ -59,8 +60,12 @@ are emitted from their normalized AST fields, once. On an external link for
 which the renderer generates `target="_blank"` and its `rel`, those generated
 values take precedence; other links may author `target` and `rel`. HTML output
 policy and URL handling otherwise remain unchanged for Markdown-owned values.
-Authored URL-bearing attributes are mapped to inert data in untrusted output,
-so they cannot bypass the renderer's URL policy.
+Authored URL-bearing attributes are mapped to `data-*` in untrusted output, so
+they cannot directly replace Markdown-owned URLs. Host frameworks can interpret
+some `data-*` names as active directives; embedding untrusted Markdown in such
+pages requires application-level filtering or namespacing of authored attributes.
+With source-span output enabled, authored `data-source-span` and `source-span`
+are skipped so they cannot duplicate or spoof the renderer's source mapping.
 
 The link parser resolves inline and reference links before considering a span.
 Thus `[text](url){...}` is an attributed link, and `[text]{...}` is a span when

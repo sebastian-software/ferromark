@@ -91,7 +91,9 @@ custom `sku` and `tracking-category` become `data-sku` and
 tables, images, figure captions, and links. [Syntax and mapping rules](https://github.com/sebastian-software/ferromark/blob/main/docs/shared-attributes.md)
 describe duplicate keys and Markdown-owned values.
 With untrusted rendering, active names such as `style`, `srcset`, and `name`
-also become inert `data-*` attributes.
+also become `data-*` attributes. Host frameworks may assign behavior to some
+`data-*` names, so filter authored attributes before embedding untrusted output
+in pages that use those frameworks.
 
 ## Block quotes with visible attributions
 
