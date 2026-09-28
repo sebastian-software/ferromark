@@ -21,6 +21,7 @@ const options: Options = {
   extendedAttributes: true,
   bracketedSpans: true,
   blockquoteAttributions: true,
+  guillemetDigraphs: true,
 };
 const highlighter: CodeHighlighter = {
   codeToHtml: (code, { lang, theme }) => `${lang}:${theme}:${code}`,

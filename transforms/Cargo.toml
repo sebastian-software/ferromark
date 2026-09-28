@@ -12,11 +12,18 @@ homepage.workspace = true
 documentation = "https://docs.rs/ferromark-transforms"
 readme = "README.md"
 description = "Optional native transform pipeline for Ferromark Markdown ASTs"
-include = ["/src", "/tests", "/examples", "/data", "/README.md"]
+include = ["/src", "/tests", "/examples", "/benches", "/data", "/README.md"]
 publish = ["crates-io"]
 
 [dependencies]
 ferromark = { version = "=2.4.0", path = ".." }
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "typography"
+harness = false
 
 [lints]
 workspace = true

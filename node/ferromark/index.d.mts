@@ -58,6 +58,8 @@ export interface Options {
   blockquoteAttributions?: boolean;
   /** Enable `++inserted text++`. Default: off, including the GFM profile. */
   insertions?: boolean;
+  /** Preserve `<<…>>` as inline text and allow typography to map balanced pairs. Default: off. */
+  guillemetDigraphs?: boolean;
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */
   renderPolicy?: RenderPolicy;
   /** Allow raw HTML in trusted output. Default: on; untrusted output always escapes it. */

@@ -70,6 +70,10 @@ let html = ferromark::to_html_with_options("# Notes\n\n++An important note++.", 
 assert!(html.contains("<ins>An important note</ins>"));
 ```
 
+`guillemet_digraphs` preserves `<<Bonjour>>` as text for the optional
+locale-aware typography pass. See the [typography guide](/guide/typography)
+for the Rust pass and Node.js configuration.
+
 See [Markdown syntax](/guide/features) for author-facing examples and
 [the Rust API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md)
 for all entry points. Keep unused extensions off when their syntax is unnecessary;

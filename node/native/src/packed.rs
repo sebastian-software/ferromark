@@ -1,6 +1,6 @@
 //! Private entry points that take `Options` in packed form.
 //!
-//! napi-rs converts an `Options` argument field by field. For each of the 38
+//! napi-rs converts an `Options` argument field by field. For each of the 39
 //! fields, present or not, it calls `napi_get_named_property`, which creates
 //! the property key from a C string and runs an uncached property lookup, and
 //! then `napi_typeof`. That costs more per call than rendering a small
@@ -17,6 +17,9 @@
 //!   `passes` pass through as read, and `undefined` stands for an absent field.
 //!   `insertions` has no packed bit; the facade uses the object-taking entry
 //!   only when the option is `true`.
+//! - `guillemetDigraphs` has no packed bit or passthrough argument. When true,
+//!   the facade uses the existing object entry; when absent or false, it keeps
+//!   the packed path.
 //!
 //! [`unpack`] rebuilds the `Options` value napi-rs would have produced from
 //! the object. Each entry then runs the same code as its public counterpart,
@@ -44,8 +47,8 @@ use crate::{
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
 ///
 /// The bit numbers follow the declaration order of [`Options`], skipping the
-/// five fields that pass through unpacked; `blockquote_attributions` and
-/// `insertions` use the object-taking entry.
+/// five fields that pass through unpacked; `blockquote_attributions`,
+/// `insertions`, and `guillemet_digraphs` use the object-taking entry.
 pub fn unpack(
     set: u32,
     on: u32,
@@ -96,6 +99,7 @@ pub fn unpack(
         passes,
         blockquote_attributions: None,
         insertions: None,
+        guillemet_digraphs: None,
     }
 }
 

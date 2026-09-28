@@ -62,6 +62,7 @@ export interface Options {
   passes?: Array<NativePassConfig>
   blockquoteAttributions?: boolean
   insertions?: boolean
+  guillemetDigraphs?: boolean
 }
 
 export declare function toHtml(markdown: string | Uint8Array, options?: Options | undefined | null): string

@@ -78,6 +78,7 @@ const fields = [
   ["passes", "array"],
   ["blockquoteAttributions", "boolean"],
   ["insertions", "boolean"],
+  ["guillemetDigraphs", "boolean"],
 ];
 const keys = fields.map(([key]) => key);
 
@@ -127,6 +128,7 @@ const probe = [
   "",
   "A**強調。**B and :rocket:.",
   '"A quote" -- it\'s fine...',
+  "<<guillemet>>",
   "",
   "<Component />",
   "",
@@ -930,6 +932,33 @@ test("routes options through the packed entries", (t) => {
     const [, rebuilt] = spies.args(object);
     assert.equal(Object.getPrototypeOf(rebuilt), null);
     assert.equal(rebuilt.blockquoteAttributions, true);
+  }
+});
+
+test("routes enabled guillemet parsing through the object entries", (t) => {
+  const routed = entries.filter(({ natives }) => natives);
+  const spies = spyOn(
+    t,
+    routed.flatMap(({ natives }) => natives),
+  );
+  for (const entry of routed) {
+    const [object, packed] = entry.natives;
+    spies.reset();
+    entry.facade(probe, {
+      renderPolicy: "trusted",
+      superscript: false,
+      guillemetDigraphs: true,
+    });
+    assert.deepEqual([spies.count(packed), spies.count(object)], [0, 1], `${entry.name} enabled`);
+    const [, rebuilt] = spies.args(object);
+    assert.equal(Object.getPrototypeOf(rebuilt), null, `${entry.name} object prototype`);
+    assert.equal(rebuilt.renderPolicy, "trusted", `${entry.name} renderPolicy`);
+    assert.equal(rebuilt.superscript, false, `${entry.name} false flag`);
+    assert.equal(rebuilt.guillemetDigraphs, true, `${entry.name} guillemet flag`);
+
+    spies.reset();
+    entry.facade(probe, { guillemetDigraphs: false });
+    assert.deepEqual([spies.count(packed), spies.count(object)], [1, 0], `${entry.name} disabled`);
   }
 });
 

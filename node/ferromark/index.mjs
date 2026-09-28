@@ -46,6 +46,7 @@ const optionKeys = new Set([
   "linkBasePath",
   "typography",
   "passes",
+  "guillemetDigraphs",
 ]);
 
 /** @type {Array<[string, number]>} */
@@ -112,7 +113,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 38 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 39 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -123,7 +124,8 @@ function validateOptions(options) {
  * `renderPolicy` (bit 0) and 30 boolean fields (bits 1 to 30, in declaration
  * order, as `unpack` numbers them) take one bit each of `set` (present) and
  * `on` (its value; `'trusted'` for `renderPolicy`). Enabled blockquote
- * attributions and insertions use the object entry so later option bits remain available.
+ * attributions, insertions, and guillemet digraphs use the object entry so later
+ * option bits remain available.
  * `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
  * values. The native side rebuilds `Options` and resolves it with the code the
@@ -152,12 +154,8 @@ class PackedOptions {
   rejected;
   /** @type {string | undefined} */
   unknownPolicy;
-  /** @type {boolean} */
-  requiresObjectPath = false;
-  /** @type {boolean} */
-  blockquoteAttributionsEnabled = false;
-  /** @type {boolean} */
-  insertionsEnabled = false;
+  /** @type {string[]} Enabled boolean fields that have no packed bit. */
+  objectPathFlags = [];
 
   /** @param {import('./index.mjs').Options} options Validated options. */
   constructor(options) {
@@ -215,8 +213,9 @@ class PackedOptions {
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
       this.array("passes", options.passes) &&
-      this.blockquoteAttributions(options.blockquoteAttributions) &&
-      this.insertions(options.insertions)
+      this.objectFlag("blockquoteAttributions", options.blockquoteAttributions) &&
+      this.objectFlag("insertions", options.insertions) &&
+      this.objectFlag("guillemetDigraphs", options.guillemetDigraphs)
     );
   }
 
@@ -249,28 +248,24 @@ class PackedOptions {
     return true;
   }
 
-  /** @param {unknown} value The optional blockquote attribution flag. */
-  blockquoteAttributions(value) {
+  /**
+   * Reads a boolean field that has no packed bit. Only `true` needs the object
+   * entry; absent or `false` keeps the packed path and its bit allocation.
+   * @param {string} key Field name. @param {unknown} value Field value.
+   */
+  objectFlag(key, value) {
     if (typeof value !== "boolean") {
-      return value === undefined || this.reject("blockquoteAttributions", value);
+      return value === undefined || this.reject(key, value);
     }
     if (value) {
-      this.blockquoteAttributionsEnabled = true;
-      this.requiresObjectPath = true;
+      this.objectPathFlags.push(key);
     }
     return true;
   }
 
-  /** @param {unknown} value The optional `insertions` flag. */
-  insertions(value) {
-    if (typeof value !== "boolean") {
-      return value === undefined || this.reject("insertions", value);
-    }
-    if (value) {
-      this.insertionsEnabled = true;
-      this.requiresObjectPath = true;
-    }
-    return true;
+  /** Whether an enabled field requires the object-taking native entry. */
+  get requiresObjectPath() {
+    return this.objectPathFlags.length > 0;
   }
 
   /** Rebuilds values already read once, without repeating caller getters. */
@@ -285,8 +280,7 @@ class PackedOptions {
     if (this.linkBasePath !== undefined) result.linkBasePath = this.linkBasePath;
     if (this.typography !== undefined) result.typography = this.typography;
     if (this.passes !== undefined) result.passes = this.passes;
-    if (this.blockquoteAttributionsEnabled) result.blockquoteAttributions = true;
-    if (this.insertionsEnabled) result.insertions = true;
+    for (const key of this.objectPathFlags) result[key] = true;
     return result;
   }
 
