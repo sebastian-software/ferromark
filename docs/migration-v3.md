@@ -6,8 +6,8 @@ and guillemet digraphs, plus opt-in technical abbreviation markup. Every new
 option is off by default. Documents render as before unless you enable one;
 the only removal is the opt-in wiki link syntax.
 
-The major version comes from the Rust API. The Node.js options only gain new
-fields.
+The major version comes from the Rust API. The Node.js options gain new fields
+and lose `wikiLinks`.
 
 ## Rust
 
