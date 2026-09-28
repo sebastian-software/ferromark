@@ -249,6 +249,7 @@ class PackedOptions {
   /** @returns {import('./index.mjs').Options} Plain values for the native object path. */
   asNativeOptions() {
     const options = Object.create(null);
+    /** @param {string} key @param {number} bit */
     const flag = (key, bit) => {
       if (this.set & bit) {
         options[key] = Boolean(this.on & bit);
