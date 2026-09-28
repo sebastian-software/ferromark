@@ -70,15 +70,21 @@ image sources and alt text, and quoted titles; metadata cannot override them.
 Under untrusted rendering, only `lang`, `dir`, `title`, `width`, `height`,
 `loading`, `decoding`, `hreflang`, `role`, `translate`, `spellcheck`, `aria-*`,
 and `data-*` keep their authored names. Other names, including `style`, `name`,
-and URL-valued attributes, become inert `data-*` metadata. Trusted rendering
-keeps the broader standard HTML name mapping. The renderer escapes all values.
+and URL-valued attributes, become `data-*` metadata. Host frameworks such as
+htmx or Knockout can execute behavior from specific `data-*` names; applications
+that render untrusted Markdown in such pages must filter or namespace authored
+attributes for their framework. Trusted rendering keeps the broader standard
+HTML name mapping. The renderer escapes all values.
 Authored IDs remain unnamespaced under either policy, so applications should
 not use them as trusted DOM property names.
+When source-span output is enabled, the renderer owns `data-source-span`;
+authored `data-source-span` and `source-span` values are ignored.
 
-An inline suffix is limited to 512 bytes and 64 attribute tokens; a longer
-suffix remains literal Markdown. With MDX enabled, an attached suffix or
-bracketed span takes precedence at these syntax positions, while a free
-`{expression}` remains MDX.
+An inline suffix scan is limited to 512 bytes. Every extended attribute block,
+including heading, table-caption, and figure-caption blocks, accepts at most
+64 tokens; a longer block remains literal Markdown. With MDX enabled, an
+attached suffix or bracketed span takes precedence at these syntax positions,
+while a free `{expression}` remains MDX.
 
 With `extended_attributes` off, existing heading/image/table ID and class
 options retain their earlier behavior. When it is on, headings use the strict

@@ -67,7 +67,11 @@ pub(super) fn trailing_attribute_open(content: &str, unicode_space: bool) -> Opt
             } else if byte == delimiter {
                 quote = None;
             }
-        } else if candidate.is_some() && matches!(byte, b'\'' | b'"') {
+        } else if candidate.is_some()
+            && matches!(byte, b'\'' | b'"')
+            && index > 0
+            && bytes[index - 1] == b'='
+        {
             quote = Some(byte);
         } else if byte == b'{'
             && (index == 0
@@ -202,6 +206,9 @@ impl<'a> Parser<'a> {
             } else {
                 raw_name
             };
+            if matches!(name, "data-" | "aria-") {
+                return None;
+            }
             pos += 1;
             let value = if matches!(bytes.get(pos), Some(b'\'' | b'"')) {
                 let quote = bytes[pos];
@@ -345,6 +352,8 @@ fn attribute_close(bytes: &[u8], mut pos: usize) -> Option<usize> {
 fn valid_shorthand(name: &str) -> bool {
     !name.is_empty()
         && !name.chars().any(|ch| {
-            ch.is_control() || matches!(ch, '"' | '\'' | '<' | '>' | '=' | '{' | '}' | '\\')
+            ch.is_whitespace()
+                || ch.is_control()
+                || matches!(ch, '"' | '\'' | '<' | '>' | '=' | '{' | '}' | '\\')
         })
 }

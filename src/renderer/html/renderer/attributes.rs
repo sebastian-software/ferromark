@@ -11,7 +11,10 @@ impl HtmlRenderer {
         reserved: &[&str],
     ) {
         for item in values {
-            if reserved.contains(&item.name) {
+            if reserved.contains(&item.name)
+                || (self.options.source_spans
+                    && matches!(item.name, "data-source-span" | "source-span"))
+            {
                 continue;
             }
             let name = item.name;
@@ -44,8 +47,9 @@ impl HtmlRenderer {
     }
 }
 
-/// Inert, useful metadata that can be emitted unchanged in untrusted output.
-/// All URL-bearing, script-bearing and DOM-clobbering names map to data-*.
+/// Built-in HTML names allowed unchanged in untrusted output. Custom data-*
+/// attributes may still activate scripts in the host application's framework.
+/// URL-bearing, script-bearing and DOM-clobbering names map to data-*.
 fn safe_untrusted_name(name: &str) -> bool {
     matches!(
         name,

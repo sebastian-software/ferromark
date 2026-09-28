@@ -34,7 +34,7 @@ fn render_untrusted(source: &str) -> String {
 }
 
 #[test]
-fn untrusted_metadata_keeps_only_inert_names_as_html_attributes() {
+fn untrusted_metadata_keeps_only_allowed_names_as_html_attributes() {
     let html = render_untrusted(
         "[Item]{style=color:red name=config href=javascript:bad srcset=javascript:bad srcdoc=evil action=javascript:bad poster=javascript:bad target=_blank lang=de title=Info width=20 aria-label=Item data-sku=7}",
     );
@@ -48,6 +48,35 @@ fn untrusted_metadata_keeps_only_inert_names_as_html_attributes() {
         assert!(html.contains(&format!(" {name}=\"")), "{name}: {html}");
     }
     assert!(render("[Item]{style=color:red}").contains(" style=\"color:red\""));
+}
+
+#[test]
+fn authored_source_spans_do_not_override_generated_positions() {
+    let source = "# H {data-source-span=999-999}\n\n| A |\n| - |\n| B |\n\n: C {source-span=888-888}\n\n![Alt](x)\n: Cap {data-source-span=777-777}";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
+    let html = HtmlRenderer::with_options(HtmlRendererOptions {
+        source_spans: true,
+        ..HtmlRendererOptions::default()
+    })
+    .render(&document);
+    for authored in ["999-999", "888-888", "777-777"] {
+        assert!(!html.contains(authored), "{html}");
+    }
+    assert!(html.contains("data-source-span=\""), "{html}");
+    assert!(render("# H {data-source-span=999-999}").contains("data-source-span=\"999-999\""));
+}
+
+#[test]
+fn malformed_ids_names_and_earlier_braces_preserve_valid_suffixes() {
+    let html = render("# The {user's} guide {#guide}");
+    assert!(html.contains("<h1 id=\"guide\">"), "{html}");
+    for source in ["[x]{id=\"a b\"}", "[x]{data-=y}", "[x]{aria-=y}"] {
+        let html = render(source);
+        assert!(!html.contains("<span"), "{source:?}: {html}");
+    }
 }
 
 #[test]
