@@ -203,10 +203,17 @@ impl HtmlRenderer {
         options: HtmlRendererOptions,
         abbreviations: AbbreviationOptions,
     ) -> Self {
-        Self::with_options(options).enable_abbreviations(abbreviations)
+        Self::with_options(options).with_abbreviations(abbreviations)
     }
 
-    fn enable_abbreviations(mut self, abbreviations: AbbreviationOptions) -> Self {
+    /// Returns this renderer with technical abbreviation recognition enabled.
+    ///
+    /// This builder is useful when configuring a reusable renderer. The
+    /// separate [`AbbreviationOptions`] type keeps [`HtmlRendererOptions`]
+    /// source-compatible and applies to every document rendered by this
+    /// renderer.
+    #[must_use]
+    pub fn with_abbreviations(mut self, abbreviations: AbbreviationOptions) -> Self {
         let matcher = AbbreviationMatcher::new(abbreviations.overrides);
         let mut patterns = self.options.autolink_patterns().to_vec();
         for default in DEFAULT_AUTOLINK_PATTERNS {

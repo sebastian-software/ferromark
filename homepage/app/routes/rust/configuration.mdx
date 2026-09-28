@@ -70,10 +70,14 @@ let html = ferromark::to_html_with_options_and_abbreviations(
 assert!(html.contains("Notes"));
 ```
 
-Use `AbbreviationOptions { overrides: BTreeMap<String, Option<String>> }` to
-provide exact titles, bare wrappers (`Some("")`), or suppressions (`None`).
-Passing this separate configuration opts in to matching while keeping
-`HtmlRendererOptions` source-compatible. See the [technical abbreviation guide](/guide/features#technical-abbreviation-markup)
+Use the non-exhaustive `AbbreviationOptions` type to provide exact titles,
+bare wrappers (`Some("")`), or suppressions (`None`). Add
+`AbbreviationOptions::default()` and set its public `overrides` field. Passing
+this separate configuration opts in to matching while keeping
+`HtmlRendererOptions` source-compatible. For a reusable renderer, call
+`HtmlRenderer::new().with_abbreviations(options)` or
+`HtmlRenderer::with_options(options).with_abbreviations(abbreviations)`. See the
+[technical abbreviation guide](/guide/features#technical-abbreviation-markup)
 for token boundaries, protected content, and the built-in dictionary.
 
 See [Markdown syntax](/guide/features) for author-facing examples and

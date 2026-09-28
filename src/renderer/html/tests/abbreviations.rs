@@ -7,7 +7,10 @@ use crate::renderer::html::{
 };
 
 fn options(overrides: BTreeMap<String, Option<String>>) -> AbbreviationOptions {
-    AbbreviationOptions { overrides }
+    AbbreviationOptions {
+        overrides,
+        ..AbbreviationOptions::default()
+    }
 }
 
 fn renderer(overrides: BTreeMap<String, Option<String>>) -> HtmlRenderer {
@@ -33,6 +36,18 @@ fn automatic_abbreviations_are_opt_in_and_include_unknown_terms() {
             "<abbr title=\"Unicode Transformation Format, 8-bit\">UTF8</abbr> ",
             "<abbr>XYZ</abbr> A</p>\n"
         )
+    );
+}
+
+#[test]
+fn abbreviation_builder_entry_point_enables_matching() {
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, "API").parse().unwrap();
+    let mut renderer = HtmlRenderer::new().with_abbreviations(AbbreviationOptions::default());
+
+    assert_eq!(
+        renderer.render(&document),
+        "<p><abbr title=\"Application Programming Interface\">API</abbr></p>\n"
     );
 }
 

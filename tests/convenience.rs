@@ -78,24 +78,24 @@ fn explicit_options_control_syntax_and_html_policy() {
 
 #[test]
 fn abbreviation_convenience_entry_point_keeps_renderer_options_compatible() {
+    let mut abbreviations = AbbreviationOptions::default();
+    abbreviations.overrides = [
+        (
+            "API".to_string(),
+            Some("Application programming interface".to_string()),
+        ),
+        (
+            "GraphQL".to_string(),
+            Some("Graph query language".to_string()),
+        ),
+    ]
+    .into_iter()
+    .collect();
     let html = to_html_with_options_and_abbreviations(
         "API GraphQL",
         ParserOptions::default(),
         HtmlRendererOptions::default(),
-        AbbreviationOptions {
-            overrides: [
-                (
-                    "API".to_string(),
-                    Some("Application programming interface".to_string()),
-                ),
-                (
-                    "GraphQL".to_string(),
-                    Some("Graph query language".to_string()),
-                ),
-            ]
-            .into_iter()
-            .collect(),
-        },
+        abbreviations,
     )
     .unwrap();
 

@@ -225,16 +225,20 @@ pub struct HtmlRendererOptions {
 
 /// Options for the opt-in technical abbreviation renderer.
 ///
-/// Pass this value to [`super::renderer::HtmlRenderer::with_options_and_abbreviations`]
-/// or [`crate::to_html_with_options_and_abbreviations`] to annotate eligible
-/// uppercase terms with `<abbr>` markup. The separate type keeps the frozen
-/// [`HtmlRendererOptions`] struct source-compatible.
+/// Pass this value to [`super::renderer::HtmlRenderer::with_abbreviations`],
+/// the [`super::renderer::HtmlRenderer::with_options_and_abbreviations`]
+/// constructor, or [`crate::to_html_with_options_and_abbreviations`] to
+/// annotate eligible uppercase terms with `<abbr>` markup. The separate type
+/// keeps the frozen [`HtmlRendererOptions`] struct source-compatible. It is
+/// non-exhaustive so future settings can be added without changing the default
+/// construction pattern.
 ///
 /// An absent key uses a built-in expansion when available, then falls back to
 /// the uppercase-token heuristic. `Some(nonempty)` supplies a title,
 /// `Some("")` requests a bare wrapper, and `None` suppresses the exact
 /// case-sensitive term.
 #[derive(Debug, Clone, Default)]
+#[non_exhaustive]
 pub struct AbbreviationOptions {
     /// Caller overrides keyed by the exact source token.
     pub overrides: BTreeMap<String, Option<String>>,

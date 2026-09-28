@@ -1,9 +1,10 @@
 # Optional technical abbreviation markup
 
-Use the additive Rust entry point or set `autoAbbreviations: true` in Node.js
-to wrap eligible technical terms in HTML `<abbr>` elements. The option is off
-by default in Node. Ferromark does not infer expansions from surrounding
-documents or learn them from earlier renders.
+Use `HtmlRenderer::with_abbreviations` or
+`to_html_with_options_and_abbreviations` in Rust, or set
+`autoAbbreviations: true` in Node.js, to wrap eligible technical terms in HTML
+`<abbr>` elements. The option is off by default in Node. Ferromark does not
+infer expansions from surrounding documents or learn them from earlier renders.
 
 ```rust
 use std::collections::BTreeMap;
@@ -13,16 +14,16 @@ use ferromark::{
     to_html_with_options_and_abbreviations,
 };
 
+let mut abbreviations = AbbreviationOptions::default();
+abbreviations.overrides = BTreeMap::from([
+    ("API".to_string(), Some("Custom API title".to_string())),
+    ("GraphQL".to_string(), Some(String::new())),
+]);
 let html = to_html_with_options_and_abbreviations(
     "API and GraphQL use HTTPS.",
     ParserOptions::default(),
     HtmlRendererOptions::default(),
-    AbbreviationOptions {
-        overrides: BTreeMap::from([
-            ("API".to_string(), Some("Custom API title".to_string())),
-            ("GraphQL".to_string(), Some(String::new())),
-        ]),
-    },
+    abbreviations,
 )
 .unwrap();
 assert!(html.contains("<abbr title=\"Custom API title\">API</abbr>"));
@@ -45,9 +46,12 @@ const renderer = new Renderer({
 renderer.toHtml("API and GraphQL use HTTPS. XYZ is suppressed.");
 ```
 
-`HtmlRenderer::with_options_and_abbreviations` offers the same configuration
-for AST-based rendering. In Rust, explicitly choosing either abbreviation API
-enables matching, including with an empty override map. In Node, supplying
+`HtmlRenderer::with_options_and_abbreviations` and the
+`HtmlRenderer::with_abbreviations` builder offer the same configuration for
+AST-based rendering. In Rust, explicitly choosing either abbreviation API
+enables matching, including with an empty override map. Create the non-exhaustive
+options type with `AbbreviationOptions::default()` and set its public
+`overrides` field. In Node, supplying
 `abbreviations` alone does not enable matching; set `autoAbbreviations: true`.
 The Node `Renderer` builds its dictionary once and reuses it across calls; each
 document's matches remain independent.
@@ -89,8 +93,10 @@ attribute.
 | Empty string | Wrap without a `title`, overriding a built-in title |
 | `null` | Leave the exact term as plain text, even if the heuristic or built-in dictionary recognizes it |
 
-Rust uses `AbbreviationOptions { overrides: BTreeMap<String, Option<String>> }`:
-`Some("")` means a bare wrapper and `None` suppresses the term. Node uses
+Rust uses the non-exhaustive `AbbreviationOptions` type with an
+`overrides: BTreeMap<String, Option<String>>` field; create it with
+`AbbreviationOptions::default()` and set that field. `Some("")` means a bare
+wrapper and `None` suppresses the term. Node uses
 `Record<string, string | null>` with the same meaning. Matching is deterministic;
 render order and other documents do not modify the dictionary.
 

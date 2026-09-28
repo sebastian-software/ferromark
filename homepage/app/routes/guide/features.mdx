@@ -90,10 +90,11 @@ capture from compilation.
 
 ## Technical abbreviation markup
 
-Use `HtmlRenderer::with_options_and_abbreviations` or
-`to_html_with_options_and_abbreviations` in Rust, or set `autoAbbreviations` in
-Node.js, to add semantic `<abbr>` markup to complete uppercase technical terms.
-The feature is opt-in. A small built-in dictionary provides common titles;
+Use `HtmlRenderer::with_abbreviations` or
+`HtmlRenderer::with_options_and_abbreviations` in Rust, or set
+`autoAbbreviations` in Node.js, to add semantic `<abbr>` markup to complete
+uppercase technical terms. The feature is opt-in. A small built-in dictionary
+provides common titles;
 unknown candidates can receive a bare wrapper, and an exact override map can
 add a mixed-case term, change a title, or suppress a false positive. Processing
 runs during rendering, so it leaves the parsed AST and heading metadata

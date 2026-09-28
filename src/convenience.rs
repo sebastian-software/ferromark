@@ -98,16 +98,16 @@ pub fn to_html_with_options(
 /// };
 /// use std::collections::BTreeMap;
 ///
+/// let mut abbreviations = AbbreviationOptions::default();
+/// abbreviations.overrides = BTreeMap::from([
+///     ("API".into(), Some("Application programming interface".into())),
+///     ("GraphQL".into(), Some("Graph query language".into())),
+/// ]);
 /// let html = to_html_with_options_and_abbreviations(
 ///     "API GraphQL",
 ///     ParserOptions::default(),
 ///     HtmlRendererOptions::default(),
-///     AbbreviationOptions {
-///         overrides: BTreeMap::from([
-///             ("API".into(), Some("Application programming interface".into())),
-///             ("GraphQL".into(), Some("Graph query language".into())),
-///         ]),
-///     },
+///     abbreviations,
 /// )?;
 /// assert!(html.contains("<abbr title=\"Application programming interface\">API</abbr>"));
 /// assert!(html.contains("<abbr title=\"Graph query language\">GraphQL</abbr>"));

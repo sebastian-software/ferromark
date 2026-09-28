@@ -91,14 +91,18 @@ A root-absolute link stays root-absolute under an empty base, as recorded in the
 
 ### Technical abbreviations
 
-Use `HtmlRenderer::with_options_and_abbreviations` or
-`to_html_with_options_and_abbreviations` to opt in to wrapping recognized prose
-terms in `<abbr>` elements. Pass exact-term overrides in the separate
+Use `HtmlRenderer::new().with_abbreviations(...)`,
+`HtmlRenderer::with_options(...).with_abbreviations(...)`, or the
+`HtmlRenderer::with_options_and_abbreviations` constructor to opt in to wrapping
+recognized prose terms in `<abbr>` elements. Use
+`to_html_with_options_and_abbreviations` for one-shot rendering. Pass
+exact-term overrides in the separate
 `AbbreviationOptions` value; `Some(nonempty)` sets a title, `Some("")` forces a
 bare wrapper, and `None` suppresses the term. This separate type preserves the
 source compatibility of `HtmlRendererOptions`. Matching happens at render time,
 so it does not change AST nodes, heading IDs, source spans, or plain-text
-heading metadata. See the
+heading metadata. `AbbreviationOptions` is non-exhaustive; create it with
+`AbbreviationOptions::default()` and set its public `overrides` field. See the
 [abbreviation guide](abbreviations.md) for the dictionary, recognition rules,
 and protected contexts.
 

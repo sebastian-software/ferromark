@@ -43,9 +43,11 @@ escaping path.
 ## Consequences
 
 Rust consumers pass a separate typed `AbbreviationOptions` to the additive
-`HtmlRenderer::with_options_and_abbreviations` constructor or
-`to_html_with_options_and_abbreviations` convenience function. The existing
-`HtmlRendererOptions` struct is frozen and remains source-compatible. Node
+`HtmlRenderer::with_abbreviations` builder,
+`HtmlRenderer::with_options_and_abbreviations` constructor, or
+`to_html_with_options_and_abbreviations` convenience function. The new options
+type is non-exhaustive so it can gain fields later; the existing
+`HtmlRendererOptions` struct remains frozen and source-compatible. Node
 consumers use `autoAbbreviations` and `abbreviations` on the additive options
 object, with `abbreviations` typed as `Record<string, string | null>`. The
 renderer prepares dictionary and URL boundary lookup data once when the option

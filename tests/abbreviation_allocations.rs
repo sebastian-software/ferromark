@@ -95,9 +95,8 @@ fn enabled_renderer_reuses_its_dictionary_without_render_allocations() {
             .iter()
             .all(|node| matches!(node, Node::Text(_)))
     );
-    let abbreviations = AbbreviationOptions {
-        overrides: BTreeMap::from([("ID".to_string(), Some("Identifier".to_string()))]),
-    };
+    let mut abbreviations = AbbreviationOptions::default();
+    abbreviations.overrides = BTreeMap::from([("ID".to_string(), Some("Identifier".to_string()))]);
 
     let (mut renderer, construction_allocations) = allocations(|| {
         HtmlRenderer::with_options_and_abbreviations(HtmlRendererOptions::default(), abbreviations)

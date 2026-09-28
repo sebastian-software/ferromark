@@ -34,9 +34,8 @@ fn bench_abbreviations(c: &mut Criterion) {
             ("ID".to_string(), Some("Identifier".to_string())),
             ("GraphQL".to_string(), Some(String::new())),
         ]);
-        let enabled_abbreviations = AbbreviationOptions {
-            overrides: abbreviations,
-        };
+        let mut enabled_abbreviations = AbbreviationOptions::default();
+        enabled_abbreviations.overrides = abbreviations;
         let enabled_options = HtmlRendererOptions::default();
         group.bench_function("enabled/hits/fresh", |b| {
             b.iter_batched(
