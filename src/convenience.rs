@@ -1,5 +1,8 @@
 //! Small owned-output helpers around the arena parser and HTML renderer.
-use crate::{Allocator, HtmlRenderer, HtmlRendererOptions, ParseResult, Parser, ParserOptions};
+use crate::{
+    AbbreviationOptions, Allocator, HtmlRenderer, HtmlRendererOptions, ParseResult, Parser,
+    ParserOptions,
+};
 
 /// Converts Markdown to owned HTML with the default Rust parser and renderer.
 ///
@@ -77,6 +80,51 @@ pub fn to_html_with_options(
     let arena = Allocator::for_source_len(source.len());
     let document = Parser::with_options(&arena, source, parser_options).parse()?;
     Ok(HtmlRenderer::with_options(renderer_options).render(&document))
+}
+
+/// Converts Markdown to HTML with explicit options and technical abbreviation markup.
+///
+/// This additive convenience function leaves [`HtmlRendererOptions`] unchanged
+/// and enables abbreviation matching for this render. Pass exact-term
+/// expansions or suppression rules in [`AbbreviationOptions::overrides`].
+///
+/// # Errors
+/// Returns the parser error when the input cannot be parsed within its limits.
+///
+/// ```
+/// use ferromark::{
+///     to_html_with_options_and_abbreviations, AbbreviationOptions,
+///     HtmlRendererOptions, ParserOptions,
+/// };
+/// use std::collections::BTreeMap;
+///
+/// let mut abbreviations = AbbreviationOptions::default();
+/// abbreviations.overrides = BTreeMap::from([
+///     ("API".into(), Some("Application programming interface".into())),
+///     ("GraphQL".into(), Some("Graph query language".into())),
+/// ]);
+/// let html = to_html_with_options_and_abbreviations(
+///     "API GraphQL",
+///     ParserOptions::default(),
+///     HtmlRendererOptions::default(),
+///     abbreviations,
+/// )?;
+/// assert!(html.contains("<abbr title=\"Application programming interface\">API</abbr>"));
+/// assert!(html.contains("<abbr title=\"Graph query language\">GraphQL</abbr>"));
+/// # Ok::<(), ferromark::ParseError>(())
+/// ```
+pub fn to_html_with_options_and_abbreviations(
+    source: &str,
+    parser_options: ParserOptions,
+    renderer_options: HtmlRendererOptions,
+    abbreviation_options: AbbreviationOptions,
+) -> ParseResult<String> {
+    let arena = Allocator::for_source_len(source.len());
+    let document = Parser::with_options(&arena, source, parser_options).parse()?;
+    Ok(
+        HtmlRenderer::with_options_and_abbreviations(renderer_options, abbreviation_options)
+            .render(&document),
+    )
 }
 
 /// Appends rendered HTML to a string using the default Rust options.

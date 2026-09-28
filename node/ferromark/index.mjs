@@ -47,6 +47,8 @@ const optionKeys = new Set([
   "typography",
   "passes",
   "guillemetDigraphs",
+  "autoAbbreviations",
+  "abbreviations",
 ]);
 
 /** @type {Array<[string, number]>} */
@@ -113,7 +115,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 39 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 41 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -124,8 +126,8 @@ function validateOptions(options) {
  * `renderPolicy` (bit 0) and 30 boolean fields (bits 1 to 30, in declaration
  * order, as `unpack` numbers them) take one bit each of `set` (present) and
  * `on` (its value; `'trusted'` for `renderPolicy`). Enabled blockquote
- * attributions, insertions, and guillemet digraphs use the object entry so later
- * option bits remain available.
+ * attributions, insertions, guillemet digraphs, and abbreviation settings use
+ * the object entry so later option bits remain available.
  * `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
  * values. The native side rebuilds `Options` and resolves it with the code the
@@ -150,6 +152,8 @@ class PackedOptions {
   typography;
   /** @type {import('./index.mjs').NativePassOptions[] | null | undefined} */
   passes;
+  /** @type {Record<string, string | null> | undefined} */
+  abbreviations;
   /** @type {import('./index.mjs').Options | undefined} */
   rejected;
   /** @type {string | undefined} */
@@ -215,7 +219,9 @@ class PackedOptions {
       this.array("passes", options.passes) &&
       this.objectFlag("blockquoteAttributions", options.blockquoteAttributions) &&
       this.objectFlag("insertions", options.insertions) &&
-      this.objectFlag("guillemetDigraphs", options.guillemetDigraphs)
+      this.objectFlag("guillemetDigraphs", options.guillemetDigraphs) &&
+      this.objectFlag("autoAbbreviations", options.autoAbbreviations) &&
+      this.record("abbreviations", options.abbreviations)
     );
   }
 
@@ -265,7 +271,7 @@ class PackedOptions {
 
   /** Whether an enabled field requires the object-taking native entry. */
   get requiresObjectPath() {
-    return this.objectPathFlags.length > 0;
+    return this.objectPathFlags.length > 0 || this.abbreviations !== undefined;
   }
 
   /** Rebuilds values already read once, without repeating caller getters. */
@@ -280,6 +286,7 @@ class PackedOptions {
     if (this.linkBasePath !== undefined) result.linkBasePath = this.linkBasePath;
     if (this.typography !== undefined) result.typography = this.typography;
     if (this.passes !== undefined) result.passes = this.passes;
+    if (this.abbreviations !== undefined) result.abbreviations = this.abbreviations;
     for (const key of this.objectPathFlags) result[key] = true;
     return result;
   }
@@ -320,6 +327,32 @@ class PackedOptions {
     return true;
   }
 
+  /** @param {"abbreviations"} key Field name. @param {unknown} value The optional map value. */
+  record(key, value) {
+    if (value === undefined) {
+      return true;
+    }
+    if (value === null) {
+      return this.reject(key, value);
+    }
+    // napi-rs converts `Option<HashMap<...>>` by enumerating the supplied
+    // value; several primitives therefore act as an empty map. Capture those
+    // entries once so invalid values can take the object path and retain
+    // napi-rs's `Options.abbreviations` error context without re-reading a
+    // caller's getters.
+    const entries = Object.entries(value);
+    const abbreviations = Object.fromEntries(entries.filter(([, title]) => title !== undefined));
+    if (
+      entries.some(
+        ([, title]) => title !== undefined && title !== null && typeof title !== "string",
+      )
+    ) {
+      return this.reject(key, Object.fromEntries(entries));
+    }
+    this.abbreviations = /** @type {Record<string, string | null>} */ (abbreviations);
+    return true;
+  }
+
   /** @param {string} key Field name. @param {unknown} value Rejected value. @returns {false} Always. */
   reject(key, value) {
     const rejected = Object.create(null);
@@ -353,9 +386,9 @@ function isMarkdown(markdown) {
  *
  * @param {import('./index.mjs').Options | null | undefined} options Validated options.
  * @returns {NativePackedOptions | NativeOptions} The packed arguments, or the
- *   argument for the object-taking entry instead: absent options, which cost
- *   napi-rs nothing to read, or a rejected value. Validated options are never
- *   an array, so `Array.isArray` tells the two apart.
+ *   argument for the object-taking entry instead: absent options, abbreviation
+ *   options that need their object fields, or a rejected value. Validated
+ *   options are never an array, so `Array.isArray` tells the two apart.
  */
 function packOptions(options) {
   if (options == null) {

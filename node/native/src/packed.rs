@@ -1,6 +1,6 @@
 //! Private entry points that take `Options` in packed form.
 //!
-//! napi-rs converts an `Options` argument field by field. For each of the 39
+//! napi-rs converts an `Options` argument field by field. For each of the 41
 //! fields, present or not, it calls `napi_get_named_property`, which creates
 //! the property key from a C string and runs an uncached property lookup, and
 //! then `napi_typeof`. That costs more per call than rendering a small
@@ -12,7 +12,8 @@
 //!   numbered in their declaration order in [`Options`]. A bit in `set` marks
 //!   the field as present, and the same bit in `on` holds its value. For
 //!   `renderPolicy`, a set value bit means `'trusted'`. Enabled blockquote
-//!   attributions and insertions use the object-taking entry.
+//!   attributions and insertions use the object-taking entry, as do
+//!   abbreviation settings (`autoAbbreviations: true` or a supplied map).
 //! - `headingOffset`, `headingIdPrefix`, `linkBasePath`, `typography`, and
 //!   `passes` pass through as read, and `undefined` stands for an absent field.
 //!   `insertions` has no packed bit; the facade uses the object-taking entry
@@ -48,7 +49,8 @@ use crate::{
 ///
 /// The bit numbers follow the declaration order of [`Options`], skipping the
 /// five fields that pass through unpacked; `blockquote_attributions`,
-/// `insertions`, and `guillemet_digraphs` use the object-taking entry.
+/// `insertions`, `guillemet_digraphs`, and the abbreviation settings use the
+/// object-taking entry.
 pub fn unpack(
     set: u32,
     on: u32,
@@ -100,6 +102,8 @@ pub fn unpack(
         blockquote_attributions: None,
         insertions: None,
         guillemet_digraphs: None,
+        auto_abbreviations: None,
+        abbreviations: None,
     }
 }
 

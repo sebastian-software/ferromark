@@ -85,6 +85,30 @@ const literalReferences = toHtml("[name]\n\n[name]: /target", {
 highlighter helpers. Inline notes do not require `footnotes: true`. Their output
 uses v2's existing footnote markup. Marked text does not enable code highlighting.
 
+## Optional technical abbreviation markup
+
+Set `autoAbbreviations: true` to wrap complete uppercase technical terms in
+`<abbr>` elements. Known terms use a built-in title; unknown candidates receive
+a bare wrapper. Use `abbreviations` to add an exact mixed-case term, provide a
+custom title, force a bare wrapper with `""`, or suppress a false positive with
+`null`. The map does not enable matching on its own.
+
+```js
+import { Renderer } from "ferromark";
+
+const renderer = new Renderer({
+  autoAbbreviations: true,
+  abbreviations: { API: "Custom expansion", GraphQL: "", README: null },
+});
+const html = renderer.toHtml("API and GraphQL appear in the README.");
+```
+
+The matcher is built once for the renderer. It processes prose inside emphasis
+and link labels while leaving code, math, raw HTML, MDX attributes, URLs,
+destinations, and image alt text alone. It does not change `transform()` heading
+metadata. See the [technical abbreviation guide](../../docs/abbreviations.md)
+for matching boundaries, the initial built-in dictionary, and limitations.
+
 ## Optional typography
 
 Typography is an explicit post-parse pass. Set `typography.language` to one of
@@ -231,7 +255,7 @@ the highlighter helpers below accept trusted highlighter HTML.
 
 ## Options reference
 
-Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions, including `insertions`, default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `headingIdPrefix` and `linkBasePath` are unset.
+Every `Options` property is optional; omitted values use the Node binding defaults. The TypeScript declaration is the complete, editor-linked reference. Defaults on: `allowHtml`, `tables`, `strikethrough`, `taskLists`, `disallowedRawHtml`, `headingIds`, and `callouts`. All other boolean syntax extensions, including `insertions` and `autoAbbreviations`, default off; `headingOffset` defaults to `0`, `renderPolicy` defaults to `'untrusted'`, and `headingIdPrefix` and `linkBasePath` are unset.
 
 Unknown option names throw a `TypeError` that identifies the rejected key, so
 misspellings such as `taskList` cannot silently change rendered output.

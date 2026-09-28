@@ -12,9 +12,7 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write_span_open(span);
-        for child in &span.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&span.children, hooks);
         self.write("</span>");
     }
 
@@ -24,9 +22,7 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write("<em>");
-        for child in &emphasis.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&emphasis.children, hooks);
         self.write("</em>");
     }
 
@@ -36,9 +32,7 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write("<strong>");
-        for child in &strong.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&strong.children, hooks);
         self.write("</strong>");
     }
 
@@ -50,9 +44,7 @@ impl HtmlRenderer {
         self.write_link_open(link);
         let prev_in_link = self.in_link;
         self.in_link = true;
-        for child in &link.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&link.children, hooks);
         self.in_link = prev_in_link;
         self.write("</a>");
     }
@@ -64,9 +56,7 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write("<mark>");
-        for child in &highlight.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&highlight.children, hooks);
         self.write("</mark>");
     }
 
@@ -76,9 +66,7 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write("<del>");
-        for child in &delete.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&delete.children, hooks);
         self.write("</del>");
     }
 
@@ -88,9 +76,7 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write("<ins>");
-        for child in &insertion.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&insertion.children, hooks);
         self.write("</ins>");
     }
 
@@ -100,9 +86,7 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write("<sup>");
-        for child in &superscript.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&superscript.children, hooks);
         self.write("</sup>");
     }
 
@@ -112,9 +96,7 @@ impl HtmlRenderer {
         hooks: &mut H,
     ) {
         self.write("<sub>");
-        for child in &subscript.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&subscript.children, hooks);
         self.write("</sub>");
     }
 }

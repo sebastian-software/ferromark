@@ -22,6 +22,12 @@ const options: Options = {
   bracketedSpans: true,
   blockquoteAttributions: true,
   guillemetDigraphs: true,
+  autoAbbreviations: true,
+  abbreviations: {
+    API: "Application Programming Interface",
+    GraphQL: "",
+    XYZ: null,
+  },
 };
 const highlighter: CodeHighlighter = {
   codeToHtml: (code, { lang, theme }) => `${lang}:${theme}:${code}`,

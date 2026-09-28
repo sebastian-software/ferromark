@@ -79,6 +79,8 @@ const fields = [
   ["blockquoteAttributions", "boolean"],
   ["insertions", "boolean"],
   ["guillemetDigraphs", "boolean"],
+  ["autoAbbreviations", "boolean"],
+  ["abbreviations", "record"],
 ];
 const keys = fields.map(([key]) => key);
 
@@ -127,6 +129,7 @@ const probe = [
   "// line comment",
   "",
   "A**強調。**B and :rocket:.",
+  "API HTTP GraphQL XYZ",
   '"A quote" -- it\'s fine...',
   "<<guillemet>>",
   "",
@@ -318,7 +321,7 @@ function declaredFields() {
     .filter((line) => line.trim() !== "" && !/^\s*(?:\/\*\*|\*)/.test(line))
     .map((line) => {
       const member =
-        /^ {2}(\w+)\?: (boolean|number|string|TypographyConfig|Array<NativePassConfig>)$/.exec(
+        /^ {2}(\w+)\?: (boolean|number|string|TypographyConfig|Array<NativePassConfig>|Record<string, string \| undefined \| null>)$/.exec(
           line,
         );
       assert.ok(member, `unexpected Options member in native.d.ts: ${line}`);
@@ -326,7 +329,9 @@ function declaredFields() {
         ? "object"
         : member[2].startsWith("Array<NativePassConfig>")
           ? "array"
-          : member[2];
+          : member[2].startsWith("Record<")
+            ? "record"
+            : member[2];
       return [member[1], type];
     });
 }
@@ -370,6 +375,7 @@ test("the packed path gets every declared field once, in declaration order", () 
               string: "",
               object: { language: "en" },
               array: [],
+              record: { API: "Application Programming Interface" },
             }[type],
       ]),
     );
@@ -390,10 +396,16 @@ test("the packed path gets every declared field once, in declaration order", () 
 test("the probe document shows every option", () => {
   // `allowHtml` and `disallowedRawHtml` only matter for trusted rendering,
   // and `tableColumnNames` only with a colgroup.
-  const bases = [{}, { renderPolicy: "trusted" }, { tableColgroup: true }];
+  const bases = [
+    {},
+    { renderPolicy: "trusted" },
+    { tableColgroup: true },
+    { autoAbbreviations: true },
+  ];
   const choices = {
     typography: [{ language: "en" }, { language: "ru", dashes: false, ellipses: false }],
     passes: [[{ kind: "emojiShortcodes" }]],
+    abbreviations: [{ API: "Custom title" }, { XYZ: null }, { GraphQL: "" }],
     headingIdPrefix: ["", "p-"],
     headingOffset: [0, 1],
     linkBasePath: ["", "/docs"],
@@ -438,6 +450,7 @@ test("packs every field at once", () => {
       string: "",
       object: { language: "en" },
       array: [],
+      record: { API: "Application Programming Interface" },
     }[type];
   }
   all.renderPolicy = "trusted";
@@ -458,6 +471,7 @@ const validValues = {
   string: ["", "docs-", "/docs", "/docs/"],
   object: [{ language: "en" }, { language: "fr" }],
   array: [[], [{ kind: "emojiShortcodes" }], [{ kind: "typography", language: "en" }]],
+  record: [{ API: "Application Programming Interface" }, { XYZ: null }, { GraphQL: "" }],
 };
 
 /** Half the fields set, mostly to valid values and sometimes to any value. */

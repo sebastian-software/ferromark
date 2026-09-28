@@ -1,3 +1,4 @@
+mod abbreviations;
 mod autolink;
 mod blocks;
 mod code;
