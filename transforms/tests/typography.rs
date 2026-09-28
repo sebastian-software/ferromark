@@ -285,7 +285,7 @@ fn spaced_guillemets_trim_all_ascii_padding_and_pair_balanced_markers() {
         ),
         "<p>Il a dit «\u{202f}Bonjour\u{202f}» 3 fois.</p>\n"
     );
-    for source in ["<< >>", "<<\t  \t>>"] {
+    for source in ["<<>>", "<< >>", "<<\t  \t>>"] {
         assert_eq!(
             render_with_options(
                 source,
