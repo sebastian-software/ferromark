@@ -99,8 +99,8 @@ pub struct ParserOptions {
     /// Enable Pandoc-style heading attribute blocks.
     ///
     /// When set, a trailing `{#id .class}` block on an ATX or setext heading
-    /// becomes [`crate::ast::Heading::id`] and
-    /// [`crate::ast::Heading::classes`] instead of rendered text.
+    /// sets metadata available through [`crate::ast::Heading::explicit_id`]
+    /// and [`crate::ast::Heading::classes`] instead of rendered text.
     ///
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
     pub heading_attributes: bool,
