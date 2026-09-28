@@ -64,6 +64,11 @@ pub trait Visit<'a> {
         walk_table(self, table);
     }
 
+    /// Visits a captioned figure and its content.
+    fn visit_figure(&mut self, figure: &Figure<'a>) {
+        walk_figure(self, figure);
+    }
+
     /// Visits a table row.
     fn visit_table_row(&mut self, table_row: &TableRow<'a>) {
         walk_table_row(self, table_row);

@@ -6,7 +6,7 @@ them disabled, including the GFM convenience and specification profiles.
 | Option | Owner | Effect |
 | --- | --- | --- |
 | `merged_table_cells` | `ParserOptions` | Adjacent closing pipes produce horizontal cell spans. |
-| `table_attributes` | `ParserOptions` | A following attribute/caption line supplies the table ID and CSS classes. |
+| `table_attributes` | `ParserOptions` | A following caption/metadata line supplies a caption and optional table ID/classes. |
 | `table_colgroup` | `HtmlRendererOptions` | Emit one `<col>` per logical column, with classes `col-1`, `col-2`, etc. |
 | `table_column_names` | `HtmlRendererOptions` | Add `col-name-<slug>` classes derived from the first row; requires `table_colgroup`. |
 
@@ -27,6 +27,9 @@ can also be used with ordinary GFM tables and without table attributes.
 
 The last cell spans the Net and Tax columns. The caption becomes a `<caption>`;
 the attributes belong to `<table id="prices" class="price-list">`.
+A caption without an attribute block must be the last table line or be followed
+by a blank line. A colon-prefixed line in the middle of a table remains a data
+row, including when it contains an escaped pipe.
 Enabling `table_colgroup` emits this before the table head, after any caption:
 
 ```html
@@ -113,14 +116,19 @@ A complete CSS example is runnable with
   span is clamped to the remaining columns; excess cells are discarded and
   short rows are padded. A merged cell uses its first covered column's alignment.
 - Metadata follows the table directly or after one blank line. It must be a
-  complete line with at most three leading spaces. `: Caption {#id .class}`
-  and `: {#id .class}` are supported. The caption is inline Markdown and the
-  attribute list must contain at least one ID or class.
+  complete line with at most three leading spaces. `: Caption`,
+  `: Caption {#id .class}`, and `: {#id .class}` are supported. The caption is
+  inline Markdown. A brace list must contain at least one ID or class. Within a
+  table body, a brace-free line with an unescaped pipe remains a data row.
 - There may be one ID and multiple classes. Arbitrary key/value attributes,
   duplicate IDs, empty names, quotes, angle brackets, backslashes, and control
   characters in names are rejected. Invalid metadata remains ordinary Markdown.
   Attribute values are also escaped during rendering, including values supplied
   by an application that transforms the AST.
+- Explicit table IDs claim document identifiers in source order. Repeated
+  `: {#prices}` lines become `prices`, `prices-1`, and so on; a later heading
+  requesting the same ID also receives the next suffix. Enabling this option
+  can therefore change a later heading anchor when a table claims it first.
 - Attributes and captions are stored in optional `Table::attributes` metadata;
   `TableCell::colspan` records the logical width. Generic AST visitors include
   caption nodes and their source spans map to the original document, including

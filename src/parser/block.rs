@@ -271,6 +271,10 @@ impl<'a> Parser<'a> {
         };
         self.position = content_end;
         let mut first_line_comment = None;
+        // Avoid reparsing an ever-growing prefix for every `:`. A later line
+        // can close an unfinished multiline image; that rare shape remains a
+        // paragraph after an earlier caption-like line was ruled out.
+        let mut caption_ruled_out = false;
 
         loop {
             if self.is_at_end() {
@@ -293,6 +297,13 @@ impl<'a> Parser<'a> {
                 first_line_comment.get_or_insert(line_start);
                 self.position = self.skip_line_comments_from(line_start);
                 continue;
+            }
+
+            if self.options.image_captions && !caption_ruled_out && bytes[cursor] == b':' {
+                if self.image_caption_interrupts_paragraph(start, content_end, line_start)? {
+                    break;
+                }
+                caption_ruled_out = true;
             }
 
             // Setext heading underline: while a paragraph is open this
@@ -360,7 +371,18 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
         let span = Span::new(start as u32, content_end as u32);
-        let children = self.parse_inline_block(content, start + leading)?;
+        let mut children = self.parse_inline_block(content, start + leading)?;
+        if self.options.image_captions
+            && children.len() == 1
+            && matches!(children.first(), Some(Node::Image(_)))
+            && let Some(image) = children.pop()
+        {
+            let attached = self.attach_image_caption(image, start)?;
+            if matches!(attached, Node::Figure(_)) {
+                return Ok(Some(attached));
+            }
+            children.push(attached);
+        }
         Ok(Some(Node::Paragraph(
             self.allocator.boxed(Paragraph { children, span }),
         )))

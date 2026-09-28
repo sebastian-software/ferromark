@@ -37,6 +37,43 @@ test("renders UTF-8 HTML directly into Node.js Buffers", () => {
   assert.equal(reusedOutput.toString("utf8"), "<h1>Grüße</h1>\n");
 });
 
+test("image attributes and separate captions work through every rendering entry point", () => {
+  const source = '![Alt](image.svg "Title"){.diagram}\n\n: A **caption** {#figure .wide}';
+  const options = { imageAttributes: true, imageCaptions: true };
+  const expected =
+    '<figure id="figure" class="wide">\n<img src="image.svg" alt="Alt" title="Title" class="diagram">\n<figcaption>A <strong>caption</strong></figcaption>\n</figure>\n';
+  const highlighter = { codeToHtml: () => "" };
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(toHtmlBuffer(source, options).toString(), expected);
+  assert.equal(transform(source, options).html, expected);
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "dark" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "dark" }, options).html,
+    expected,
+  );
+  const renderer = new Renderer(options);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(renderer.toHtmlBuffer(source).toString(), expected);
+  assert.equal(renderer.toHtml(source), expected);
+  assert.equal(
+    toHtml(source),
+    '<p><img src="image.svg" alt="Alt" title="Title">{.diagram}</p>\n<p>: A <strong>caption</strong> {#figure .wide}</p>\n',
+  );
+});
+
+test("image and figure IDs agree with transformed heading metadata", () => {
+  const source = "![Alt](a.svg){#shared}\n: Caption {#shared}\n\n# Heading {#shared}";
+  const result = transform(source, {
+    imageAttributes: true,
+    imageCaptions: true,
+    headingAttributes: true,
+  });
+  assert.match(result.html, /<figure id="shared">/);
+  assert.match(result.html, /<img src="a.svg" alt="Alt" id="shared-1">/);
+  assert.match(result.html, /<h1 id="shared-2">Heading<\/h1>/);
+  assert.equal(result.headings[0].id, "shared-2");
+});
+
 test("applies optional locale-aware typography across the public Node API", () => {
   const source = '# "Hello **world**" -- it\'s 12 km...';
   const expected =

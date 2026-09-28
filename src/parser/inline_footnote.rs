@@ -235,6 +235,12 @@ impl<'a> Parser<'a> {
                     }
                 }
             }
+            Node::Figure(n) => {
+                self.lift_inline_note(&mut n.content, definitions, next_id, explicit);
+                for child in &mut n.caption {
+                    self.lift_inline_note(child, definitions, next_id, explicit);
+                }
+            }
             Node::Text(_)
             | Node::ThematicBreak(_)
             | Node::CodeBlock(_)

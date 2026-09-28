@@ -21,7 +21,7 @@ CommonMark core. GFM adds pipe tables, checklists, strikethrough, and autolinks.
 - [x] Publish the docs
 - [ ] Check the examples
 
-Read the [guide](/guide). ~~Outdated advice~~
+Read the [guide](/guide/getting-started). ~~Outdated advice~~
 ```
 
 ## Front matter and heading IDs
@@ -52,12 +52,27 @@ See [front-matter boundaries](https://github.com/sebastian-software/ferromark/bl
 ```
 
 With table spans enabled, adjacent closing pipes merge horizontal cells. Table
-attributes attach the ID and classes to the table; captions require an ID or
-class. Generated colgroups expose positional classes such as `col-1` and optional
+attributes attach the ID and classes to the table; a caption also works without
+attributes. Generated colgroups expose positional classes such as `col-1` and optional
 header-derived classes such as `col-name-net`. Set widths in CSS. Delimiter dash
 counts do not produce numeric width hints in v2.
 
 See [table syntax, options, and CSS](https://github.com/sebastian-software/ferromark/blob/main/docs/table-layout.md).
+
+## Images with separate captions
+
+```text
+![Three components connected by arrows](pipeline.svg "Browser title"){.diagram}
+
+: The **processing pipeline** {#pipeline .figure-wide}
+```
+
+Enable image attributes and captions separately. The image suffix styles
+`<img>`; the caption suffix styles `<figure>`. The image description remains
+alternative text, and the quoted title remains the HTML `title` attribute.
+A caption can omit attributes and follows a standalone image immediately or
+after one blank line. [Image syntax and boundaries](https://github.com/sebastian-software/ferromark/blob/main/docs/image-captions.md)
+also cover references, linked images, and containers.
 
 ## Notes, marks, and callouts
 

@@ -86,6 +86,8 @@ pub enum Node<'a> {
     Html(Html<'a>),
     /// Table (GFM extension).
     Table(Box<'a, Table<'a>>),
+    /// Captioned image figure (extension).
+    Figure(Box<'a, Figure<'a>>),
     /// Definition list.
     DefinitionList(Box<'a, DefinitionList<'a>>),
     /// Term inside a definition list.
@@ -267,6 +269,22 @@ pub struct TableAttributes<'a> {
     pub caption: Vec<'a, Node<'a>>,
 }
 
+/// A standalone image with a separate, visible caption.
+///
+/// `content` is an image node. Keeping it as a node permits the same figure
+/// shape to hold a block quote when quote attribution is added later.
+#[derive(Debug)]
+pub struct Figure<'a> {
+    /// The semantic content of the figure.
+    pub content: Node<'a>,
+    /// Caption inline nodes.
+    pub caption: Vec<'a, Node<'a>>,
+    /// Authored figure metadata. Absent when the caption has no attributes.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
+    /// Span from the image through the caption line.
+    pub span: Span,
+}
+
 /// Table row.
 #[derive(Debug)]
 pub struct TableRow<'a> {
@@ -404,8 +422,20 @@ pub struct Image<'a> {
     pub alt: &'a str,
     /// Title.
     pub title: Option<&'a str>,
+    /// Authored image metadata. Absent on the default parser path.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Source span.
     pub span: Span,
+}
+
+/// ID and classes authored in an opt-in element attribute block.
+/// The single optional pointer keeps ordinary image nodes compact.
+#[derive(Debug)]
+pub struct ElementAttributes<'a> {
+    /// Explicit HTML ID, without the leading `#`.
+    pub id: Option<&'a str>,
+    /// CSS class names, without leading dots.
+    pub classes: Vec<'a, &'a str>,
 }
 
 /// Strikethrough (GFM extension).
@@ -500,6 +530,7 @@ impl<'a> Node<'a> {
             Self::MathBlock(n) => n.span,
             Self::Html(n) => n.span,
             Self::Table(n) => n.span,
+            Self::Figure(n) => n.span,
             Self::DefinitionList(n) => n.span,
             Self::DefinitionListTerm(n) => n.span,
             Self::DefinitionListDefinition(n) => n.span,

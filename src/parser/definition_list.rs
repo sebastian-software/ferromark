@@ -72,6 +72,18 @@ impl<'a> Parser<'a> {
             return Ok(None);
         };
 
+        // The term range is known here. Let a standalone image with an
+        // immediate caption (or one blank line) keep the caption instead of
+        // claiming that line as a definition body. Checking only this range
+        // avoids a forward scan from every image-like block start.
+        if self.options.image_captions
+            && (terms.end == terms.body_start
+                || self.next_line_start(terms.end) == terms.body_start)
+            && self.image_caption_interrupts_paragraph(start, terms.end, terms.body_start)?
+        {
+            return Ok(None);
+        }
+
         let mut nodes = self.allocator.new_vec_with_capacity(terms.count + 1);
         let mut line_start = start;
         while line_start < terms.end {

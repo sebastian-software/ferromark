@@ -46,6 +46,14 @@ pub struct ParserOptions {
     /// [`Self::tables`]. Default: `false`, including all presets.
     pub table_attributes: bool,
 
+    /// Parse `{#id .class}` directly after inline or reference images.
+    /// Independent of image captions. Default: `false`.
+    pub image_attributes: bool,
+
+    /// Attach one `: Caption` line to a standalone image as a figure.
+    /// Independent of image attributes. Default: `false`.
+    pub image_captions: bool,
+
     /// Omit source-only physical lines beginning with `//` after at most
     /// three ASCII spaces. Comments do not introduce a paragraph break.
     /// Explicit container prefixes, code blocks, and raw HTML remain literal.
@@ -180,6 +188,8 @@ impl Default for ParserOptions {
             tables: false,
             merged_table_cells: false,
             table_attributes: false,
+            image_attributes: false,
+            image_captions: false,
             line_comments: false,
             front_matter: false,
             strikethrough: false,
@@ -231,6 +241,8 @@ impl ParserOptions {
             tables: true,
             merged_table_cells: false,
             table_attributes: false,
+            image_attributes: false,
+            image_captions: false,
             line_comments: false,
             front_matter: false,
             strikethrough: true,

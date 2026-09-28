@@ -1,9 +1,23 @@
-use crate::ast::{BlockQuote, Heading, List, ListItem, Node, Paragraph};
+use crate::ast::{BlockQuote, Figure, Heading, List, ListItem, Node, Paragraph};
 
 use super::{HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks};
 use crate::renderer::html::renderer::HtmlRenderer;
 
 impl HtmlRenderer {
+    pub(in crate::renderer::html::renderer) fn render_figure_with_hooks<H: HtmlRenderHooks>(
+        &mut self,
+        figure: &Figure<'_>,
+        hooks: &mut H,
+    ) {
+        self.write_figure_opening(figure);
+        self.render_node_with_hooks(&figure.content, hooks);
+        self.write("\n<figcaption>");
+        for child in &figure.caption {
+            self.render_inline_node_with_hooks(child, hooks);
+        }
+        self.write("</figcaption>\n</figure>\n");
+    }
+
     pub(in crate::renderer::html::renderer) fn render_paragraph_with_hooks<H: HtmlRenderHooks>(
         &mut self,
         paragraph: &Paragraph<'_>,

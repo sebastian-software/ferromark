@@ -15,6 +15,8 @@ const optionKeys = new Set([
   "wikiLinks",
   "cjkEmphasis",
   "mdx",
+  "imageAttributes",
+  "imageCaptions",
   "tables",
   "mergedTableCells",
   "tableColgroup",
@@ -73,7 +75,7 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and the boolean fields (bits 1 to 26, in declaration
+ * `renderPolicy` (bit 0) and the boolean fields (bits 1 to 28, in declaration
  * order, as `unpack` numbers them) take one bit each of `set` (present) and
  * `on` (its value; `'trusted'` for `renderPolicy`). `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
@@ -153,6 +155,8 @@ class PackedOptions {
       this.flag("wikiLinks", 1 << 24, options.wikiLinks) &&
       this.flag("cjkEmphasis", 1 << 25, options.cjkEmphasis) &&
       this.flag("mdx", 1 << 26, options.mdx) &&
+      this.flag("imageAttributes", 1 << 27, options.imageAttributes) &&
+      this.flag("imageCaptions", 1 << 28, options.imageCaptions) &&
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
       this.array("passes", options.passes)

@@ -342,6 +342,7 @@ impl HtmlRenderer {
             Node::MathBlock(node) => self.render_math_block(node),
             Node::Html(node) => self.render_html(node),
             Node::Table(node) => self.render_table(node),
+            Node::Figure(node) => self.render_figure(node),
             Node::DefinitionList(node) => self.render_definition_list(node),
             Node::DefinitionListTerm(node) => self.render_definition_list_term(node),
             Node::DefinitionListDefinition(node) => self.render_definition_list_definition(node),

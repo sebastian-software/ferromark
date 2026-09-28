@@ -8,7 +8,7 @@
 //! JavaScript, where V8 caches them, and passes the result to these entries as
 //! plain arguments:
 //!
-//! - `set` and `on` hold one bit each for `renderPolicy` and the 26 boolean
+//! - `set` and `on` hold one bit each for `renderPolicy` and the 28 boolean
 //!   fields, numbered in their declaration order in [`Options`]. A bit in `set`
 //!   marks the field as present, and the same bit in `on` holds its value. For
 //!   `renderPolicy`, a set value bit means `'trusted'`.
@@ -83,6 +83,8 @@ pub fn unpack(
         wiki_links: flag(24),
         cjk_emphasis: flag(25),
         mdx: flag(26),
+        image_attributes: flag(27),
+        image_captions: flag(28),
         link_base_path,
         typography,
         passes,

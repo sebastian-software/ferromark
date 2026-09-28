@@ -26,6 +26,7 @@ pub fn walk_node<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, node: &Node<'a>) {
         Node::MathBlock(n) => visitor.visit_math_block(n),
         Node::Html(n) => visitor.visit_html(n),
         Node::Table(n) => visitor.visit_table(n),
+        Node::Figure(n) => visitor.visit_figure(n),
         Node::DefinitionList(n) => visitor.visit_definition_list(n),
         Node::DefinitionListTerm(n) => visitor.visit_definition_list_term(n),
         Node::DefinitionListDefinition(n) => visitor.visit_definition_list_definition(n),
@@ -96,6 +97,14 @@ pub fn walk_table<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, table: &Table<'a>)
     }
     for row in &table.children {
         visitor.visit_table_row(row);
+    }
+}
+
+/// Walks the figure content and its visible caption.
+pub fn walk_figure<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, figure: &Figure<'a>) {
+    visitor.visit_node(&figure.content);
+    for child in &figure.caption {
+        visitor.visit_node(child);
     }
 }
 

@@ -91,6 +91,7 @@ fn node_kind(node: Option<&Node<'_>>) -> &'static str {
         Some(Node::MathBlock(_)) => "MathBlock",
         Some(Node::Html(_)) => "Html",
         Some(Node::Table(_)) => "Table",
+        Some(Node::Figure(_)) => "Figure",
         Some(Node::DefinitionList(_)) => "DefinitionList",
         Some(Node::DefinitionListTerm(_)) => "DefinitionListTerm",
         Some(Node::DefinitionListDefinition(_)) => "DefinitionListDefinition",

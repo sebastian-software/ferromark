@@ -236,6 +236,7 @@ pub(super) fn remap_table_cell_inline_spans(
         | Node::CodeBlock(_)
         | Node::MathBlock(_)
         | Node::Table(_)
+        | Node::Figure(_)
         | Node::DefinitionList(_)
         | Node::DefinitionListTerm(_)
         | Node::DefinitionListDefinition(_)
