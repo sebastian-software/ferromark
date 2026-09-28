@@ -251,12 +251,15 @@ impl HtmlRenderer {
     /// Writes inline HTML and tracks only its surrounding inline container
     /// when abbreviation matching is enabled. Block HTML is deliberately
     /// emitted by `write_html_value` without changing this state.
+    #[inline]
     pub(in crate::renderer::html::renderer) fn write_inline_html_value(&mut self, value: &str) {
         // Keep text inside authored tags untouched even when those tags are
         // escaped by sanitization or disallowed-HTML filtering. The scope is
         // reset at the end of this inline container, so an unclosed tag cannot
         // affect later paragraphs or headings.
-        self.update_raw_html_depth(value);
+        if self.options.abbreviations {
+            self.update_raw_html_depth(value);
+        }
         self.write_html_value(value);
     }
 
@@ -273,12 +276,22 @@ impl HtmlRenderer {
     /// The cached flag keeps the whole question off the hot path while the
     /// default `"\n"` is configured, where writing the line ending verbatim
     /// and writing the configured value are the same thing.
+    ///
+    /// Renderers without abbreviations keep this to one pointer check in
+    /// front of the plain text path; the boundary-aware writer stays out of
+    /// line.
     #[inline]
     pub(in crate::renderer::html::renderer) fn write_inline_text(&mut self, value: &str) {
-        self.write_inline_text_with_boundaries(value, None, None);
+        if !self.options.special_inline_text {
+            self.write_inline_text_run(value);
+        } else if self.options.abbreviations {
+            self.write_inline_text_with_boundaries(value, None, None);
+        } else {
+            self.write_inline_text_with_soft_breaks(value);
+        }
     }
 
-    #[inline]
+    #[inline(never)]
     pub(in crate::renderer::html::renderer) fn write_inline_text_with_boundaries(
         &mut self,
         value: &str,
@@ -407,6 +420,8 @@ impl HtmlRenderer {
     }
 
     /// Tracks trusted raw HTML elements so their contents remain authored.
+    #[cold]
+    #[inline(never)]
     fn update_raw_html_depth(&mut self, html: &str) {
         let Some(state) = self.abbreviation_state.as_mut() else {
             return;
@@ -530,17 +545,27 @@ impl HtmlRenderer {
 
     /// Visits inline children while treating adjacent plain text as one token
     /// stream for abbreviation boundary checks.
+    ///
+    /// Every inline container renders through here, so the default path stays
+    /// the plain loop inlined at each call site; the abbreviation walk lives in
+    /// a separate cold function.
+    #[inline]
     pub(in crate::renderer::html::renderer) fn render_inline_children(
         &mut self,
         children: &[Node<'_>],
     ) {
-        if self.abbreviation_state.is_none() {
-            for child in children {
-                self.visit_inline_node(child);
-            }
+        if self.options.abbreviations {
+            self.render_inline_children_with_abbreviations(children);
             return;
         }
+        for child in children {
+            self.visit_inline_node(child);
+        }
+    }
 
+    #[cold]
+    #[inline(never)]
+    fn render_inline_children_with_abbreviations(&mut self, children: &[Node<'_>]) {
         self.begin_inline_abbreviation_scope();
         for (index, child) in children.iter().enumerate() {
             if let Node::Text(text) = child {

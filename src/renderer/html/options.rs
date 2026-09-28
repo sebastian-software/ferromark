@@ -266,6 +266,13 @@ pub(super) struct RendererOptions {
     /// `true` when `soft_break` differs from the default line ending, so the
     /// text path can skip the soft-break check for the common configuration.
     pub(super) custom_soft_break: bool,
+    /// `true` once [`super::HtmlRenderer::with_abbreviations`] enabled
+    /// abbreviation markup. A plain flag beside the other options keeps the
+    /// hot inline paths from loading the optional abbreviation state.
+    pub(super) abbreviations: bool,
+    /// `true` when inline text needs more than escaping: a custom soft break
+    /// or abbreviation markup. Plain text takes one branch on this flag.
+    pub(super) special_inline_text: bool,
     hard_break: Cow<'static, str>,
     pub(super) sanitize: bool,
     pub(super) disallow_raw_html: bool,
@@ -332,6 +339,8 @@ impl From<HtmlRendererOptions> for RendererOptions {
         Self {
             xhtml: options.xhtml,
             custom_soft_break: options.soft_break != DEFAULT_SOFT_BREAK,
+            abbreviations: false,
+            special_inline_text: options.soft_break != DEFAULT_SOFT_BREAK,
             soft_break: options.soft_break,
             hard_break: options.hard_break,
             sanitize: options.sanitize,
