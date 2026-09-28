@@ -65,9 +65,7 @@ impl<'a> Parser<'a> {
         let link = Link {
             url,
             title: None,
-            id: None,
-            classes: self.allocator.new_vec(),
-            attributes: self.allocator.new_vec(),
+            attributes: None,
             children,
             span: Span::new((offset + pos) as u32, (offset + close + 1) as u32),
         };

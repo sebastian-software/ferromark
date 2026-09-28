@@ -465,6 +465,7 @@ fn is_inline_node(node: &Node<'_>) -> bool {
             | Node::InlineMath(_)
             | Node::Break(_)
             | Node::Link(_)
+            | Node::Span(_)
             | Node::Image(_)
             | Node::Highlight(_)
             | Node::Delete(_)

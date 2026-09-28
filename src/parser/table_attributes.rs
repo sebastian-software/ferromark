@@ -3,22 +3,17 @@
 use crate::allocator::Box;
 use crate::ast::TableAttributes;
 
-use super::Parser;
+use super::{Parser, attributes::caption_line};
 use crate::parser::error::ParseResult;
-
-struct AttributeLine<'a> {
-    caption: &'a str,
-    caption_offset: usize,
-    tokens: Option<&'a str>,
-}
 
 impl<'a> Parser<'a> {
     pub(super) fn is_table_attributes_line(&self, position: usize) -> bool {
-        attribute_line(self.line_at(position)).is_some_and(|line| {
-            line.tokens.is_none_or(|tokens| {
-                self.parse_attributes(tokens, self.options.extended_attributes)
-                    .is_some()
-            })
+        caption_line(self.line_at(position), true).is_some_and(|line| {
+            (line.tokens.is_some() || !has_unescaped_pipe(line.content))
+                && line.tokens.is_none_or(|tokens| {
+                    self.parse_attributes(tokens, self.options.extended_attributes)
+                        .is_some()
+                })
         })
     }
 
@@ -40,7 +35,7 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
         let (raw_line, next_position) = self.line_and_next(position);
-        let Some(line) = attribute_line(raw_line) else {
+        let Some(line) = caption_line(raw_line, true) else {
             return Ok(None);
         };
 
@@ -53,7 +48,7 @@ impl<'a> Parser<'a> {
         } else {
             self.empty_attributes()
         };
-        let caption = self.parse_inline_block(line.caption, position + line.caption_offset)?;
+        let caption = self.parse_inline_block(line.content, position + line.content_offset)?;
         self.position = next_position;
         Ok(Some(self.allocator.boxed(TableAttributes {
             id: attributes.id,
@@ -64,39 +59,17 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn attribute_line(line: &str) -> Option<AttributeLine<'_>> {
-    let trimmed_start = line.trim_start_matches(' ');
-    let indent = line.len() - trimmed_start.len();
-    if indent > 3 {
-        return None;
-    }
-    let after_colon = trimmed_start.strip_prefix(':')?;
-    if !after_colon.starts_with([' ', '\t']) {
-        return None;
-    }
-    let content = after_colon.trim_start_matches([' ', '\t']);
-    let caption_offset = line.len() - content.len();
-    let content = content.trim_end_matches([' ', '\t']);
-    if !content.ends_with('}') {
-        if content.contains(['{', '}']) {
-            return None;
+fn has_unescaped_pipe(source: &str) -> bool {
+    let mut escaped = false;
+    for byte in source.bytes() {
+        if byte == b'\\' {
+            escaped = !escaped;
+            continue;
         }
-        return (!content.is_empty()).then_some(AttributeLine {
-            caption: content,
-            caption_offset,
-            tokens: None,
-        });
+        if byte == b'|' && !escaped {
+            return true;
+        }
+        escaped = false;
     }
-    let without_close = content.strip_suffix('}')?;
-    let open = without_close.rfind('{')?;
-    let caption = &content[..open];
-    if !caption.is_empty() && !caption.ends_with([' ', '\t']) {
-        return None;
-    }
-    let tokens = &without_close[open + 1..];
-    Some(AttributeLine {
-        caption: caption.trim_end_matches([' ', '\t']),
-        caption_offset,
-        tokens: Some(tokens),
-    })
+    false
 }

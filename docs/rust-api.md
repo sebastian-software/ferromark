@@ -161,6 +161,11 @@ planning, so collision suffixes stay the same. Only ASCII letters, digits,
 underscores, and hyphens are accepted. This setting does not rewrite authored
 fragment links and does not change footnote IDs.
 
+Authored IDs on images, figures, and tables are emitted without a namespace,
+including under untrusted rendering. HTML escaping protects the attribute
+syntax, but applications should not treat authored IDs as safe DOM property
+names. The heading ID prefix applies only to headings.
+
 ## Document outline and table of contents
 
 `Document::outline` returns owned heading text, effective levels, resolved

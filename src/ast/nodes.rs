@@ -161,16 +161,28 @@ pub struct Paragraph<'a> {
 pub struct Heading<'a> {
     /// Heading depth (1-6).
     pub depth: u8,
-    /// Explicit heading id from a trailing attribute block.
-    pub id: Option<&'a str>,
-    /// Explicit heading classes from a trailing attribute block.
-    pub classes: Vec<'a, &'a str>,
-    /// Authored key/value attributes, before HTML-specific name mapping.
-    pub attributes: Vec<'a, Attribute<'a>>,
+    /// Authored heading metadata, absent without a suffix.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Inline children.
     pub children: Vec<'a, Node<'a>>,
     /// Source span.
     pub span: Span,
+}
+
+impl Heading<'_> {
+    /// Authored ID, if the heading has one.
+    pub fn explicit_id(&self) -> Option<&str> {
+        self.attributes
+            .as_ref()
+            .and_then(|attributes| attributes.id)
+    }
+
+    /// Authored CSS classes in source order.
+    pub fn classes(&self) -> &[&str] {
+        self.attributes
+            .as_ref()
+            .map_or(&[], |attributes| &attributes.classes)
+    }
 }
 
 /// Thematic break (horizontal rule).
@@ -285,12 +297,8 @@ pub struct Figure<'a> {
     pub content: Node<'a>,
     /// Caption inline nodes.
     pub caption: Vec<'a, Node<'a>>,
-    /// Explicit figure ID, without the leading `#`.
-    pub id: Option<&'a str>,
-    /// Figure CSS classes.
-    pub classes: Vec<'a, &'a str>,
-    /// Authored key/value attributes, before HTML-specific name mapping.
-    pub attributes: Vec<'a, Attribute<'a>>,
+    /// Authored figure metadata, absent without a suffix.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Span from the image through the caption line.
     pub span: Span,
 }
@@ -417,16 +425,28 @@ pub struct Link<'a> {
     pub url: &'a str,
     /// Title.
     pub title: Option<&'a str>,
-    /// Explicit link ID.
-    pub id: Option<&'a str>,
-    /// Explicit link classes.
-    pub classes: Vec<'a, &'a str>,
-    /// Authored key/value attributes, before HTML-specific name mapping.
-    pub attributes: Vec<'a, Attribute<'a>>,
+    /// Authored link metadata, absent on the default parser path.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Inline children.
     pub children: Vec<'a, Node<'a>>,
     /// Source span.
     pub span: Span,
+}
+
+impl Link<'_> {
+    /// Authored ID, if the link has one.
+    pub fn explicit_id(&self) -> Option<&str> {
+        self.attributes
+            .as_ref()
+            .and_then(|attributes| attributes.id)
+    }
+
+    /// Authored CSS classes in source order.
+    pub fn classes(&self) -> &[&str] {
+        self.attributes
+            .as_ref()
+            .map_or(&[], |attributes| &attributes.classes)
+    }
 }
 
 /// Image.
@@ -438,14 +458,22 @@ pub struct Image<'a> {
     pub alt: &'a str,
     /// Title.
     pub title: Option<&'a str>,
-    /// Explicit image ID, without the leading `#`.
-    pub id: Option<&'a str>,
-    /// Image CSS classes.
-    pub classes: Vec<'a, &'a str>,
-    /// Authored key/value attributes, before HTML-specific name mapping.
-    pub attributes: Vec<'a, Attribute<'a>>,
+    /// Authored image metadata, absent on the default parser path.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Source span.
     pub span: Span,
+}
+
+/// Authored metadata shared by elements with optional attribute suffixes.
+/// A single optional pointer keeps ordinary image nodes compact.
+#[derive(Debug)]
+pub struct ElementAttributes<'a> {
+    /// Explicit HTML ID, without the leading `#`.
+    pub id: Option<&'a str>,
+    /// CSS class names, without leading dots.
+    pub classes: Vec<'a, &'a str>,
+    /// Other authored key/value attributes before HTML name mapping.
+    pub values: Vec<'a, Attribute<'a>>,
 }
 
 /// An authored key/value attribute. HTML-specific `data-` mapping is deferred
@@ -551,6 +579,21 @@ pub struct FootnoteDefinition<'a> {
 }
 
 impl<'a> Node<'a> {
+    /// Authored ID claimed by the renderer for this element, before collision
+    /// suffixing. Headings also apply their configured heading prefix.
+    #[must_use]
+    pub fn explicit_element_id(&self) -> Option<&str> {
+        match self {
+            Self::Heading(node) => node.explicit_id(),
+            Self::Table(node) => node.attributes.as_ref().and_then(|attrs| attrs.id),
+            Self::Figure(node) => node.attributes.as_ref().and_then(|attrs| attrs.id),
+            Self::Link(node) => node.explicit_id(),
+            Self::Image(node) => node.attributes.as_ref().and_then(|attrs| attrs.id),
+            Self::Span(node) => node.id,
+            _ => None,
+        }
+    }
+
     /// Returns the span of this node.
     #[must_use]
     pub fn span(&self) -> Span {

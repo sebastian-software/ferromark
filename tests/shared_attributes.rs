@@ -1,7 +1,7 @@
 use ferromark::allocator::Allocator;
 use ferromark::ast::{Node, Visit};
 use ferromark::parser::{Parser, ParserOptions};
-use ferromark::{HtmlRenderer, OutlineOptions};
+use ferromark::{HtmlRenderer, HtmlRendererOptions, OutlineOptions};
 
 fn options() -> ParserOptions {
     ParserOptions {
@@ -19,6 +19,146 @@ fn render(source: &str) -> String {
         .parse()
         .unwrap();
     HtmlRenderer::new().render(&document)
+}
+
+fn render_untrusted(source: &str) -> String {
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
+    HtmlRenderer::with_options(HtmlRendererOptions {
+        sanitize: true,
+        ..HtmlRendererOptions::default()
+    })
+    .render(&document)
+}
+
+#[test]
+fn untrusted_metadata_keeps_only_inert_names_as_html_attributes() {
+    let html = render_untrusted(
+        "[Item]{style=color:red name=config href=javascript:bad srcset=javascript:bad srcdoc=evil action=javascript:bad poster=javascript:bad target=_blank lang=de title=Info width=20 aria-label=Item data-sku=7}",
+    );
+    for name in [
+        "style", "name", "href", "srcset", "srcdoc", "action", "poster", "target",
+    ] {
+        assert!(html.contains(&format!("data-{name}=\"")), "{name}: {html}");
+        assert!(!html.contains(&format!(" {name}=\"")), "{name}: {html}");
+    }
+    for name in ["lang", "title", "width", "aria-label", "data-sku"] {
+        assert!(html.contains(&format!(" {name}=\"")), "{name}: {html}");
+    }
+    assert!(render("[Item]{style=color:red}").contains(" style=\"color:red\""));
+}
+
+#[test]
+fn spans_propagate_link_rules_autolinks_and_permalink_markers() {
+    for source in [
+        "[[x [a](b)]{.c}](u)",
+        "[z [x [a](b)]{.c}](u)",
+        "[[x `c` [a](b)]{.c}](u)",
+        "[outer [inner [go](/x)]{.wrap}](/y)",
+    ] {
+        let nested = render(source);
+        assert!(nested.contains("<span"), "{nested}");
+        assert_eq!(nested.matches("<a ").count(), 1, "{nested}");
+    }
+    let autolink = render("[www.example.com]{.wrap}");
+    assert!(
+        autolink.contains("<span class=\"wrap\"><a href="),
+        "{autolink}"
+    );
+
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, "# [Hello [#](#hello)]{.wrap}", options())
+        .parse()
+        .unwrap();
+    let html = HtmlRenderer::with_options(HtmlRendererOptions {
+        heading_permalinks: true,
+        ..HtmlRendererOptions::default()
+    })
+    .render(&document);
+    assert_eq!(html.matches("href=\"#hello\"").count(), 1, "{html}");
+}
+
+#[test]
+fn bracketed_spans_work_without_extended_element_attributes() {
+    let allocator = Allocator::new();
+    let document = Parser::with_options(
+        &allocator,
+        "[A]{lang=de} [B](/b){lang=de}",
+        ParserOptions {
+            bracketed_spans: true,
+            ..ParserOptions::gfm()
+        },
+    )
+    .parse()
+    .unwrap();
+    let html = HtmlRenderer::new().render(&document);
+    assert!(html.contains("<span lang=\"de\">A</span>"), "{html}");
+    assert!(html.contains("<a href=\"/b\">B</a>{lang=de}"), "{html}");
+}
+
+#[test]
+fn default_links_and_headings_have_no_metadata_allocation() {
+    let allocator = Allocator::new();
+    let document =
+        Parser::with_options(&allocator, "# Title\n\n[Link](/url)", ParserOptions::gfm())
+            .parse()
+            .unwrap();
+    let Node::Heading(heading) = &document.children[0] else {
+        panic!("heading");
+    };
+    assert!(heading.attributes.is_none());
+    let Node::Paragraph(paragraph) = &document.children[1] else {
+        panic!("paragraph");
+    };
+    let Node::Link(link) = &paragraph.children[0] else {
+        panic!("link");
+    };
+    assert!(link.attributes.is_none());
+    let link_size = std::mem::size_of::<ferromark::ast::Link<'static>>();
+    let heading_size = std::mem::size_of::<ferromark::ast::Heading<'static>>();
+    assert!(link_size <= 80, "Link grew to {link_size} bytes");
+    assert!(heading_size <= 64, "Heading grew to {heading_size} bytes");
+}
+
+#[test]
+fn quoted_braces_and_attribute_names_keep_valid_html_syntax() {
+    let html = render("# Heading {title=\"a{b\"}");
+    assert!(html.contains("<h1 id=\"heading\" title=\"a{b\">"), "{html}");
+    let html = render("[Text]{xlink:href=u}");
+    assert!(html.contains("[Text]{xlink:href=u}"), "{html}");
+    assert!(!html.contains("data-xlink:href"), "{html}");
+}
+
+#[test]
+fn attached_attributes_take_precedence_over_mdx_expressions() {
+    let allocator = Allocator::new();
+    let document = Parser::with_options(
+        &allocator,
+        "[A]{x=1} text {x=1}\n\n# T {a=b}",
+        ParserOptions {
+            extended_attributes: true,
+            bracketed_spans: true,
+            ..ParserOptions::mdx()
+        },
+    )
+    .parse()
+    .unwrap();
+    let Node::Paragraph(paragraph) = &document.children[0] else {
+        panic!("paragraph");
+    };
+    assert!(matches!(paragraph.children.first(), Some(Node::Span(_))));
+    assert!(
+        paragraph
+            .children
+            .iter()
+            .any(|child| matches!(child, Node::MdxTextExpression(_)))
+    );
+    let Node::Heading(heading) = &document.children[1] else {
+        panic!("heading");
+    };
+    assert_eq!(heading.attributes.as_ref().unwrap().values[0].name, "a");
 }
 
 #[test]

@@ -198,6 +198,14 @@ is escaped, and unsafe link and image URL schemes (such as `javascript:`) are
 removed from the rendered attributes. Use this default for Markdown from users
 or other untrusted sources.
 
+With the optional image and table attribute syntax enabled, authored `id`
+values are escaped but emitted without a namespace even under this policy.
+Avoid relying on IDs from untrusted Markdown as safe DOM property names.
+When extended attributes are enabled, `style`, URL-bearing names, `name`, and
+other active HTML attributes become inert `data-*` metadata under the
+untrusted policy. A small set of presentation and accessibility names remains
+unchanged; see the shared attribute documentation for that list.
+
 ```js
 toHtml("<img src=x onerror=alert(1)>");
 // '&lt;img src=x onerror=alert(1)&gt;'

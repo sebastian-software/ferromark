@@ -516,6 +516,7 @@ fn node_has_permalink_marker(node: &Node<'_>, prefix: &str, id: &str) -> bool {
                 || heading_has_permalink_marker(&link.children, prefix, id)
         }
         Node::Html(html) => html_has_header_anchor(html.value),
+        Node::Span(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Emphasis(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Strong(value) => heading_has_permalink_marker(&value.children, prefix, id),
         Node::Highlight(value) => heading_has_permalink_marker(&value.children, prefix, id),

@@ -80,9 +80,9 @@ impl HtmlRenderer {
             self.write_heading_id(heading);
             self.output.push('"');
         }
-        if !heading.classes.is_empty() {
+        if !heading.classes().is_empty() {
             self.output.push_str(" class=\"");
-            for (index, class_name) in heading.classes.iter().enumerate() {
+            for (index, class_name) in heading.classes().iter().enumerate() {
                 if index > 0 {
                     self.output.push(' ');
                 }
@@ -90,7 +90,9 @@ impl HtmlRenderer {
             }
             self.output.push('"');
         }
-        self.write_authored_attributes(&heading.attributes, &["id", "class"]);
+        if let Some(attributes) = &heading.attributes {
+            self.write_authored_attributes(&attributes.values, &["id", "class"]);
+        }
         self.write_source_span_attr(heading.span);
         self.output.push('>');
         for child in &heading.children {
@@ -398,20 +400,24 @@ impl HtmlRenderer {
         figure: &Figure<'_>,
     ) {
         self.write("<figure");
-        if let Some(id) = figure.id {
-            self.write_explicit_element_id(id);
-        }
-        if !figure.classes.is_empty() {
-            self.write(" class=\"");
-            for (index, class_name) in figure.classes.iter().enumerate() {
-                if index > 0 {
-                    self.write(" ");
-                }
-                self.write_attribute_escaped(class_name);
+        if let Some(attributes) = &figure.attributes {
+            if let Some(id) = attributes.id {
+                self.write_explicit_element_id(id);
             }
-            self.write("\"");
+            if !attributes.classes.is_empty() {
+                self.write(" class=\"");
+                for (index, class_name) in attributes.classes.iter().enumerate() {
+                    if index > 0 {
+                        self.write(" ");
+                    }
+                    self.write_attribute_escaped(class_name);
+                }
+                self.write("\"");
+            }
         }
-        self.write_authored_attributes(&figure.attributes, &["id", "class"]);
+        if let Some(attributes) = &figure.attributes {
+            self.write_authored_attributes(&attributes.values, &["id", "class"]);
+        }
         self.write_source_span_attr(figure.span);
         self.write(">\n");
     }

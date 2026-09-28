@@ -46,9 +46,9 @@ impl HtmlRenderer {
             self.write_heading_id(heading);
             self.output.push('"');
         }
-        if !heading.classes.is_empty() {
+        if !heading.classes().is_empty() {
             self.write(" class=\"");
-            for (index, class_name) in heading.classes.iter().enumerate() {
+            for (index, class_name) in heading.classes().iter().enumerate() {
                 if index > 0 {
                     self.output.push(' ');
                 }
@@ -56,7 +56,9 @@ impl HtmlRenderer {
             }
             self.output.push('"');
         }
-        self.write_authored_attributes(&heading.attributes, &["id", "class"]);
+        if let Some(attributes) = &heading.attributes {
+            self.write_authored_attributes(&attributes.values, &["id", "class"]);
+        }
         self.write_source_span_attr(heading.span);
         self.write(">");
         for child in &heading.children {

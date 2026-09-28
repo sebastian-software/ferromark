@@ -15,8 +15,15 @@ impl HtmlRenderer {
                 continue;
             }
             let name = item.name;
-            let mapped =
-                standard_name(name) || name.starts_with("aria-") || name.starts_with("data-");
+            // Escaping a value does not make an arbitrary HTML attribute safe:
+            // style, URL-valued names and DOM-clobbering names must remain data.
+            let mapped = name.starts_with("aria-")
+                || name.starts_with("data-")
+                || if self.options.sanitize {
+                    safe_untrusted_name(name)
+                } else {
+                    standard_name(name)
+                };
             if !mapped
                 && values
                     .iter()
@@ -35,6 +42,25 @@ impl HtmlRenderer {
             self.write("\"");
         }
     }
+}
+
+/// Inert, useful metadata that can be emitted unchanged in untrusted output.
+/// All URL-bearing, script-bearing and DOM-clobbering names map to data-*.
+fn safe_untrusted_name(name: &str) -> bool {
+    matches!(
+        name,
+        "lang"
+            | "dir"
+            | "title"
+            | "width"
+            | "height"
+            | "loading"
+            | "decoding"
+            | "hreflang"
+            | "role"
+            | "translate"
+            | "spellcheck"
+    )
 }
 
 /// Recognized HTML attribute names. Recognition is element-independent;

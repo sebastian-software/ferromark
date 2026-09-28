@@ -24,14 +24,16 @@ colon, indentation beyond three spaces, and an empty or attribute-only caption
 remain ordinary Markdown. The image's own suffix targets `<img>`; a trailing
 caption suffix targets `<figure>`. A caption without attributes is valid.
 
-The native AST stores image ID/classes on `Image` and a captioned image as
-`Node::Figure` with `content`, inline `caption`, figure ID/classes, and a source
+The native AST stores image ID/classes in an optional `ElementAttributes`
+allocation on `Image` and a captioned image as
+`Node::Figure` with `content`, inline `caption`, optional figure attributes, and a source
 span covering the image through the caption. Visitors and rendering hooks
 traverse both content and caption. The figure shape can later hold a quoted
 block as content for #468. The parser does not infer a caption from alt text or
 title, and an empty alt remains empty.
 
-Image and table suffixes use one grammar: at most one `#id`, any number of
+Image, table, and figure suffixes use one ID/class scanner and caption-line
+grammar: at most one `#id`, any number of
 `.class` tokens, nonempty names, and no quotes, angle brackets, equals, braces,
 backslashes, or controls. Invalid blocks stay literal. Repeated IDs invalidate
 the block. Heading suffixes retain their existing permissive parser, including
@@ -46,7 +48,9 @@ With `table_attributes` enabled, a nonempty `: Caption` line now attaches to a
 table without requiring an attribute block. `: {#id .class}` remains metadata
 without a caption. This intentionally broadens the enabled table extension;
 default CommonMark and GFM parsing remain unchanged. Figure and table captions
-contain ordinary inline Markdown. No configuration file or site-level caption
+contain ordinary inline Markdown. A brace-free `: text | value |` within a table
+body remains a data row; a plain caption with a pipe can follow after the
+table. Malformed brace syntax remains literal at both attachment points. No configuration file or site-level caption
 inference is added.
 
 ## Boundaries and consequences
@@ -58,6 +62,11 @@ lists keep their prior behavior. Container subparsers keep figure and caption
 spans in the original source. Code, raw HTML, MDX, and link destinations are
 unaffected. The normal renderer applies URL policy and HTML escaping to image
 and caption content, including untrusted output and XHTML images.
+Caption lines also attach through existing lazy list/blockquote paragraph
+continuation; for example `> ![Alt](a.png)\n: Caption` stays inside the quote.
+Explicit authored IDs are not prefixed by `heading_id_prefix` or namespaced in
+untrusted output, matching existing heading IDs. Applications accepting
+untrusted authored IDs should avoid relying on them as safe DOM names.
 
 Disabled image attributes return before suffix scanning, and disabled image
 captions do not parse candidate lines. The `image_captions` benchmark measures
@@ -71,7 +80,20 @@ measurement were:
 | Valid images and captions (3,968 bytes) | 11.66 µs | 13.72 µs | 20.92 µs | 28.21 µs |
 | Repeated invalid IDs (3,520 bytes) | 7.95 µs | 9.64 µs | 11.99 µs | 13.81 µs |
 
-The ordinary-prose differences are within the run's noise. Enabling captions
-adds a visible parsing cost for image-heavy input because each candidate
-paragraph is parsed again to decide whether the colon line attaches. The
-benchmark exercises parsing only and makes no rendering throughput claim.
+These measurements describe the initial implementation before review fixes.
+The follow-up avoids repeated inline parsing of caption-like lines once a
+paragraph is ruled out, and keeps ordinary image nodes compact with an
+optional attribute allocation. An external release harness then compared
+`main` with the reviewed PR using GFM defaults (both options off), 96 repeated
+blocks per input, seven 250 ms windows after a 200 ms warmup, and two
+alternating process cycles. Medians on the same arm64 Mac were:
+
+| Workload | Main parse | PR parse | Main parse + render | PR parse + render |
+| --- | ---: | ---: | ---: | ---: |
+| Ordinary prose | 10.84 µs | 10.89 µs (+0.5%) | 15.22 µs | 15.26 µs (+0.3%) |
+| Ordinary images | 10.55 µs | 10.79 µs (+2.3%) | 16.19 µs | 16.51 µs (+2.0%) |
+| Ordinary links | 12.93 µs | 12.97 µs (+0.4%) | 19.49 µs | 19.44 µs (−0.3%) |
+
+These are descriptive local timings, not a cross-machine guarantee. The
+within-build Criterion target exercises parsing only. The adversarial
+caption-like paragraph has a scaling regression test.

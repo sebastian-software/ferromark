@@ -552,49 +552,20 @@ impl Metadata {
 }
 
 impl<'a> Visit<'a> for Metadata {
-    fn visit_span(&mut self, span: &ferromark::ast::InlineSpan<'a>) {
-        if let Some(id) = span.id {
-            let _ = self.id_planner.plan(id);
-        }
-        ferromark::ast::walk_span(self, span);
-    }
-
-    fn visit_link(&mut self, link: &ferromark::ast::Link<'a>) {
-        if let Some(id) = link.id {
-            let _ = self.id_planner.plan(id);
-        }
-        ferromark::ast::walk_link(self, link);
-    }
-
-    fn visit_figure(&mut self, figure: &ferromark::ast::Figure<'a>) {
-        if let Some(id) = figure.id {
-            let _ = self.id_planner.plan(id);
-        }
-        ferromark::ast::walk_figure(self, figure);
-    }
-
-    fn visit_image(&mut self, image: &ferromark::ast::Image<'a>) {
-        if let Some(id) = image.id {
-            let _ = self.id_planner.plan(id);
-        }
-    }
-
-    fn visit_table(&mut self, table: &ferromark::ast::Table<'a>) {
-        if let Some(id) = table
-            .attributes
-            .as_ref()
-            .and_then(|attributes| attributes.id)
+    fn visit_node(&mut self, node: &Node<'a>) {
+        if !matches!(node, Node::Heading(_))
+            && let Some(id) = node.explicit_element_id()
         {
             let _ = self.id_planner.plan(id);
         }
-        ferromark::ast::walk_table(self, table);
+        ferromark::ast::walk_node(self, node);
     }
 
     fn visit_heading(&mut self, heading: &ferromark::ast::Heading<'a>) {
         let text = ferromark::collect_heading_text(&heading.children);
         let id = if self.heading_ids {
             let base = heading
-                .id
+                .explicit_id()
                 .map_or_else(|| ferromark::slugify_heading(&text), str::to_owned);
             let mut requested = self.heading_id_prefix.clone();
             requested.push_str(&base);

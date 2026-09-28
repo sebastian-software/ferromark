@@ -50,6 +50,22 @@ fn image_attributes_work_without_captions() {
 }
 
 #[test]
+fn ordinary_image_nodes_keep_attributes_unallocated() {
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, "![Alt](a.svg)", ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let Node::Paragraph(paragraph) = &document.children[0] else {
+        panic!("expected paragraph");
+    };
+    let Node::Image(image) = &paragraph.children[0] else {
+        panic!("expected image");
+    };
+    assert!(image.attributes.is_none());
+    assert!(std::mem::size_of::<ferromark::ast::Image<'static>>() <= 64);
+}
+
+#[test]
 fn separate_caption_makes_figure_and_keeps_alt_title_independent() {
     for gap in ["", "\n"] {
         let source = format!(
@@ -105,6 +121,16 @@ fn captions_respect_containers_and_definition_list_precedence() {
         render("![Alt](a.png)\n: A caption", options),
         "<figure>\n<img src=\"a.png\" alt=\"Alt\">\n<figcaption>A caption</figcaption>\n</figure>\n"
     );
+    let html = render(
+        "![a\nb](c)\n: cap",
+        ParserOptions {
+            image_captions: true,
+            definition_lists: true,
+            ..ParserOptions::gfm()
+        },
+    );
+    assert!(html.starts_with("<figure>\n<img "), "{html}");
+    assert!(html.contains("<figcaption>cap</figcaption>"), "{html}");
     let options = ParserOptions {
         image_captions: true,
         ..ParserOptions::gfm()
@@ -121,6 +147,44 @@ fn captions_respect_containers_and_definition_list_precedence() {
         render("![Alt](a.png)\n\n> : Outside", options),
         "<p><img src=\"a.png\" alt=\"Alt\"></p>\n<blockquote>\n<p>: Outside</p>\n</blockquote>\n"
     );
+}
+
+#[test]
+fn a_captioned_image_keeps_a_blank_separated_list_item_loose() {
+    let html = render(
+        "- intro\n\n  ![Alt](a.png)\n  : Caption",
+        ParserOptions {
+            image_captions: true,
+            ..ParserOptions::gfm()
+        },
+    );
+    assert!(html.contains("<li><p>intro</p>\n<figure>"), "{html}");
+}
+
+#[test]
+fn caption_lines_can_follow_a_lazy_container_continuation() {
+    let options = ParserOptions {
+        image_captions: true,
+        ..ParserOptions::gfm()
+    };
+    let quote = render("> ![Alt](a.png)\n: Caption", options.clone());
+    assert!(quote.contains("<blockquote>\n<figure>"), "{quote}");
+    let list = render("- ![Alt](a.png)\n: Caption", options);
+    assert!(list.contains("<li>\n<figure>"), "{list}");
+}
+
+#[test]
+fn image_attribute_suffixes_do_not_cross_lines_or_nested_openers() {
+    let options = ParserOptions {
+        image_attributes: true,
+        ..ParserOptions::gfm()
+    };
+    let html = render("![Alt](a.svg){#x\n.y}", options.clone());
+    assert!(html.contains("<img src=\"a.svg\" alt=\"Alt\">"), "{html}");
+    assert!(!html.contains("id=\"x\""), "{html}");
+    let html = render("![Alt](a.svg){{#x}", options);
+    assert!(html.contains("<img src=\"a.svg\" alt=\"Alt\">"), "{html}");
+    assert!(!html.contains("id=\"x\""), "{html}");
 }
 
 #[test]

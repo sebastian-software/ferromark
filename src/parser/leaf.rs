@@ -1,5 +1,5 @@
-use crate::allocator::Vec as ArenaVec;
-use crate::ast::{Node, Span};
+use crate::allocator::Box;
+use crate::ast::{ElementAttributes, Node, Span};
 
 use super::Parser;
 use super::line_scan::{line_end as line_end_scan, line_terminator_end};
@@ -121,7 +121,7 @@ impl<'a> Parser<'a> {
 
         let span = Span::new(start as u32, self.position as u32);
 
-        let (content, id, classes, attributes) = self.split_heading_attributes(content);
+        let (content, attributes) = self.split_heading_attributes(content);
 
         // Parse inline content
         let children = if !content.is_empty() {
@@ -133,8 +133,6 @@ impl<'a> Parser<'a> {
         Ok(Some(Node::Heading(self.allocator.boxed(
             crate::ast::Heading {
                 depth,
-                id,
-                classes,
                 attributes,
                 children,
                 span,
@@ -145,43 +143,40 @@ impl<'a> Parser<'a> {
     pub(super) fn split_heading_attributes(
         &self,
         content: &'a str,
-    ) -> (
-        &'a str,
-        Option<&'a str>,
-        ArenaVec<'a, &'a str>,
-        ArenaVec<'a, crate::ast::Attribute<'a>>,
-    ) {
-        let mut classes = self.allocator.new_vec();
-        let empty_values = self.allocator.new_vec();
+    ) -> (&'a str, Option<Box<'a, ElementAttributes<'a>>>) {
         if !self.options.heading_attributes && !self.options.extended_attributes {
-            return (content, None, classes, empty_values);
+            return (content, None);
         }
 
         let trimmed = content.trim_end_matches(char::is_whitespace);
         if !trimmed.ends_with('}') {
-            return (content, None, classes, empty_values);
+            return (content, None);
         }
 
-        let Some(open) = trimmed.rfind('{') else {
-            return (content, None, classes, empty_values);
+        let open = if self.options.extended_attributes {
+            super::attributes::trailing_attribute_open(&trimmed[..trimmed.len() - 1], true)
+        } else {
+            trimmed.rfind('{')
+        };
+        let Some(open) = open else {
+            return (content, None);
         };
         if open > 0 && !ends_with_whitespace(&trimmed[..open]) {
-            return (content, None, classes, empty_values);
+            return (content, None);
         }
 
         if self.options.extended_attributes {
             let Some(parsed) = self.parse_attributes(&trimmed[open + 1..trimmed.len() - 1], true)
             else {
-                return (content, None, classes, empty_values);
+                return (content, None);
             };
             return (
                 trimmed[..open].trim_end_matches(char::is_whitespace),
-                parsed.id,
-                parsed.classes,
-                parsed.values,
+                Some(self.boxed_attributes(parsed)),
             );
         }
 
+        let mut classes = self.allocator.new_vec();
         let mut id = None;
         let mut has_attribute = false;
         let attrs = &trimmed[open + 1..trimmed.len() - 1];
@@ -200,14 +195,16 @@ impl<'a> Parser<'a> {
         }
 
         if !has_attribute {
-            return (content, None, classes, empty_values);
+            return (content, None);
         }
 
         (
             trimmed[..open].trim_end_matches(char::is_whitespace),
-            id,
-            classes,
-            empty_values,
+            Some(self.allocator.boxed(ElementAttributes {
+                id,
+                classes,
+                values: self.allocator.new_vec(),
+            })),
         )
     }
 

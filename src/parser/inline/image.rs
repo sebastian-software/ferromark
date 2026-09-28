@@ -55,9 +55,7 @@ impl<'a> Parser<'a> {
                     url: target.url,
                     alt,
                     title: target.title,
-                    id: attributes.id,
-                    classes: attributes.classes,
-                    attributes: attributes.values,
+                    attributes,
                     span: Span::new((offset + image_start) as u32, (offset + end) as u32),
                 })));
                 *pos = end;
@@ -89,9 +87,7 @@ impl<'a> Parser<'a> {
                             url: reference.url,
                             alt,
                             title: reference.title,
-                            id: attributes.id,
-                            classes: attributes.classes,
-                            attributes: attributes.values,
+                            attributes,
                             span: Span::new((offset + image_start) as u32, (offset + end) as u32),
                         })));
                         *pos = end;
@@ -106,9 +102,7 @@ impl<'a> Parser<'a> {
                     url: reference.url,
                     alt,
                     title: reference.title,
-                    id: attributes.id,
-                    classes: attributes.classes,
-                    attributes: attributes.values,
+                    attributes,
                     span: Span::new((offset + image_start) as u32, (offset + end) as u32),
                 })));
                 *pos = end;

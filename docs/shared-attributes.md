@@ -56,6 +56,7 @@ const html = toHtml("[Bonjour]{lang=fr}", {
 
 The grammar accepts `#id`, `.class`, and `name=value`. Values may be unquoted
 without spaces or single/double quoted; `hidden=""` expresses an empty value.
+Names use ASCII letters, digits, hyphens, and underscores; colon is not accepted.
 Use `class="one two"` to add multiple classes. Attribute names are normalized
 to lowercase; values, IDs, and classes keep their case. The last repeated ID
 or key wins, while classes accumulate. Invalid syntax remains visible
@@ -66,7 +67,18 @@ written. `aria-*` and `data-*` also stay as written. Other names become
 `data-*` in HTML, while the AST keeps their authored names. If `sku` and
 `data-sku` both appear, `data-sku` wins. Markdown owns link destinations,
 image sources and alt text, and quoted titles; metadata cannot override them.
-The renderer escapes values and applies its normal output policy.
+Under untrusted rendering, only `lang`, `dir`, `title`, `width`, `height`,
+`loading`, `decoding`, `hreflang`, `role`, `translate`, `spellcheck`, `aria-*`,
+and `data-*` keep their authored names. Other names, including `style`, `name`,
+and URL-valued attributes, become inert `data-*` metadata. Trusted rendering
+keeps the broader standard HTML name mapping. The renderer escapes all values.
+Authored IDs remain unnamespaced under either policy, so applications should
+not use them as trusted DOM property names.
+
+An inline suffix is limited to 512 bytes and 64 attribute tokens; a longer
+suffix remains literal Markdown. With MDX enabled, an attached suffix or
+bracketed span takes precedence at these syntax positions, while a free
+`{expression}` remains MDX.
 
 With `extended_attributes` off, existing heading/image/table ID and class
 options retain their earlier behavior. When it is on, headings use the strict

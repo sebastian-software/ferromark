@@ -115,12 +115,17 @@ A complete CSS example is runnable with
 - Metadata follows the table directly or after one blank line. It must be a
   complete line with at most three leading spaces. `: Caption`,
   `: Caption {#id .class}`, and `: {#id .class}` are supported. The caption is
-  inline Markdown. A brace list must contain at least one ID or class.
+  inline Markdown. A brace list must contain at least one ID or class. Within a
+  table body, a brace-free line with an unescaped pipe remains a data row.
 - There may be one ID and multiple classes. Arbitrary key/value attributes,
   duplicate IDs, empty names, quotes, angle brackets, backslashes, and control
   characters in names are rejected. Invalid metadata remains ordinary Markdown.
   Attribute values are also escaped during rendering, including values supplied
   by an application that transforms the AST.
+- Explicit table IDs claim document identifiers in source order. Repeated
+  `: {#prices}` lines become `prices`, `prices-1`, and so on; a later heading
+  requesting the same ID also receives the next suffix. Enabling this option
+  can therefore change a later heading anchor when a table claims it first.
 - Attributes and captions are stored in optional `Table::attributes` metadata;
   `TableCell::colspan` records the logical width. Generic AST visitors include
   caption nodes and their source spans map to the original document, including

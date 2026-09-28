@@ -97,6 +97,23 @@ test("shared attributes and bracketed spans work through every public entry poin
   );
 });
 
+test("untrusted shared attributes cannot emit active HTML names", () => {
+  const source =
+    '[Item]{style="position:fixed" name=config srcset="javascript:bad" target=_blank lang=de}';
+  const html = toHtml(source, { bracketedSpans: true });
+  assert.match(html, / data-style="position:fixed"/);
+  assert.match(html, / data-name="config"/);
+  assert.match(html, / data-srcset="javascript:bad"/);
+  assert.match(html, / data-target="_blank"/);
+  assert.match(html, / lang="de"/);
+  assert.doesNotMatch(html, /<span[^>]* style=/);
+  assert.doesNotMatch(html, /<span[^>]* srcset=/);
+  assert.match(
+    toHtml(source, { bracketedSpans: true, renderPolicy: "trusted" }),
+    / style="position:fixed"/,
+  );
+});
+
 test("span IDs share heading metadata collision planning", () => {
   const result = transform("[Item]{#shared sku=x}\n\n# Heading {#shared}", {
     extendedAttributes: true,
