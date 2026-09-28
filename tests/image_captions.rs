@@ -118,7 +118,7 @@ fn captions_respect_containers_and_definition_list_precedence() {
         ..ParserOptions::gfm()
     };
     assert_eq!(
-        render("![Alt](a.png)\n: A caption", options),
+        render("![Alt](a.png)\n: A caption", options.clone()),
         "<figure>\n<img src=\"a.png\" alt=\"Alt\">\n<figcaption>A caption</figcaption>\n</figure>\n"
     );
     let html = render(
@@ -131,6 +131,8 @@ fn captions_respect_containers_and_definition_list_precedence() {
     );
     assert!(html.starts_with("<figure>\n<img "), "{html}");
     assert!(html.contains("<figcaption>cap</figcaption>"), "{html}");
+    let html = render("![a](c)\n\n: cap", options);
+    assert!(html.starts_with("<figure>\n<img "), "{html}");
     let options = ParserOptions {
         image_captions: true,
         ..ParserOptions::gfm()
@@ -147,6 +149,22 @@ fn captions_respect_containers_and_definition_list_precedence() {
         render("![Alt](a.png)\n\n> : Outside", options),
         "<p><img src=\"a.png\" alt=\"Alt\"></p>\n<blockquote>\n<p>: Outside</p>\n</blockquote>\n"
     );
+}
+
+#[test]
+fn unfinished_multiline_images_do_not_trigger_later_captions() {
+    let options = ParserOptions {
+        image_captions: true,
+        ..ParserOptions::gfm()
+    };
+    for source in [
+        "![a\n: b](c)\n: cap",
+        "![a](b \"x\n: y\")\n: cap",
+        "![[a](b) x\n: c](d)\n: cap",
+    ] {
+        let html = render(source, options.clone());
+        assert!(!html.contains("<figure>"), "{source:?}: {html}");
+    }
 }
 
 #[test]

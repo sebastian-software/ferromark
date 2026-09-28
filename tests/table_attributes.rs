@@ -99,17 +99,19 @@ fn plain_caption_attaches_when_table_extension_is_enabled() {
 
 #[test]
 fn a_colon_prefixed_pipe_row_does_not_end_the_table() {
-    let source = "| k | v |\n| - | - |\n| a | 1 |\n: ratio | 2 |\n| b | 3 |";
-    let allocator = Allocator::new();
-    let document = Parser::with_options(&allocator, source, options())
-        .parse()
-        .unwrap();
-    let Node::Table(table) = &document.children[0] else {
-        panic!("expected table");
-    };
-    assert_eq!(table.children.len(), 4);
-    assert!(table.attributes.is_none());
-    assert_eq!(document.children.len(), 1);
+    for row in [": ratio | 2 |", ": ratio \\| 2", ": note"] {
+        let source = format!("| k | v |\n| - | - |\n| a | 1 |\n{row}\n| b | 3 |");
+        let allocator = Allocator::new();
+        let document = Parser::with_options(&allocator, &source, options())
+            .parse()
+            .unwrap();
+        let Node::Table(table) = &document.children[0] else {
+            panic!("expected table");
+        };
+        assert_eq!(table.children.len(), 4, "{row}");
+        assert!(table.attributes.is_none(), "{row}");
+        assert_eq!(document.children.len(), 1, "{row}");
+    }
 }
 
 #[test]

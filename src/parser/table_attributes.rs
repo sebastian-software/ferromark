@@ -9,7 +9,15 @@ use crate::parser::error::ParseResult;
 impl<'a> Parser<'a> {
     pub(super) fn is_table_attributes_line(&self, position: usize) -> bool {
         caption_line(self.line_at(position), true).is_some_and(|line| {
-            (line.tokens.is_some() || !has_unescaped_pipe(line.content))
+            // A brace-free colon line in the middle of a table is still a
+            // data row, including when its only pipe is escaped. A plain
+            // caption must terminate the table; an explicit attribute block
+            // is unambiguous even before another row.
+            let (_, next) = self.line_and_next(position);
+            (line.tokens.is_some()
+                || (!has_unescaped_pipe(line.content)
+                    && (next >= self.source.len()
+                        || self.line_at(next).trim_matches([' ', '\t']).is_empty())))
                 && line.tokens.is_none_or(|tokens| {
                     self.parse_attributes(tokens, self.options.extended_attributes)
                         .is_some()

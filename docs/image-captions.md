@@ -49,6 +49,8 @@ line and may contain ordinary inline Markdown. A linked image or a paragraph
 with surrounding text stays an ordinary paragraph. An unrelated colon line is
 not consumed. An escaped colon remains literal. Multiple images and multiline
 captions are not supported by this syntax.
+If a caption-like line occurs before an unfinished multiline image closes,
+the paragraph stays ordinary Markdown; no later caption line attaches.
 
 | Suffix location | HTML target |
 | --- | --- |

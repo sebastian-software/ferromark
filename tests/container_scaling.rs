@@ -116,7 +116,7 @@ fn assert_linear(label: &str, small: &str, large: &str, options: &ParserOptions)
 
 #[test]
 fn repeated_caption_like_lines_do_not_reparse_a_growing_paragraph() {
-    let source = |count| format!("[a](b) x\n{}", ": c\n".repeat(count));
+    let source = |count| format!("![a](b) x\n{}", ": c\n".repeat(count));
     let options = ParserOptions {
         image_captions: true,
         ..ParserOptions::gfm()
@@ -125,6 +125,22 @@ fn repeated_caption_like_lines_do_not_reparse_a_growing_paragraph() {
         "caption-like paragraph lines",
         &source(2_000),
         &source(8_000),
+        &options,
+    );
+}
+
+#[test]
+fn image_caption_precedence_does_not_scan_past_block_starts() {
+    let source = |count| "![a](b)\n# h\n![a](b)\n***\n".repeat(count);
+    let options = ParserOptions {
+        image_captions: true,
+        definition_lists: true,
+        ..ParserOptions::gfm()
+    };
+    assert_linear(
+        "image captions before definition lists",
+        &source(500),
+        &source(2_000),
         &options,
     );
 }
