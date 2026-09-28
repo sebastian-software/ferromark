@@ -358,6 +358,7 @@ impl HtmlRenderer {
             Node::Image(node) => self.render_image(node),
             Node::Highlight(node) => self.render_highlight(node),
             Node::Delete(node) => self.render_delete(node),
+            Node::Insertion(node) => self.render_insertion(node),
             Node::Superscript(node) => self.render_superscript(node),
             Node::Subscript(node) => self.render_subscript(node),
             Node::FootnoteReference(node) => self.render_footnote_reference(node),

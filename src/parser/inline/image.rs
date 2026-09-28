@@ -131,6 +131,7 @@ impl<'a> Parser<'a> {
         if short_scan::find3(b'[', b'*', b'_', raw.as_bytes()).is_none()
             && short_scan::find3(b'`', b'\\', b'&', raw.as_bytes()).is_none()
             && short_scan::find(b'<', raw.as_bytes()).is_none()
+            && (!self.options.insertions || short_scan::find(b'+', raw.as_bytes()).is_none())
         {
             return Ok(raw);
         }
@@ -151,6 +152,7 @@ fn flatten_inline_text(nodes: &[Node<'_>], out: &mut crate::allocator::String<'_
             Node::Strong(n) => flatten_inline_text(&n.children, out),
             Node::Highlight(n) => flatten_inline_text(&n.children, out),
             Node::Delete(n) => flatten_inline_text(&n.children, out),
+            Node::Insertion(n) => flatten_inline_text(&n.children, out),
             Node::Superscript(n) => flatten_inline_text(&n.children, out),
             Node::Subscript(n) => flatten_inline_text(&n.children, out),
             Node::Link(n) => flatten_inline_text(&n.children, out),

@@ -77,6 +77,7 @@ const fields = [
   ["typography", "object"],
   ["passes", "array"],
   ["blockquoteAttributions", "boolean"],
+  ["insertions", "boolean"],
 ];
 const keys = fields.map(([key]) => key);
 
@@ -103,7 +104,7 @@ const probe = [
   "",
   ": A visible caption",
   "",
-  "~~strike~~ x^2^ H~2~O ==mark== ^[inline note] www.example.com $x$",
+  "~~strike~~ ++added++ x^2^ H~2~O ==mark== ^[inline note] www.example.com $x$",
   "",
   "- [x] done",
   "",

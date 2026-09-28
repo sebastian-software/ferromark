@@ -113,7 +113,7 @@ pub(super) fn scheme_prefix_len(bytes: &[u8], at: usize) -> Option<usize> {
 
 /// Start-of-text, whitespace, or common delimiter punctuation may precede an
 /// autolink.
-fn valid_boundary(value: &str, start: usize) -> bool {
+pub(super) fn valid_boundary(value: &str, start: usize) -> bool {
     value[..start]
         .chars()
         .next_back()
@@ -154,6 +154,7 @@ pub(super) fn validate_url(value: &str, start: usize, prefix_len: usize) -> Opti
         start,
         end,
         href_prefix: if prefix_len == 4 { "http://" } else { "" },
+        protect_plus_markers: prefix_len != 4,
     })
 }
 
@@ -348,6 +349,7 @@ fn validate_email_parts(value: &str, at: usize) -> Option<Candidate> {
         start,
         end,
         href_prefix: "mailto:",
+        protect_plus_markers: false,
     })
 }
 

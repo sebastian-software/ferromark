@@ -20,6 +20,7 @@ const optionKeys = new Set([
   "extendedAttributes",
   "bracketedSpans",
   "blockquoteAttributions",
+  "insertions",
   "tables",
   "mergedTableCells",
   "tableColgroup",
@@ -111,7 +112,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 37 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 38 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -122,7 +123,7 @@ function validateOptions(options) {
  * `renderPolicy` (bit 0) and 30 boolean fields (bits 1 to 30, in declaration
  * order, as `unpack` numbers them) take one bit each of `set` (present) and
  * `on` (its value; `'trusted'` for `renderPolicy`). Enabled blockquote
- * attributions use the object entry so later option bits remain available.
+ * attributions and insertions use the object entry so later option bits remain available.
  * `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
  * values. The native side rebuilds `Options` and resolves it with the code the
@@ -153,6 +154,10 @@ class PackedOptions {
   unknownPolicy;
   /** @type {boolean} */
   requiresObjectPath = false;
+  /** @type {boolean} */
+  blockquoteAttributionsEnabled = false;
+  /** @type {boolean} */
+  insertionsEnabled = false;
 
   /** @param {import('./index.mjs').Options} options Validated options. */
   constructor(options) {
@@ -210,7 +215,8 @@ class PackedOptions {
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
       this.array("passes", options.passes) &&
-      this.blockquoteAttributions(options.blockquoteAttributions)
+      this.blockquoteAttributions(options.blockquoteAttributions) &&
+      this.insertions(options.insertions)
     );
   }
 
@@ -249,6 +255,19 @@ class PackedOptions {
       return value === undefined || this.reject("blockquoteAttributions", value);
     }
     if (value) {
+      this.blockquoteAttributionsEnabled = true;
+      this.requiresObjectPath = true;
+    }
+    return true;
+  }
+
+  /** @param {unknown} value The optional `insertions` flag. */
+  insertions(value) {
+    if (typeof value !== "boolean") {
+      return value === undefined || this.reject("insertions", value);
+    }
+    if (value) {
+      this.insertionsEnabled = true;
       this.requiresObjectPath = true;
     }
     return true;
@@ -266,7 +285,8 @@ class PackedOptions {
     if (this.linkBasePath !== undefined) result.linkBasePath = this.linkBasePath;
     if (this.typography !== undefined) result.typography = this.typography;
     if (this.passes !== undefined) result.passes = this.passes;
-    result.blockquoteAttributions = true;
+    if (this.blockquoteAttributionsEnabled) result.blockquoteAttributions = true;
+    if (this.insertionsEnabled) result.insertions = true;
     return result;
   }
 

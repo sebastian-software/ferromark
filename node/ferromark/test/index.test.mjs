@@ -24,6 +24,39 @@ test("renders Markdown through the native binding", () => {
   assert.equal(toHtml("# Hello"), '<h1 id="hello">Hello</h1>\n');
 });
 
+test("supports opt-in insertions across the public Node rendering API", () => {
+  const source = "~~old~~ ++new **bold**++";
+  const expected = "<p><del>old</del> <ins>new <strong>bold</strong></ins></p>\n";
+  const options = { insertions: true };
+  const highlighter = { codeToHtml: () => "<pre><code>unused</code></pre>\n" };
+
+  assert.equal(toHtml(source), "<p><del>old</del> ++new <strong>bold</strong>++</p>\n");
+  assert.equal(toHtml(source, options), expected);
+  assert.equal(
+    toHtml("++<script>alert(1)</script>++", options),
+    "<p><ins>&lt;script&gt;alert(1)&lt;/script&gt;</ins></p>\n",
+  );
+  assert.equal(toHtmlBuffer(source, options).toString("utf8"), expected);
+  assert.equal(transform(source, options).html, expected);
+  assert.equal(new Renderer(options).toHtml(source), expected);
+  assert.equal(toHtmlWithHighlighter(source, highlighter, { theme: "test" }, options), expected);
+  assert.equal(
+    transformWithHighlighter(source, highlighter, { theme: "test" }, options).html,
+    expected,
+  );
+  assert.equal(
+    toHtml("https://example.com/++path++", { insertions: true, autolinkLiterals: true }),
+    '<p><a href="https://example.com/++path++">https://example.com/++path++</a></p>\n',
+  );
+  assert.equal(
+    toHtml("# ++Good news++", { insertions: true }).trim(),
+    '<h1 id="good-news"><ins>Good news</ins></h1>',
+  );
+  assert.deepEqual(transform("# ++Good news++", options).headings, [
+    { level: 1, id: "good-news", text: "Good news" },
+  ]);
+});
+
 test("renders UTF-8 HTML directly into Node.js Buffers", () => {
   const expected = '<h1 id="grüße">Grüße</h1>\n';
   const output = toHtmlBuffer("# Grüße");

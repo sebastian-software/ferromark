@@ -96,6 +96,7 @@ pub struct Options {
     pub typography: Option<TypographyConfig>,
     pub passes: Option<Vec<NativePassConfig>>,
     pub blockquote_attributions: Option<bool>,
+    pub insertions: Option<bool>,
 }
 
 fn core_options(options: Option<Options>) -> Result<CoreOptions> {
@@ -180,6 +181,7 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             parser.blockquote_attributions,
             options.blockquote_attributions
         );
+        apply!(parser.insertions, options.insertions);
         if let Some(base) = options.link_base_path {
             // The JavaScript string is owned, so this becomes `Cow::Owned`;
             // every other renderer option keeps its borrowed default.

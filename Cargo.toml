@@ -97,6 +97,10 @@ harness = false
 name = "sanitized_urls"
 harness = false
 
+[[bench]]
+name = "insertions"
+harness = false
+
 [workspace]
 resolver = "2"
 members = ["node/native", "transforms"]
