@@ -370,6 +370,11 @@ fn bare_urls_near_a_closer_stay_outside_generated_quote_links() {
     };
     for (source, language, url) in [
         (
+            "<<voir https://exemple.fr>> ici",
+            TypographyLanguage::French,
+            "https://exemple.fr",
+        ),
+        (
             "<<voir https://exemple.fr >> ici",
             TypographyLanguage::French,
             "https://exemple.fr",
