@@ -123,16 +123,26 @@ pub struct HtmlRenderer {
     autolink_index: Option<FirstByteIndex>,
     /// Optional, longest-term-first technical abbreviation matcher. It is
     /// built once with the renderer so repeated documents share its dictionary.
-    abbreviation_matcher: Option<AbbreviationMatcher>,
+    /// State used only by opt-in technical abbreviation rendering. Keeping it
+    /// behind one pointer avoids growing every default renderer with the
+    /// dictionary and URL scanner fields.
+    abbreviation_state: Option<Box<AbbreviationState>>,
+}
+
+/// Render-time state owned only by renderers that enable abbreviations.
+struct AbbreviationState {
+    matcher: AbbreviationMatcher,
     /// URL scanner used only to keep URL text outside generated abbreviation
     /// wrappers. It includes HTTP(S) even when autolinking is disabled.
-    abbreviation_url_index: Option<FirstByteIndex>,
-    /// URL prefixes paired with `abbreviation_url_index`.
-    abbreviation_url_patterns: Vec<String>,
-    /// Raw HTML elements are copied as authored, including their child text.
+    url_index: FirstByteIndex,
+    /// URL prefixes paired with `url_index`.
+    url_patterns: Vec<String>,
+    /// Raw inline HTML depth is scoped to one top-level inline container.
     raw_html_depth: usize,
     /// MDX elements named `abbr` must not gain generated child wrappers.
-    mdx_abbreviation_depth: usize,
+    mdx_depth: usize,
+    /// Nested inline child lists share the current paragraph/heading context.
+    inline_depth: usize,
 }
 
 /// Working capacity a heading scratch buffer is given on first use.
@@ -197,7 +207,7 @@ impl HtmlRenderer {
     }
 
     fn enable_abbreviations(mut self, abbreviations: AbbreviationOptions) -> Self {
-        self.abbreviation_matcher = Some(AbbreviationMatcher::new(abbreviations.overrides));
+        let matcher = AbbreviationMatcher::new(abbreviations.overrides);
         let mut patterns = self.options.autolink_patterns().to_vec();
         for default in DEFAULT_AUTOLINK_PATTERNS {
             if !patterns
@@ -207,8 +217,14 @@ impl HtmlRenderer {
                 patterns.push(default.clone());
             }
         }
-        self.abbreviation_url_index = Some(FirstByteIndex::from_patterns(&patterns));
-        self.abbreviation_url_patterns = patterns.into_iter().map(Cow::into_owned).collect();
+        self.abbreviation_state = Some(Box::new(AbbreviationState {
+            matcher,
+            url_index: FirstByteIndex::from_patterns(&patterns),
+            url_patterns: patterns.into_iter().map(Cow::into_owned).collect(),
+            raw_html_depth: 0,
+            mdx_depth: 0,
+            inline_depth: 0,
+        }));
         self
     }
 
@@ -290,11 +306,7 @@ impl HtmlRenderer {
             in_link: false,
             in_mdx_island_children: false,
             autolink_index,
-            abbreviation_matcher: None,
-            abbreviation_url_index: None,
-            abbreviation_url_patterns: Vec::new(),
-            raw_html_depth: 0,
-            mdx_abbreviation_depth: 0,
+            abbreviation_state: None,
         }
     }
 
@@ -329,8 +341,11 @@ impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn prepare_render(&mut self, document: &Document<'_>) {
         self.output.clear();
         self.in_mdx_island_children = false;
-        self.raw_html_depth = 0;
-        self.mdx_abbreviation_depth = 0;
+        if let Some(state) = self.abbreviation_state.as_mut() {
+            state.raw_html_depth = 0;
+            state.mdx_depth = 0;
+            state.inline_depth = 0;
+        }
         self.code_block_index = 0;
         self.heading_id_planner.clear();
         self.clear_footnote_state();

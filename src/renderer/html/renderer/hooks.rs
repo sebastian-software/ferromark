@@ -166,10 +166,11 @@ impl HtmlRenderContext<'_> {
         nodes: &ArenaVec<'a, Node<'a>>,
         hooks: &mut H,
     ) {
-        for node in nodes {
-            if self.children_inline {
-                self.renderer.render_inline_node_with_hooks(node, hooks);
-            } else {
+        if self.children_inline {
+            self.renderer
+                .render_inline_children_with_hooks(nodes, hooks);
+        } else {
+            for node in nodes {
                 self.renderer.render_node_with_hooks(node, hooks);
             }
         }
@@ -256,6 +257,16 @@ impl HtmlRenderer {
         node: &Node<'_>,
         hooks: &mut H,
     ) {
+        self.render_inline_node_with_hooks_and_boundaries(node, hooks, None, None);
+    }
+
+    fn render_inline_node_with_hooks_and_boundaries<H: HtmlRenderHooks>(
+        &mut self,
+        node: &Node<'_>,
+        hooks: &mut H,
+        before: Option<char>,
+        after: Option<char>,
+    ) {
         let control = {
             let mut cx = HtmlRenderContext {
                 renderer: self,
@@ -264,8 +275,38 @@ impl HtmlRenderer {
             hooks.render_node(node, &mut cx)
         };
         if control == HtmlRenderControl::Default {
-            self.render_inline_node_default_with_hooks(node, hooks);
+            if let Node::Text(text) = node {
+                self.write_inline_text_with_boundaries(text.value, before, after);
+            } else {
+                self.render_inline_node_default_with_hooks(node, hooks);
+            }
         }
+    }
+
+    pub(in crate::renderer::html::renderer) fn render_inline_children_with_hooks<
+        H: HtmlRenderHooks,
+    >(
+        &mut self,
+        children: &[Node<'_>],
+        hooks: &mut H,
+    ) {
+        if self.abbreviation_state.is_none() {
+            for child in children {
+                self.render_inline_node_with_hooks(child, hooks);
+            }
+            return;
+        }
+
+        self.begin_inline_abbreviation_scope();
+        for (index, child) in children.iter().enumerate() {
+            self.render_inline_node_with_hooks_and_boundaries(
+                child,
+                hooks,
+                super::write::adjacent_text_boundary_before(children, index),
+                super::write::adjacent_text_boundary_after(children, index),
+            );
+        }
+        self.end_inline_abbreviation_scope();
     }
 
     fn render_node_default_with_hooks<H: HtmlRenderHooks>(
@@ -325,7 +366,7 @@ impl HtmlRenderer {
     ) {
         match node {
             Node::Text(node) => self.render_text(node),
-            Node::Html(node) => self.write_html_value(node.value),
+            Node::Html(node) => self.write_inline_html_value(node.value),
             Node::Emphasis(node) => self.render_emphasis_with_hooks(node, hooks),
             Node::Strong(node) => self.render_strong_with_hooks(node, hooks),
             Node::InlineCode(node) => self.render_inline_code(node),

@@ -8,13 +8,14 @@
 //! JavaScript, where V8 caches them, and passes the result to these entries as
 //! plain arguments:
 //!
-//! - `set` and `on` hold one bit each for `renderPolicy` and the 27 boolean
+//! - `set` and `on` hold one bit each for `renderPolicy` and the 26 boolean
 //!   fields, numbered in their declaration order in [`Options`]. A bit in `set`
 //!   marks the field as present, and the same bit in `on` holds its value. For
 //!   `renderPolicy`, a set value bit means `'trusted'`.
 //! - `headingOffset`, `headingIdPrefix`, `linkBasePath`, `typography`,
-//!   `passes`, and `abbreviations` pass through as read, and `undefined`
-//!   stands for an absent field.
+//!   and `passes` pass through as read, and `undefined` stands for an absent
+//!   field. Abbreviation settings use the object-taking entries so this packed
+//!   layout does not consume a flag bit for the opt-in feature.
 //!
 //! [`unpack`] rebuilds the `Options` value napi-rs would have produced from
 //! the object. Each entry then runs the same code as its public counterpart,
@@ -29,22 +30,21 @@
 //! The entries are private to the facade. napi-rs declares them in the
 //! generated `native.d.ts`, but the package types in `index.d.mts` do not.
 
-use napi::bindgen_prelude::{Buffer, FnArgs, Function, Result};
-use napi::{Env, JsString};
-use napi_derive::napi;
-use std::collections::HashMap;
-
 use crate::input::Utf8Input;
 use crate::{
     NativePassConfig, Options, TransformResult, TypographyConfig, core_options, html_buffer,
     js_string, render_document, render_one_shot,
 };
+use napi::bindgen_prelude::{Buffer, FnArgs, Function, Result};
+use napi::{Env, JsString};
+use napi_derive::napi;
 
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
 ///
 /// The bit numbers follow the declaration order of [`Options`], skipping the
-/// six fields that pass through unpacked.
-#[allow(clippy::implicit_hasher, clippy::too_many_arguments)]
+/// five fields that pass through unpacked. Abbreviation options use the object
+/// entry point so they do not consume scarce packed flag bits.
+#[allow(clippy::too_many_arguments)]
 pub fn unpack(
     set: u32,
     on: u32,
@@ -53,7 +53,6 @@ pub fn unpack(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    abbreviations: Option<HashMap<String, Option<String>>>,
 ) -> Options {
     let flag = |bit: u32| (set & (1 << bit) != 0).then_some(on & (1 << bit) != 0);
     Options {
@@ -90,8 +89,8 @@ pub fn unpack(
         link_base_path,
         typography,
         passes,
-        auto_abbreviations: flag(27),
-        abbreviations,
+        auto_abbreviations: None,
+        abbreviations: None,
     }
 }
 
@@ -103,7 +102,7 @@ pub fn unpack(
 /// defaults as well: every bit of `set` is clear, so [`unpack`] ignores `on`
 /// and leaves every field unset, and `core_options` changes nothing for
 /// unset fields.
-#[allow(clippy::implicit_hasher, clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 fn unpack_present(
     set: u32,
     on: u32,
@@ -112,15 +111,13 @@ fn unpack_present(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    abbreviations: Option<HashMap<String, Option<String>>>,
 ) -> Option<Options> {
     let absent = set == 0
         && heading_offset.is_none()
         && heading_id_prefix.is_none()
         && link_base_path.is_none()
         && typography.is_none()
-        && passes.is_none()
-        && abbreviations.is_none();
+        && passes.is_none();
     (!absent).then(|| {
         unpack(
             set,
@@ -130,14 +127,13 @@ fn unpack_present(
             link_base_path,
             typography,
             passes,
-            abbreviations,
         )
     })
 }
 
 /// Internal to the `ferromark` facade: `toHtml` with packed options.
 #[napi(catch_unwind, js_name = "toHtmlPacked")]
-#[allow(clippy::implicit_hasher, clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn to_html_packed<'env>(
     env: &'env Env,
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
@@ -148,7 +144,6 @@ pub fn to_html_packed<'env>(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    abbreviations: Option<HashMap<String, Option<String>>>,
 ) -> Result<JsString<'env>> {
     let options = unpack_present(
         set,
@@ -158,14 +153,13 @@ pub fn to_html_packed<'env>(
         link_base_path,
         typography,
         passes,
-        abbreviations,
     );
     render_one_shot(&markdown, options, |html| js_string(env, html))
 }
 
 /// Internal to the `ferromark` facade: `toHtmlBuffer` with packed options.
 #[napi(catch_unwind, js_name = "toHtmlBufferPacked")]
-#[allow(clippy::implicit_hasher, clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn to_html_buffer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
@@ -175,7 +169,6 @@ pub fn to_html_buffer_packed(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    abbreviations: Option<HashMap<String, Option<String>>>,
 ) -> Result<Buffer> {
     let options = unpack_present(
         set,
@@ -185,14 +178,13 @@ pub fn to_html_buffer_packed(
         link_base_path,
         typography,
         passes,
-        abbreviations,
     );
     render_one_shot(&markdown, options, html_buffer)
 }
 
 /// Internal to the `ferromark` facade: `transform` with packed options.
 #[napi(catch_unwind, js_name = "transformPacked")]
-#[allow(clippy::implicit_hasher, clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn transform_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
@@ -202,7 +194,6 @@ pub fn transform_packed(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    abbreviations: Option<HashMap<String, Option<String>>>,
 ) -> Result<TransformResult> {
     let options = unpack(
         set,
@@ -212,7 +203,6 @@ pub fn transform_packed(
         link_base_path,
         typography,
         passes,
-        abbreviations,
     );
     render_document(&markdown, core_options(Some(options))?, None)
 }
@@ -221,7 +211,7 @@ pub fn transform_packed(
 /// options.
 #[napi(catch_unwind, js_name = "toHtmlWithRendererPacked")]
 #[allow(clippy::type_complexity)]
-#[allow(clippy::implicit_hasher, clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn to_html_with_renderer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
@@ -231,7 +221,6 @@ pub fn to_html_with_renderer_packed(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    abbreviations: Option<HashMap<String, Option<String>>>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
     let options = unpack(
@@ -242,7 +231,6 @@ pub fn to_html_with_renderer_packed(
         link_base_path,
         typography,
         passes,
-        abbreviations,
     );
     Ok(render_document(&markdown, core_options(Some(options))?, Some(renderer))?.html)
 }
@@ -251,7 +239,7 @@ pub fn to_html_with_renderer_packed(
 /// options.
 #[napi(catch_unwind, js_name = "transformWithRendererPacked")]
 #[allow(clippy::type_complexity)]
-#[allow(clippy::implicit_hasher, clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn transform_with_renderer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
@@ -261,7 +249,6 @@ pub fn transform_with_renderer_packed(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    abbreviations: Option<HashMap<String, Option<String>>>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<TransformResult> {
     let options = unpack(
@@ -272,7 +259,6 @@ pub fn transform_with_renderer_packed(
         link_base_path,
         typography,
         passes,
-        abbreviations,
     );
     render_document(&markdown, core_options(Some(options))?, Some(renderer))
 }

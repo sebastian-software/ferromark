@@ -12,9 +12,7 @@ impl HtmlRenderer {
         self.write("<p");
         self.write_source_span_attr(paragraph.span);
         self.write(">");
-        for child in &paragraph.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&paragraph.children, hooks);
         self.write("</p>\n");
     }
 
@@ -44,9 +42,7 @@ impl HtmlRenderer {
         }
         self.write_source_span_attr(heading.span);
         self.write(">");
-        for child in &heading.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&heading.children, hooks);
         self.write_heading_permalink_if_needed(heading);
         self.write("</h");
         self.output.push((b'0' + depth) as char);
@@ -156,8 +152,9 @@ impl HtmlRenderer {
         let body_start = self.output.len();
         let autolink_index = self.autolink_index.take();
         let mut before_body = true;
+        self.begin_inline_abbreviation_scope();
 
-        for child in &paragraph.children {
+        for (index, child) in paragraph.children.iter().enumerate() {
             match child {
                 Node::Text(text) if skip_chars > 0 || before_body => {
                     let mut value = text.value;
@@ -170,11 +167,41 @@ impl HtmlRenderer {
                         skip_chars = 0;
                     }
                     value = value.trim_start();
+                    let skipped_prefix = text.value.len() - value.len();
                     if value.is_empty() {
                         continue;
                     }
                     before_body = false;
-                    self.write_inline_text(value);
+                    let before = if skipped_prefix > 0 {
+                        text.value[..skipped_prefix].chars().next_back()
+                    } else {
+                        super::super::write::adjacent_text_boundary_before(
+                            &paragraph.children,
+                            index,
+                        )
+                    };
+                    self.write_inline_text_with_boundaries(
+                        value,
+                        before,
+                        super::super::write::adjacent_text_boundary_after(
+                            &paragraph.children,
+                            index,
+                        ),
+                    );
+                }
+                Node::Text(text) => {
+                    before_body = false;
+                    self.write_inline_text_with_boundaries(
+                        text.value,
+                        super::super::write::adjacent_text_boundary_before(
+                            &paragraph.children,
+                            index,
+                        ),
+                        super::super::write::adjacent_text_boundary_after(
+                            &paragraph.children,
+                            index,
+                        ),
+                    );
                 }
                 _ => {
                     before_body = false;
@@ -182,6 +209,7 @@ impl HtmlRenderer {
                 }
             }
         }
+        self.end_inline_abbreviation_scope();
         self.autolink_index = autolink_index;
 
         if self.output[body_start..].trim().is_empty() {
@@ -220,9 +248,7 @@ impl HtmlRenderer {
                         hooks.render_node(child, &mut cx)
                     };
                     if control == HtmlRenderControl::Default {
-                        for inline in &paragraph.children {
-                            self.render_inline_node_with_hooks(inline, hooks);
-                        }
+                        self.render_inline_children_with_hooks(&paragraph.children, hooks);
                     }
                     continue;
                 }

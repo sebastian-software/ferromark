@@ -17,9 +17,7 @@ impl HtmlRenderer {
             && !attributes.caption.is_empty()
         {
             self.write("<caption>");
-            for child in &attributes.caption {
-                self.render_inline_node_with_hooks(child, hooks);
-            }
+            self.render_inline_children_with_hooks(&attributes.caption, hooks);
             self.write("</caption>\n");
         }
         self.write_table_colgroup(table);
@@ -66,9 +64,7 @@ impl HtmlRenderer {
         self.write("<dt");
         self.write_source_span_attr(term.span);
         self.write(">");
-        for child in &term.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&term.children, hooks);
         self.write("</dt>\n");
     }
 
@@ -85,9 +81,7 @@ impl HtmlRenderer {
             && let Some(Node::Paragraph(paragraph)) = definition.children.first()
         {
             self.write(">");
-            for child in &paragraph.children {
-                self.render_inline_node_with_hooks(child, hooks);
-            }
+            self.render_inline_children_with_hooks(&paragraph.children, hooks);
             self.write("</dd>\n");
             return;
         }
@@ -126,8 +120,6 @@ impl HtmlRenderer {
         cell: &TableCell<'_>,
         hooks: &mut H,
     ) {
-        for child in &cell.children {
-            self.render_inline_node_with_hooks(child, hooks);
-        }
+        self.render_inline_children_with_hooks(&cell.children, hooks);
     }
 }

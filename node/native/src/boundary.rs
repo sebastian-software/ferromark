@@ -217,7 +217,6 @@ pub fn options_packed(
         link_base_path,
         None,
         None,
-        None,
     );
     let options = core_options(Some(options))?;
     Ok(u32::from(black_box(options).html.sanitize))

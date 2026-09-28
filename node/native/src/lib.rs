@@ -429,7 +429,6 @@ impl Renderer {
         link_base_path: Option<String>,
         typography: Option<TypographyConfig>,
         passes: Option<Vec<NativePassConfig>>,
-        abbreviations: Option<HashMap<String, Option<String>>>,
     ) -> Result<Self> {
         let options = packed::unpack(
             set,
@@ -439,7 +438,6 @@ impl Renderer {
             link_base_path,
             typography,
             passes,
-            abbreviations,
         );
         Self::new(Some(options))
     }

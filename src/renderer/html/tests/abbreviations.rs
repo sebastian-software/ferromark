@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 
 use crate::allocator::Allocator;
 use crate::parser::{Parser, ParserOptions};
-use crate::renderer::html::{AbbreviationOptions, HtmlRenderer, HtmlRendererOptions};
+use crate::renderer::html::{
+    AbbreviationOptions, HtmlRenderer, HtmlRendererOptions, NoHtmlRenderHooks,
+};
 
 fn options(overrides: BTreeMap<String, Option<String>>) -> AbbreviationOptions {
     AbbreviationOptions { overrides }
@@ -129,6 +131,86 @@ fn link_labels_are_prose_but_url_text_and_destinations_are_preserved() {
             "<p><a href=\"/API\"><abbr title=\"Application Programming Interface\">API</abbr> and ",
             "https://API.example/API</a> https://API.example/API</p>\n"
         )
+    );
+}
+
+#[test]
+fn ordinary_and_hook_rendering_share_adjacent_text_boundaries() {
+    let allocator = Allocator::new();
+    let source = "x\\_API &Auml;API [x\\_API](/x) [API](/x)";
+    let document = Parser::new(&allocator, source).parse().unwrap();
+    let mut ordinary = renderer(BTreeMap::new());
+    let mut hooked = renderer(BTreeMap::new());
+    let mut hooks = NoHtmlRenderHooks;
+    let html = ordinary.render(&document);
+
+    assert_eq!(hooked.render_with_hooks(&document, &mut hooks), html);
+    assert_eq!(html.matches("<abbr").count(), 1, "{html}");
+    assert!(html.contains("x_API ÄAPI"), "{html}");
+
+    let escaped_url = Parser::new(&allocator, "https://example.com/a\\_b")
+        .parse()
+        .unwrap();
+    assert_eq!(
+        renderer(BTreeMap::new()).render(&escaped_url),
+        HtmlRenderer::new().render(&escaped_url)
+    );
+}
+
+#[test]
+fn inline_html_state_is_scoped_and_skipped_when_sanitizing_or_rendering_blocks() {
+    let cases = [
+        (
+            "<span>API\n\n# API",
+            false,
+            "<h1 id=\"api\"><abbr title=\"Application Programming Interface\">API</abbr></h1>",
+        ),
+        (
+            "<div>\nAPI\n</div>\n\nAPI",
+            false,
+            "<p><abbr title=\"Application Programming Interface\">API</abbr></p>",
+        ),
+        (
+            "<span>API\n\nAPI",
+            true,
+            "<p><abbr title=\"Application Programming Interface\">API</abbr></p>",
+        ),
+    ];
+
+    for (source, sanitize, expected) in cases {
+        let allocator = Allocator::new();
+        let document = Parser::new(&allocator, source).parse().unwrap();
+        let mut renderer = HtmlRenderer::with_options_and_abbreviations(
+            HtmlRendererOptions {
+                sanitize,
+                ..HtmlRendererOptions::default()
+            },
+            AbbreviationOptions::default(),
+        );
+        let html = renderer.render(&document);
+        assert!(html.contains(expected), "source: {source:?}; html: {html}");
+    }
+}
+
+#[test]
+fn callout_urls_remain_unlinked_when_abbreviations_are_enabled() {
+    let allocator = Allocator::new();
+    let source = "> [!NOTE]\n> body https://example.com/API\n\nAPI";
+    let document = Parser::new(&allocator, source).parse().unwrap();
+    let plain = HtmlRenderer::new().render(&document);
+    let annotated = renderer(BTreeMap::new()).render(&document);
+
+    assert!(
+        !plain.contains("href=\"https://example.com/API\""),
+        "{plain}"
+    );
+    assert!(
+        !annotated.contains("href=\"https://example.com/API\""),
+        "{annotated}"
+    );
+    assert!(
+        annotated
+            .ends_with("<p><abbr title=\"Application Programming Interface\">API</abbr></p>\n")
     );
 }
 

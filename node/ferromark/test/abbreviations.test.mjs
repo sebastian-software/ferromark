@@ -41,6 +41,13 @@ test("an override map alone does not enable automatic markup", () => {
   assert.equal(toHtml("API GraphQL", { abbreviations: { API: "Custom" } }), "<p>API GraphQL</p>\n");
 });
 
+test("undefined override values leave built-in terms unchanged", () => {
+  assert.equal(
+    toHtml("API", { autoAbbreviations: true, abbreviations: { API: undefined } }),
+    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+  );
+});
+
 test("trusted raw HTML remains untouched and its text is not wrapped", () => {
   assert.equal(
     toHtml('<abbr title="API">API <strong>HTTP</strong></abbr> <span>XYZ</span>', {

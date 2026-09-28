@@ -152,8 +152,11 @@ napi-rs converts an `Options` object field by field: one
 `napi_get_named_property` and one `napi_typeof` for each of its 34 fields,
 present or not. The facade therefore reads the object itself, in the same order
 and with the same property gets, and passes the private `…Packed` exports a
-bitmask for `renderPolicy` and the boolean fields plus the five other values
-([`node/native/src/packed.rs`](../../native/src/packed.rs)). The fixed table
+bitmask for `renderPolicy` and the 26 packed boolean fields plus five other
+values ([`node/native/src/packed.rs`](../../native/src/packed.rs)). When
+`autoAbbreviations` is true or an `abbreviations` map is supplied, the facade
+passes its already-read option snapshot through the existing object entry so
+those fields do not consume packed flag bits. The fixed table
 times both paths:
 
 | Lane                                | What it runs                                                          |

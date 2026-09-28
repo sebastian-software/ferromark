@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 
 use crate::renderer::html::escape::write_attribute_escaped_into;
+use rustc_hash::FxHashMap;
 
 /// A deliberately small, maintained dictionary of common technical terms.
 ///
@@ -59,7 +60,11 @@ pub(super) struct Entry {
 #[derive(Debug)]
 pub(super) struct AbbreviationMatcher {
     entries: Vec<Entry>,
-    starts: [bool; 256],
+    /// Half-open entry ranges grouped by first byte. This bounds the work per
+    /// candidate to terms that can actually match its first byte.
+    first_byte_ranges: [usize; 257],
+    /// Exact built-in/override lookup for the heuristic fallback.
+    exact_terms: FxHashMap<String, usize>,
 }
 
 /// The match action borrowed from a reusable dictionary entry.
@@ -93,43 +98,70 @@ impl AbbreviationMatcher {
         }
 
         entries.sort_by(|left, right| {
-            right
-                .term
-                .len()
-                .cmp(&left.term.len())
+            left.term
+                .as_bytes()
+                .first()
+                .cmp(&right.term.as_bytes().first())
+                .then_with(|| right.term.len().cmp(&left.term.len()))
                 .then_with(|| right.is_override.cmp(&left.is_override))
                 .then_with(|| left.term.cmp(&right.term))
         });
 
-        let mut starts = [false; 256];
-        for entry in &entries {
-            if let Some(first) = entry.term.as_bytes().first() {
-                starts[usize::from(*first)] = true;
+        let mut first_byte_ranges = [0; 257];
+        let mut cursor = 0;
+        for (first, range_start) in first_byte_ranges[..256].iter_mut().enumerate() {
+            *range_start = cursor;
+            while entries
+                .get(cursor)
+                .and_then(|entry| entry.term.as_bytes().first())
+                .is_some_and(|byte| usize::from(*byte) == first)
+            {
+                cursor += 1;
+            }
+        }
+        first_byte_ranges[256] = entries.len();
+
+        let mut exact_terms = FxHashMap::default();
+        for (index, entry) in entries.iter().enumerate() {
+            if entry.is_override {
+                exact_terms.insert(entry.term.clone(), index);
+            } else {
+                exact_terms.entry(entry.term.clone()).or_insert(index);
             }
         }
 
-        Self { entries, starts }
+        Self {
+            entries,
+            first_byte_ranges,
+            exact_terms,
+        }
     }
 
     /// Finds an explicit entry first, then a complete uppercase token.
-    pub(super) fn find<'a>(&'a self, text: &str, start: usize) -> Option<AbbreviationMatch<'a>> {
+    pub(super) fn find<'a>(
+        &'a self,
+        text: &str,
+        start: usize,
+        before: Option<char>,
+        after: Option<char>,
+    ) -> Option<AbbreviationMatch<'a>> {
         let bytes = text.as_bytes();
         let first = *bytes.get(start)?;
-        if !self.starts[usize::from(first)] && !first.is_ascii_uppercase() {
+        let first_index = usize::from(first);
+        let range = self.first_byte_ranges[first_index]..self.first_byte_ranges[first_index + 1];
+        if range.is_empty() && !first.is_ascii_uppercase() {
             return None;
         }
-        if !has_token_boundary_before(text, start) {
+        if !has_token_boundary_before(text, start, before) {
             return None;
         }
 
-        for entry in &self.entries {
-            if entry.term.as_bytes().first() != Some(&first)
-                || !text[start..].starts_with(&entry.term)
-            {
+        for entry in &self.entries[range] {
+            if !text[start..].starts_with(&entry.term) {
                 continue;
             }
             let end = start + entry.term.len();
-            if has_token_boundary_after(text, end) {
+            if has_token_boundary_after(text, end, after) {
                 return Some(AbbreviationMatch {
                     end,
                     entry: Some(entry),
@@ -153,30 +185,38 @@ impl AbbreviationMatcher {
             return None;
         }
 
-        let plural =
-            bytes.get(end) == Some(&b's') && has_token_boundary_after(text, end.saturating_add(1));
-        if !plural && !has_token_boundary_after(text, end) {
+        let plural = bytes.get(end) == Some(&b's')
+            && has_token_boundary_after(text, end.saturating_add(1), after);
+        if !plural && !has_token_boundary_after(text, end, after) {
             return None;
         }
 
         let term = &text[start..end];
-        let entry = self.entries.iter().find(|entry| entry.term == term);
+        let entry = self
+            .exact_terms
+            .get(term)
+            .map(|index| &self.entries[*index]);
         Some(AbbreviationMatch { end, entry })
     }
 }
 
-/// Writes prose with abbreviation markup, escaping both text and titles.
-pub(super) fn write_abbreviations_into(
+/// Writes prose with abbreviation markup, escaping both text and titles. The
+/// optional characters come from adjacent text nodes at the two ends of a run.
+pub(super) fn write_abbreviations_into_with_boundaries(
     output: &mut String,
     text: &str,
     matcher: &AbbreviationMatcher,
+    before: Option<char>,
+    after: Option<char>,
 ) {
     let mut cursor = 0usize;
     let mut scan = 0usize;
     while scan < text.len() {
         let byte = text.as_bytes()[scan];
-        let potential_start = matcher.starts[usize::from(byte)] || byte.is_ascii_uppercase();
-        if potential_start && let Some(found) = matcher.find(text, scan) {
+        let potential_start = matcher.first_byte_ranges[usize::from(byte)]
+            < matcher.first_byte_ranges[usize::from(byte) + 1]
+            || byte.is_ascii_uppercase();
+        if potential_start && let Some(found) = matcher.find(text, scan, before, after) {
             if scan > cursor {
                 crate::renderer::html::escape::write_escaped_into(output, &text[cursor..scan]);
             }
@@ -210,18 +250,14 @@ pub(super) fn write_abbreviations_into(
     }
 }
 
-fn has_token_boundary_before(text: &str, position: usize) -> bool {
-    text[..position]
-        .chars()
-        .next_back()
-        .is_none_or(|character| !is_identifier_character(character))
+fn has_token_boundary_before(text: &str, position: usize, before: Option<char>) -> bool {
+    let previous = text[..position].chars().next_back().or(before);
+    previous.is_none_or(|character| !is_identifier_character(character))
 }
 
-fn has_token_boundary_after(text: &str, position: usize) -> bool {
-    text[position..]
-        .chars()
-        .next()
-        .is_none_or(|character| !is_identifier_character(character))
+fn has_token_boundary_after(text: &str, position: usize, after: Option<char>) -> bool {
+    let next = text[position..].chars().next().or(after);
+    next.is_none_or(|character| !is_identifier_character(character))
 }
 
 fn is_identifier_character(character: char) -> bool {

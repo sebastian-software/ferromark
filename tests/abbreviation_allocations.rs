@@ -6,6 +6,7 @@ use std::cell::Cell;
 use std::collections::BTreeMap;
 use std::hint::black_box;
 
+use ferromark::ast::Node;
 use ferromark::{AbbreviationOptions, Allocator, HtmlRenderer, HtmlRendererOptions, Parser};
 
 thread_local! {
@@ -78,9 +79,22 @@ fn disabled_renderer_build_does_not_change_its_allocation_count() {
 
 #[test]
 fn enabled_renderer_reuses_its_dictionary_without_render_allocations() {
-    let source = "API HTTP/2 XYZ ID";
+    let source = "x\\_API HTTP/2 XYZ ID";
     let allocator = Allocator::for_source_len(source.len());
     let document = Parser::new(&allocator, source).parse().unwrap();
+    let Node::Paragraph(paragraph) = &document.children[0] else {
+        panic!("expected a paragraph");
+    };
+    assert!(
+        paragraph.children.len() > 1,
+        "the test needs multiple text nodes"
+    );
+    assert!(
+        paragraph
+            .children
+            .iter()
+            .all(|node| matches!(node, Node::Text(_)))
+    );
     let abbreviations = AbbreviationOptions {
         overrides: BTreeMap::from([("ID".to_string(), Some("Identifier".to_string()))]),
     };

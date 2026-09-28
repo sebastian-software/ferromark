@@ -12,6 +12,7 @@ use ferromark::parser::Parser;
 use ferromark::renderer::{AbbreviationOptions, HtmlRenderer, HtmlRendererOptions};
 
 const MARKDOWN: &str = include_str!("fixtures/abbreviations.md");
+const RAW_HTML_FRAGMENT: &str = include_str!("fixtures/abbreviations-raw-html.md");
 const NO_CANDIDATES: &str = "This guide describes a renderer, a parser, and a reusable cache.\n";
 
 fn bench_abbreviations(c: &mut Criterion) {
@@ -62,20 +63,43 @@ fn bench_abbreviations(c: &mut Criterion) {
         group.finish();
     }
 
+    let raw_html_heavy = RAW_HTML_FRAGMENT.repeat(64);
+    let allocator = Allocator::for_source_len(raw_html_heavy.len());
+    let document = Parser::new(&allocator, &raw_html_heavy).parse().unwrap();
+    {
+        let mut group = c.benchmark_group("abbreviations/disabled_raw_html");
+        group.throughput(Throughput::Bytes(raw_html_heavy.len() as u64));
+        group.bench_function("fresh", |b| {
+            b.iter(|| {
+                let mut renderer = HtmlRenderer::new();
+                black_box(renderer.render_borrowed(black_box(&document)));
+            });
+        });
+        let mut raw_html_renderer = HtmlRenderer::new();
+        group.bench_function("reused", |b| {
+            b.iter(|| {
+                black_box(raw_html_renderer.render_borrowed(black_box(&document)));
+            });
+        });
+        group.finish();
+    }
+
     let allocator = Allocator::for_source_len(NO_CANDIDATES.len());
     let document = Parser::new(&allocator, NO_CANDIDATES).parse().unwrap();
-    let mut group = c.benchmark_group("abbreviations/no_candidates");
-    group.throughput(Throughput::Bytes(NO_CANDIDATES.len() as u64));
-    let mut no_candidate_renderer = HtmlRenderer::with_options_and_abbreviations(
-        HtmlRendererOptions::default(),
-        AbbreviationOptions::default(),
-    );
-    group.bench_function("enabled/reused", |b| {
-        b.iter(|| {
-            let _ = black_box(no_candidate_renderer.render_borrowed(black_box(&document)));
+    {
+        let mut group = c.benchmark_group("abbreviations/no_candidates");
+        group.throughput(Throughput::Bytes(NO_CANDIDATES.len() as u64));
+        let mut no_candidate_renderer = HtmlRenderer::with_options_and_abbreviations(
+            HtmlRendererOptions::default(),
+            AbbreviationOptions::default(),
+        );
+        group.bench_function("enabled/reused", |b| {
+            b.iter(|| {
+                let _ = black_box(no_candidate_renderer.render_borrowed(black_box(&document)));
+            });
         });
-    });
-    group.finish();
+        group.finish();
+    }
 }
 
 criterion_group!(benches, bench_abbreviations);
