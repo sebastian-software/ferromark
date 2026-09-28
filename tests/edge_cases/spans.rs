@@ -192,41 +192,6 @@ fn table_inline_strong_spans_after_escaped_pipes_index_document_source() {
     }
 }
 
-#[test]
-fn table_wiki_link_span_after_escaped_pipes_indexes_document_source() {
-    let allocator = Allocator::new();
-    let source = "| a\\|b\\|c [[Guide\\|Label]] |\n| --- |\n";
-    let options = ParserOptions {
-        wiki_links: true,
-        ..ParserOptions::gfm()
-    };
-    let doc = parse_with_options(&allocator, source, options);
-
-    let Node::Table(table) = &doc.children[0] else {
-        panic!("expected table, got {:?}", doc.children[0]);
-    };
-    let cell = &table.children[0].children[0];
-    let Node::Link(link) = &cell.children[1] else {
-        panic!("expected wiki link, got {:?}", cell.children[1]);
-    };
-
-    assert_eq!(link.url, "Guide");
-    let link_source = "[[Guide\\|Label]]";
-    let link_start = source.find(link_source).expect("link source") as u32;
-    assert_eq!(
-        link.span,
-        Span::new(link_start, link_start + link_source.len() as u32)
-    );
-    assert_eq!(link.span.source_text(source), link_source);
-
-    let Node::Text(label) = &link.children[0] else {
-        panic!("expected wiki link label, got {:?}", link.children[0]);
-    };
-    assert_eq!(label.value, "Label");
-    assert_eq!(label.span.source_text(source), "Label");
-    assert_all_spans_index_source(source, &doc.children);
-}
-
 fn assert_all_spans_index_source(source: &str, nodes: &[Node<'_>]) {
     for node in nodes {
         assert_node_span_indexes_source(source, node);

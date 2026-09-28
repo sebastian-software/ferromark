@@ -103,8 +103,8 @@ impl<'a> Parser<'a> {
 
     /// Opens one inline context and bounds how many may nest.
     ///
-    /// Link text, image alt text, wiki-link labels, script spans and inline
-    /// JSX phrasing re-enter [`Self::parse_inline`] once per bracket level,
+    /// Link text, image alt text, script spans and inline JSX phrasing
+    /// re-enter [`Self::parse_inline`] once per bracket level,
     /// so `[[[[...` recurses as deeply as the input is nested. A stack
     /// overflow aborts the process instead of unwinding, so the depth has to
     /// be refused before the recursion happens rather than recovered from

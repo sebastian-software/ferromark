@@ -131,7 +131,7 @@ const fixtures = [
   '```ts {1-3} title="Example"\ncode\n```\n\n```ts\ncode\n```',
   "```unknown\n<tag>\n```\n\n    indented\n    code\n",
   "[x](javascript:alert%281%29) ![x](data:text/html,bad) <script>x</script>",
-  "Footnote[^1] and [[Wiki Page]] and [guide](/guide.md).\n\n[^1]: The note.",
+  "Footnote[^1] and [guide](/guide.md).\n\n[^1]: The note.",
   "> [!NOTE]\n> Callout.\n\nTerm\n: Definition\n\n// line comment\n\nA**強調。**B\n\n<Component />",
   "line one\r\nline two\r\n\r\n- [x] done\r\n",
   "nul \0 byte and \uFEFF inside",
@@ -157,7 +157,6 @@ const everyOption = {
   subscript: true,
   superscript: true,
   tableColgroup: true,
-  wikiLinks: true,
 };
 // Without options the facade calls the object-taking export; with them, the
 // packed one.

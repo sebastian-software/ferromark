@@ -85,7 +85,6 @@ pub struct Options {
     pub callouts: Option<bool>,
     pub definition_lists: Option<bool>,
     pub line_comments: Option<bool>,
-    pub wiki_links: Option<bool>,
     pub cjk_emphasis: Option<bool>,
     pub mdx: Option<bool>,
     pub image_attributes: Option<bool>,
@@ -175,7 +174,6 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(html.callouts, options.callouts);
         apply!(parser.definition_lists, options.definition_lists);
         apply!(parser.line_comments, options.line_comments);
-        apply!(parser.wiki_links, options.wiki_links);
         apply!(parser.cjk_emphasis, options.cjk_emphasis);
         apply!(parser.mdx, options.mdx);
         apply!(parser.image_attributes, options.image_attributes);
