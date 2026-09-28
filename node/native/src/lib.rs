@@ -99,6 +99,7 @@ pub struct Options {
     pub guillemet_digraphs: Option<bool>,
     pub auto_abbreviations: Option<bool>,
     pub abbreviations: Option<HashMap<String, Option<String>>>,
+    pub preset: Option<String>,
 }
 
 fn core_options(options: Option<Options>) -> Result<CoreOptions> {
@@ -112,6 +113,23 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         mut pipeline,
     } = addon_defaults();
     if let Some(options) = options {
+        // A preset replaces the syntax defaults first, so every individual
+        // option below still overrides it.
+        if let Some(preset) = options.preset.as_deref() {
+            match preset {
+                "ffm" => {
+                    // Keep the package's own autolink default; FFM adds syntax only.
+                    parser = ParserOptions {
+                        autolinks: parser.autolinks,
+                        ..ParserOptions::ffm()
+                    };
+                    auto_abbreviations = true;
+                }
+                _ => {
+                    return Err(Error::new(Status::InvalidArg, "preset must be 'ffm'"));
+                }
+            }
+        }
         if let Some(policy) = options.render_policy {
             html.sanitize = match policy.as_str() {
                 "untrusted" => true,

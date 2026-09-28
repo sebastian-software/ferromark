@@ -1,7 +1,9 @@
 # Table spans and CSS layout
 
-Ferromark v2 has opt-in table structure and CSS layout extensions. Every preset leaves
-them disabled, including the GFM convenience and specification profiles.
+Ferromark has opt-in table structure and CSS layout extensions. The GFM
+convenience and specification profiles leave them disabled. `ParserOptions::ffm()`
+enables merged cells and table attributes; the renderer's colgroup options stay
+a separate choice.
 
 | Option | Owner | Effect |
 | --- | --- | --- |

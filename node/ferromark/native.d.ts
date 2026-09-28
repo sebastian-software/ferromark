@@ -64,6 +64,7 @@ export interface Options {
   guillemetDigraphs?: boolean
   autoAbbreviations?: boolean
   abbreviations?: Record<string, string | undefined | null>
+  preset?: string
 }
 
 export declare function toHtml(markdown: string | Uint8Array, options?: Options | undefined | null): string

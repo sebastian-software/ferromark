@@ -125,6 +125,12 @@ export interface Options {
    * wrapping. Supplying this map does not enable autoAbbreviations.
    */
   abbreviations?: Record<string, string | null>;
+  /**
+   * Start from the Ferromark Flavored Markdown syntax profile: GFM plus opt-in
+   * authoring syntax and technical abbreviation markup. Individual options
+   * still override it. Default: unset.
+   */
+  preset?: "ffm";
 }
 
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging

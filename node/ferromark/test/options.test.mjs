@@ -80,6 +80,7 @@ const fields = [
   ["guillemetDigraphs", "boolean"],
   ["autoAbbreviations", "boolean"],
   ["abbreviations", "record"],
+  ["preset", "string"],
 ];
 const keys = fields.map(([key]) => key);
 
@@ -368,14 +369,16 @@ test("the packed path gets every declared field once, in declaration order", () 
         key,
         key === "renderPolicy"
           ? "trusted"
-          : {
-              boolean: true,
-              number: 1,
-              string: "",
-              object: { language: "en" },
-              array: [],
-              record: { API: "Application Programming Interface" },
-            }[type],
+          : key === "preset"
+            ? "ffm"
+            : {
+                boolean: true,
+                number: 1,
+                string: "",
+                object: { language: "en" },
+                array: [],
+                record: { API: "Application Programming Interface" },
+              }[type],
       ]),
     );
     // Legacy typography and the ordered pass array are mutually exclusive.
@@ -408,6 +411,7 @@ test("the probe document shows every option", () => {
     headingIdPrefix: ["", "p-"],
     headingOffset: [0, 1],
     linkBasePath: ["", "/docs"],
+    preset: ["ffm"],
     renderPolicy: ["trusted", "untrusted"],
   };
   for (const key of keys) {
@@ -455,6 +459,7 @@ test("packs every field at once", () => {
   all.renderPolicy = "trusted";
   all.headingIdPrefix = "docs-";
   all.linkBasePath = "/docs";
+  all.preset = "ffm";
   assertEquivalentOptions(probe, all, "every field");
   for (const [key, type] of fields) {
     if (type === "boolean") {
@@ -467,6 +472,7 @@ const validValues = {
   boolean: [true, false],
   number: [-2, -1, 0, 1, 2],
   renderPolicy: ["trusted", "untrusted"],
+  preset: ["ffm"],
   string: ["", "docs-", "/docs", "/docs/"],
   object: [{ language: "en" }, { language: "fr" }],
   array: [[], [{ kind: "emojiShortcodes" }], [{ kind: "typography", language: "en" }]],
@@ -480,7 +486,7 @@ function randomOptions(random) {
   for (const [key, type] of fields) {
     const roll = random();
     if (roll >= 0.53) {
-      options[key] = pick(validValues[key === "renderPolicy" ? key : type]);
+      options[key] = pick(validValues[key in validValues ? key : type]);
     } else if (roll >= 0.5) {
       options[key] = pick(values);
     }

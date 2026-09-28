@@ -37,20 +37,27 @@ let html = to_html_with_options(
 
 Parser options select the Markdown dialect; renderer options control HTML.
 Both types share the three names `commonmark()`, `gfm_spec()` and `gfm()`, so a
-pair is built from one name; `mdx()` is parser-only, because the renderer handles
-MDX nodes without a profile of its own:
+pair is built from one name; `ffm()` and `mdx()` are parser-only, because the
+renderer handles their nodes without a profile of its own:
 
 | Profile | Parser | Renderer |
 | --- | --- | --- |
 | `commonmark()` | Strict CommonMark | Strict CommonMark, no product conveniences |
 | `gfm_spec()` | GFM without semantic footnotes | `commonmark()` plus the GFM tag filter |
 | `gfm()` | GFM plus footnotes | `new()` plus the GFM tag filter |
+| `ffm()` | GFM plus Ferromark Flavored Markdown syntax | — (pair with `gfm()`) |
 | `mdx()` | MDX, GFM off | — |
 
 Pair `ParserOptions::gfm_spec()` with `HtmlRendererOptions::gfm_spec()` for
 specification-oriented GFM output, and `gfm()` with `gfm()` for the convenience
 profile that keeps heading IDs, callouts, URL autolinking,
 link targets, and fence metadata cleanup. `commonmark()` pairs the same way.
+`ParserOptions::ffm()` adds Ferromark Flavored Markdown to `gfm()`: marks,
+insertions, inline notes, superscript, definition lists, heading, table, image,
+and shared attributes, bracketed spans, merged table cells, image captions,
+block quote attributions, line comments, and guillemet digraphs. Pair it with
+`HtmlRendererOptions::gfm()`, and add `HtmlRenderer::with_abbreviations` for
+technical abbreviation markup.
 See [optional writing syntax](optional-writing.md) for marks and inline notes.
 Image IDs/classes and separate figure captions use independent
 `ParserOptions::image_attributes` and `ParserOptions::image_captions` flags.

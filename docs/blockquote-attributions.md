@@ -1,8 +1,9 @@
 # Block quote attributions
 
 `blockquote_attributions` (Rust) and `blockquoteAttributions` (Node.js) attach
-one visible source line to a block quote. The option is off in every preset and
-by default; it does not require image captions or bracketed spans.
+one visible source line to a block quote. The option is off by default and in
+every preset except `ParserOptions::ffm()`; it does not require image captions
+or bracketed spans.
 
 ```markdown
 > The parser keeps the whole passage inside the quote.

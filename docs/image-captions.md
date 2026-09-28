@@ -2,7 +2,8 @@
 
 The image extensions are opt-in. `image_attributes` enables ID and class
 suffixes on images; `image_captions` enables a separate visible caption for a
-standalone image. Both are off in all Rust presets and in Node by default.
+standalone image. Both are off by default in Node and in every Rust preset
+except `ParserOptions::ffm()`, which enables both.
 
 ```markdown
 ![Three components connected by arrows](pipeline.svg "Browser title"){.diagram}
