@@ -26,10 +26,12 @@ pub fn walk_node<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, node: &Node<'a>) {
         Node::MathBlock(n) => visitor.visit_math_block(n),
         Node::Html(n) => visitor.visit_html(n),
         Node::Table(n) => visitor.visit_table(n),
+        Node::Figure(n) => visitor.visit_figure(n),
         Node::DefinitionList(n) => visitor.visit_definition_list(n),
         Node::DefinitionListTerm(n) => visitor.visit_definition_list_term(n),
         Node::DefinitionListDefinition(n) => visitor.visit_definition_list_definition(n),
         Node::Text(n) => visitor.visit_text(n),
+        Node::Span(n) => visitor.visit_span(n),
         Node::Emphasis(n) => visitor.visit_emphasis(n),
         Node::Strong(n) => visitor.visit_strong(n),
         Node::InlineCode(n) => visitor.visit_inline_code(n),
@@ -100,6 +102,14 @@ pub fn walk_table<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, table: &Table<'a>)
     }
 }
 
+/// Walks the figure content and its visible caption.
+pub fn walk_figure<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, figure: &Figure<'a>) {
+    visitor.visit_node(&figure.content);
+    for child in &figure.caption {
+        visitor.visit_node(child);
+    }
+}
+
 /// Walks through a table row's children.
 pub fn walk_table_row<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, table_row: &TableRow<'a>) {
     for cell in &table_row.children {
@@ -161,6 +171,13 @@ pub fn walk_strong<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, strong: &Strong<'
 /// Walks through a link's children.
 pub fn walk_link<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, link: &Link<'a>) {
     for child in &link.children {
+        visitor.visit_node(child);
+    }
+}
+
+/// Walks bracketed span content.
+pub fn walk_span<'a, V: Visit<'a> + ?Sized>(visitor: &mut V, span: &InlineSpan<'a>) {
+    for child in &span.children {
         visitor.visit_node(child);
     }
 }

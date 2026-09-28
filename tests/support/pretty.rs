@@ -175,6 +175,22 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
                 }
             }
         }
+        Node::Figure(f) => {
+            line(
+                out,
+                depth,
+                format_args!(
+                    "Figure id={:?} classes={:?} {}",
+                    f.attributes.as_ref().and_then(|attributes| attributes.id),
+                    f.attributes.as_ref().map(|attributes| &attributes.classes),
+                    span(f.span, source),
+                ),
+            );
+            format_node(&f.content, source, depth + 1, out);
+            for child in &f.caption {
+                format_node(child, source, depth + 1, out);
+            }
+        }
         Node::DefinitionList(d) => {
             line(
                 out,
@@ -202,6 +218,12 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
                 format_args!("DefinitionListDefinition {}", span(d.span, source)),
             );
             for child in &d.children {
+                format_node(child, source, depth + 1, out);
+            }
+        }
+        Node::Span(node) => {
+            line(out, depth, format_args!("Span {}", span(node.span, source)));
+            for child in &node.children {
                 format_node(child, source, depth + 1, out);
             }
         }

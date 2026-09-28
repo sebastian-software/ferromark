@@ -69,10 +69,15 @@ const fields = [
   ["wikiLinks", "boolean"],
   ["cjkEmphasis", "boolean"],
   ["mdx", "boolean"],
-  ["insertions", "boolean"],
+  ["imageAttributes", "boolean"],
+  ["imageCaptions", "boolean"],
+  ["extendedAttributes", "boolean"],
+  ["bracketedSpans", "boolean"],
   ["linkBasePath", "string"],
   ["typography", "object"],
   ["passes", "array"],
+  ["blockquoteAttributions", "boolean"],
+  ["insertions", "boolean"],
 ];
 const keys = fields.map(([key]) => key);
 
@@ -95,6 +100,10 @@ const probe = [
   "| merged ||",
   ": Caption {#table-id .wide}",
   "",
+  "![Logo](logo.svg){.tiny}",
+  "",
+  ": A visible caption",
+  "",
   "~~strike~~ ++added++ x^2^ H~2~O ==mark== ^[inline note] www.example.com $x$",
   "",
   "- [x] done",
@@ -107,6 +116,9 @@ const probe = [
   "",
   "> [!NOTE]",
   "> Callout.",
+  "",
+  "> A quoted passage.",
+  ": Jane Doe",
   "",
   "Term",
   ": Definition",
@@ -900,6 +912,24 @@ test("routes options through the packed entries", (t) => {
   for (const entry of routed) {
     assertPacked(entry, spies);
     assertObjectPath(entry, spies);
+    const [object, packed] = entry.natives;
+    spies.reset();
+    entry.facade(probe, { blockquoteAttributions: false });
+    assert.deepEqual(
+      [spies.count(packed), spies.count(object)],
+      [1, 0],
+      `${entry.name} keeps disabled attribution packed`,
+    );
+    spies.reset();
+    entry.facade(probe, { blockquoteAttributions: true });
+    assert.deepEqual(
+      [spies.count(packed), spies.count(object)],
+      [0, 1],
+      `${entry.name} routes enabled attribution through the object entry`,
+    );
+    const [, rebuilt] = spies.args(object);
+    assert.equal(Object.getPrototypeOf(rebuilt), null);
+    assert.equal(rebuilt.blockquoteAttributions, true);
   }
 });
 

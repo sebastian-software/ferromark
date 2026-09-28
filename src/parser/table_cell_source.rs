@@ -144,6 +144,12 @@ pub(super) fn remap_table_cell_inline_spans(
         Node::Text(node) => {
             remap_table_cell_span(&mut node.span, source_offset, source_map);
         }
+        Node::Span(node) => {
+            remap_table_cell_span(&mut node.span, source_offset, source_map);
+            for child in &mut node.children {
+                remap_table_cell_inline_spans(child, source_offset, source_map);
+            }
+        }
         Node::Emphasis(node) => {
             remap_table_cell_span(&mut node.span, source_offset, source_map);
             for child in &mut node.children {
@@ -242,6 +248,7 @@ pub(super) fn remap_table_cell_inline_spans(
         | Node::CodeBlock(_)
         | Node::MathBlock(_)
         | Node::Table(_)
+        | Node::Figure(_)
         | Node::DefinitionList(_)
         | Node::DefinitionListTerm(_)
         | Node::DefinitionListDefinition(_)

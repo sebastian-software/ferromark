@@ -290,6 +290,7 @@ impl<'arena> TransformContext<'arena> {
         Node::Link(self.allocator.boxed(Link {
             url: self.alloc_str(url),
             title: None,
+            attributes: None,
             children,
             span,
         }))

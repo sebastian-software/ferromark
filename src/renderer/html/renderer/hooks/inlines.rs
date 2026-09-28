@@ -1,9 +1,23 @@
-use crate::ast::{Delete, Emphasis, Highlight, Insertion, Link, Strong, Subscript, Superscript};
+use crate::ast::{
+    Delete, Emphasis, Highlight, InlineSpan, Insertion, Link, Strong, Subscript, Superscript,
+};
 
 use super::HtmlRenderHooks;
 use crate::renderer::html::renderer::HtmlRenderer;
 
 impl HtmlRenderer {
+    pub(in crate::renderer::html::renderer) fn render_span_with_hooks<H: HtmlRenderHooks>(
+        &mut self,
+        span: &InlineSpan<'_>,
+        hooks: &mut H,
+    ) {
+        self.write_span_open(span);
+        for child in &span.children {
+            self.render_inline_node_with_hooks(child, hooks);
+        }
+        self.write("</span>");
+    }
+
     pub(in crate::renderer::html::renderer) fn render_emphasis_with_hooks<H: HtmlRenderHooks>(
         &mut self,
         emphasis: &Emphasis<'_>,

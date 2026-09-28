@@ -52,6 +52,19 @@ specification-oriented GFM output, and `gfm()` with `gfm()` for the convenience
 profile that keeps heading IDs, callouts, URL autolinking,
 link targets, and fence metadata cleanup. `commonmark()` pairs the same way.
 See [optional writing syntax](optional-writing.md) for marks and inline notes.
+Image IDs/classes and separate figure captions use independent
+`ParserOptions::image_attributes` and `ParserOptions::image_captions` flags.
+With `table_attributes` enabled, a nonempty plain table caption needs no
+attribute block. See [image captions](image-captions.md) and
+[table layout](table-layout.md) for syntax and attachment rules.
+`ParserOptions::extended_attributes` enables shared key/value suffixes on
+headings, links, images, tables, and figures; `bracketed_spans` enables native
+inline spans. Both default off. See [shared attributes](shared-attributes.md)
+for grammar, mapping, and precedence.
+`ParserOptions::blockquote_attributions` attaches one source line to a block
+quote as a `<figcaption>`; it defaults off. See
+[block quote attributions](blockquote-attributions.md) for syntax, attributes,
+and attachment rules.
 
 ### String-valued renderer options
 
@@ -151,6 +164,11 @@ heading IDs and generated permalink fragments. Prefixes are applied after ID
 planning, so collision suffixes stay the same. Only ASCII letters, digits,
 underscores, and hyphens are accepted. This setting does not rewrite authored
 fragment links and does not change footnote IDs.
+
+Authored IDs on images, figures, and tables are emitted without a namespace,
+including under untrusted rendering. HTML escaping protects the attribute
+syntax, but applications should not treat authored IDs as safe DOM property
+names. The heading ID prefix applies only to headings.
 
 ## Document outline and table of contents
 

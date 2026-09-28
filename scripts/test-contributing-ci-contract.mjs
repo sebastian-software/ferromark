@@ -34,7 +34,7 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
     "coverage",
   ])
     assert.ok(ci.jobs[job]);
-  assert.equal(ci.jobs.native.strategy.matrix.include.length, 8);
+  assert.equal(ci.jobs.native.strategy.matrix.include.length, 7);
   assert.equal(ci.jobs["npm-packages"].needs, "native");
   assert.ok(
     ci.jobs["npm-packages"].steps.some(

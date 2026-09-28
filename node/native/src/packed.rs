@@ -1,6 +1,6 @@
 //! Private entry points that take `Options` in packed form.
 //!
-//! napi-rs converts an `Options` argument field by field. For each of the 33
+//! napi-rs converts an `Options` argument field by field. For each of the 38
 //! fields, present or not, it calls `napi_get_named_property`, which creates
 //! the property key from a C string and runs an uncached property lookup, and
 //! then `napi_typeof`. That costs more per call than rendering a small
@@ -8,10 +8,11 @@
 //! JavaScript, where V8 caches them, and passes the result to these entries as
 //! plain arguments:
 //!
-//! - `set` and `on` hold one bit each for `renderPolicy` and the 26 boolean
-//!   fields, numbered in their declaration order in [`Options`]. A bit in `set`
-//!   marks the field as present, and the same bit in `on` holds its value. For
-//!   `renderPolicy`, a set value bit means `'trusted'`.
+//! - `set` and `on` hold one bit each for `renderPolicy` and 30 boolean fields,
+//!   numbered in their declaration order in [`Options`]. A bit in `set` marks
+//!   the field as present, and the same bit in `on` holds its value. For
+//!   `renderPolicy`, a set value bit means `'trusted'`. Enabled blockquote
+//!   attributions and insertions use the object-taking entry.
 //! - `headingOffset`, `headingIdPrefix`, `linkBasePath`, `typography`, and
 //!   `passes` pass through as read, and `undefined` stands for an absent field.
 //!   `insertions` has no packed bit; the facade uses the object-taking entry
@@ -43,7 +44,8 @@ use crate::{
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
 ///
 /// The bit numbers follow the declaration order of [`Options`], skipping the
-/// fields passed through as values and `insertions` (which uses the object path).
+/// five fields that pass through unpacked; `blockquote_attributions` and
+/// `insertions` use the object-taking entry.
 pub fn unpack(
     set: u32,
     on: u32,
@@ -85,10 +87,15 @@ pub fn unpack(
         wiki_links: flag(24),
         cjk_emphasis: flag(25),
         mdx: flag(26),
-        insertions: None,
+        image_attributes: flag(27),
+        image_captions: flag(28),
+        extended_attributes: flag(29),
+        bracketed_spans: flag(30),
         link_base_path,
         typography,
         passes,
+        blockquote_attributions: None,
+        insertions: None,
     }
 }
 

@@ -53,10 +53,15 @@ export interface Options {
   wikiLinks?: boolean
   cjkEmphasis?: boolean
   mdx?: boolean
-  insertions?: boolean
+  imageAttributes?: boolean
+  imageCaptions?: boolean
+  extendedAttributes?: boolean
+  bracketedSpans?: boolean
   linkBasePath?: string
   typography?: TypographyConfig
   passes?: Array<NativePassConfig>
+  blockquoteAttributions?: boolean
+  insertions?: boolean
 }
 
 export declare function toHtml(markdown: string | Uint8Array, options?: Options | undefined | null): string

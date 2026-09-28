@@ -271,6 +271,10 @@ impl<'a> Parser<'a> {
         };
         self.position = content_end;
         let mut first_line_comment = None;
+        // Avoid reparsing an ever-growing prefix for every `:`. A later line
+        // can close an unfinished multiline image; that rare shape remains a
+        // paragraph after an earlier caption-like line was ruled out.
+        let mut caption_ruled_out = false;
 
         loop {
             if self.is_at_end() {
@@ -295,6 +299,13 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
+            if self.options.image_captions && !caption_ruled_out && bytes[cursor] == b':' {
+                if self.image_caption_interrupts_paragraph(start, content_end, line_start)? {
+                    break;
+                }
+                caption_ruled_out = true;
+            }
+
             // Setext heading underline: while a paragraph is open this
             // takes precedence over every block start (`Foo\n---` is an
             // h2, not a paragraph followed by a thematic break), so it
@@ -315,12 +326,11 @@ impl<'a> Parser<'a> {
                 }
                 let (content, leading) =
                     whitespace::trim_with_leading(&self.source[start..content_end]);
-                let (content, id, classes) = self.split_heading_attributes(content);
+                let (content, attributes) = self.split_heading_attributes(content);
                 let children = self.parse_inline_block(content, start + leading)?;
                 return Ok(Some(Node::Heading(self.allocator.boxed(Heading {
                     depth,
-                    id,
-                    classes,
+                    attributes,
                     children,
                     span: Span::new(start as u32, heading_end as u32),
                 }))));
@@ -360,7 +370,18 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
         let span = Span::new(start as u32, content_end as u32);
-        let children = self.parse_inline_block(content, start + leading)?;
+        let mut children = self.parse_inline_block(content, start + leading)?;
+        if self.options.image_captions
+            && children.len() == 1
+            && matches!(children.first(), Some(Node::Image(_)))
+            && let Some(image) = children.pop()
+        {
+            let attached = self.attach_image_caption(image, start)?;
+            if matches!(attached, Node::Figure(_)) {
+                return Ok(Some(attached));
+            }
+            children.push(attached);
+        }
         Ok(Some(Node::Paragraph(
             self.allocator.boxed(Paragraph { children, span }),
         )))
@@ -384,10 +405,10 @@ impl<'a> Parser<'a> {
         if heading.is_none() && content.is_empty() {
             return Ok(None);
         }
-        let (content, id, classes) = if heading.is_some() {
+        let (content, attributes) = if heading.is_some() {
             self.split_heading_attributes(content)
         } else {
-            (content, None, self.allocator.new_vec())
+            (content, None)
         };
         // A remapped copy starts its own coordinates at zero; a borrowed
         // slice starts at `start`.
@@ -410,8 +431,7 @@ impl<'a> Parser<'a> {
         let node = if let Some((depth, heading_end)) = heading {
             Node::Heading(self.allocator.boxed(Heading {
                 depth,
-                id,
-                classes,
+                attributes,
                 children,
                 span: Span::new(start as u32, heading_end as u32),
             }))

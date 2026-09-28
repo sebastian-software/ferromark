@@ -21,7 +21,7 @@ CommonMark core. GFM adds pipe tables, checklists, strikethrough, and autolinks.
 - [x] Publish the docs
 - [ ] Check the examples
 
-Read the [guide](/guide). ~~Outdated advice~~ ++Updated advice++
+Read the [guide](/guide/getting-started). ~~Outdated advice~~ ++Updated advice++
 ```
 
 ## Front matter and heading IDs
@@ -52,12 +52,70 @@ See [front-matter boundaries](https://github.com/sebastian-software/ferromark/bl
 ```
 
 With table spans enabled, adjacent closing pipes merge horizontal cells. Table
-attributes attach the ID and classes to the table; captions require an ID or
-class. Generated colgroups expose positional classes such as `col-1` and optional
+attributes attach the ID and classes to the table; a caption also works without
+attributes. Generated colgroups expose positional classes such as `col-1` and optional
 header-derived classes such as `col-name-net`. Set widths in CSS. Delimiter dash
 counts do not produce numeric width hints in v2.
 
 See [table syntax, options, and CSS](https://github.com/sebastian-software/ferromark/blob/main/docs/table-layout.md).
+
+## Images with separate captions
+
+```text
+![Three components connected by arrows](pipeline.svg "Browser title"){.diagram}
+
+: The **processing pipeline** {#pipeline .figure-wide}
+```
+
+Enable image attributes and captions separately. The image suffix styles
+`<img>`; the caption suffix styles `<figure>`. The image description remains
+alternative text, and the quoted title remains the HTML `title` attribute.
+A caption can omit attributes and follows a standalone image immediately or
+after one blank line. [Image syntax and boundaries](https://github.com/sebastian-software/ferromark/blob/main/docs/image-captions.md)
+also cover references, linked images, and containers.
+
+## Inline spans and shared attributes
+
+```text
+Das französische [C’est la vie]{lang=fr} trifft es gut.
+
+[Product **offer**]{.product sku="A-17" tracking-category=offer}
+
+[Documentation](https://example.org){.external hreflang=en}
+```
+
+Enable bracketed spans and shared key/value attributes separately. The span
+keeps nested Markdown; `lang` and `hreflang` remain HTML attributes, while
+custom `sku` and `tracking-category` become `data-sku` and
+`data-tracking-category` in HTML. The same grammar attaches to headings,
+tables, images, figure captions, and links. [Syntax and mapping rules](https://github.com/sebastian-software/ferromark/blob/main/docs/shared-attributes.md)
+describe duplicate keys and Markdown-owned values.
+With untrusted rendering, active names such as `style`, `srcset`, and `name`
+also become `data-*` attributes. Host frameworks may assign behavior to some
+`data-*` names, so filter authored attributes before embedding untrusted output
+in pages that use those frameworks.
+
+## Block quotes with visible attributions
+
+```text
+> A memorable passage.
+: Jane Doe, **author** {#source .byline}
+```
+
+Enable `blockquote_attributions` in Rust or `blockquoteAttributions` in Node.js.
+The source line sits outside the quote and becomes a visible `<figcaption>` in a
+`<figure>` around the original block quote. Put it directly after the quote or
+leave one blank line. Inside a list, indent the source to keep it in the same
+item as the quote. Inline links and reference links work as usual; the
+renderer does not add a `<cite>` element or a `cite` URL. IDs and classes in
+the suffix apply to the figure. The shown example needs only the attribution
+option. Key/value entries such as `lang=en` also require
+`extended_attributes` (Rust) or `extendedAttributes` (Node.js). The option is off
+by default. An outdented `: source` after a quote in a list stays lazy text
+inside that list; indent it to attach. See
+[syntax, boundaries, and examples](https://github.com/sebastian-software/ferromark/blob/main/docs/blockquote-attributions.md).
+Recognized callout markers do not receive attributions, even when callout
+rendering is disabled.
 
 ## Notes, marks, and callouts
 

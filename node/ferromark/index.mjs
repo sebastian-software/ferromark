@@ -7,53 +7,6 @@ import { linuxLibc, nativeTarget as resolveNativeTarget } from "./native-target.
 
 const require = createRequire(import.meta.url);
 
-/** @type {Array<[string, number]>} */
-const packedBooleanFlagsBeforeHeadingOffsets = [
-  ["allowHtml", 1 << 1],
-  ["tables", 1 << 2],
-  ["mergedTableCells", 1 << 3],
-  ["tableColgroup", 1 << 4],
-  ["tableColumnNames", 1 << 5],
-  ["tableAttributes", 1 << 6],
-  ["strikethrough", 1 << 7],
-  ["superscript", 1 << 8],
-  ["subscript", 1 << 9],
-  ["taskLists", 1 << 10],
-  ["autolinkLiterals", 1 << 11],
-  ["disallowedRawHtml", 1 << 12],
-  ["footnotes", 1 << 13],
-  ["highlight", 1 << 14],
-  ["inlineFootnotes", 1 << 15],
-  ["allowLinkRefs", 1 << 16],
-  ["frontMatter", 1 << 17],
-  ["headingIds", 1 << 18],
-];
-
-/** @type {Array<[string, number]>} */
-const packedBooleanFlagsAfterHeadingOffsets = [
-  ["headingAttributes", 1 << 19],
-  ["math", 1 << 20],
-  ["callouts", 1 << 21],
-  ["definitionLists", 1 << 22],
-  ["lineComments", 1 << 23],
-  ["wikiLinks", 1 << 24],
-  ["cjkEmphasis", 1 << 25],
-  ["mdx", 1 << 26],
-];
-
-/**
- * @param {Record<string, unknown>} options Target options object.
- * @param {{ set: number, on: number }} packed Parsed bitmasks.
- * @param {Array<[string, number]>} flags Option names and their bits.
- */
-function copyPackedBooleanFlags(options, packed, flags) {
-  for (const [key, bit] of flags) {
-    if (packed.set & bit) {
-      options[key] = Boolean(packed.on & bit);
-    }
-  }
-}
-
 const optionKeys = new Set([
   "renderPolicy",
   "allowHtml",
@@ -62,6 +15,11 @@ const optionKeys = new Set([
   "wikiLinks",
   "cjkEmphasis",
   "mdx",
+  "imageAttributes",
+  "imageCaptions",
+  "extendedAttributes",
+  "bracketedSpans",
+  "blockquoteAttributions",
   "insertions",
   "tables",
   "mergedTableCells",
@@ -90,6 +48,47 @@ const optionKeys = new Set([
   "passes",
 ]);
 
+/** @type {Array<[string, number]>} */
+const packedBooleanFlags = [
+  ["allowHtml", 1 << 1],
+  ["tables", 1 << 2],
+  ["mergedTableCells", 1 << 3],
+  ["tableColgroup", 1 << 4],
+  ["tableColumnNames", 1 << 5],
+  ["tableAttributes", 1 << 6],
+  ["strikethrough", 1 << 7],
+  ["superscript", 1 << 8],
+  ["subscript", 1 << 9],
+  ["taskLists", 1 << 10],
+  ["autolinkLiterals", 1 << 11],
+  ["disallowedRawHtml", 1 << 12],
+  ["footnotes", 1 << 13],
+  ["highlight", 1 << 14],
+  ["inlineFootnotes", 1 << 15],
+  ["allowLinkRefs", 1 << 16],
+  ["frontMatter", 1 << 17],
+  ["headingIds", 1 << 18],
+  ["headingAttributes", 1 << 19],
+  ["math", 1 << 20],
+  ["callouts", 1 << 21],
+  ["definitionLists", 1 << 22],
+  ["lineComments", 1 << 23],
+  ["wikiLinks", 1 << 24],
+  ["cjkEmphasis", 1 << 25],
+  ["mdx", 1 << 26],
+  ["imageAttributes", 1 << 27],
+  ["imageCaptions", 1 << 28],
+  ["extendedAttributes", 1 << 29],
+  ["bracketedSpans", 1 << 30],
+];
+
+/** @param {{ set: number, on: number }} packed Parsed flags. @param {object} target Rebuilt object. */
+function copyPackedBooleanFlags(packed, target) {
+  for (const [key, bit] of packedBooleanFlags) {
+    if (packed.set & bit) Reflect.set(target, key, Boolean(packed.on & bit));
+  }
+}
+
 /** @param {import('./index.mjs').Options | null | undefined} options Options to validate. */
 function validateOptions(options) {
   if (options == null) {
@@ -113,7 +112,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 33 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 38 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -121,13 +120,13 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and the other boolean fields (bits 1 to 26, in
- * declaration order, as `unpack` numbers them) take one bit each of `set`
- * (present) and `on` (its value; `'trusted'` for `renderPolicy`). `headingOffset`,
+ * `renderPolicy` (bit 0) and 30 boolean fields (bits 1 to 30, in declaration
+ * order, as `unpack` numbers them) take one bit each of `set` (present) and
+ * `on` (its value; `'trusted'` for `renderPolicy`). Enabled blockquote
+ * attributions and insertions use the object entry so later option bits remain available.
+ * `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
- * values. `insertions` is deliberately not packed: when true, it uses a
- * materialized object on the existing native options path. The native side
- * rebuilds packed `Options` and resolves them with the code the
+ * values. The native side rebuilds `Options` and resolves it with the code the
  * object path runs, so later checks and their errors are shared.
  *
  * napi-rs builds each conversion error from the value itself. For a value it
@@ -153,7 +152,12 @@ class PackedOptions {
   rejected;
   /** @type {string | undefined} */
   unknownPolicy;
-  insertions = false;
+  /** @type {boolean} */
+  requiresObjectPath = false;
+  /** @type {boolean} */
+  blockquoteAttributionsEnabled = false;
+  /** @type {boolean} */
+  insertionsEnabled = false;
 
   /** @param {import('./index.mjs').Options} options Validated options. */
   constructor(options) {
@@ -204,10 +208,15 @@ class PackedOptions {
       this.flag("wikiLinks", 1 << 24, options.wikiLinks) &&
       this.flag("cjkEmphasis", 1 << 25, options.cjkEmphasis) &&
       this.flag("mdx", 1 << 26, options.mdx) &&
-      this.insertion(options.insertions) &&
+      this.flag("imageAttributes", 1 << 27, options.imageAttributes) &&
+      this.flag("imageCaptions", 1 << 28, options.imageCaptions) &&
+      this.flag("extendedAttributes", 1 << 29, options.extendedAttributes) &&
+      this.flag("bracketedSpans", 1 << 30, options.bracketedSpans) &&
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
-      this.array("passes", options.passes)
+      this.array("passes", options.passes) &&
+      this.blockquoteAttributions(options.blockquoteAttributions) &&
+      this.insertions(options.insertions)
     );
   }
 
@@ -240,13 +249,45 @@ class PackedOptions {
     return true;
   }
 
+  /** @param {unknown} value The optional blockquote attribution flag. */
+  blockquoteAttributions(value) {
+    if (typeof value !== "boolean") {
+      return value === undefined || this.reject("blockquoteAttributions", value);
+    }
+    if (value) {
+      this.blockquoteAttributionsEnabled = true;
+      this.requiresObjectPath = true;
+    }
+    return true;
+  }
+
   /** @param {unknown} value The optional `insertions` flag. */
-  insertion(value) {
+  insertions(value) {
     if (typeof value !== "boolean") {
       return value === undefined || this.reject("insertions", value);
     }
-    this.insertions = value;
+    if (value) {
+      this.insertionsEnabled = true;
+      this.requiresObjectPath = true;
+    }
     return true;
+  }
+
+  /** Rebuilds values already read once, without repeating caller getters. */
+  toObjectOptions() {
+    const result = Object.create(null);
+    if (this.set & 1) {
+      result.renderPolicy = this.on & 1 ? "trusted" : "untrusted";
+    }
+    copyPackedBooleanFlags(this, result);
+    if (this.headingOffset !== undefined) result.headingOffset = this.headingOffset;
+    if (this.headingIdPrefix !== undefined) result.headingIdPrefix = this.headingIdPrefix;
+    if (this.linkBasePath !== undefined) result.linkBasePath = this.linkBasePath;
+    if (this.typography !== undefined) result.typography = this.typography;
+    if (this.passes !== undefined) result.passes = this.passes;
+    if (this.blockquoteAttributionsEnabled) result.blockquoteAttributions = true;
+    if (this.insertionsEnabled) result.insertions = true;
+    return result;
   }
 
   /** @param {"headingOffset"} key Field name. @param {unknown} value Field value. */
@@ -292,23 +333,6 @@ class PackedOptions {
     this.rejected = rejected;
     return false;
   }
-
-  /** @returns {import('./index.mjs').Options} Plain values for the native object path. */
-  asNativeOptions() {
-    const options = Object.create(null);
-    if (this.set & 1) {
-      options.renderPolicy = this.on & 1 ? "trusted" : "untrusted";
-    }
-    copyPackedBooleanFlags(options, this, packedBooleanFlagsBeforeHeadingOffsets);
-    if (this.headingOffset !== undefined) options.headingOffset = this.headingOffset;
-    if (this.headingIdPrefix !== undefined) options.headingIdPrefix = this.headingIdPrefix;
-    copyPackedBooleanFlags(options, this, packedBooleanFlagsAfterHeadingOffsets);
-    options.insertions = true;
-    if (this.linkBasePath !== undefined) options.linkBasePath = this.linkBasePath;
-    if (this.typography !== undefined) options.typography = this.typography;
-    if (this.passes !== undefined) options.passes = this.passes;
-    return options;
-  }
 }
 
 /**
@@ -336,8 +360,8 @@ function isMarkdown(markdown) {
  * @param {import('./index.mjs').Options | null | undefined} options Validated options.
  * @returns {NativePackedOptions | NativeOptions} The packed arguments, or the
  *   argument for the object-taking entry instead: absent options, which cost
- *   napi-rs nothing to read, insertion-enabled options, or a rejected value.
- *   Validated options are never an array, so `Array.isArray` tells the two apart.
+ *   napi-rs nothing to read, or a rejected value. Validated options are never
+ *   an array, so `Array.isArray` tells the two apart.
  */
 function packOptions(options) {
   if (options == null) {
@@ -346,8 +370,8 @@ function packOptions(options) {
   const packed = new PackedOptions(options);
   return (
     packed.rejected ??
-    (packed.insertions
-      ? packed.asNativeOptions()
+    (packed.requiresObjectPath
+      ? packed.toObjectOptions()
       : [
           packed.set,
           packed.on,

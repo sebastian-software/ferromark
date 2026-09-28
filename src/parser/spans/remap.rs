@@ -60,6 +60,13 @@ impl<'a> Parser<'a> {
                     }
                 }
             }
+            Node::Figure(node) => {
+                Self::remap_span(&mut node.span, source_map);
+                Self::remap_node_spans(&mut node.content, source_map);
+                for child in &mut node.caption {
+                    Self::remap_node_spans(child, source_map);
+                }
+            }
             Node::DefinitionList(node) => {
                 Self::remap_span(&mut node.span, source_map);
                 for child in &mut node.children {
@@ -114,6 +121,12 @@ impl<'a> Parser<'a> {
                 }
             }
             Node::Insertion(node) => {
+                Self::remap_inline_span(&mut node.span, source_map);
+                for child in &mut node.children {
+                    Self::remap_node_spans(child, source_map);
+                }
+            }
+            Node::Span(node) => {
                 Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {
                     Self::remap_node_spans(child, source_map);

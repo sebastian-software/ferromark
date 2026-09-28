@@ -23,11 +23,18 @@ See the [v2 migration guide](../../docs/migration-v2.md) for breaking changes.
 The v2 engine uses an arena AST and retains upstream MIT attribution in `LICENSE`.
 
 Removed options `tableColumnWidths` and `indentedCodeBlocks` throw an unknown-option error. `tableColgroup`,
-`tableColumnNames`, `tableAttributes`,
+`tableColumnNames`, `tableAttributes`, `imageAttributes`, `imageCaptions`,
+`extendedAttributes`, `bracketedSpans`, `blockquoteAttributions`,
 `headingAttributes`, `wikiLinks`, `cjkEmphasis`, and `mdx` expose v2 features.
 Optional `highlight` (`==text==`) and `inlineFootnotes` (`^[note]`) default off.
 `allowLinkRefs` defaults on; disabling it keeps reference definitions visible.
 See [optional writing syntax](../../docs/optional-writing.md).
+See [image captions](../../docs/image-captions.md) for image suffixes and
+separate figure captions, and [block quote attributions](../../docs/blockquote-attributions.md)
+for visible quote sources. The enabled table extension also accepts plain
+captions without attributes.
+See [shared attributes](../../docs/shared-attributes.md) for bracketed spans,
+key/value metadata, and automatic `data-*` mapping.
 Heading slugs and extension HTML follow v2. `linkBasePath` enables v2 site routing:
 root-absolute links, images, and raw HTML URLs use the base, and Markdown links
 become index.html routes. Highlighters receive fenced and indented code blocks.
@@ -192,6 +199,14 @@ is escaped, and unsafe link and image URL schemes (such as `javascript:`) are
 removed from the rendered attributes. Use this default for Markdown from users
 or other untrusted sources.
 
+With the optional image and table attribute syntax enabled, authored `id`
+values are escaped but emitted without a namespace even under this policy.
+Avoid relying on IDs from untrusted Markdown as safe DOM property names.
+When extended attributes are enabled, `style`, URL-bearing names, `name`, and
+other active HTML attributes become inert `data-*` metadata under the
+untrusted policy. A small set of presentation and accessibility names remains
+unchanged; see the shared attribute documentation for that list.
+
 ```js
 toHtml("<img src=x onerror=alert(1)>");
 // '&lt;img src=x onerror=alert(1)&gt;'
@@ -303,7 +318,7 @@ load fails:
 | Message or environment                       | Resolution                                                                                                                                                                                                                                                                                                                                                       |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Node.js below 22.12                          | Upgrade to Node.js 22.12 or newer; this is the package's declared engine requirement and the first Node 22 release with unflagged `require(esm)` support.                                                                                                                                                                                                        |
-| Unsupported platform or architecture         | Use macOS, Windows, or glibc/musl Linux on x64 or arm64.                                                                                                                                                                                                                                                                                                         |
+| Unsupported platform or architecture         | Use macOS on Apple Silicon, Windows, or glibc/musl Linux on x64 or arm64.                                                                                                                                                                                                                                                                                        |
 | `could not load the optional native package` | Reinstall without `--omit=optional` and verify that your lockfile includes Ferromark's package for the current platform.                                                                                                                                                                                                                                         |
 | `ERR_DLOPEN_FAILED`                          | Read the wrapped loader message for the exact binary and platform. On GNU Linux, verify glibc 2.17 or newer and required shared libraries; on Windows, install or repair the Microsoft Visual C++ Redistributable; on macOS, check architecture, OS compatibility, quarantine, and code-signing policy. The original loader error is available as `error.cause`. |
 
