@@ -390,7 +390,7 @@ impl<'a> Parser<'a> {
                 let protected_url = protected_urls
                     .get(url_index)
                     .copied()
-                    .filter(|(start, end)| *start <= *pos && run_end <= *end);
+                    .filter(|(start, end)| *start < *pos && run_end <= *end);
                 let is_protected_url = protected_url.is_some();
                 let closes_insertion = protected_url.is_some_and(|(_, end)| end == run_end)
                     && markers.has_insertion_opener
@@ -404,8 +404,14 @@ impl<'a> Parser<'a> {
                     );
                     *pos = run_end;
                 } else {
-                    markers.has_insertion_opener |=
-                        self.push_insertion_run(content, offset, children, delimiters, pos);
+                    markers.has_insertion_opener |= self.push_insertion_run(
+                        content,
+                        offset,
+                        children,
+                        delimiters,
+                        pos,
+                        closes_insertion,
+                    );
                 }
             }
             b'~' if self.options.subscript && !same_marker_neighbor(bytes, *pos, b'~') => {

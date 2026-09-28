@@ -24,21 +24,27 @@ syntax and does not require the transforms package.
 Delimiter flanking follows CommonMark emphasis' whitespace and punctuation
 conditions, as does [markdown-it-ins](https://github.com/markdown-it/markdown-it-ins).
 Each plus run of two or more signs is split into independent `++` delimiter
-tokens; an odd run leaves one literal plus before its pairs. The rule of three
-for `*`/`_` emphasis does not apply. A single plus, unmatched delimiters, and
-invalid pairs stay literal. Pair tokens from the same source run cannot match
-one another, so `a++++b` remains literal rather than creating an empty
-`<ins>`. For an odd closing run, the remaining plus follows all closing tags:
+tokens; an odd run leaves one literal plus outside its pairs. On a close-only
+odd run the literal plus follows the closing tags, so source spans do not
+overlap: `++a+++` renders as `<ins>a</ins>+`. The rule of three for `*`/`_`
+emphasis does not apply. A single plus, unmatched delimiters, and invalid pairs
+stay literal. Pair tokens from the same source run cannot match one another,
+so `a++++b` remains literal rather than creating an empty `<ins>`. For an odd
+run on both sides, the remaining plus follows all closing tags:
 `+++++a+++++` renders as `+<ins><ins>a</ins></ins>+`. Insertions accept
 ordinary nested inline Markdown
 and may include soft line breaks, but cannot cross paragraph or block
 boundaries. Existing escapes and protected code, math, HTML, URL, and MDX
 contexts keep their existing parsing rules.
 
-With GFM bare-URL autolinks enabled, plus pairs within the URL candidate stay
-part of the link. A closing pair exactly at a candidate's end can still close
-an insertion that opened before it. Fixtures cover both a `++` pair in the
-middle of a URL and a URL inside an insertion.
+With GFM bare-URL autolinks enabled, scheme URL candidates keep `++` inside the
+link text. Raw-source protection stops before inline syntax that the autolink
+post-pass cannot see across. A closing pair exactly at a scheme URL candidate's
+end can still close an insertion that opened before it, but it cannot open a
+new insertion. Fuzzy email and `www.` links are created after inline parsing,
+so their plus delimiters remain active insertion syntax. Fixtures cover a
+`++` pair in the middle of a scheme URL, a scheme URL inside an insertion,
+markup adjacent to autolinks, and email local parts containing plus signs.
 
 Reserve `++...++` for inserted text. Its meaning is independent of content, so
 `++ctrl+c++` is an insertion even though other extensions use plus signs for
@@ -52,11 +58,13 @@ delimiters removed.
 
 ## Consequences
 
-With the option off, `+` stays on the normal text scan path and output remains
-unchanged. Enabling insertions adds `+` to the fused inline marker classifier
-and uses the existing delimiter stack and nesting bound. Benchmark the enabled,
-disabled, unmatched-plus, and repeated-run cases separately; do not infer a
-speedup from the optional default path.
+With the option off, `+` keeps its ordinary text meaning and output remains
+unchanged. The disabled implementation path is not byte-for-byte identical to
+`main`: it has option plumbing, an extra opener-bottom table, and insertion
+pairing branches. Enabling insertions adds `+` to the fused inline marker
+classifier and uses the existing delimiter stack and nesting bound. Benchmark
+the enabled, disabled, unmatched-plus, and repeated-run cases separately; do
+not infer a speedup from the optional default path.
 
 A local Criterion run on Rust 1.95.0 (`aarch64-apple-darwin`, 10 samples per
 case, one-second warm-up and measurement) observed these parser times:
@@ -92,6 +100,27 @@ rendering stayed within that A/A spread. The A/A parse-only rounds ranged from
 0.996 to 0.999, so the 1.2% parse-only difference was larger than this run's
 measured variation. These local paired samples describe this host and corpus;
 they are not a cross-machine guarantee.
+
+A follow-up base-versus-PR run on 2026-09-28 included the review fixes. It used
+the same 120 cases, Rust 1.95.0, fat LTO, and `-C target-cpu=generic`; HTML and
+AST output stayed identical in every case. Geometric means were:
+
+| Case group | Cases | Fresh | Parse-only |
+| --- | ---: | ---: | ---: |
+| All default-off inputs | 120 | 0.9959 | 0.9868 |
+| Broad inputs | 57 | 0.9916 | 0.9851 |
+| Bare-URL autolink inputs | 57 | 0.9992 | 0.9868 |
+| Insertion-shaped diagnostics | 6 | 1.0056 | 1.0037 |
+
+Ratios are baseline time divided by candidate time. The new comparison measured
+0.4% slower fresh rendering and 1.3% slower parse-only. A same-binary A/A run
+had geometric means of 1.0019 fresh and 0.9996 parse-only; across its rounds,
+fresh ratios ranged from 0.9952 to 1.0039 and parse-only ratios from 0.9932 to
+1.0218. The parse-only control itself therefore varied from 0.7% slower to
+2.1% faster. Host load rose during that control, from a 7.6 one-minute average
+to 20.6, so I treat the measured 1.3% parse-only difference as a small,
+inconclusive cost rather than a stable regression. These figures are local to
+this corpus and host.
 
 The public Rust API keeps `Node` and `ParserOptions` exhaustive. Adding
 `Node::Insertion` and `ParserOptions::insertions` therefore requires a major

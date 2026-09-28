@@ -164,6 +164,15 @@ fn protected_contexts_and_untrusted_rendering_keep_their_policies() {
         autolinks: true,
         ..ParserOptions::gfm()
     };
+    assert_eq!(
+        render("++jane@x.com++", autolinks.clone()),
+        "<p><ins><a href=\"mailto:jane@x.com\">jane@x.com</a></ins></p>\n"
+    );
+    assert_eq!(
+        render("x ++c++d@x.com", autolinks.clone()),
+        "<p>x <ins>c</ins><a href=\"mailto:d@x.com\">d@x.com</a></p>\n"
+    );
+
     let linked_url = render("https://example.com/++path++", autolinks.clone());
     assert!(
         linked_url.contains("href=\"https://example.com/++path++\""),
@@ -181,7 +190,7 @@ fn protected_contexts_and_untrusted_rendering_keep_their_policies() {
         "{closing_pair_inside_url}"
     );
 
-    let url_inside_insertion = render("++a https://x.com/p++b c++", autolinks);
+    let url_inside_insertion = render("++a https://x.com/p++b c++", autolinks.clone());
     assert!(
         url_inside_insertion.contains("<ins>a <a href=\"https://x.com/p++b\""),
         "{url_inside_insertion}"
@@ -189,6 +198,31 @@ fn protected_contexts_and_untrusted_rendering_keep_their_policies() {
     assert!(
         url_inside_insertion.contains(" c</ins>"),
         "{url_inside_insertion}"
+    );
+
+    assert_eq!(
+        render("*https://x.com/a*++c++", autolinks.clone()),
+        "<p><em><a href=\"https://x.com/a\" target=\"_blank\" rel=\"noopener noreferrer\">https://x.com/a</a></em><ins>c</ins></p>\n"
+    );
+    assert_eq!(
+        render(
+            "~~https://x.com/old~~++https://x.com/new++",
+            autolinks.clone()
+        ),
+        "<p><del><a href=\"https://x.com/old\" target=\"_blank\" rel=\"noopener noreferrer\">https://x.com/old</a></del><ins><a href=\"https://x.com/new\" target=\"_blank\" rel=\"noopener noreferrer\">https://x.com/new</a></ins></p>\n"
+    );
+    assert_eq!(
+        render("**www.x.com**++new++", autolinks.clone()),
+        "<p><strong><a href=\"http://www.x.com\" target=\"_blank\" rel=\"noopener noreferrer\">www.x.com</a></strong><ins>new</ins></p>\n"
+    );
+    assert_eq!(
+        render("https://x.com/?q=1&x=++a++", autolinks.clone()),
+        "<p><a href=\"https://x.com/?q=1&amp;x=++a++\" target=\"_blank\" rel=\"noopener noreferrer\">https://x.com/?q=1&amp;x=++a++</a></p>\n"
+    );
+
+    assert_eq!(
+        render("++a++ https://x.com/(x)++. More text++", autolinks,),
+        "<p><ins>a</ins> <a href=\"https://x.com/(x)++\" target=\"_blank\" rel=\"noopener noreferrer\">https://x.com/(x)++</a>. More text++</p>\n"
     );
 
     let url_after_closed_insertion = render(
@@ -346,8 +380,11 @@ fn insertion_nodes_have_delimiter_spans_and_visit_their_children() {
 }
 
 #[test]
-fn odd_closing_runs_keep_the_full_insertion_source_span() {
-    for (source, expected) in [("++a+++", "++a+++"), ("x++y+++ z", "++y+++")] {
+fn odd_closing_runs_keep_the_literal_plus_outside_the_insertion_span() {
+    for (source, expected_insertion, expected_plus_span) in [
+        ("++a+++ b", "++a++", Span::new(5, 6)),
+        ("x++y+++ z", "++y++", Span::new(6, 7)),
+    ] {
         let allocator = Allocator::new();
         let document = Parser::with_options(&allocator, source, insertion_options())
             .parse()
@@ -363,7 +400,17 @@ fn odd_closing_runs_keep_the_full_insertion_source_span() {
                 _ => None,
             })
             .expect("the syntax creates an insertion node");
-        assert_eq!(insertion.span.source_text(source), expected);
+        assert_eq!(insertion.span.source_text(source), expected_insertion);
+        let plus = paragraph
+            .children
+            .iter()
+            .find_map(|node| match node {
+                Node::Text(text) if text.value == "+" => Some(text),
+                _ => None,
+            })
+            .expect("the odd closing run leaves one literal plus");
+        assert_eq!(plus.span, expected_plus_span);
+        assert!(insertion.span.end <= plus.span.start);
     }
 }
 

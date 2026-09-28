@@ -33,10 +33,26 @@ pub(super) fn collect_candidate_ranges<'arena>(
         };
         let start = from + candidate.start;
         let end = from + candidate.end;
-        if valid_boundary(value, start) {
-            ranges.push((start, end));
+        if candidate.protect_plus_markers && valid_boundary(value, start) {
+            // The inline parser can turn these bytes into nodes that the
+            // autolink post-pass cannot see as one text run. Leave the range
+            // before the first such byte, then search the rest of the raw
+            // source for another scheme URL.
+            let protected_end = value.as_bytes()[start..end]
+                .iter()
+                .position(|byte| matches!(byte, b'*' | b'_' | b'~' | b'`' | b'<' | b'[' | b'\\'))
+                .map_or(end, |relative| start + relative);
+            if protected_end > start {
+                ranges.push((start, protected_end));
+            }
+            from = if protected_end < end {
+                protected_end
+            } else {
+                end
+            };
+        } else {
+            from = end;
         }
-        from = end;
     }
 }
 
@@ -46,6 +62,10 @@ pub(super) struct Candidate {
     pub(super) start: usize,
     pub(super) end: usize,
     pub(super) href_prefix: &'static str,
+    /// Only scheme URLs need raw-source protection before the inline pass.
+    /// Fuzzy email and `www.` candidates are linkified after parsing, so
+    /// insertion markers in those candidates must remain active.
+    pub(super) protect_plus_markers: bool,
 }
 
 /// What the block-level pre-flight proved about a block's raw content, so

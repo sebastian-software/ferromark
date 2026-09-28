@@ -128,8 +128,9 @@ impl<'a> Parser<'a> {
     }
 
     /// Records the `++` pairs from a plus run, following markdown-it-ins run
-    /// consumption: an odd leading plus stays literal and each remaining pair
-    /// is an independent delimiter token.
+    /// consumption: an odd plus stays literal outside the pairs (at the end
+    /// for a close-only run, otherwise at the beginning), and each pair is an
+    /// independent delimiter token.
     pub(in crate::parser) fn push_insertion_run(
         &self,
         content: &'a str,
@@ -137,6 +138,7 @@ impl<'a> Parser<'a> {
         children: &mut Vec<'a, Node<'a>>,
         delimiters: &mut Vec<'a, Delimiter>,
         pos: &mut usize,
+        close_only: bool,
     ) -> bool {
         let bytes = content.as_bytes();
         let start = *pos;
@@ -153,12 +155,16 @@ impl<'a> Parser<'a> {
         }
         let end = start + run_len;
         let (can_open, can_close) = self.classify_run(b'+', &content[..start], &content[end..]);
+        let can_open = can_open && !close_only;
         let has_extra_plus = run_len % 2 == 1;
-        if has_extra_plus {
+        let extra_plus_at_end = has_extra_plus && can_close && !can_open;
+        let move_extra_plus = has_extra_plus && !extra_plus_at_end;
+        if move_extra_plus {
             Self::push_text(children, "+", offset + start, offset + start + 1);
             *pos += 1;
         }
-        while *pos < end {
+        let pair_end = end - usize::from(extra_plus_at_end);
+        while *pos < pair_end {
             let pair_start = *pos;
             Self::push_text(children, "++", offset + pair_start, offset + pair_start + 2);
             *pos += 2;
@@ -183,11 +189,15 @@ impl<'a> Parser<'a> {
                 remaining: 2,
                 can_open,
                 can_close,
-                extra_plus: has_extra_plus,
+                extra_plus: move_extra_plus,
                 depth: 0,
                 prev,
                 next: NO_DELIMITER,
             });
+        }
+        if extra_plus_at_end {
+            Self::push_text(children, "+", offset + end - 1, offset + end);
+            *pos = end;
         }
         can_open
     }

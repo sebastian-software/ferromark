@@ -41,11 +41,17 @@ defaults. When enabled, `++...++` parses its body as ordinary inline Markdown
 and renders a semantic `<ins>` element. Emphasis, links, code, and other inline
 features can appear inside it. A single plus and an unmatched delimiter remain
 literal. Delimiters use CommonMark-style whitespace and punctuation flanking;
-an odd run leaves one literal plus before the remaining pairs, following the
+an odd run leaves one literal plus outside the remaining pairs. On a
+close-only odd run, that plus follows the closing insertion tags, matching the
 [markdown-it-ins reference](https://github.com/markdown-it/markdown-it-ins).
 Soft line breaks may occur inside an insertion, but it cannot cross a paragraph
 or block boundary. Escapes, code, math payloads, HTML tags/attributes, URLs,
 link destinations, and MDX payloads keep their own parsing rules.
+
+With GFM autolinks enabled, `http://`, `https://`, and `ftp://` URL candidates
+keep `++` inside their link text. A pair exactly at a scheme URL's end can close
+an insertion opened before it. Fuzzy email and `www.` autolinks are created
+after inline parsing, so their plus delimiters remain active insertion syntax.
 
 The `++...++` notation is reserved for inserted text: `++ctrl+c++` is an
 insertion regardless of its contents, not keyboard markup. This extension needs

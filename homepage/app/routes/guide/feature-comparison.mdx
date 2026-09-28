@@ -88,16 +88,19 @@ footnotes. Disabling reference links preserves definitions as visible Markdown;
 inline links and images continue to work. Marked text is separate from code
 syntax highlighting. [Rust and Node examples, syntax, and defaults](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md).
 
-The writing extensions remain off by default. Paired measurements found no
-material slowdown on representative documents with them disabled. Enabling them
-on documents without matching syntax still costs several percent, and literal
+The existing highlight and inline-note measurements found no material slowdown
+on representative documents with those options disabled. Enabling them on
+documents without matching syntax still costs several percent, and literal
 marker-heavy inputs cost more. Disabling reference links can skip parsing work,
 but its benefit depends on the parser profile and changes the output of actual
 references. See the [measured costs and limitations](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-15-optional-writing/README.md).
-Insertions have a dedicated Criterion benchmark. A 120-input base-versus-PR
-check with insertions disabled measured 0.2% slower fresh rendering and 1.2%
-slower parse-only; the same-commit A/A stayed within 0.1% fresh and 0.4%
-parse-only. See the [measurement details](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-27-inline-insertions.md).
+
+Insertions have a separate default-off measurement. A 120-input base-versus-PR
+comparison found identical HTML and AST output; fresh rendering measured 0.4%
+slower and parse-only 1.3% slower. The same-binary control varied from 0.7%
+slower to 2.1% faster parse-only as host load increased, so the small difference
+is noisy. The disabled parser path is not byte-for-byte identical to `main`.
+See the [measurement details](https://github.com/sebastian-software/ferromark/blob/main/docs/decisions/2026-09-27-inline-insertions.md).
 
 ### Other extension policies
 
