@@ -125,6 +125,53 @@
   border-bottom: 1px solid var(--iron-line);
 }
 
+.ferromark-ffm .fam-note a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.ferromark-ffm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.ferromark-ffm-grid article {
+  min-width: 0;
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--rust);
+}
+
+.ferromark-ffm-grid h3 {
+  font-size: var(--h3-size);
+}
+
+.ferromark-ffm-grid p {
+  margin-top: 0.8rem;
+  max-width: 32ch;
+  color: var(--ink-soft);
+}
+
+.ferromark-ffm-grid pre {
+  overflow-x: auto;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  background: var(--bg-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 800px) {
+  .ferromark-ffm-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
 .ferromark-menu-label {
   margin-bottom: 0.25rem;
   padding: 0.5rem 0.6rem 0;

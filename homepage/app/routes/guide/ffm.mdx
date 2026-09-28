@@ -1,0 +1,129 @@
+---
+title: Ferromark Flavored Markdown
+order: 5
+---
+
+# Ferromark Flavored Markdown (FFM)
+
+FFM is the name for Ferromark's opt-in authoring syntax on top of CommonMark and
+GFM. It groups features for publishing richer documents without requiring a new
+file format. Enable each feature separately; there is no `ffm` preset.
+Caption, attribution, table layout, marked text, inline notes, and bracketed
+spans are off in Node.js defaults and every Rust preset. Other features have
+their own defaults.
+Keep unused syntax disabled to avoid its parsing cost.
+
+For standard Markdown, start with [CommonMark and GFM](/guide/features). For
+option defaults and HTML trust, see [Node.js](/node/configuration),
+[Rust](/rust/configuration), and [rendering and trust](/guide/rendering).
+
+## Figures and sources
+
+```text
+![Three components connected by arrows](pipeline.svg "Browser title"){.diagram}
+
+: The **processing pipeline** {#pipeline .figure-wide}
+
+> A memorable passage.
+: Jane Doe, **author** {#source .byline}
+```
+
+`imageCaptions` / `image_captions` gives a standalone image a visible
+`<figcaption>`; its alternative text stays on `<img>`. `imageAttributes` /
+`image_attributes` adds image classes and IDs. `blockquoteAttributions` /
+`blockquote_attributions` puts a source line outside the quote in a figure
+caption. IDs and classes on the caption line attach to the figure. Both caption
+forms accept inline Markdown and can follow their block immediately or after
+one blank line. See [image boundaries](https://github.com/sebastian-software/ferromark/blob/main/docs/image-captions.md)
+and [quote boundaries](https://github.com/sebastian-software/ferromark/blob/main/docs/blockquote-attributions.md).
+
+## Tables with captions and spans
+
+```text
+| Item | Net | Tax |
+| :--- | ---: | ---: |
+| Book | 20.00 | 1.40 |
+| Gift | Included ||
+
+: Prices *today* {#prices .price-list}
+```
+
+`mergedTableCells` / `merged_table_cells` reads adjacent closing pipes as a
+horizontal span. `tableAttributes` / `table_attributes` adds a caption and
+optional ID/classes to a GFM table. Renderer options `tableColgroup` and
+`tableColumnNames` (Rust: `table_colgroup`, `table_column_names`) emit CSS
+hooks for columns. Set column widths in CSS. See the
+[table syntax and CSS example](https://github.com/sebastian-software/ferromark/blob/main/docs/table-layout.md).
+
+## Inline meaning and attributes
+
+```text
+This is ==important==.^[An explanatory note.]
+
+The French [C’est la vie]{lang=fr} fits here.
+[Documentation](https://example.org){.external hreflang=en}
+```
+
+`highlight` renders `==...==` as `<mark>`; `inlineFootnotes` /
+`inline_footnotes` turns `^[...]` into a footnote. These options are independent
+of code highlighting and reference footnotes. `bracketedSpans` /
+`bracketed_spans` enables `[text]{...}`. `extendedAttributes` /
+`extended_attributes` enables key/value attributes on spans, links, headings,
+tables, images, and figures. Basic ID/class suffixes also have their own
+feature options. Read the [writing syntax](https://github.com/sebastian-software/ferromark/blob/main/docs/optional-writing.md)
+and [attribute mapping rules](https://github.com/sebastian-software/ferromark/blob/main/docs/shared-attributes.md),
+especially before embedding untrusted output in a host framework that uses
+`data-*` attributes.
+
+## More authoring syntax
+
+| Use                   | Example                            | Node.js option             | Rust option                     |
+| --------------------- | ---------------------------------- | -------------------------- | ------------------------------- |
+| Reference notes       | `A fact.[^source]`                 | `footnotes`                | `footnotes`                     |
+| Definition lists      | `Term` followed by `: Explanation` | `definitionLists`          | `definition_lists`              |
+| Heading IDs/classes   | `# Title {#title .section}`        | `headingAttributes`        | `heading_attributes`            |
+| Wiki links            | `[[Page]]`                         | `wikiLinks`                | `wiki_links`                    |
+| Math notation         | `$x^2$`                            | `math`                     | `math`                          |
+| Superscript/subscript | `x^2^`, `H~2~O`                    | `superscript`, `subscript` | `superscript`, `subscript`      |
+| Source metadata       | Leading `---` or `+++` block       | `frontMatter`              | `front_matter`                  |
+| Source comments       | `// note` at line start            | `lineComments`             | `line_comments`                 |
+| Alert boxes           | `> [!NOTE]`                        | `callouts`                 | `HtmlRendererOptions::callouts` |
+
+These options have separate boundaries. Math needs downstream typesetting;
+wiki links need application routing. Front matter exposes raw metadata text,
+without parsing YAML or TOML values. Subscript takes precedence over
+single-tilde strikethrough when enabled. Callouts are a renderer feature,
+enabled in Node.js and the default Rust renderer; strict Rust specification
+profiles disable them. Other defaults are listed in the configuration guides.
+See [front matter](https://github.com/sebastian-software/ferromark/blob/main/docs/front-matter.md),
+[line comments](https://github.com/sebastian-software/ferromark/blob/main/docs/line-comments.md),
+and the [feature comparison](/guide/feature-comparison) for further details.
+
+## Enable a small dialect
+
+```ts
+import { toHtml } from "ferromark";
+
+const html = toHtml("![Logo](logo.svg)\n\n: Company logo", {
+  imageCaptions: true,
+});
+```
+
+The same option can be set as `image_captions: true` in Rust `ParserOptions`.
+Other features remain at their defaults. Each additional enabled syntax may
+add work even when a document does not use it; the
+[runtime profiles](/guide/workflow-benchmarks) and linked feature reports
+provide measurements.
+
+## Related extensions in review
+
+Three independent PRs add adjacent capabilities. Until they merge, use their
+branches to try them:
+
+- [Inserted text](https://github.com/sebastian-software/ferromark/pull/474): `++new text++` renders as `<ins>` with `insertions: true` (Node.js) or `ParserOptions::insertions` (Rust).
+- [ASCII guillemet digraphs](https://github.com/sebastian-software/ferromark/pull/472): `<<Bonjour>>` needs `guillemetDigraphs` / `guillemet_digraphs` and an explicit-language typography pass.
+- [Technical abbreviations](https://github.com/sebastian-software/ferromark/pull/475): renderer-generated `<abbr>` markup uses `autoAbbreviations: true` in Node.js or an abbreviation-enabled Rust renderer; it adds no Markdown syntax.
+
+[Typography](/guide/typography) transforms punctuation after parsing, and
+[MDX](/guide/mdx) captures component syntax for downstream integration. Their
+processing and trust boundaries differ from FFM's authoring syntax.
