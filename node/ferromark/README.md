@@ -246,10 +246,10 @@ Bytes can: a `Uint8Array` of more than 4,294,967,295 bytes throws a
 
 ## Syntax highlighting with Ferriki
 
-An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter plugs into the code-block renderer without coupling the two native cores:
+An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter (`npm install @ferriki/core`) plugs into the code-block renderer without coupling the two native cores:
 
 ````js
-import { createHighlighter } from "ferriki";
+import { createHighlighter } from "@ferriki/core";
 import { toHtmlWithHighlighter } from "ferromark";
 
 const highlighter = await createHighlighter({
