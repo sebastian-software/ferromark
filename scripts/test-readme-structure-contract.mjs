@@ -15,11 +15,11 @@ test("README source and generated output prominently link the live documentation
   }
 });
 
-test("README introduces the stable v2 release and delegates detailed documentation", () => {
+test("README introduces the v3 release and delegates detailed documentation", () => {
   const source = read("README.md.src");
-  assert.match(source, /^# Ferromark v2$/m);
+  assert.match(source, /^# Ferromark v3$/m);
   assert.match(source, /arena-allocated/);
-  assert.match(source, /breaking upgrade from v1/);
+  assert.match(source, /breaking upgrade of the Rust API/);
   assert.match(source, /CHANGELOG\.md/);
   // Install lines carry no version. The release pull request bumps the docs.rs
   // reference alone, from the root package version the rust strategy owns.
@@ -31,6 +31,7 @@ test("README introduces the stable v2 release and delegates detailed documentati
   assert.ok(source.includes("npm install ferromark\n"), "README installs the npm package");
   assert.ok(source.includes("cargo add ferromark\n"), "README adds the crate");
   assert.match(source, /docs\/migration-v2\.md/);
+  assert.match(source, /docs\/migration-v3\.md/);
   assert.match(source, /node\/ferromark\/README\.md/);
   assert.match(source, /UPSTREAM\.md/);
   assert.match(source, /HtmlRendererOptions::sanitize/);
@@ -38,7 +39,14 @@ test("README introduces the stable v2 release and delegates detailed documentati
   assert.ok(source.split(/\s+/).length < 700, "README stays below 700 words");
   const headings = [...source.matchAll(/^#{1,2} (.+)$/gm)].map((m) => m[1]);
   assert.equal(new Set(headings).size, headings.length);
-  for (const page of ["features", "correctness", "benchmarks", "architecture", "rendering"]) {
+  for (const page of [
+    "features",
+    "ffm",
+    "correctness",
+    "benchmarks",
+    "architecture",
+    "rendering",
+  ]) {
     assert.ok(source.includes(`/guide/${page}`));
     assert.ok(read(`homepage/app/routes/guide/${page}.mdx`).length > 0);
   }
