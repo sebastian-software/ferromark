@@ -46,6 +46,18 @@ pub struct ParserOptions {
     /// [`Self::tables`]. Default: `false`, including all presets.
     pub table_attributes: bool,
 
+    /// Parse `{#id .class}` directly after inline or reference images.
+    /// Independent of image captions. Default: `false`.
+    pub image_attributes: bool,
+
+    /// Attach one `: Caption` line to a standalone image as a figure.
+    /// Independent of image attributes. Default: `false`.
+    pub image_captions: bool,
+
+    /// Attach one colon-prefixed attribution line after a block quote as a
+    /// figure caption. Independent of image captions. Default: false.
+    pub blockquote_attributions: bool,
+
     /// Omit source-only physical lines beginning with `//` after at most
     /// three ASCII spaces. Comments do not introduce a paragraph break.
     /// Explicit container prefixes, code blocks, and raw HTML remain literal.
@@ -62,6 +74,9 @@ pub struct ParserOptions {
     ///
     /// Default: `false`; [`ParserOptions::gfm`] sets this to `true`.
     pub strikethrough: bool,
+
+    /// Enable `++inserted text++` spans. Off in all presets.
+    pub insertions: bool,
 
     /// Enable GFM autolinks.
     ///
@@ -91,11 +106,18 @@ pub struct ParserOptions {
     /// Enable Pandoc-style heading attribute blocks.
     ///
     /// When set, a trailing `{#id .class}` block on an ATX or setext heading
-    /// becomes [`crate::ast::Heading::id`] and
-    /// [`crate::ast::Heading::classes`] instead of rendered text.
+    /// sets metadata available through [`crate::ast::Heading::explicit_id`]
+    /// and [`crate::ast::Heading::classes`] instead of rendered text.
     ///
     /// Default: `false`; not enabled by [`ParserOptions::gfm`].
     pub heading_attributes: bool,
+
+    /// Enable shared key/value attributes and suffixes on links and existing
+    /// heading, image, table, and figure attachment points.
+    pub extended_attributes: bool,
+
+    /// Enable `[inline Markdown]{attributes}` spans independently of captions.
+    pub bracketed_spans: bool,
 
     /// Enable Obsidian-style wiki links as link nodes.
     ///
@@ -150,7 +172,7 @@ pub struct ParserOptions {
     /// children, and on a bracketed slice for link text, image alt text,
     /// wiki-link labels, inline notes, script spans and inline JSX phrasing.
     /// Emphasis counts too, although it never recurses: pairing delimiter
-    /// runs builds `*`, `_`, `**`, `~~`, `==`, `~`, `^` and CJK emphasis
+    /// runs builds `*`, `_`, `**`, `~~`, `++`, `==`, `~`, `^` and CJK emphasis
     /// into a tree that the renderer and the [`Visit`](crate::ast::Visit)
     /// walkers do recurse over, and its depth counts the same way — the
     /// depth of the tree, so `*`×200 `a` `*`×200 is 100 levels while a run
@@ -186,15 +208,21 @@ impl Default for ParserOptions {
             tables: false,
             merged_table_cells: false,
             table_attributes: false,
+            image_attributes: false,
+            image_captions: false,
+            blockquote_attributions: false,
             line_comments: false,
             front_matter: false,
             strikethrough: false,
+            insertions: false,
             autolinks: false,
             superscript: false,
             subscript: false,
             math: false,
             definition_lists: false,
             heading_attributes: false,
+            extended_attributes: false,
+            bracketed_spans: false,
             wiki_links: false,
             guillemet_digraphs: false,
             cjk_emphasis: false,
@@ -238,15 +266,21 @@ impl ParserOptions {
             tables: true,
             merged_table_cells: false,
             table_attributes: false,
+            image_attributes: false,
+            image_captions: false,
+            blockquote_attributions: false,
             line_comments: false,
             front_matter: false,
             strikethrough: true,
+            insertions: false,
             autolinks: true,
             superscript: false,
             subscript: false,
             math: false,
             definition_lists: false,
             heading_attributes: false,
+            extended_attributes: false,
+            bracketed_spans: false,
             wiki_links: false,
             guillemet_digraphs: false,
             // Not part of GFM: GitHub renders these runs per CommonMark too.

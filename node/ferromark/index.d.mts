@@ -46,6 +46,18 @@ export interface Options {
   cjkEmphasis?: boolean;
   /** Recognize MDX syntax; does not compile or execute JavaScript. */
   mdx?: boolean;
+  /** Parse `{#id .class}` directly after an image. Default: off. */
+  imageAttributes?: boolean;
+  /** Attach a separate `: Caption` line to a standalone image. Default: off. */
+  imageCaptions?: boolean;
+  /** Enable shared key/value attributes on headings, links, images, tables, and figures. */
+  extendedAttributes?: boolean;
+  /** Enable `[inline Markdown]{attributes}` spans. */
+  bracketedSpans?: boolean;
+  /** Attach a separate `: Author` line after a block quote. Default: off. */
+  blockquoteAttributions?: boolean;
+  /** Enable `++inserted text++`. Default: off, including the GFM profile. */
+  insertions?: boolean;
   /** Preserve `<<…>>` as inline text and allow typography to map balanced pairs. Default: off. */
   guillemetDigraphs?: boolean;
   /** Output trust boundary. Default: `'untrusted'`; use `'trusted'` only for trusted Markdown. */

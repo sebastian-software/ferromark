@@ -4,8 +4,8 @@
 //! one cursor and the rule for when it has to be recomputed.
 
 use super::scan::{
-    INLINE_MARKER_HIGHLIGHT, INLINE_MARKER_MATH, INLINE_MARKER_MDX, INLINE_MARKER_SUPERSCRIPT,
-    next_inline_marker,
+    INLINE_MARKER_HIGHLIGHT, INLINE_MARKER_INSERTIONS, INLINE_MARKER_MATH, INLINE_MARKER_MDX,
+    INLINE_MARKER_SUPERSCRIPT, next_inline_marker,
 };
 
 /// A memo for one forward byte scan over a fixed slice.
@@ -47,6 +47,7 @@ impl ForwardScan {
 pub(in crate::parser) struct InlineMarkerScan {
     optional: u8,
     notes_only: bool,
+    pub(super) has_insertion_opener: bool,
     scan: ForwardScan,
 }
 
@@ -65,9 +66,13 @@ impl InlineMarkerScan {
         if options.highlight {
             optional |= INLINE_MARKER_HIGHLIGHT;
         }
+        if options.insertions {
+            optional |= INLINE_MARKER_INSERTIONS;
+        }
         Self {
             optional,
             notes_only: options.inline_footnotes && !options.superscript,
+            has_insertion_opener: false,
             scan: ForwardScan::new(),
         }
     }
@@ -94,6 +99,7 @@ impl InlineMarkerScan {
                     continue;
                 }
                 if (bytes[at] == b'=' && bytes.get(at + 1) != Some(&b'='))
+                    || (bytes[at] == b'+' && bytes.get(at + 1) != Some(&b'+'))
                     || (notes_only && bytes[at] == b'^' && bytes.get(at + 1) != Some(&b'['))
                 {
                     at += 1;
@@ -117,6 +123,7 @@ mod tests {
             || (options & INLINE_MARKER_SUPERSCRIPT != 0 && byte == b'^')
             || (options & INLINE_MARKER_MATH != 0 && byte == b'$')
             || (options & INLINE_MARKER_HIGHLIGHT != 0 && byte == b'=')
+            || (options & INLINE_MARKER_INSERTIONS != 0 && byte == b'+')
     }
 
     fn oracle(bytes: &[u8], from: usize, options: u8) -> usize {
@@ -124,6 +131,7 @@ mod tests {
         while at < bytes.len()
             && (!is_marker(bytes[at], options)
                 || (bytes[at] == b'=' && bytes.get(at + 1) != Some(&b'='))
+                || (bytes[at] == b'+' && bytes.get(at + 1) != Some(&b'+'))
                 || (bytes[at] == b'='
                     && bytes.get(at + 1) == Some(&b'=')
                     && (at == 0 || bytes[at - 1].is_ascii_whitespace())
@@ -136,7 +144,7 @@ mod tests {
 
     #[test]
     fn matches_scalar_oracle_for_all_option_masks_and_offsets() {
-        for options in 0..=15 {
+        for options in 0..=31 {
             for len in 0..=80 {
                 let mut storage = [b'x'; 80];
                 for (at, byte) in storage[..len].iter_mut().enumerate() {
@@ -145,7 +153,8 @@ mod tests {
                         1 => b'^',
                         2 => b'$',
                         3 => b'*',
-                        4 => 0x80,
+                        4 => b'+',
+                        5 => 0x80,
                         _ => b'x',
                     };
                 }
@@ -154,6 +163,7 @@ mod tests {
                     let mut scan = InlineMarkerScan {
                         optional: options,
                         notes_only: false,
+                        has_insertion_opener: false,
                         scan: ForwardScan::new(),
                     };
                     assert_eq!(
@@ -168,7 +178,7 @@ mod tests {
 
     #[test]
     fn matches_every_byte_value_at_every_offset() {
-        for options in 0..=15 {
+        for options in 0..=31 {
             for value in 0..=u8::MAX {
                 let mut bytes = [b'x'; 72];
                 for at in 0..bytes.len() {
@@ -177,9 +187,14 @@ mod tests {
                         let mut scan = InlineMarkerScan {
                             optional: options,
                             notes_only: false,
+                            has_insertion_opener: false,
                             scan: ForwardScan::new(),
                         };
-                        assert_eq!(scan.next(&bytes, from), oracle(&bytes, from, options));
+                        assert_eq!(
+                            scan.next(&bytes, from),
+                            oracle(&bytes, from, options),
+                            "options {options}, value {value}, at {at}, from {from}"
+                        );
                     }
                 }
             }
@@ -190,10 +205,11 @@ mod tests {
     fn matches_valid_utf8_and_earliest_marker() {
         let text = "prefixé 中 {math ^ $ * suffix";
         let bytes = text.as_bytes();
-        for options in 0..=15 {
+        for options in 0..=31 {
             let mut scan = InlineMarkerScan {
                 optional: options,
                 notes_only: false,
+                has_insertion_opener: false,
                 scan: ForwardScan::new(),
             };
             for from in 0..=bytes.len() {

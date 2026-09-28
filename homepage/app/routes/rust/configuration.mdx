@@ -50,8 +50,14 @@ use ferromark::{HtmlRendererOptions, ParserOptions};
 
 let syntax = ParserOptions {
     front_matter: true,
+    insertions: true,
     merged_table_cells: true,
     table_attributes: true,
+    image_attributes: true,
+    image_captions: true,
+    extended_attributes: true,
+    bracketed_spans: true,
+    blockquote_attributions: true,
     ..ParserOptions::gfm()
 };
 let output = HtmlRendererOptions {
@@ -60,8 +66,8 @@ let output = HtmlRendererOptions {
     sanitize: true,
     ..HtmlRendererOptions::default()
 };
-let html = ferromark::to_html_with_options("# Notes", syntax, output).unwrap();
-assert!(html.contains("Notes"));
+let html = ferromark::to_html_with_options("# Notes\n\n++An important note++.", syntax, output).unwrap();
+assert!(html.contains("<ins>An important note</ins>"));
 ```
 
 `guillemet_digraphs` preserves `<<Bonjour>>` as text for the optional
@@ -72,3 +78,9 @@ See [Markdown syntax](/guide/features) for author-facing examples and
 [the Rust API guide](https://github.com/sebastian-software/ferromark/blob/main/docs/rust-api.md)
 for all entry points. Keep unused extensions off when their syntax is unnecessary;
 [profile measurements](/guide/workflow-benchmarks) describe their costs.
+[Image captions](https://github.com/sebastian-software/ferromark/blob/main/docs/image-captions.md)
+explain the independent image options and the plain table caption form.
+[Shared attributes](https://github.com/sebastian-software/ferromark/blob/main/docs/shared-attributes.md)
+cover bracketed spans and key/value metadata.
+[Block quote attributions](https://github.com/sebastian-software/ferromark/blob/main/docs/blockquote-attributions.md)
+describe visible sources, attachment boundaries, and figure attributes.

@@ -182,6 +182,18 @@ fn inline_math_runs_cost_linear_time() {
 }
 
 #[test]
+fn insertion_delimiters_in_many_autolinks_cost_linear_time() {
+    let options = ParserOptions {
+        insertions: true,
+        autolinks: true,
+        ..ParserOptions::gfm()
+    };
+    assert_linear("insertion pluses inside autolinks", &options, |bytes| {
+        run_to("++z ", "https://a.co/x++y ", bytes, "")
+    });
+}
+
+#[test]
 fn inline_math_runs_with_one_closer_cost_linear_time() {
     // One closing `$` behind the run is what a cheap last-closer guard
     // cannot answer with.

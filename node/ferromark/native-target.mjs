@@ -55,7 +55,6 @@ export function nativeTarget(platform, arch, libc) {
   /** @type {Record<string, string>} */
   const targets = {
     "darwin-arm64": "darwin-arm64",
-    "darwin-x64": "darwin-x64",
     "linux-arm64-gnu": "linux-arm64-gnu",
     "linux-arm64-musl": "linux-arm64-musl",
     "linux-x64-gnu": "linux-x64-gnu",

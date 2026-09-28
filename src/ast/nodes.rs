@@ -86,6 +86,8 @@ pub enum Node<'a> {
     Html(Html<'a>),
     /// Table (GFM extension).
     Table(Box<'a, Table<'a>>),
+    /// Captioned image figure (extension).
+    Figure(Box<'a, Figure<'a>>),
     /// Definition list.
     DefinitionList(Box<'a, DefinitionList<'a>>),
     /// Term inside a definition list.
@@ -96,6 +98,8 @@ pub enum Node<'a> {
     // Inline nodes
     /// Plain text.
     Text(Text<'a>),
+    /// Bracketed inline span with authored attributes.
+    Span(Box<'a, InlineSpan<'a>>),
     /// Emphasis (italic).
     Emphasis(Box<'a, Emphasis<'a>>),
     /// Strong emphasis (bold).
@@ -115,6 +119,8 @@ pub enum Node<'a> {
 
     /// Strikethrough (GFM extension).
     Delete(Box<'a, Delete<'a>>),
+    /// Inserted text (`++text++` extension).
+    Insertion(Box<'a, Insertion<'a>>),
     /// Superscript (extension).
     Superscript(Box<'a, Superscript<'a>>),
     /// Subscript (extension).
@@ -157,14 +163,28 @@ pub struct Paragraph<'a> {
 pub struct Heading<'a> {
     /// Heading depth (1-6).
     pub depth: u8,
-    /// Explicit heading id from a trailing attribute block.
-    pub id: Option<&'a str>,
-    /// Explicit heading classes from a trailing attribute block.
-    pub classes: Vec<'a, &'a str>,
+    /// Authored heading metadata, absent without a suffix.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Inline children.
     pub children: Vec<'a, Node<'a>>,
     /// Source span.
     pub span: Span,
+}
+
+impl Heading<'_> {
+    /// Authored ID, if the heading has one.
+    pub fn explicit_id(&self) -> Option<&str> {
+        self.attributes
+            .as_ref()
+            .and_then(|attributes| attributes.id)
+    }
+
+    /// Authored CSS classes in source order.
+    pub fn classes(&self) -> &[&str] {
+        self.attributes
+            .as_ref()
+            .map_or(&[], |attributes| &attributes.classes)
+    }
 }
 
 /// Thematic break (horizontal rule).
@@ -263,8 +283,26 @@ pub struct TableAttributes<'a> {
     pub id: Option<&'a str>,
     /// CSS class names, without leading dots.
     pub classes: Vec<'a, &'a str>,
+    /// Authored key/value attributes, before HTML-specific name mapping.
+    pub attributes: Vec<'a, Attribute<'a>>,
     /// Optional caption as inline Markdown nodes.
     pub caption: Vec<'a, Node<'a>>,
+}
+
+/// A standalone image with a separate, visible caption.
+///
+/// `content` is an image node. Keeping it as a node permits the same figure
+/// shape to hold a block quote when quote attribution is added later.
+#[derive(Debug)]
+pub struct Figure<'a> {
+    /// The semantic content of the figure.
+    pub content: Node<'a>,
+    /// Caption inline nodes.
+    pub caption: Vec<'a, Node<'a>>,
+    /// Authored figure metadata, absent without a suffix.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
+    /// Span from the image through the caption line.
+    pub span: Span,
 }
 
 /// Table row.
@@ -389,10 +427,28 @@ pub struct Link<'a> {
     pub url: &'a str,
     /// Title.
     pub title: Option<&'a str>,
+    /// Authored link metadata, absent on the default parser path.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Inline children.
     pub children: Vec<'a, Node<'a>>,
     /// Source span.
     pub span: Span,
+}
+
+impl Link<'_> {
+    /// Authored ID, if the link has one.
+    pub fn explicit_id(&self) -> Option<&str> {
+        self.attributes
+            .as_ref()
+            .and_then(|attributes| attributes.id)
+    }
+
+    /// Authored CSS classes in source order.
+    pub fn classes(&self) -> &[&str] {
+        self.attributes
+            .as_ref()
+            .map_or(&[], |attributes| &attributes.classes)
+    }
 }
 
 /// Image.
@@ -404,7 +460,46 @@ pub struct Image<'a> {
     pub alt: &'a str,
     /// Title.
     pub title: Option<&'a str>,
+    /// Authored image metadata, absent on the default parser path.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Source span.
+    pub span: Span,
+}
+
+/// Authored metadata shared by elements with optional attribute suffixes.
+/// A single optional pointer keeps ordinary image nodes compact.
+#[derive(Debug)]
+pub struct ElementAttributes<'a> {
+    /// Explicit HTML ID, without the leading `#`.
+    pub id: Option<&'a str>,
+    /// CSS class names, without leading dots.
+    pub classes: Vec<'a, &'a str>,
+    /// Other authored key/value attributes before HTML name mapping.
+    pub values: Vec<'a, Attribute<'a>>,
+}
+
+/// An authored key/value attribute. HTML-specific `data-` mapping is deferred
+/// until rendering so other consumers can inspect the source name.
+#[derive(Debug, Clone, Copy)]
+pub struct Attribute<'a> {
+    /// Authored name, normalized to lowercase but without renderer data prefix.
+    pub name: &'a str,
+    /// Authored value after quote escape processing.
+    pub value: &'a str,
+}
+
+/// Inline content wrapped in an authored bracketed span.
+#[derive(Debug)]
+pub struct InlineSpan<'a> {
+    /// Nested inline Markdown.
+    pub children: Vec<'a, Node<'a>>,
+    /// Explicit span ID.
+    pub id: Option<&'a str>,
+    /// CSS classes in authored order.
+    pub classes: Vec<'a, &'a str>,
+    /// Other authored key/value attributes.
+    pub attributes: Vec<'a, Attribute<'a>>,
+    /// Source span including brackets and the attribute suffix.
     pub span: Span,
 }
 
@@ -414,6 +509,15 @@ pub struct Delete<'a> {
     /// Inline children.
     pub children: Vec<'a, Node<'a>>,
     /// Source span.
+    pub span: Span,
+}
+
+/// Inserted inline text.
+#[derive(Debug)]
+pub struct Insertion<'a> {
+    /// Inline children.
+    pub children: Vec<'a, Node<'a>>,
+    /// Source span, including the `++` delimiters.
     pub span: Span,
 }
 
@@ -486,6 +590,21 @@ pub struct FootnoteDefinition<'a> {
 }
 
 impl<'a> Node<'a> {
+    /// Authored ID claimed by the renderer for this element, before collision
+    /// suffixing. Headings also apply their configured heading prefix.
+    #[must_use]
+    pub fn explicit_element_id(&self) -> Option<&str> {
+        match self {
+            Self::Heading(node) => node.explicit_id(),
+            Self::Table(node) => node.attributes.as_ref().and_then(|attrs| attrs.id),
+            Self::Figure(node) => node.attributes.as_ref().and_then(|attrs| attrs.id),
+            Self::Link(node) => node.explicit_id(),
+            Self::Image(node) => node.attributes.as_ref().and_then(|attrs| attrs.id),
+            Self::Span(node) => node.id,
+            _ => None,
+        }
+    }
+
     /// Returns the span of this node.
     #[must_use]
     pub fn span(&self) -> Span {
@@ -500,10 +619,12 @@ impl<'a> Node<'a> {
             Self::MathBlock(n) => n.span,
             Self::Html(n) => n.span,
             Self::Table(n) => n.span,
+            Self::Figure(n) => n.span,
             Self::DefinitionList(n) => n.span,
             Self::DefinitionListTerm(n) => n.span,
             Self::DefinitionListDefinition(n) => n.span,
             Self::Text(n) => n.span,
+            Self::Span(n) => n.span,
             Self::Emphasis(n) => n.span,
             Self::Strong(n) => n.span,
             Self::InlineCode(n) => n.span,
@@ -513,6 +634,7 @@ impl<'a> Node<'a> {
             Self::Image(n) => n.span,
             Self::Highlight(n) => n.span,
             Self::Delete(n) => n.span,
+            Self::Insertion(n) => n.span,
             Self::Superscript(n) => n.span,
             Self::Subscript(n) => n.span,
             Self::FootnoteReference(n) => n.span,

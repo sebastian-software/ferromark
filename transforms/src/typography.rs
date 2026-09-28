@@ -434,6 +434,14 @@ fn transform_block_node<'arena, const GUILLEMET_DIGRAPHS: bool>(
     raw_html_spans: &[Span],
 ) {
     match node {
+        Node::Span(node) => {
+            transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.children,
+                context,
+                options,
+                raw_html_spans,
+            );
+        }
         Node::Paragraph(node) => {
             transform_inline_children::<GUILLEMET_DIGRAPHS>(
                 &mut node.children,
@@ -496,6 +504,20 @@ fn transform_block_node<'arena, const GUILLEMET_DIGRAPHS: bool>(
                 }
             }
         }
+        Node::Figure(node) => {
+            transform_block_node::<GUILLEMET_DIGRAPHS>(
+                &mut node.content,
+                context,
+                options,
+                raw_html_spans,
+            );
+            transform_inline_children::<GUILLEMET_DIGRAPHS>(
+                &mut node.caption,
+                context,
+                options,
+                raw_html_spans,
+            );
+        }
         Node::DefinitionList(node) => {
             transform_block_children::<GUILLEMET_DIGRAPHS>(
                 &mut node.children,
@@ -557,7 +579,8 @@ fn transform_block_node<'arena, const GUILLEMET_DIGRAPHS: bool>(
         | Node::MdxJsxTextElement(_)
         | Node::MdxjsEsm(_)
         | Node::MdxFlowExpression(_)
-        | Node::MdxTextExpression(_) => {}
+        | Node::MdxTextExpression(_)
+        | Node::Insertion(_) => {}
     }
 }
 
@@ -571,9 +594,11 @@ fn is_inline_node(node: &Node<'_>) -> bool {
             | Node::InlineMath(_)
             | Node::Break(_)
             | Node::Link(_)
+            | Node::Span(_)
             | Node::Image(_)
             | Node::Highlight(_)
             | Node::Delete(_)
+            | Node::Insertion(_)
             | Node::Superscript(_)
             | Node::Subscript(_)
             | Node::FootnoteReference(_)
@@ -996,6 +1021,15 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
 
     for (index, node) in nodes.iter().enumerate() {
         match node {
+            Node::Span(node) => {
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
+            }
             Node::Text(text) => {
                 let protected_urls = protected_urls_by_node
                     .as_mut()
@@ -1041,6 +1075,15 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                 );
             }
             Node::Delete(node) => {
+                collect_inline_items::<GUILLEMET_DIGRAPHS>(
+                    &node.children,
+                    context,
+                    raw_html_spans,
+                    items,
+                    protected_urls_by_item,
+                );
+            }
+            Node::Insertion(node) => {
                 collect_inline_items::<GUILLEMET_DIGRAPHS>(
                     &node.children,
                     context,
@@ -1117,6 +1160,7 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
             | Node::CodeBlock(_)
             | Node::MathBlock(_)
             | Node::Table(_)
+            | Node::Figure(_)
             | Node::DefinitionList(_)
             | Node::DefinitionListTerm(_)
             | Node::DefinitionListDefinition(_)
@@ -1142,6 +1186,14 @@ fn apply_inline_replacements<'arena>(
 ) {
     for node in nodes {
         match node {
+            Node::Span(node) => {
+                apply_inline_replacements(
+                    &mut node.children,
+                    replacements,
+                    replacement_index,
+                    context,
+                );
+            }
             Node::Text(text) => {
                 if let Some(Some(value)) = replacements.get(*replacement_index) {
                     context.replace_text_value(text, value);
@@ -1173,6 +1225,14 @@ fn apply_inline_replacements<'arena>(
                 );
             }
             Node::Delete(node) => {
+                apply_inline_replacements(
+                    &mut node.children,
+                    replacements,
+                    replacement_index,
+                    context,
+                );
+            }
+            Node::Insertion(node) => {
                 apply_inline_replacements(
                     &mut node.children,
                     replacements,
@@ -1227,6 +1287,7 @@ fn apply_inline_replacements<'arena>(
             | Node::Break(_)
             | Node::Image(_)
             | Node::Table(_)
+            | Node::Figure(_)
             | Node::DefinitionList(_)
             | Node::DefinitionListTerm(_)
             | Node::DefinitionListDefinition(_)

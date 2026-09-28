@@ -164,6 +164,11 @@ impl<'a> Parser<'a> {
                     self.lift_inline_note(child, definitions, next_id, explicit);
                 }
             }
+            Node::Span(n) => {
+                for child in &mut n.children {
+                    self.lift_inline_note(child, definitions, next_id, explicit);
+                }
+            }
             Node::Emphasis(n) => {
                 for child in &mut n.children {
                     self.lift_inline_note(child, definitions, next_id, explicit);
@@ -185,6 +190,11 @@ impl<'a> Parser<'a> {
                 }
             }
             Node::Delete(n) => {
+                for child in &mut n.children {
+                    self.lift_inline_note(child, definitions, next_id, explicit);
+                }
+            }
+            Node::Insertion(n) => {
                 for child in &mut n.children {
                     self.lift_inline_note(child, definitions, next_id, explicit);
                 }
@@ -233,6 +243,12 @@ impl<'a> Parser<'a> {
                             self.lift_inline_note(child, definitions, next_id, explicit);
                         }
                     }
+                }
+            }
+            Node::Figure(n) => {
+                self.lift_inline_note(&mut n.content, definitions, next_id, explicit);
+                for child in &mut n.caption {
+                    self.lift_inline_note(child, definitions, next_id, explicit);
                 }
             }
             Node::Text(_)

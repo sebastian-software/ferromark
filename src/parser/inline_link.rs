@@ -10,7 +10,7 @@
 //! `docs/decisions/2026-09-17-linear-link-probe.md`.
 
 use crate::allocator::Vec;
-use crate::ast::{Link, Node, Span};
+use crate::ast::{InlineSpan, Link, Node, Span};
 
 use super::Parser;
 use crate::parser::error::{ParseErrorKind, ParseResult};
@@ -113,6 +113,12 @@ impl<'a> Parser<'a> {
             // (re-parsed after the fallback) wins.
             if !inner_has_link && let Some(resolved) = self.resolve_link(content, close, link_text)
             {
+                let (attributes, end) = self.parse_attribute_suffix(
+                    content,
+                    resolved.end,
+                    self.options.extended_attributes,
+                    true,
+                );
                 let children_nodes = match inner_nodes.take() {
                     Some(nodes) => nodes,
                     None => self.parse_inline(link_text, offset + text_start)?,
@@ -120,11 +126,30 @@ impl<'a> Parser<'a> {
                 children.push(Node::Link(self.allocator.boxed(Link {
                     url: resolved.url,
                     title: resolved.title,
+                    attributes: attributes.map(|parsed| self.boxed_attributes(parsed)),
                     children: children_nodes,
-                    span: Span::new((offset + link_start) as u32, (offset + resolved.end) as u32),
+                    span: Span::new((offset + link_start) as u32, (offset + end) as u32),
                 })));
-                *pos = resolved.end;
+                *pos = end;
                 return Ok(true);
+            }
+            if self.options.bracketed_spans {
+                let (attributes, end) = self.parse_attribute_suffix(content, close + 1, true, true);
+                if let Some(attributes) = attributes {
+                    let children_nodes = match inner_nodes.take() {
+                        Some(nodes) => nodes,
+                        None => self.parse_inline(link_text, offset + text_start)?,
+                    };
+                    children.push(Node::Span(self.allocator.boxed(InlineSpan {
+                        children: children_nodes,
+                        id: attributes.id,
+                        classes: attributes.classes,
+                        attributes: attributes.values,
+                        span: Span::new((offset + link_start) as u32, (offset + end) as u32),
+                    })));
+                    *pos = end;
+                    return Ok(inner_has_link);
+                }
             }
         }
 
@@ -241,6 +266,12 @@ impl<'a> Parser<'a> {
         self.remember_probe_verdict(link_text, made_link);
 
         if !made_link && let Some(resolved) = self.resolve_link(content, close, link_text) {
+            let (attributes, end) = self.parse_attribute_suffix(
+                content,
+                resolved.end,
+                self.options.extended_attributes,
+                true,
+            );
             // The trailing text run is held back for the caller to merge
             // with what follows the bracket; as link children it ends here.
             if resume < close {
@@ -260,11 +291,40 @@ impl<'a> Parser<'a> {
             children.push(Node::Link(self.allocator.boxed(Link {
                 url: resolved.url,
                 title: resolved.title,
+                attributes: attributes.map(|parsed| self.boxed_attributes(parsed)),
                 children: inner_nodes,
-                span: Span::new((offset + link_start) as u32, (offset + resolved.end) as u32),
+                span: Span::new((offset + link_start) as u32, (offset + end) as u32),
             })));
-            *pos = resolved.end;
+            *pos = end;
             return Ok(Some(true));
+        }
+
+        if self.options.bracketed_spans {
+            let (attributes, end) = self.parse_attribute_suffix(content, close + 1, true, true);
+            if let Some(attributes) = attributes {
+                if resume < close {
+                    Self::push_text(
+                        children,
+                        &content[resume..close],
+                        offset + resume,
+                        offset + close,
+                    );
+                }
+                let mut inner_nodes = self
+                    .allocator
+                    .new_vec_with_capacity(children.len() - node_start - 1);
+                inner_nodes.extend(children.drain(node_start + 1..));
+                children.truncate(node_start);
+                children.push(Node::Span(self.allocator.boxed(InlineSpan {
+                    children: inner_nodes,
+                    id: attributes.id,
+                    classes: attributes.classes,
+                    attributes: attributes.values,
+                    span: Span::new((offset + link_start) as u32, (offset + end) as u32),
+                })));
+                *pos = end;
+                return Ok(Some(made_link));
+            }
         }
 
         *pos = resume;
@@ -403,6 +463,7 @@ impl<'a> Parser<'a> {
             Node::Link(self.allocator.boxed(Link {
                 url: target,
                 title: None,
+                attributes: None,
                 children,
                 span: Span::new((offset + link_start) as u32, (offset + close + 2) as u32),
             })),
@@ -513,11 +574,13 @@ fn trim_with_offset(value: &str, offset: usize) -> (&str, usize) {
 fn contains_link(nodes: &[Node<'_>]) -> bool {
     nodes.iter().any(|node| match node {
         Node::Link(_) => true,
+        Node::Span(n) => contains_link(&n.children),
         Node::FootnoteDefinition(n) if n.label.is_none() => true,
         Node::Emphasis(n) => contains_link(&n.children),
         Node::Strong(n) => contains_link(&n.children),
         Node::Highlight(n) => contains_link(&n.children),
         Node::Delete(n) => contains_link(&n.children),
+        Node::Insertion(n) => contains_link(&n.children),
         Node::Superscript(n) => contains_link(&n.children),
         Node::Subscript(n) => contains_link(&n.children),
         _ => false,

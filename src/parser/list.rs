@@ -349,28 +349,10 @@ impl<'a> Parser<'a> {
 /// two block-level elements with a blank line between them".
 fn item_content_has_blank_gap(source: &str, children: &[Node<'_>]) -> bool {
     children.windows(2).any(|pair| {
-        let gap_start = block_span(&pair[0]).end as usize;
-        let gap_end = block_span(&pair[1]).start as usize;
+        let gap_start = pair[0].span().end as usize;
+        let gap_end = pair[1].span().start as usize;
         source
             .get(gap_start..gap_end)
             .is_some_and(|gap| gap.contains('\n'))
     })
-}
-
-fn block_span(node: &Node<'_>) -> Span {
-    match node {
-        Node::Paragraph(n) => n.span,
-        Node::Heading(n) => n.span,
-        Node::ThematicBreak(n) => n.span,
-        Node::BlockQuote(n) => n.span,
-        Node::List(n) => n.span,
-        Node::CodeBlock(n) => n.span,
-        Node::MathBlock(n) => n.span,
-        Node::Html(n) => n.span,
-        Node::Table(n) => n.span,
-        Node::DefinitionList(n) => n.span,
-        Node::Definition(n) => n.span,
-        Node::FootnoteDefinition(n) => n.span,
-        _ => Span::new(0, 0),
-    }
 }

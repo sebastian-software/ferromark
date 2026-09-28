@@ -15,6 +15,12 @@ const optionKeys = new Set([
   "wikiLinks",
   "cjkEmphasis",
   "mdx",
+  "imageAttributes",
+  "imageCaptions",
+  "extendedAttributes",
+  "bracketedSpans",
+  "blockquoteAttributions",
+  "insertions",
   "tables",
   "mergedTableCells",
   "tableColgroup",
@@ -71,12 +77,16 @@ const packedBooleanFlags = [
   ["wikiLinks", 1 << 24],
   ["cjkEmphasis", 1 << 25],
   ["mdx", 1 << 26],
+  ["imageAttributes", 1 << 27],
+  ["imageCaptions", 1 << 28],
+  ["extendedAttributes", 1 << 29],
+  ["bracketedSpans", 1 << 30],
 ];
 
-/** @param {{set: number, on: number}} packed @param {Record<string, unknown>} target */
+/** @param {{ set: number, on: number }} packed Parsed flags. @param {object} target Rebuilt object. */
 function copyPackedBooleanFlags(packed, target) {
   for (const [key, bit] of packedBooleanFlags) {
-    if (packed.set & bit) target[key] = Boolean(packed.on & bit);
+    if (packed.set & bit) Reflect.set(target, key, Boolean(packed.on & bit));
   }
 }
 
@@ -103,7 +113,7 @@ function validateOptions(options) {
  * An options object, read the way napi-rs reads `Options` and packed into the
  * plain arguments of the private native entries (`node/native/src/packed.rs`).
  *
- * For an `Options` argument, napi-rs gets each of the 33 fields once, in their
+ * For an `Options` argument, napi-rs gets each of the 39 fields once, in their
  * declaration order in `node/native/src/lib.rs`, with an ordinary property
  * get: inherited properties, getters and proxy traps all take part. It
  * converts each value before it gets the next field. `undefined` leaves a
@@ -111,12 +121,12 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and the 26 packed boolean fields (bits 1 to 26, in
- * declaration order, as `unpack` numbers them) take one bit each of `set`
- * (present) and `on` (its value; `'trusted'` for `renderPolicy`). The
- * `guillemetDigraphs` field is read in declaration order but has no packed
- * bit: `true` routes through the existing object entry, while absent or
- * `false` leaves the packed path unchanged. `headingOffset`,
+ * `renderPolicy` (bit 0) and 30 boolean fields (bits 1 to 30, in declaration
+ * order, as `unpack` numbers them) take one bit each of `set` (present) and
+ * `on` (its value; `'trusted'` for `renderPolicy`). Enabled blockquote
+ * attributions, insertions, and guillemet digraphs use the object entry so later
+ * option bits remain available.
+ * `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
  * values. The native side rebuilds `Options` and resolves it with the code the
  * object path runs, so later checks and their errors are shared.
@@ -144,8 +154,8 @@ class PackedOptions {
   rejected;
   /** @type {string | undefined} */
   unknownPolicy;
-  /** @type {boolean} */
-  requiresObjectPath = false;
+  /** @type {string[]} Enabled boolean fields that have no packed bit. */
+  objectPathFlags = [];
 
   /** @param {import('./index.mjs').Options} options Validated options. */
   constructor(options) {
@@ -196,10 +206,16 @@ class PackedOptions {
       this.flag("wikiLinks", 1 << 24, options.wikiLinks) &&
       this.flag("cjkEmphasis", 1 << 25, options.cjkEmphasis) &&
       this.flag("mdx", 1 << 26, options.mdx) &&
+      this.flag("imageAttributes", 1 << 27, options.imageAttributes) &&
+      this.flag("imageCaptions", 1 << 28, options.imageCaptions) &&
+      this.flag("extendedAttributes", 1 << 29, options.extendedAttributes) &&
+      this.flag("bracketedSpans", 1 << 30, options.bracketedSpans) &&
       this.string("linkBasePath", options.linkBasePath) &&
       this.object("typography", options.typography) &&
       this.array("passes", options.passes) &&
-      this.guillemetDigraphs(options.guillemetDigraphs)
+      this.objectFlag("blockquoteAttributions", options.blockquoteAttributions) &&
+      this.objectFlag("insertions", options.insertions) &&
+      this.objectFlag("guillemetDigraphs", options.guillemetDigraphs)
     );
   }
 
@@ -232,17 +248,24 @@ class PackedOptions {
     return true;
   }
 
-  /** @param {unknown} value The optional guillemet parser flag. */
-  guillemetDigraphs(value) {
+  /**
+   * Reads a boolean field that has no packed bit. Only `true` needs the object
+   * entry; absent or `false` keeps the packed path and its bit allocation.
+   * @param {string} key Field name. @param {unknown} value Field value.
+   */
+  objectFlag(key, value) {
     if (typeof value !== "boolean") {
-      return value === undefined || this.reject("guillemetDigraphs", value);
+      return value === undefined || this.reject(key, value);
     }
     if (value) {
-      // Keep the packed ABI unchanged; only the enabled case needs the object
-      // entry to carry this option to the native parser and typography pass.
-      this.requiresObjectPath = true;
+      this.objectPathFlags.push(key);
     }
     return true;
+  }
+
+  /** Whether an enabled field requires the object-taking native entry. */
+  get requiresObjectPath() {
+    return this.objectPathFlags.length > 0;
   }
 
   /** Rebuilds values already read once, without repeating caller getters. */
@@ -257,7 +280,7 @@ class PackedOptions {
     if (this.linkBasePath !== undefined) result.linkBasePath = this.linkBasePath;
     if (this.typography !== undefined) result.typography = this.typography;
     if (this.passes !== undefined) result.passes = this.passes;
-    result.guillemetDigraphs = true;
+    for (const key of this.objectPathFlags) result[key] = true;
     return result;
   }
 

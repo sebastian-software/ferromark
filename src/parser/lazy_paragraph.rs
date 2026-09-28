@@ -29,6 +29,8 @@
 
 use memchr::{memchr, memmem};
 
+use crate::callout::source_starts_with_callout;
+
 use super::Parser;
 use super::ParserOptions;
 use super::html::HtmlBlockStart;
@@ -71,6 +73,12 @@ pub(super) struct OpenParagraph {
     /// could head a table, with the markers it sat under.
     header: Option<(Markers, usize)>,
     paragraph_open: bool,
+    /// Container markers for the open paragraph. Lazy lines without markers
+    /// inherit these markers, including a surrounding block quote.
+    paragraph_markers: Markers,
+    /// Source-level callout predictor for the innermost open paragraph.
+    /// The parsed AST remains authoritative when attaching a figure.
+    paragraph_callout: bool,
     /// How many bytes of the container's collected text have been observed.
     observed: usize,
 }
@@ -105,6 +113,10 @@ impl OpenParagraph {
         self.paragraph_open
     }
 
+    pub(super) fn paragraph_is_callout(&self) -> bool {
+        self.paragraph_open && self.paragraph_callout
+    }
+
     /// Leaves the collected text up to `len` unobserved. A line comment the
     /// collector copies verbatim is not content the tracker classifies, so
     /// the collector catches up before it and skips past it.
@@ -119,6 +131,7 @@ impl OpenParagraph {
             self.html = None;
         }
         self.paragraph_open = false;
+        self.paragraph_callout = false;
         self.table = None;
         self.header = None;
     }
@@ -227,6 +240,7 @@ impl OpenParagraph {
             {
                 self.header = None;
                 self.paragraph_open = false;
+                self.paragraph_callout = false;
                 self.table = Some(markers);
                 return;
             }
@@ -240,6 +254,14 @@ impl OpenParagraph {
 
         // Paragraph text, which the next line may still turn into a table
         // header when it holds a pipe.
+        if options.blockquote_attributions
+            && (markers != Markers::default() || !self.paragraph_open)
+        {
+            if markers != self.paragraph_markers || !self.paragraph_open {
+                self.paragraph_callout = source_starts_with_callout(trimmed);
+            }
+            self.paragraph_markers = markers;
+        }
         self.paragraph_open = true;
         self.header = (options.tables && memchr(b'|', trimmed.as_bytes()).is_some()).then(|| {
             (
@@ -251,12 +273,14 @@ impl OpenParagraph {
 
     fn close_paragraph(&mut self) {
         self.paragraph_open = false;
+        self.paragraph_callout = false;
         self.table = None;
         self.header = None;
     }
 
     fn continue_table(&mut self, markers: Markers) {
         self.paragraph_open = false;
+        self.paragraph_callout = false;
         self.table = Some(markers);
         self.header = None;
     }

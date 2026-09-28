@@ -6,8 +6,8 @@
 
 use crate::ast::{BlockQuote, Node, Paragraph};
 
-use super::super::callout::CalloutKind;
 use super::HtmlRenderer;
+use crate::callout::detect_callout;
 
 impl HtmlRenderer {
     fn render_paragraph_with_skipped_text_prefix<'a>(
@@ -67,69 +67,6 @@ impl HtmlRenderer {
         }
     }
 
-    pub(in crate::renderer::html::renderer) fn detect_callout<'a>(
-        paragraph: &Paragraph<'a>,
-    ) -> Option<(CalloutKind, usize)> {
-        // Fast bail: a callout marker is `[!KIND]...` so the very first
-        // text byte must be `[`. The previous version unconditionally
-        // allocated a `String prefix` and pushed Text values into it
-        // before checking — pure waste for the overwhelmingly common
-        // case of a regular block quote.
-        let Node::Text(first_text) = paragraph.children.first()? else {
-            return None;
-        };
-        if first_text.value.as_bytes().first() != Some(&b'[') {
-            return None;
-        }
-
-        // Keep the overwhelmingly common contiguous case to one slice scan.
-        if let Some((kind, remainder)) = CalloutKind::parse_marker(first_text.value) {
-            let consumed = first_text.value.len().saturating_sub(remainder.len());
-            return Some((kind, consumed));
-        }
-
-        // Failed link parsing can split `[!NOTE]` into adjacent Text nodes.
-        // Walk those nodes as one logical marker without concatenating them.
-        // `IMPORTANT` is the longest accepted name, so every candidate that
-        // could succeed fits in this stack buffer.
-        let mut name = [0u8; 9];
-        let mut name_len = 0usize;
-        let mut consumed = 0usize;
-        let mut state = 0u8;
-        let mut trailing_name_whitespace = false;
-
-        for child in &paragraph.children {
-            let Node::Text(text) = child else {
-                return None;
-            };
-
-            for ch in text.value.chars() {
-                consumed += ch.len_utf8();
-                match state {
-                    0 if ch == '[' => state = 1,
-                    1 if ch == '!' => state = 2,
-                    0 | 1 => return None,
-                    _ if ch == ']' => {
-                        let name = std::str::from_utf8(&name[..name_len]).ok()?;
-                        return Some((CalloutKind::from_name(name)?, consumed));
-                    }
-                    _ if ch.is_whitespace() => {
-                        trailing_name_whitespace |= name_len != 0;
-                    }
-                    _ => {
-                        if trailing_name_whitespace || !ch.is_ascii() || name_len == name.len() {
-                            return None;
-                        }
-                        name[name_len] = ch as u8;
-                        name_len += 1;
-                    }
-                }
-            }
-        }
-
-        None
-    }
-
     pub(in crate::renderer::html::renderer) fn render_callout_block_quote<'a>(
         &mut self,
         block_quote: &BlockQuote<'a>,
@@ -137,7 +74,7 @@ impl HtmlRenderer {
         let Some(Node::Paragraph(first_paragraph)) = block_quote.children.first() else {
             return false;
         };
-        let Some((kind, consumed_chars)) = Self::detect_callout(first_paragraph) else {
+        let Some((kind, consumed_chars)) = detect_callout(first_paragraph) else {
             return false;
         };
 

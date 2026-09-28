@@ -536,6 +536,47 @@ fn existing_typography_and_protected_content_are_preserved() {
 }
 
 #[test]
+fn typography_transforms_text_inside_inline_insertions() {
+    let html = render_with(
+        "++\"new\"...++",
+        TypographyLanguage::English,
+        ParserOptions {
+            insertions: true,
+            ..ParserOptions::default()
+        },
+        HtmlRendererOptions::default(),
+    );
+    assert_eq!(html, "<p><ins>“new”…</ins></p>\n");
+}
+
+#[test]
+fn guillemet_digraphs_pair_inside_insertions_spans_and_figure_captions() {
+    let parser_options = ParserOptions {
+        guillemet_digraphs: true,
+        insertions: true,
+        bracketed_spans: true,
+        image_captions: true,
+        ..ParserOptions::default()
+    };
+    let render = |source: &str| {
+        render_with_options(
+            source,
+            TypographyOptions::new(TypographyLanguage::French).with_guillemet_digraphs(true),
+            parser_options.clone(),
+            HtmlRendererOptions::default(),
+        )
+    };
+    assert_eq!(
+        render("++<<Bonjour>>++ and [<<Salut>>]{.greeting}"),
+        "<p><ins>«\u{202f}Bonjour\u{202f}»</ins> and <span class=\"greeting\">«\u{202f}Salut\u{202f}»</span></p>\n"
+    );
+    assert!(
+        render("![Logo](logo.svg)\n\n: <<Bonjour>>")
+            .contains("<figcaption>«\u{202f}Bonjour\u{202f}»</figcaption>")
+    );
+}
+
+#[test]
 fn math_html_mdx_expressions_and_image_metadata_are_protected() {
     let source = r#"<span title="--...">--...</span> $--...$ ![alt --...](image--... "title --...") {value("--...")}"#;
     let allocator = Allocator::new();

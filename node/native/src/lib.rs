@@ -88,9 +88,15 @@ pub struct Options {
     pub wiki_links: Option<bool>,
     pub cjk_emphasis: Option<bool>,
     pub mdx: Option<bool>,
+    pub image_attributes: Option<bool>,
+    pub image_captions: Option<bool>,
+    pub extended_attributes: Option<bool>,
+    pub bracketed_spans: Option<bool>,
     pub link_base_path: Option<String>,
     pub typography: Option<TypographyConfig>,
     pub passes: Option<Vec<NativePassConfig>>,
+    pub blockquote_attributions: Option<bool>,
+    pub insertions: Option<bool>,
     pub guillemet_digraphs: Option<bool>,
 }
 
@@ -168,6 +174,15 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
         apply!(parser.wiki_links, options.wiki_links);
         apply!(parser.cjk_emphasis, options.cjk_emphasis);
         apply!(parser.mdx, options.mdx);
+        apply!(parser.image_attributes, options.image_attributes);
+        apply!(parser.image_captions, options.image_captions);
+        apply!(parser.extended_attributes, options.extended_attributes);
+        apply!(parser.bracketed_spans, options.bracketed_spans);
+        apply!(
+            parser.blockquote_attributions,
+            options.blockquote_attributions
+        );
+        apply!(parser.insertions, options.insertions);
         apply!(parser.guillemet_digraphs, options.guillemet_digraphs);
         if let Some(base) = options.link_base_path {
             // The JavaScript string is owned, so this becomes `Cow::Owned`;
@@ -549,11 +564,20 @@ impl Metadata {
 }
 
 impl<'a> Visit<'a> for Metadata {
+    fn visit_node(&mut self, node: &Node<'a>) {
+        if !matches!(node, Node::Heading(_))
+            && let Some(id) = node.explicit_element_id()
+        {
+            let _ = self.id_planner.plan(id);
+        }
+        ferromark::ast::walk_node(self, node);
+    }
+
     fn visit_heading(&mut self, heading: &ferromark::ast::Heading<'a>) {
         let text = ferromark::collect_heading_text(&heading.children);
         let id = if self.heading_ids {
             let base = heading
-                .id
+                .explicit_id()
                 .map_or_else(|| ferromark::slugify_heading(&text), str::to_owned);
             let mut requested = self.heading_id_prefix.clone();
             requested.push_str(&base);

@@ -9,8 +9,8 @@ use std::ops::RangeInclusive;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::ast::{
-    Document, FootnoteDefinition, FootnoteReference, Heading, Span, Visit, walk_document,
-    walk_footnote_definition, walk_heading,
+    Document, FootnoteDefinition, FootnoteReference, Heading, Node, Span, Visit, walk_document,
+    walk_footnote_definition, walk_heading, walk_node,
 };
 use crate::renderer::{
     HeadingIdPlanner, HtmlRenderer, InvalidHeadingIdPrefix, collect_heading_text,
@@ -258,10 +258,19 @@ impl<'options> OutlineCollector<'options> {
 }
 
 impl Visit<'_> for OutlineCollector<'_> {
+    fn visit_node(&mut self, node: &Node<'_>) {
+        if !matches!(node, Node::Heading(_))
+            && let Some(id) = node.explicit_element_id()
+        {
+            self.id_planner.plan_into(id, &mut self.claimed_id);
+        }
+        walk_node(self, node);
+    }
+
     fn visit_heading(&mut self, heading: &Heading<'_>) {
         let level = map_heading_level(heading.depth, self.options.heading_level_offset);
         let include = self.options.level_filter.contains(&level);
-        let needs_text = include || (self.options.heading_ids && heading.id.is_none());
+        let needs_text = include || (self.options.heading_ids && heading.explicit_id().is_none());
         let text = if needs_text {
             collect_heading_text(&heading.children)
         } else {
@@ -271,7 +280,7 @@ impl Visit<'_> for OutlineCollector<'_> {
         let id = if self.options.heading_ids {
             self.candidate.clear();
             self.candidate.push_str(&self.options.heading_id_prefix);
-            if let Some(explicit_id) = heading.id {
+            if let Some(explicit_id) = heading.explicit_id() {
                 self.candidate.push_str(explicit_id);
             } else {
                 self.candidate.push_str(&slugify_heading(&text));

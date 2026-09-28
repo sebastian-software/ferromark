@@ -238,6 +238,7 @@ fn assert_node_span_indexes_source(source: &str, node: &Node<'_>) {
     match node {
         Node::Paragraph(node) => assert_all_spans_index_source(source, &node.children),
         Node::Heading(node) => assert_all_spans_index_source(source, &node.children),
+        Node::Span(node) => assert_all_spans_index_source(source, &node.children),
         Node::BlockQuote(node) => assert_all_spans_index_source(source, &node.children),
         Node::List(node) => {
             for item in &node.children {
@@ -258,10 +259,15 @@ fn assert_node_span_indexes_source(source: &str, node: &Node<'_>) {
                 assert_table_row_span_indexes_source(source, row);
             }
         }
+        Node::Figure(figure) => {
+            assert_node_span_indexes_source(source, &figure.content);
+            assert_all_spans_index_source(source, &figure.caption);
+        }
         Node::Emphasis(node) => assert_all_spans_index_source(source, &node.children),
         Node::Strong(node) => assert_all_spans_index_source(source, &node.children),
         Node::Link(node) => assert_all_spans_index_source(source, &node.children),
         Node::Delete(node) => assert_all_spans_index_source(source, &node.children),
+        Node::Insertion(node) => assert_all_spans_index_source(source, &node.children),
         Node::Highlight(node) => assert_all_spans_index_source(source, &node.children),
         Node::Superscript(node) => assert_all_spans_index_source(source, &node.children),
         Node::Subscript(node) => assert_all_spans_index_source(source, &node.children),

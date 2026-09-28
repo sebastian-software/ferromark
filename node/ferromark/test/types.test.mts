@@ -16,6 +16,11 @@ const options: Options = {
   wikiLinks: true,
   cjkEmphasis: true,
   mdx: true,
+  imageAttributes: true,
+  imageCaptions: true,
+  extendedAttributes: true,
+  bracketedSpans: true,
+  blockquoteAttributions: true,
   guillemetDigraphs: true,
 };
 const highlighter: CodeHighlighter = {

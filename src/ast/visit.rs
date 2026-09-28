@@ -64,6 +64,11 @@ pub trait Visit<'a> {
         walk_table(self, table);
     }
 
+    /// Visits a captioned figure and its content.
+    fn visit_figure(&mut self, figure: &Figure<'a>) {
+        walk_figure(self, figure);
+    }
+
     /// Visits a table row.
     fn visit_table_row(&mut self, table_row: &TableRow<'a>) {
         walk_table_row(self, table_row);
@@ -94,6 +99,11 @@ pub trait Visit<'a> {
 
     /// Visits text.
     fn visit_text(&mut self, _text: &Text<'a>) {}
+
+    /// Visits a bracketed span.
+    fn visit_span(&mut self, span: &InlineSpan<'a>) {
+        walk_span(self, span);
+    }
 
     /// Visits emphasis.
     fn visit_emphasis(&mut self, emphasis: &Emphasis<'a>) {
@@ -130,6 +140,11 @@ pub trait Visit<'a> {
     /// Visits strikethrough.
     fn visit_delete(&mut self, delete: &Delete<'a>) {
         walk_delete(self, delete);
+    }
+
+    /// Visits inserted text and its children.
+    fn visit_insertion(&mut self, insertion: &Insertion<'a>) {
+        walk_insertion(self, insertion);
     }
 
     /// Visits superscript.

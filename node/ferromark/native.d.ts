@@ -53,9 +53,15 @@ export interface Options {
   wikiLinks?: boolean
   cjkEmphasis?: boolean
   mdx?: boolean
+  imageAttributes?: boolean
+  imageCaptions?: boolean
+  extendedAttributes?: boolean
+  bracketedSpans?: boolean
   linkBasePath?: string
   typography?: TypographyConfig
   passes?: Array<NativePassConfig>
+  blockquoteAttributions?: boolean
+  insertions?: boolean
   guillemetDigraphs?: boolean
 }
 
