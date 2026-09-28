@@ -181,8 +181,8 @@ fn format_node(node: &Node<'_>, source: &str, depth: usize, out: &mut String) {
                 depth,
                 format_args!(
                     "Figure id={:?} classes={:?} {}",
-                    f.id,
-                    f.classes,
+                    f.attributes.as_ref().and_then(|attributes| attributes.id),
+                    f.attributes.as_ref().map(|attributes| &attributes.classes),
                     span(f.span, source),
                 ),
             );

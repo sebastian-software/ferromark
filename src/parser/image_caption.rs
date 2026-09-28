@@ -1,9 +1,9 @@
 //! Optional image captions, attached only to standalone image paragraphs.
 
 use crate::allocator::Vec;
-use crate::ast::{Figure, Node, Span};
+use crate::ast::{ElementAttributes, Figure, Node, Span};
 
-use super::Parser;
+use super::{Parser, attributes::caption_line};
 use crate::parser::error::ParseResult;
 
 struct CaptionLine<'a> {
@@ -14,6 +14,35 @@ struct CaptionLine<'a> {
 }
 
 impl<'a> Parser<'a> {
+    /// Definition-list parsing runs before paragraph parsing. Look through a
+    /// possible multiline image only when both extensions are enabled, so an
+    /// eligible caption wins without reparsing ordinary image paragraphs.
+    pub(super) fn image_caption_precedes_definition_list(
+        &self,
+        start: usize,
+        mut position: usize,
+    ) -> ParseResult<bool> {
+        while position < self.source.len() {
+            let (line, next) = self.line_and_next(position);
+            if self.parse_image_caption_line(line).is_some() {
+                return self.image_caption_interrupts_paragraph(start, position, position);
+            }
+            if line.trim_matches([' ', '\t']).is_empty() {
+                if next >= self.source.len() {
+                    return Ok(false);
+                }
+                let (following, _) = self.line_and_next(next);
+                return if self.parse_image_caption_line(following).is_some() {
+                    self.image_caption_interrupts_paragraph(start, position, next)
+                } else {
+                    Ok(false)
+                };
+            }
+            position = next;
+        }
+        Ok(false)
+    }
+
     /// Before ending a paragraph on an immediate `: Caption` line, verify
     /// that the paragraph is exactly one image. Other prose keeps CommonMark
     /// lazy continuation behavior even with the extension enabled.
@@ -65,53 +94,33 @@ impl<'a> Parser<'a> {
         if caption.is_empty() {
             return Ok(image);
         }
+        let attributes = (parsed.id.is_some() || !parsed.classes.is_empty()).then(|| {
+            self.allocator.boxed(ElementAttributes {
+                id: parsed.id,
+                classes: parsed.classes,
+            })
+        });
         self.position = next;
         Ok(Node::Figure(self.allocator.boxed(Figure {
             content: image,
             caption,
-            id: parsed.id,
-            classes: parsed.classes,
+            attributes,
             span: Span::new(start as u32, next as u32),
         })))
     }
 
     fn parse_image_caption_line(&self, line: &'a str) -> Option<CaptionLine<'a>> {
-        let trimmed = line.trim_start_matches(' ');
-        let indent = line.len() - trimmed.len();
-        if indent > 3 {
-            return None;
-        }
-        let rest = trimmed.strip_prefix(':')?;
-        if !rest.starts_with([' ', '\t']) {
-            return None;
-        }
-        let content = rest.trim_start_matches([' ', '\t']);
-        let offset = line.len() - content.len();
-        let content = content.trim_end_matches([' ', '\t']);
-        if content.is_empty() {
-            return None;
-        }
-        if let Some(without_close) = content.strip_suffix('}')
-            && let Some(open) = without_close.rfind('{')
-            && (open == 0 || without_close[..open].ends_with([' ', '\t']))
-        {
-            let caption = without_close[..open].trim_end_matches([' ', '\t']);
-            if caption.is_empty() {
-                return None;
-            }
-            let (id, classes) = self.parse_id_classes(&without_close[open + 1..])?;
-            return Some(CaptionLine {
-                content: caption,
-                content_offset: offset,
-                id,
-                classes,
-            });
-        }
+        let parsed = caption_line(line, false)?;
+        let (id, classes) = if let Some(tokens) = parsed.tokens {
+            self.parse_id_classes(tokens)?
+        } else {
+            (None, self.allocator.new_vec())
+        };
         Some(CaptionLine {
-            content,
-            content_offset: offset,
-            id: None,
-            classes: self.allocator.new_vec(),
+            content: parsed.content,
+            content_offset: parsed.content_offset,
+            id,
+            classes,
         })
     }
 }

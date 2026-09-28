@@ -279,10 +279,8 @@ pub struct Figure<'a> {
     pub content: Node<'a>,
     /// Caption inline nodes.
     pub caption: Vec<'a, Node<'a>>,
-    /// Explicit figure ID, without the leading `#`.
-    pub id: Option<&'a str>,
-    /// Figure CSS classes.
-    pub classes: Vec<'a, &'a str>,
+    /// Authored figure metadata. Absent when the caption has no attributes.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Span from the image through the caption line.
     pub span: Span,
 }
@@ -424,12 +422,20 @@ pub struct Image<'a> {
     pub alt: &'a str,
     /// Title.
     pub title: Option<&'a str>,
-    /// Explicit image ID, without the leading `#`.
-    pub id: Option<&'a str>,
-    /// Image CSS classes.
-    pub classes: Vec<'a, &'a str>,
+    /// Authored image metadata. Absent on the default parser path.
+    pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Source span.
     pub span: Span,
+}
+
+/// ID and classes authored in an opt-in element attribute block.
+/// The single optional pointer keeps ordinary image nodes compact.
+#[derive(Debug)]
+pub struct ElementAttributes<'a> {
+    /// Explicit HTML ID, without the leading `#`.
+    pub id: Option<&'a str>,
+    /// CSS class names, without leading dots.
+    pub classes: Vec<'a, &'a str>,
 }
 
 /// Strikethrough (GFM extension).

@@ -65,6 +65,8 @@ permissive name parser. Explicit IDs share the renderer's document-wide collisio
 sequence with heading IDs; `heading_id_prefix` applies only to headings.
 Attributes are escaped during HTML output. Arbitrary `key=value` attributes
 are not part of this extension.
+Authored IDs are emitted without a namespace under untrusted rendering; avoid
+using them as trusted DOM property names.
 
 With `table_attributes: true`, a table may now have a plain `: Caption` line
 without an ID or class. The existing `: Caption {#id .class}` and

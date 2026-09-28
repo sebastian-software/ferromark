@@ -397,18 +397,20 @@ impl HtmlRenderer {
         figure: &Figure<'_>,
     ) {
         self.write("<figure");
-        if let Some(id) = figure.id {
-            self.write_explicit_element_id(id);
-        }
-        if !figure.classes.is_empty() {
-            self.write(" class=\"");
-            for (index, class_name) in figure.classes.iter().enumerate() {
-                if index > 0 {
-                    self.write(" ");
-                }
-                self.write_attribute_escaped(class_name);
+        if let Some(attributes) = &figure.attributes {
+            if let Some(id) = attributes.id {
+                self.write_explicit_element_id(id);
             }
-            self.write("\"");
+            if !attributes.classes.is_empty() {
+                self.write(" class=\"");
+                for (index, class_name) in attributes.classes.iter().enumerate() {
+                    if index > 0 {
+                        self.write(" ");
+                    }
+                    self.write_attribute_escaped(class_name);
+                }
+                self.write("\"");
+            }
         }
         self.write_source_span_attr(figure.span);
         self.write(">\n");

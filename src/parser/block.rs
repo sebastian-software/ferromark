@@ -227,17 +227,11 @@ impl<'a> Parser<'a> {
         }
 
         let image_caption_precedes_definition = if self.options.image_captions
+            && self.options.definition_lists
             && bytes[trimmed_start] == b'!'
         {
             let after_image = first_line_end.unwrap_or_else(|| scan_next_line_start(bytes, start));
-            let (line, next) = self.line_and_next(after_image);
-            let caption_start = if line.trim_matches([' ', '\t']).is_empty() {
-                next
-            } else {
-                after_image
-            };
-            caption_start < self.source.len()
-                && self.image_caption_interrupts_paragraph(start, after_image, caption_start)?
+            self.image_caption_precedes_definition_list(start, after_image)?
         } else {
             false
         };
@@ -288,6 +282,9 @@ impl<'a> Parser<'a> {
         };
         self.position = content_end;
         let mut first_line_comment = None;
+        // Once a paragraph is not a single image, appending more lines cannot
+        // make it one. Avoid reparsing an ever-growing prefix for every `:`.
+        let mut caption_ruled_out = false;
 
         loop {
             if self.is_at_end() {
@@ -312,10 +309,11 @@ impl<'a> Parser<'a> {
                 continue;
             }
 
-            if bytes[cursor] == b':'
-                && self.image_caption_interrupts_paragraph(start, content_end, line_start)?
-            {
-                break;
+            if self.options.image_captions && !caption_ruled_out && bytes[cursor] == b':' {
+                if self.image_caption_interrupts_paragraph(start, content_end, line_start)? {
+                    break;
+                }
+                caption_ruled_out = true;
             }
 
             // Setext heading underline: while a paragraph is open this

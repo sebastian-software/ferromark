@@ -86,18 +86,20 @@ impl HtmlRenderer {
             self.write_escaped(title);
             self.write("\"");
         }
-        if let Some(id) = image.id {
-            self.write_explicit_element_id(id);
-        }
-        if !image.classes.is_empty() {
-            self.write(" class=\"");
-            for (index, class_name) in image.classes.iter().enumerate() {
-                if index > 0 {
-                    self.write(" ");
-                }
-                self.write_attribute_escaped(class_name);
+        if let Some(attributes) = &image.attributes {
+            if let Some(id) = attributes.id {
+                self.write_explicit_element_id(id);
             }
-            self.write("\"");
+            if !attributes.classes.is_empty() {
+                self.write(" class=\"");
+                for (index, class_name) in attributes.classes.iter().enumerate() {
+                    if index > 0 {
+                        self.write(" ");
+                    }
+                    self.write_attribute_escaped(class_name);
+                }
+                self.write("\"");
+            }
         }
         if self.options.xhtml {
             self.write(" />");

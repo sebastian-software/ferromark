@@ -114,6 +114,21 @@ fn assert_linear(label: &str, small: &str, large: &str, options: &ParserOptions)
     );
 }
 
+#[test]
+fn repeated_caption_like_lines_do_not_reparse_a_growing_paragraph() {
+    let source = |count| format!("[a](b) x\n{}", ": c\n".repeat(count));
+    let options = ParserOptions {
+        image_captions: true,
+        ..ParserOptions::gfm()
+    };
+    assert_linear(
+        "caption-like paragraph lines",
+        &source(2_000),
+        &source(8_000),
+        &options,
+    );
+}
+
 fn nested_list_with_blank_lines(blank_lines: usize) -> String {
     let mut source = "- ".repeat(100);
     source.push_str("a\n");

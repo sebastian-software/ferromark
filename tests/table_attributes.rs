@@ -98,6 +98,48 @@ fn plain_caption_attaches_when_table_extension_is_enabled() {
 }
 
 #[test]
+fn a_colon_prefixed_pipe_row_does_not_end_the_table() {
+    let source = "| k | v |\n| - | - |\n| a | 1 |\n: ratio | 2 |\n| b | 3 |";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, options())
+        .parse()
+        .unwrap();
+    let Node::Table(table) = &document.children[0] else {
+        panic!("expected table");
+    };
+    assert_eq!(table.children.len(), 4);
+    assert!(table.attributes.is_none());
+    assert_eq!(document.children.len(), 1);
+}
+
+#[test]
+fn table_ids_claim_document_identifiers_before_later_tables_and_headings() {
+    let source = "| A |\n| - |\n| x |\n: {#shared}\n\n| A |\n| - |\n| y |\n: {#shared}\n\n# Heading {#shared}";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(
+        &allocator,
+        source,
+        ParserOptions {
+            table_attributes: true,
+            heading_attributes: true,
+            ..ParserOptions::gfm()
+        },
+    )
+    .parse()
+    .unwrap();
+    let html = ferromark::HtmlRenderer::new().render(&document);
+    assert!(html.contains("<table id=\"shared\">"), "{html}");
+    assert!(html.contains("<table id=\"shared-1\">"), "{html}");
+    assert!(html.contains("<h1 id=\"shared-2\">"), "{html}");
+    assert_eq!(
+        document.outline(&ferromark::OutlineOptions::default())[0]
+            .id
+            .as_deref(),
+        Some("shared-2")
+    );
+}
+
+#[test]
 fn malformed_metadata_preserves_the_following_markdown() {
     for metadata in [
         ": Caption {}",

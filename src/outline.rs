@@ -259,14 +259,22 @@ impl<'options> OutlineCollector<'options> {
 
 impl Visit<'_> for OutlineCollector<'_> {
     fn visit_figure(&mut self, figure: &Figure<'_>) {
-        if let Some(id) = figure.id {
+        if let Some(id) = figure
+            .attributes
+            .as_ref()
+            .and_then(|attributes| attributes.id)
+        {
             self.id_planner.plan_into(id, &mut self.claimed_id);
         }
         walk_figure(self, figure);
     }
 
     fn visit_image(&mut self, image: &Image<'_>) {
-        if let Some(id) = image.id {
+        if let Some(id) = image
+            .attributes
+            .as_ref()
+            .and_then(|attributes| attributes.id)
+        {
             self.id_planner.plan_into(id, &mut self.claimed_id);
         }
     }
