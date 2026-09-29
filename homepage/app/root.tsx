@@ -19,6 +19,7 @@ import { NavLink, useLocation } from "react-router";
 import config from "virtual:ardo/config";
 
 import { documentationSections, sharedConcepts } from "./navigation";
+import { version } from "./version";
 import "ardo/ui/styles.css";
 import "ferramenta-family/tokens.css";
 import "ferramenta-family/fonts.css";
@@ -169,8 +170,9 @@ function FamilyFooter() {
       current="ferromark"
       legal={
         <>
-          ferromark and this site are MIT-licensed. Copyright {new Date().getFullYear()} Sebastian
-          Software GmbH · <a href="https://ardo-docs.dev">Built with Ardo</a>
+          {`Ferromark v${version}`} · Released under the MIT License · Copyright{" "}
+          {new Date().getFullYear()} Sebastian Software GmbH ·{" "}
+          <a href="https://ardo-docs.dev">Built with Ardo</a>
         </>
       }
     />

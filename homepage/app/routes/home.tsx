@@ -215,7 +215,8 @@ function StartSection() {
 export default function HomePage() {
   return (
     <RegistryFacts snapshot={registrySnapshot} snapshotGeneratedAt={registrySnapshotGeneratedAt}>
-      <main className="fam-page">
+      {/* A div, not a second <main>: Ardo already renders the page's main landmark. */}
+      <div className="fam-page">
         <ProjectIntro />
         <ContractBand />
         <PipelineSection />
@@ -223,7 +224,7 @@ export default function HomePage() {
         <EvidenceSection />
         <ConformanceSection />
         <StartSection />
-      </main>
+      </div>
     </RegistryFacts>
   );
 }
