@@ -79,8 +79,11 @@ pub struct CodeHighlightInput<'a> {
 
 /// Trusted inner HTML for one code block, with one entry per displayed line.
 ///
-/// Line entries must be independently tag-balanced. They are inserted raw,
-/// while Ferromark escapes the block's attributes and metadata as usual.
+/// Line entries must be independently tag-balanced. They are inserted raw.
+/// Theme colors are trusted CSS values from the highlighter: Ferromark escapes
+/// them for the HTML attribute, but does not validate their CSS syntax.
+/// Ferromark escapes the block's own attributes and metadata as usual.
+#[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct HighlightedCodeBlock {
     /// Highlighted HTML for each line, including a final empty line if present.
@@ -101,7 +104,10 @@ impl HighlightedCodeBlock {
         }
     }
 
-    /// Sets the theme colors applied to the outer `<pre>` element.
+    /// Sets trusted theme colors applied to the outer `<pre>` element.
+    ///
+    /// Values are HTML attribute-escaped, but not validated as CSS colors.
+    /// Pass only colors from a trusted highlighter, never untrusted source text.
     #[must_use]
     pub fn with_colors(
         mut self,

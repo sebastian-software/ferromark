@@ -45,7 +45,8 @@ can inspect the code, language, and metadata, then write its HTML here.
 `cx.write()` inserts raw HTML, even when sanitization is enabled. Escape source
 text with `write_escaped`, attributes with `write_attribute_escaped`, and URL
 attributes with `write_url_escaped`. Validate URL schemes when supplying custom
-URLs. Only insert highlighter output you trust.
+URLs. Only insert highlighter output you trust. Theme colors from custom hooks
+are escaped for HTML attributes, but their CSS values are not validated.
 
 For code annotations, line numbers, and heading permalinks, inspect the existing
 `HtmlRendererOptions` before writing a hook. [Rendering and trust](/guide/rendering)
