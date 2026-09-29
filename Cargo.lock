@@ -39,6 +39,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -267,12 +276,47 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
+name = "ferriki"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef0cb2a303dd921f27b91edd774dd6b6fd67a1ad428726a033863dfd2e07370a"
+dependencies = [
+ "ferriki-asset-gen",
+ "ferriki-textmate",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ferriki-asset-gen"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0d82d5f83b7553c0d29012def3fa967f7528745c050b61c3baf588aaa855b8d"
+dependencies = [
+ "bincode",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ferriki-textmate"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15c3d78fc5f51a42331beca6071e7feca1e24635b0286981db56b9323a16e830"
+dependencies = [
+ "ferroni",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ferromark"
 version = "2.4.0"
 dependencies = [
  "bumpalo",
  "compact_str",
  "criterion",
+ "ferriki",
  "insta",
  "memchr",
  "rustc-hash",
@@ -298,6 +342,18 @@ version = "2.4.0"
 dependencies = [
  "criterion",
  "ferromark",
+]
+
+[[package]]
+name = "ferroni"
+version = "1.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebf72fbf93846fa8c74f940a54fd0e41c73fc0bede635b6637e23d62a4be210d"
+dependencies = [
+ "aho-corasick",
+ "bitflags",
+ "memchr",
+ "smallvec",
 ]
 
 [[package]]

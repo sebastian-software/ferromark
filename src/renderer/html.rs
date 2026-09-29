@@ -9,6 +9,8 @@ mod abbreviation;
 mod autolink;
 mod code_annotations;
 mod escape;
+#[cfg(feature = "ferriki")]
+mod ferriki_integration;
 mod heading;
 mod html_attr;
 mod mdx_payload;
@@ -20,6 +22,8 @@ mod tagfilter;
 mod tests;
 
 pub use autolink::{AutolinkMatcher, find_autolink_ranges};
+#[cfg(feature = "ferriki")]
+pub use ferriki_integration::FerrikiHighlightHooks;
 pub use heading::{
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, InvalidHeadingIdPrefix, collect_heading_text,
     map_heading_level, slugify_heading,

@@ -22,6 +22,10 @@ pub mod outline;
 pub mod parser;
 pub mod renderer;
 
+/// Ferriki's Rust API, available with the `ferriki` feature.
+#[cfg(feature = "ferriki")]
+pub use ferriki;
+
 mod callout;
 mod convenience;
 
@@ -39,3 +43,6 @@ pub use renderer::{
     NoHtmlRenderHooks, collect_heading_text, find_autolink_ranges, map_heading_level,
     slugify_heading,
 };
+
+#[cfg(feature = "ferriki")]
+pub use renderer::FerrikiHighlightHooks;

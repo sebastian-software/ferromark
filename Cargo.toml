@@ -44,6 +44,10 @@ include = [
 [lints]
 workspace = true
 
+[features]
+default = []
+ferriki = ["dep:ferriki"]
+
 [dependencies]
 bumpalo = { workspace = true, features = ["collections", "boxed"] }
 compact_str.workspace = true
@@ -52,6 +56,7 @@ memchr.workspace = true
 rustc-hash.workspace = true
 thiserror.workspace = true
 serde_json.workspace = true
+ferriki = { version = "0.4.1", optional = true }
 
 [dev-dependencies]
 criterion.workspace = true
@@ -88,6 +93,11 @@ harness = false
 [[bench]]
 name = "renderer"
 harness = false
+
+[[bench]]
+name = "ferriki"
+harness = false
+required-features = ["ferriki"]
 
 [[bench]]
 name = "headings"
