@@ -132,43 +132,104 @@
   font-weight: 700;
 }
 
-.ferromark-ffm-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.5rem;
+.ferromark-ffm-examples {
   margin-top: 2.5rem;
 }
 
-.ferromark-ffm-grid article {
-  min-width: 0;
-  padding-top: 1.25rem;
+.ferromark-ffm-example {
+  display: grid;
+  grid-template-columns: minmax(0, 0.32fr) minmax(0, 0.68fr);
+  gap: 1.5rem 2.5rem;
+  padding-block: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.ferromark-ffm-example:first-child {
   border-top: 2px solid var(--rust);
 }
 
-.ferromark-ffm-grid h3 {
+.ferromark-ffm-example-intro,
+.ferromark-ffm-comparison,
+.ferromark-ffm-panel {
+  min-width: 0;
+}
+
+.ferromark-ffm-example h3 {
   font-size: var(--h3-size);
 }
 
-.ferromark-ffm-grid p {
+.ferromark-ffm-example-intro p {
   margin-top: 0.8rem;
   max-width: 32ch;
   color: var(--ink-soft);
 }
 
-.ferromark-ffm-grid pre {
-  overflow-x: auto;
-  margin-top: 1.25rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--line);
-  background: var(--bg-dim);
+.ferromark-ffm-example-intro .ferromark-ffm-options {
   font-size: 0.85rem;
-  line-height: 1.5;
 }
 
-@media (max-width: 800px) {
-  .ferromark-ffm-grid {
+.ferromark-ffm-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.ferromark-ffm-panel {
+  display: flex;
+  flex-direction: column;
+  border-top: 2px solid var(--rust);
+}
+
+.ferromark-ffm-panel figcaption {
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+.ferromark-ffm-panel pre {
+  flex: 1;
+  overflow-x: auto;
+  padding: 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.ferromark-ffm-panel code {
+  font-size: 1em;
+}
+
+.ferromark-ffm-input {
+  background: var(--iron);
+  color: var(--iron-ink);
+}
+
+.ferromark-ffm-input figcaption {
+  border-bottom-color: var(--iron-line);
+  color: var(--iron-soft);
+}
+
+.ferromark-ffm-output {
+  border-inline: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-dim);
+  color: var(--ink);
+}
+
+@media (max-width: 1000px) {
+  .ferromark-ffm-example {
     grid-template-columns: 1fr;
-    gap: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .ferromark-ffm-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .ferromark-ffm-panel pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 }
 

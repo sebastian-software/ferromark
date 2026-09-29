@@ -12,6 +12,7 @@ import {
 } from "ferramenta-family";
 import { Link } from "react-router";
 
+import { FlavoredMarkdownSection } from "../components/ffm-showcase";
 import { agreementDocuments, formatSpeed, nativeBenchmarks } from "../components/native-benchmarks";
 import landingSample from "../data/landing-sample.json";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
@@ -135,50 +136,6 @@ function PipelineSection() {
           </>
         }
       />
-    </Section>
-  );
-}
-
-function FlavoredMarkdownSection() {
-  return (
-    <Section
-      id="ffm"
-      className="ferromark-ffm"
-      title="Markdown with room for publishing."
-      intro="Ferromark Flavored Markdown (FFM) adds opt-in syntax for the details a published document needs. Start with CommonMark and GFM, then enable only the extensions your content uses."
-      note={
-        <Link to="/guide/ffm">
-          Explore FFM syntax and options <Mark name="arrow" className="icon" size={18} />
-        </Link>
-      }
-    >
-      <div className="ferromark-ffm-grid">
-        <article>
-          <h3>Captioned images</h3>
-          <p>Keep alternative text for accessibility and write a separate visible caption.</p>
-          <pre>
-            <code>{"![Pipeline](pipeline.svg)\n: The processing pipeline"}</code>
-          </pre>
-        </article>
-        <article>
-          <h3>Attributed quotes</h3>
-          <p>Put a source below a quotation while keeping it outside the quoted text.</p>
-          <pre>
-            <code>{"> A memorable passage.\n: Jane Doe, author"}</code>
-          </pre>
-        </article>
-        <article>
-          <h3>Structured tables</h3>
-          <p>Add captions, cell spans, and CSS hooks to familiar GFM tables.</p>
-          <pre>
-            <code>
-              {
-                "| Item | Net | Tax |\n| --- | ---: | ---: |\n| Gift | Included ||\n\n: Prices today"
-              }
-            </code>
-          </pre>
-        </article>
-      </div>
     </Section>
   );
 }
