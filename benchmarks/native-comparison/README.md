@@ -72,7 +72,7 @@ Markdown input; this is not an MDX feature benchmark.
 
 V2 uses `HtmlRendererOptions::commonmark()` in both lanes, disabling heading
 IDs, callouts, and fence metadata cleanup. V1 also
-disables its renderer extras. Original OX has no native flags to turn off those
+disables its renderer extras. OX-Content has no native flags to turn off those
 three behaviors; it remains unchanged. The harness neither replaces its renderer
 through hooks nor adds a slugifier to an engine that lacks one.
 The [current flag contract](../../docs/reports/2026-09-15-native-arm/FLAGS.md)
@@ -328,8 +328,10 @@ for build in native-bench-build native-bench-pgo-build; do
 done
 ```
 
-The default source pins are v2 `e93394e` and v1 `4e15141`; other engine pins are
-unchanged. The
+The low-level v2 default remains the historical `e93394e`; current campaigns
+pass a committed revision explicitly, as the manual CLI does automatically.
+The v1 control stays at `4e15141`. Current competitor pins live in `prepare.py`;
+reproduce older measurements with their retained harness and lock. The
 [previous matched-flags comparison](../../docs/reports/2026-09-14-native-matched/README.md)
 and original pre-correction comparison are preserved separately in
 [`2026-09-14-native-engines`](../../docs/reports/2026-09-14-native-engines/README.md).

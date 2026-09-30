@@ -13,6 +13,10 @@ host architecture. The full suite has been built and verified on macOS arm64;
 existing Linux x86-64 harness evidence is retained separately. New platform
 runs still need their own build and output verification before timing.
 
+Before allocating runner time after dependency changes, follow the
+[dependency readiness checklist](dependency-readiness.md). It identifies the
+current pins, release sources, local checks, and the latest completed preflight.
+
 ## First setup
 
 Install Git, curl, clang/clang++, CMake, Python 3.11 or newer, Node.js **24**, npm,

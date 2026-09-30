@@ -10,6 +10,16 @@ Use the repository's `scripts/benchmark-comparison` commands. Read
 resolve commands from the repository root. Follow root AGENTS.md and
 CONTRIBUTING.md for checks and PR conventions.
 
+- Before an official campaign, check all 14 competitor versions against their
+  official registries or released tags, including Node extensions and adapter
+  toolchain requirements. Read [dependency readiness](../../../benchmarks/manual-comparison/dependency-readiness.md).
+  Refresh the pins and locks in a separate reviewed change when needed; keep
+  historical reports and published figures tied to their measured versions.
+- After a dependency or adapter refresh, run `doctor`, `prepare OUTPUT`, then
+  `verify OUTPUT` locally before allocating managed runner time. This checks
+  installation, all native builds, the Node addon, every option guard, and all
+  57 inputs. Report which host actually passed; do not infer another platform
+  passed. A diagnostic timing smoke must stay separate from publishable evidence.
 - For measurements, run `doctor`, then `run OUTPUT` in a new directory outside
   the checkout. Measure the committed branch requested by the user. Preserve
   dirty changes; use a clean worktree or commit only the authorized changes.
