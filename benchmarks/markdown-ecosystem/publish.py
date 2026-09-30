@@ -95,7 +95,7 @@ The older native report and homepage headline numbers remain historical evidence
             'reuse': results[track]['v2_relative_throughput']['reuse'],
             'revision': records[track]['git_head'][:8],
         } for track, competitor, runtime in (
-            ('native', 'markdown-rs', 'Native Rust'), ('node', 'micromark', 'Node.js'))],
+            ('native', 'markdown-rs', 'Native'), ('node', 'micromark', 'Node.js'))],
     }
     original = GUIDE.read_text()
     base = original.split(MARKER)[0].rstrip() + '\n'

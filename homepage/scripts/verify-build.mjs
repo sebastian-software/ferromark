@@ -63,7 +63,10 @@ if (benchmarks.platforms.length < 2) {
 }
 const platformFragments = benchmarks.platforms.flatMap((platform) => {
   return [
-    ...platform.figures.flatMap((figure) => [figure.label, `${figure.fresh.toFixed(1)}×`]),
+    ...platform.figures.flatMap((figure) => [
+      figure.id === "bun" ? "Bun MD" : figure.label,
+      `${figure.fresh.toFixed(1)}×`,
+    ]),
     platform.label,
     ...platform.machine.split(", "),
     platform.revision,
@@ -90,6 +93,8 @@ const requiredFragments = [
   "Ferromark speedup over each library",
   "2× means twice the throughput",
   'class="ferromark-comparison"',
+  'id="comparison-native"',
+  'id="comparison-node"',
   ...platformFragments,
   'href="/guide/benchmarks"',
   '"/assets/',

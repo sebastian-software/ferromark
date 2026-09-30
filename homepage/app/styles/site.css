@@ -499,12 +499,13 @@
   font-weight: 600;
 }
 
-.ferromark-comparison-runtime {
-  display: block;
-  margin-top: 0.15rem;
+.ferromark-comparison .ferromark-comparison-group th {
+  width: auto;
+  padding-top: 1rem;
+  padding-bottom: 0.4rem;
   color: var(--ink-soft);
-  font-size: 0.8rem;
-  font-weight: 400;
+  font-size: 0.875rem;
+  text-align: left;
 }
 
 .ferromark-comparison td {

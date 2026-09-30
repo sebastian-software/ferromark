@@ -17,7 +17,7 @@ const nativeFigures = [
 const rows = [
   ...nativeFigures.map((figure) => ({
     id: figure.id,
-    label: figure.label,
+    label: figure.id === "bun" ? "Bun MD" : figure.label,
     runtime: "Native",
     results: platforms.map((platform, index) => {
       const result = figuresByPlatform[index].get(figure.id);
@@ -46,6 +46,34 @@ const rows = [
   })),
 ];
 
+const groups = [
+  { id: "native", label: "Native", rows: rows.filter((row) => row.runtime === "Native") },
+  { id: "node", label: "Node.js", rows: rows.filter((row) => row.runtime === "Node.js") },
+];
+
+function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
+  return (
+    <tr>
+      <th scope="row">{row.label}</th>
+      {row.results.map((result, index) => (
+        <td key={platforms[index].id}>
+          {result ? (
+            <a
+              href={reportUrl(result.report)}
+              title={result.evidence}
+              aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
+            >
+              {formatSpeed(result.speed)}
+            </a>
+          ) : (
+            <span aria-label="Not measured">—</span>
+          )}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
 export function BenchmarkComparison() {
   return (
     <table className="ferromark-comparison" id="markdown-ecosystem">
@@ -60,31 +88,18 @@ export function BenchmarkComparison() {
           ))}
         </tr>
       </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.id}>
-            <th scope="row">
-              {row.label}
-              <span className="ferromark-comparison-runtime">{row.runtime}</span>
+      {groups.map((group) => (
+        <tbody key={group.id} aria-labelledby={`comparison-${group.id}`}>
+          <tr className="ferromark-comparison-group">
+            <th scope="rowgroup" colSpan={platforms.length + 1} id={`comparison-${group.id}`}>
+              {group.label}
             </th>
-            {row.results.map((result, index) => (
-              <td key={platforms[index].id}>
-                {result ? (
-                  <a
-                    href={reportUrl(result.report)}
-                    title={result.evidence}
-                    aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
-                  >
-                    {formatSpeed(result.speed)}
-                  </a>
-                ) : (
-                  <span aria-label="Not measured">—</span>
-                )}
-              </td>
-            ))}
           </tr>
-        ))}
-      </tbody>
+          {group.rows.map((row) => (
+            <ComparisonRow key={row.id} row={row} />
+          ))}
+        </tbody>
+      ))}
     </table>
   );
 }
