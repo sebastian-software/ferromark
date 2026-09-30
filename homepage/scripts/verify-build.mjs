@@ -65,38 +65,51 @@ const projects = JSON.parse(
   await readFile(new URL("../app/data/benchmark-projects.json", import.meta.url), "utf8"),
 );
 const libraryLabels = new Map(projects.map((project) => [project.id, project.label]));
-const platformFragments = benchmarks.platforms.flatMap((platform) => {
-  return [
-    ...platform.figures.flatMap((figure) => {
-      if (figure.id === "v1") return [];
-      return [libraryLabels.get(figure.id) ?? figure.label, `${figure.fresh.toFixed(1)}×`];
-    }),
-    platform.label,
-    ...platform.machine.split(", "),
-    platform.revision,
-  ];
-});
-
 const ecosystemBenchmarks = JSON.parse(
   await readFile(
     new URL("../app/data/markdown-ecosystem-benchmarks.json", import.meta.url),
     "utf8",
   ),
 );
-const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) => [
-  libraryLabels.get(figure.id),
-  figure.runtime,
-  `${figure.fresh.toFixed(1)}×`,
-  `${figure.documents}/${figure.corpusDocuments} documents`,
-  figure.revision,
-]);
-
 const completedBenchmarks = JSON.parse(
   await readFile(new URL("../app/data/benchmark-platform-values.json", import.meta.url), "utf8"),
 );
+const completedKeys = new Set(
+  completedBenchmarks.figures.map((figure) => `${figure.platform}/${figure.id}`),
+);
+// Historical values remain in the guide; require the currently selected values
+// on the landing page when a new manual report replaces a platform's cells.
+const completedPlatforms = new Map(
+  completedBenchmarks.figures.map((figure) => [figure.platform, figure.platformLabel]),
+);
+const platformFragments = benchmarks.platforms.flatMap((platform) => [
+  completedPlatforms.get(platform.id) ?? platform.label,
+  ...platform.figures.flatMap((figure) => {
+    if (figure.id === "v1" || completedKeys.has(`${platform.id}/${figure.id}`)) return [];
+    return [
+      libraryLabels.get(figure.id) ?? figure.label,
+      `${figure.fresh.toFixed(1)}×`,
+      ...platform.machine.split(", "),
+      platform.revision,
+    ];
+  }),
+]);
+const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) =>
+  completedKeys.has(`macos-arm64/${figure.id}`)
+    ? []
+    : [
+        libraryLabels.get(figure.id),
+        figure.runtime,
+        `${figure.fresh.toFixed(1)}×`,
+        `${figure.documents}/${figure.corpusDocuments} documents`,
+        figure.revision,
+      ],
+);
 const completedFragments = completedBenchmarks.figures.flatMap((figure) => [
+  figure.platformLabel,
   `${figure.fresh.toFixed(1)}×`,
   `${figure.documents}/${figure.corpusDocuments} documents`,
+  figure.machine,
   figure.revision,
   `href="https://github.com/sebastian-software/ferromark/tree/main/${figure.report}"`,
 ]);

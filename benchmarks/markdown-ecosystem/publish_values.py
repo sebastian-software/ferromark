@@ -32,6 +32,37 @@ def figures():
     return values
 
 
+def manual_workflow():
+    import importlib.util
+    path = REPO / 'benchmarks/manual-comparison/cli.py'
+    spec = importlib.util.spec_from_file_location('manual_comparison', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def current_figures():
+    historical = figures()
+    pointer = json.loads((REPO / 'benchmarks/manual-comparison/current.json').read_text())
+    current = manual_workflow().active() if pointer['reports'] else []
+    return merge_figures(historical, current)
+
+
+def merge_figures(historical, current):
+    keys = {(value['platform'], value['id']) for value in current}
+    assert len(keys) == len(current), 'duplicate current platform values'
+    return [value for value in historical if (value['platform'], value['id']) not in keys] + current
+
+
+def current_content():
+    pointer = json.loads((REPO / 'benchmarks/manual-comparison/current.json').read_text())
+    if not pointer['reports']:
+        return ''
+    workflow = manual_workflow()
+    values = workflow.active()
+    return workflow.content(values) if values else ''
+
+
 def content(values=None):
     values = figures() if values is None else values
     text = '\n## Completed native and Linux comparisons\n\n'
@@ -91,7 +122,7 @@ def main():
         readme += f"- {value['platformLabel']} / {value['label']}: [metadata]({folder}/run.json), [aggregate]({folder}/summary.json), [outputs]({folder}/verification.json.gz), [windows]({folder}/samples.json.gz), [guards]({folder}/behavior.json.gz), [corpus]({folder}/corpus.json.gz), [adapters]({folder}/adapters/).\n"
     readme += '\nLinux source: [successful workflow](https://github.com/sebastian-software/ferromark/actions/runs/36702822137); [origin metadata](origin.json). The macOS hardware identifier is retained in [macos-host.txt](macos-host.txt). [SHA256SUMS](SHA256SUMS) covers the complete report archive.\n'
     readme += '\nInput attribution remains in the [frozen broad corpus](../../../benchmarks/broad-comparison/README.md). Original measurements are preserved separately. Regenerate with `python3 benchmarks/markdown-ecosystem/publish_values.py`.\n'
-    for path, expected in [(REPORT / 'README.md', readme), (FIGURES, json.dumps({'figures': values}, indent=2) + '\n')]:
+    for path, expected in [(REPORT / 'README.md', readme), (FIGURES, json.dumps({'figures': current_figures()}, indent=2) + '\n')]:
         if args.check:
             assert path.read_text() == expected, f'stale generated content: {path}'
         else:

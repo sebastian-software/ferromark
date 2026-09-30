@@ -3,7 +3,17 @@ import projects from "../data/benchmark-projects.json";
 import ecosystemBenchmarks from "../data/markdown-ecosystem-benchmarks.json";
 import { formatSpeed, nativeBenchmarks } from "./native-benchmarks";
 
-const platforms = nativeBenchmarks.platforms;
+const platforms = [
+  ...new Map(
+    [
+      ...nativeBenchmarks.platforms.map((platform) => ({ id: platform.id, label: platform.label })),
+      ...completedBenchmarks.figures.map((figure) => ({
+        id: figure.platform,
+        label: figure.platformLabel,
+      })),
+    ].map((platform) => [platform.id, platform]),
+  ).values(),
+];
 const reportUrl = (report: string) =>
   `https://github.com/sebastian-software/ferromark/tree/main/${report}`;
 const ecosystemFigures = new Map(ecosystemBenchmarks.figures.map((figure) => [figure.id, figure]));
@@ -12,13 +22,20 @@ const completedFigures = new Map(
   completedBenchmarks.figures.map((figure) => [`${figure.platform}/${figure.id}`, figure]),
 );
 
-const nativeFiguresByPlatform = platforms.map(
-  (platform) => new Map(platform.figures.map((figure) => [figure.id, figure])),
+const nativePlatforms = new Map(
+  nativeBenchmarks.platforms.map((platform) => [platform.id, platform]),
+);
+
+const nativeFiguresByPlatform = new Map(
+  nativeBenchmarks.platforms.map((platform) => [
+    platform.id,
+    new Map(platform.figures.map((figure) => [figure.id, figure])),
+  ]),
 );
 
 const rows = projects.map((project) => ({
   ...project,
-  results: platforms.map((platform, index) => {
+  results: platforms.map((platform) => {
     const completed = completedFigures.get(`${platform.id}/${project.id}`);
     if (completed) {
       return {
@@ -35,13 +52,16 @@ const rows = projects.map((project) => ({
         evidence: `${ecosystem.documents}/${ecosystem.corpusDocuments} documents · equivalent HTML · ${ecosystem.profileScope} · macOS arm64 · ${ecosystemBenchmarks.measured} · ${ecosystem.revision}`,
       };
     }
+    const historical = nativePlatforms.get(platform.id);
     const native =
-      project.runtime === "Native" ? nativeFiguresByPlatform[index].get(project.id) : undefined;
-    return native
+      project.runtime === "Native"
+        ? nativeFiguresByPlatform.get(platform.id)?.get(project.id)
+        : undefined;
+    return native && historical
       ? {
           speed: native.fresh,
-          report: platform.report,
-          evidence: `${native.documents} equivalent documents · ${platform.label} · ${platform.machine} · ${platform.measured} · ${platform.revision}`,
+          report: historical.report,
+          evidence: `${native.documents} equivalent documents · ${platform.label} · ${historical.machine} · ${historical.measured} · ${historical.revision}`,
         }
       : null;
   }),
@@ -88,7 +108,7 @@ export function BenchmarkComparison() {
           <th scope="col">Compared with</th>
           {platforms.map((platform) => (
             <th scope="col" key={platform.id}>
-              {platform.id === "macos-arm64" ? "macOS arm64" : platform.label}
+              {platform.label}
             </th>
           ))}
         </tr>

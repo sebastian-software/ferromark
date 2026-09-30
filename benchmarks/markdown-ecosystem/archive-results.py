@@ -14,8 +14,8 @@ import run
 REPO = run.REPO
 
 
-def validate(source):
-    read = lambda name: json.loads((source / (name + '.json')).read_text())
+def validate(source, revision=None):
+    read = lambda name: json.loads((source / (name + '.json')).read_text()) if (source / (name + '.json')).exists() else json.loads(gzip.decompress((source / (name + '.json.gz')).read_bytes()))
     config, summary, corpus, outputs, rows = (read(name) for name in ('run', 'summary', 'corpus', 'verification', 'samples'))
     engine = config['engines'][1]
     assert config['rounds'] == 3 and config['samples'] == 6
@@ -49,7 +49,15 @@ def validate(source):
     assert run.native.sha(source / lock) == config['lock_sha256']
     # The measured core must match the earlier clean-core run, across both platforms.
     baseline = json.loads((REPO / 'docs/reports/2026-09-30-markdown-ecosystem-main/node/run.json').read_text())
-    assert config['local_source_sha256'] == baseline['local_source_sha256']
+    if revision is None:
+        assert config['local_source_sha256'] == baseline['local_source_sha256']
+    else:
+        assert config['git_head'] == revision, 'unexpected measured revision'
+        assert not config['git_status'], 'dirty measured checkout'
+        tracked = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only', revision], cwd=REPO, text=True).splitlines()
+        paths = {path for path in tracked if path.endswith('.rs') and path.startswith(('src/', 'node/native/', 'transforms/'))}
+        paths.update(('Cargo.toml', 'Cargo.lock', 'node/native/Cargo.toml', 'transforms/Cargo.toml', 'node/ferromark/index.mjs', 'node/ferromark/native-target.mjs'))
+        assert set(config['local_source_sha256']) == paths, 'incomplete measured source hashes'
     assert config['corpus_sha256'] == baseline['corpus_sha256']
     frozen = run.native.read_json(REPO / 'docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz')
     if engine in ('cmark', 'commonmark'):
@@ -69,6 +77,9 @@ def validate(source):
     if config['track'] == 'node':
         files.update({'worker.mjs': ('benchmarks/markdown-ecosystem/worker.mjs', 'worker_sha256'),
                       'node-adapters.mjs': ('benchmarks/markdown-ecosystem/node-adapters.mjs', 'node_adapters_sha256')})
+        for name, key in [('benchmark-facade.mjs', 'benchmark_facade_sha256'), ('benchmark-target.mjs', 'benchmark_target_sha256')]:
+            if key in config:
+                files[name] = ('benchmarks/markdown-ecosystem/' + name, key)
     else:
         files['worker.rs'] = ('benchmarks/markdown-ecosystem/worker.rs', 'adapter_sha256')
         build = config['build_metadata']
@@ -84,22 +95,29 @@ def validate(source):
     return config, sources
 
 
+def retain(source, destination, revision=None):
+    config, sources = validate(source, revision)
+    destination.mkdir(parents=True, exist_ok=False)
+    for name in ('corpus', 'verification', 'samples', 'behavior'):
+        path = source / (name + '.json')
+        data = path.read_bytes() if path.exists() else gzip.decompress(Path(str(path) + '.gz').read_bytes())
+        (destination / (name + '.json.gz')).write_bytes(gzip.compress(data, mtime=0))
+    for name in ('run.json', 'summary.json', 'Cargo.lock' if config['track'] == 'native' else 'package-lock.json', 'host.txt', 'build.log'):
+        if (source / name).exists():
+            shutil.copyfile(source / name, destination / name)
+    snapshot = destination / 'adapters'
+    snapshot.mkdir()
+    for name, data in sources.items():
+        (snapshot / name).write_bytes(data)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('source', type=Path)
     p.add_argument('destination', type=Path)
+    p.add_argument('--revision', help='full committed revision for a new measurement; default requires the historical clean core')
     args = p.parse_args()
-    config, sources = validate(args.source)
-    args.destination.mkdir(parents=True, exist_ok=False)
-    for name in ('corpus', 'verification', 'samples', 'behavior'):
-        (args.destination / (name + '.json.gz')).write_bytes(gzip.compress((args.source / (name + '.json')).read_bytes(), mtime=0))
-    for name in ('run.json', 'summary.json', 'Cargo.lock' if config['track'] == 'native' else 'package-lock.json', 'host.txt', 'build.log'):
-        if (args.source / name).exists():
-            shutil.copyfile(args.source / name, args.destination / name)
-    snapshot = args.destination / 'adapters'
-    snapshot.mkdir()
-    for name, data in sources.items():
-        (snapshot / name).write_bytes(data)
+    retain(args.source, args.destination, args.revision)
     print('Verified and retained 2,052 windows:', args.destination)
 
 

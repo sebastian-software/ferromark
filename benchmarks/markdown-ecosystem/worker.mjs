@@ -7,9 +7,8 @@ import { gfmStrikethrough, gfmStrikethroughHtml } from "micromark-extension-gfm-
 import { gfmTable, gfmTableHtml } from "micromark-extension-gfm-table";
 import { gfmTaskListItem, gfmTaskListItemHtml } from "micromark-extension-gfm-task-list-item";
 import { createNodeRender } from "./node-adapters.mjs";
-import { Renderer, toHtml } from "../../node/ferromark/index.mjs";
-
-import { linuxLibc, nativeTarget } from "../../node/ferromark/native-target.mjs";
+import { loadBenchmarkFacade } from "./benchmark-facade.mjs";
+import { localTarget } from "./benchmark-target.mjs";
 
 const [engine, profile, mode, ...paths] = process.argv.slice(2);
 if (
@@ -22,19 +21,7 @@ if (
 ) {
   throw new Error("worker ENGINE PROFILE MODE INPUT...");
 }
-const target = nativeTarget(
-  process.platform,
-  process.arch,
-  process.platform === "linux"
-    ? linuxLibc(process.report?.getReport?.(), () => {
-        try {
-          return readFileSync("/usr/bin/ldd", "utf8");
-        } catch {
-          return "";
-        }
-      })
-    : undefined,
-);
+const target = localTarget();
 if (
   engine === "v2" &&
   !existsSync(new URL(`../../node/ferromark/ferromark.${target}.node`, import.meta.url))
@@ -43,6 +30,7 @@ if (
     "Build the local Ferromark addon before measuring; a registry fallback is not a local-core comparison.",
   );
 }
+const { Renderer, toHtml } = await loadBenchmarkFacade();
 const gfm = profile !== "commonmark";
 const inputs = paths.map((path) => readFileSync(path, "utf8"));
 const options = {
