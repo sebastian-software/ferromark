@@ -133,16 +133,30 @@ class ManualTests(unittest.TestCase):
             self.assertEqual(len({(v['platform'], v['id']) for v in combined}), len(combined))
 
     def test_new_campaign_scope_is_committed_and_cannot_downgrade_to_fourteen(self):
-        revision = cli.git('rev-parse', 'HEAD')
+        revision = '43693790c059093e048f34adaabe25454814945a'
         data = cli.committed(revision, 'benchmarks/markdown-ecosystem/comparisons.json')
         suite = {**self.suite, 'schema': 3, 'revision': revision,
                  'comparisons_sha256': cli.hashlib.sha256(data).hexdigest()}
         self.assertEqual(len(cli.suite_projects(suite)), 22)
-        self.assertEqual(set(cli.suite_pairs(suite)), set(cli.PAIRS))
+        self.assertEqual(set(cli.suite_pairs(suite)), {(p['track'], p['id']) for p in json.loads(data) if p['lane'] == 'pair'})
         with self.assertRaises(AssertionError):
             cli.suite_projects({**suite, 'comparisons_sha256': '0' * 64})
         with self.assertRaises(AssertionError):
             cli.suite_pairs({**suite, 'schema': 2})
+
+    def test_selected_scope_keeps_optional_adapters_out_of_required_coverage(self):
+        from unittest.mock import patch
+        data = (cli.ECO / 'comparisons.json').read_bytes()
+        suite = {**self.suite, 'schema': 4, 'comparison_scope': 'main',
+                 'comparisons_sha256': cli.hashlib.sha256(data).hexdigest()}
+        with patch.object(cli, 'committed', return_value=data):
+            self.assertEqual(len(cli.suite_projects(suite)), 20)
+            self.assertEqual(set(cli.suite_pairs(suite)), set(cli.PAIRS))
+            self.assertEqual(len(cli.suite_projects({**suite, 'comparison_scope': 'extended'})), 23)
+            for bad in ({**suite, 'schema': 3}, {**suite, 'comparison_scope': 'unknown'},
+                        {key: value for key, value in suite.items() if key != 'comparison_scope'}):
+                with self.assertRaises(AssertionError):
+                    cli.suite_projects(bad)
 
     def test_platform_aliases_and_addon_libraries(self):
         for system, slug in [('Darwin', 'macos'), ('Linux', 'linux')]:

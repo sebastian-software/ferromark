@@ -180,8 +180,9 @@ and homepage JSON. Run `publish.py` to refresh the benchmark guide; both support
 
 ## Expanded public APIs
 
-The complete [campaign inventory](comparisons.json) includes 22 displayed rows
-(18 independent pairs plus the original native harness's four displayed engines).
+The complete [campaign inventory](comparisons.json) retains 23 executable rows. The default
+campaign and homepage show 20 (16 independent pairs plus the original native harness's four displayed engines). The extended scope adds markdown-exit, markdown-it-ts,
+and MD4X WASM. Their adapters and pins remain available.
 The [manual workflow](../manual-comparison/README.md) is the entry point for a new
 complete campaign. Existing archives retain their original versions and scope.
 
@@ -194,6 +195,7 @@ complete campaign. Existing archives retain their original versions and scope.
 | Sätteri | npm 0.10.5; `markdownToHtml(...).html` | Native Node pipeline without MDX/plugins. Other extensions off. Public GFM also enables literal autolinks; there is no individual public switch, so the difference remains. `rawHtml: false` disables the extra AST conversion feature, while ordinary raw HTML remains verified. |
 | MD4X NAPI | npm 0.0.30; explicit `md4x/napi` init then `renderToHtml` | Native Node addon with no WASM fallback. `headingIds`, `full`, `heal` off. Public API has no parser-feature flags; tables, strike, tasks, autolinks, footnotes, callouts, and frontmatter extraction remain enabled even for CommonMark-profile inputs. |
 | MD4X WASM | npm 0.0.30; explicit `md4x/wasm` init with installed WASM bytes then `renderToHtml` | WASM initialization is untimed; identical public parser contract, separately timed JS/WASM boundary. No NAPI fallback. |
+| TanStack Markdown | @tanstack/markdown 0.0.16; public `renderHtml(source, options)` from `/html` | Trusted raw HTML and unchanged URLs; heading IDs/anchors, frontmatter, highlighting, docs/AI extensions off. No public switches for tables, strike, tasks, footnotes, or code wrapper attributes. Deliberate syntax subset; all disagreements stay in verification and only equivalent HTML contributes. |
 | OX-Content Node | @ox-content/napi 3.2.13; `parseAndRender(...).html` | Individual parser flags enable only shared extensions. Public renderer heading IDs, TOC, callouts, fence metadata handling, and literal URL transformations cannot be disabled. Complete public API cost is timed, including returned metadata. |
 
 Every pair retains the manifest and contract code hashes. `contracts.py` asserts

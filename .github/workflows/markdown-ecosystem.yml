@@ -6,37 +6,41 @@ on:
       - benchmarks/markdown-ecosystem/**
       - .github/workflows/markdown-ecosystem.yml
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Main comparisons or include the three optional adapters
+        type: choice
+        options: [main, extended]
+        default: main
 
 permissions:
   contents: read
 
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - id: matrix
+        env:
+          SCOPE: ${{ inputs.scope || 'main' }}
+        run: |
+          matrix="$(python3 benchmarks/markdown-ecosystem/contracts.py --scope "$SCOPE")"
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+
   compare:
+    needs: plan
     name: linux x86-64 / ${{ matrix.engine }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - {track: native, engine: markdown-rs}
-          - {track: native, engine: comrak}
-          - {track: native, engine: cmark}
-          - {track: native, engine: cmark-gfm}
-          - {track: native, engine: goldmark}
-          - {track: node, engine: micromark}
-          - {track: node, engine: marked}
-          - {track: node, engine: markdown-it}
-          - {track: node, engine: remark}
-          - {track: node, engine: showdown}
-          - {track: node, engine: commonmark}
-          - {track: node, engine: remarkable}
-          - {track: node, engine: markdown-exit}
-          - {track: node, engine: markdown-it-ts}
-          - {track: node, engine: satteri}
-          - {track: node, engine: md4x-napi}
-          - {track: node, engine: md4x-wasm}
-          - {track: node, engine: ox-content-napi}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

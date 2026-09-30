@@ -175,7 +175,8 @@
     "track": "node",
     "lane": "pair",
     "profile": "frozen-shared",
-    "package": "markdown-exit"
+    "package": "markdown-exit",
+    "optional": true
   },
   {
     "id": "markdown-it-ts",
@@ -186,7 +187,8 @@
     "track": "node",
     "lane": "pair",
     "profile": "frozen-shared",
-    "package": "markdown-it-ts"
+    "package": "markdown-it-ts",
+    "optional": true
   },
   {
     "id": "satteri",
@@ -219,7 +221,8 @@
     "track": "node",
     "lane": "pair",
     "profile": "fixed-md4x-defaults",
-    "package": "md4x"
+    "package": "md4x",
+    "optional": true
   },
   {
     "id": "ox-content-napi",
@@ -231,5 +234,16 @@
     "lane": "pair",
     "profile": "shared-with-ox-renderer-builtins",
     "package": "@ox-content/napi"
+  },
+  {
+    "id": "tanstack-markdown",
+    "label": "TanStack Markdown",
+    "runtime": "Node.js",
+    "backend": "JavaScript (syntax subset)",
+    "github": "https://github.com/TanStack/markdown",
+    "track": "node",
+    "lane": "pair",
+    "profile": "fixed-tanstack-subset",
+    "package": "@tanstack/markdown"
   }
 ]

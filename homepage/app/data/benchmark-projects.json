@@ -3,57 +3,57 @@
     "id": "pulldown-cmark",
     "label": "pulldown-cmark",
     "runtime": "Native",
-    "github": "https://github.com/pulldown-cmark/pulldown-cmark",
-    "backend": "Rust"
+    "backend": "Rust",
+    "github": "https://github.com/pulldown-cmark/pulldown-cmark"
   },
   {
     "id": "md4c",
     "label": "md4c",
     "runtime": "Native",
-    "github": "https://github.com/mity/md4c",
-    "backend": "C"
+    "backend": "C",
+    "github": "https://github.com/mity/md4c"
   },
   {
     "id": "bun",
     "label": "Bun MD",
     "runtime": "Native",
-    "github": "https://github.com/oven-sh/bun",
-    "backend": "Rust"
+    "backend": "Rust",
+    "github": "https://github.com/oven-sh/bun"
   },
   {
     "id": "ox-content",
     "label": "OX-Content",
     "runtime": "Native",
-    "github": "https://github.com/ubugeeei-prod/ox-content",
-    "backend": "Rust"
+    "backend": "Rust",
+    "github": "https://github.com/ubugeeei-prod/ox-content"
   },
   {
     "id": "markdown-rs",
     "label": "markdown-rs",
     "runtime": "Native",
-    "github": "https://github.com/wooorm/markdown-rs",
-    "backend": "Rust"
+    "backend": "Rust",
+    "github": "https://github.com/wooorm/markdown-rs"
   },
   {
     "id": "comrak",
     "label": "Comrak",
     "runtime": "Native",
-    "github": "https://github.com/kivikakk/comrak",
-    "backend": "Rust"
+    "backend": "Rust",
+    "github": "https://github.com/kivikakk/comrak"
   },
   {
     "id": "cmark",
     "label": "cmark",
     "runtime": "Native",
-    "github": "https://github.com/commonmark/cmark",
-    "backend": "C"
+    "backend": "C",
+    "github": "https://github.com/commonmark/cmark"
   },
   {
     "id": "cmark-gfm",
     "label": "cmark-gfm",
     "runtime": "Native",
-    "github": "https://github.com/github/cmark-gfm",
-    "backend": "C"
+    "backend": "C",
+    "github": "https://github.com/github/cmark-gfm"
   },
   {
     "id": "goldmark",
@@ -66,43 +66,43 @@
     "id": "marked",
     "label": "marked",
     "runtime": "Node.js",
-    "github": "https://github.com/markedjs/marked",
-    "backend": "JavaScript"
+    "backend": "JavaScript",
+    "github": "https://github.com/markedjs/marked"
   },
   {
     "id": "markdown-it",
     "label": "markdown-it",
     "runtime": "Node.js",
-    "github": "https://github.com/markdown-it/markdown-it",
-    "backend": "JavaScript"
+    "backend": "JavaScript",
+    "github": "https://github.com/markdown-it/markdown-it"
   },
   {
     "id": "remark",
     "label": "remark / unified",
     "runtime": "Node.js",
-    "github": "https://github.com/remarkjs/remark",
-    "backend": "JavaScript"
+    "backend": "JavaScript",
+    "github": "https://github.com/remarkjs/remark"
   },
   {
     "id": "micromark",
     "label": "micromark",
     "runtime": "Node.js",
-    "github": "https://github.com/micromark/micromark",
-    "backend": "JavaScript"
+    "backend": "JavaScript",
+    "github": "https://github.com/micromark/micromark"
   },
   {
     "id": "showdown",
     "label": "Showdown",
     "runtime": "Node.js",
-    "github": "https://github.com/showdownjs/showdown",
-    "backend": "JavaScript"
+    "backend": "JavaScript",
+    "github": "https://github.com/showdownjs/showdown"
   },
   {
     "id": "commonmark",
     "label": "commonmark.js",
     "runtime": "Node.js",
-    "github": "https://github.com/commonmark/commonmark.js",
-    "backend": "JavaScript"
+    "backend": "JavaScript",
+    "github": "https://github.com/commonmark/commonmark.js"
   },
   {
     "id": "remarkable",
@@ -110,20 +110,6 @@
     "runtime": "Node.js",
     "backend": "JavaScript",
     "github": "https://github.com/jonschlinkert/remarkable"
-  },
-  {
-    "id": "markdown-exit",
-    "label": "markdown-exit",
-    "runtime": "Node.js",
-    "backend": "JavaScript",
-    "github": "https://github.com/serkodev/markdown-exit"
-  },
-  {
-    "id": "markdown-it-ts",
-    "label": "markdown-it-ts",
-    "runtime": "Node.js",
-    "backend": "JavaScript",
-    "github": "https://github.com/Simon-He95/markdown-it-ts"
   },
   {
     "id": "satteri",
@@ -140,17 +126,17 @@
     "github": "https://github.com/unjs/md4x"
   },
   {
-    "id": "md4x-wasm",
-    "label": "MD4X (WASM)",
-    "runtime": "Node.js",
-    "backend": "WASM",
-    "github": "https://github.com/unjs/md4x"
-  },
-  {
     "id": "ox-content-napi",
     "label": "OX-Content",
     "runtime": "Node.js",
     "backend": "Native addon",
     "github": "https://github.com/ubugeeei-prod/ox-content"
+  },
+  {
+    "id": "tanstack-markdown",
+    "label": "TanStack Markdown",
+    "runtime": "Node.js",
+    "backend": "JavaScript (syntax subset)",
+    "github": "https://github.com/TanStack/markdown"
   }
 ]

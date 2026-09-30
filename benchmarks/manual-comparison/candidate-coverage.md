@@ -1,9 +1,10 @@
 # Benchmark candidate coverage
 
 Reviewed on **2026-09-30**. The original review found seven direct gaps in the
-14-row executable matrix. The follow-up implements those projects as **eight new
-lanes**, bringing the required inventory to **nine Native and thirteen Node.js
-execution variants**. MD4X has distinct explicit NAPI and WASM entries; OX-Content
+14-row executable matrix. The follow-up implemented those projects as eight new
+lanes, then added TanStack Markdown and made three variants optional. The default
+campaign now contains **nine Native and eleven Node.js execution variants**.
+The inventory retains 23 executable rows; the homepage and default campaign show 20. MD4X has distinct explicit NAPI and WASM entries; OX-Content
 has separate native and Node binding entries. Their pinned public API contracts
 and local checks are in the [ecosystem runbook](../markdown-ecosystem/README.md#expanded-public-apis).
 No new performance values are published by adding adapters.
@@ -82,6 +83,44 @@ Node/WASM implementations simply because a related native core is already
 listed. Their public execution paths and costs differ. Conversely, label shared
 parser lineage so that variants are not presented as independent algorithms.
 
+## Default campaign and optional adapters
+
+The main campaign keeps the original 14 rows plus Goldmark, Remarkable, Sätteri,
+MD4X NAPI, OX-Content NAPI, and TanStack Markdown: **20 variants**. The TanStack
+name and ecosystem make its public HTML API relevant, even though upstream
+explicitly supports a syntax subset. Its fixed parser features, code markup,
+and actual equivalent-output coverage must remain visible; no CommonMark/GFM
+conformance or speed result is inferred.
+
+markdown-exit, markdown-it-ts, and MD4X WASM are **optional**. The two TypeScript
+rewrites are secondary to markdown-it for this full-document workload; their
+async/incremental capabilities are not represented by its throughput factor.
+The WASM path is useful for portable/browser workloads but is secondary to the
+NAPI path in the main Node comparison. Keep their exact pins, adapters, tests,
+and explicit `--scope extended` support. Binding rows for OX-Content and MD4X
+NAPI stay in main: they measure the API Node consumers can choose against our
+own binding, not an inferred native-core factor.
+
+### OX-Content cross-check, 2026-09-30
+
+I checked the official [performance page](https://ubugeeei-prod.github.io/ox-content/performance/index.html),
+its [source](https://github.com/ubugeeei-prod/ox-content/blob/main/docs/content/performance.md),
+and [benchmark runner](https://github.com/ubugeeei-prod/ox-content/blob/main/tools/benchmarks/bundle-size/parse-benchmark.mjs).
+The additional names are accounted for as follows; no upstream measurements are
+imported into our reports or homepage.
+
+| Candidate in OX-Content | Main-campaign decision |
+| --- | --- |
+| TanStack Markdown | Included as @tanstack/markdown 0.0.16, direct HTML API with its subset contract. |
+| @mizchi/markdown, JS/WASM/native | Existing innovation backlog. MoonBit/CST and target availability need separate adapter/build validation; three variants are not required for the initial shorter campaign. |
+| md4w | Existing secondary WASM backlog. Its MD4C lineage is already represented; a Node/WASM bridge still needs an explicit runtime contract if added. |
+| markdown-it-ts and MD4X WASM | Retained as optional, not overlooked or deleted. |
+| xai-grok-markdown-core (Grok Build) | The [native adapter](https://github.com/ubugeeei-prod/ox-content/blob/main/tools/benchmarks/native-competitors/src/main.rs) measures `offset_events` only in parse-only rows. The [dependency](https://github.com/ubugeeei-prod/ox-content/blob/main/tools/benchmarks/native-competitors/Cargo.toml) is a pinned pulldown-cmark wrapper, not a separate full HTML-rendering implementation. Defer a facade/event-stream workload; pulldown-cmark remains in our HTML campaign. |
+
+OX-Content's conformance column and separate parse-only/parse+render workloads
+are useful presentation ideas. Their host, defaults, corpus, and denominators
+are different; their figures cannot establish our ranking or conformance rate.
+
 ## Additional adoption and innovation candidates
 
 These should remain visible in the selection review. Some fit full-document HTML
@@ -91,7 +130,7 @@ others are deferred; this document does not certify their adapters as ready.
 
 | Project | Evidence or distinctive approach | Measurement decision |
 | --- | --- | --- |
-| [TanStack Markdown](https://github.com/TanStack/markdown) | npm @tanstack/markdown 0.0.16; 258,243 downloads; small parser and serializable AST with direct HTML API. Upstream explicitly targets controlled blog/docs syntax rather than complete CommonMark/GFM. | Include in Node candidate evaluation; disclose its syntax subset and actual agreement coverage. Its AI profile reparses accumulated text, rather than being a stateful incremental parser. |
+| [TanStack Markdown](https://github.com/TanStack/markdown) | npm @tanstack/markdown 0.0.16; 258,243 downloads; small parser and serializable AST with direct HTML API. Upstream explicitly targets controlled blog/docs syntax rather than complete CommonMark/GFM. | Implemented in the main Node campaign; disclose its syntax subset and actual agreement coverage. Its AI profile reparses accumulated text, rather than being a stateful incremental parser. |
 | [@mizchi/markdown](https://github.com/mizchi/markdown.mbt) | npm 0.8.3; 780 downloads; MoonBit CST/incremental design with JS, WASM-GC, and native targets. WASM string interop is technically distinct from linear-memory UTF-8 bridges. | Innovation candidate despite small adoption. Validate published backend availability and Node 24 support; separate full-document HTML and edit workloads. |
 | [Snarkdown](https://github.com/developit/snarkdown) | npm 2.0.0; 596,132 downloads; deliberately tiny regex-based parser. Upstream explicitly omits tables. | Relevant small-bundle/subset candidate. Record unsupported features and agreement-set size; no universal GFM ranking. |
 | [markdown-wasm](https://github.com/rsms/markdown-wasm) / [md4w](https://github.com/ije/md4w) | npm 1.2.0 / 0.2.7; 26,502 / 52,795 downloads; established MD4C-based WASM bridges. | Secondary Node/WASM candidates alongside MD4X. Verify their bundled MD4C revisions; a latest wrapper release can still contain an older core. |
@@ -174,6 +213,6 @@ throughput factor to make streaming or incremental claims.
    reports and the current 14-project readiness record remain immutable.
 
 The original review supplied a sourced selection and implementation queue. The
-seven direct projects now have adapters; their homepage cells remain unmeasured
+seven direct projects and TanStack now have adapters; their homepage cells remain unmeasured
 until a complete campaign is reviewed and imported. There is no claim that every implementation in every language has been
 cataloged or measured.

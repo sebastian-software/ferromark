@@ -69,12 +69,10 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
   for (const id of [
     "goldmark",
     "remarkable",
-    "markdown-exit",
-    "markdown-it-ts",
     "satteri",
     "md4x-napi",
-    "md4x-wasm",
     "ox-content-napi",
+    "tanstack-markdown",
   ]) {
     const project = projects.find((row) => row.id === id);
     assert.ok(project);
@@ -82,7 +80,11 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
     assert.ok(html.includes(`${project.label} · ${project.backend}`));
     assert.ok(!completed.figures.some((row) => row.id === id));
   }
-  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 16);
-  assert.ok(html.includes('class="ferromark-project-backend">WASM</span>'));
+  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 12);
+  assert.equal(projects.length, 20);
+  for (const id of ["markdown-exit", "markdown-it-ts", "md4x-wasm"]) {
+    assert.ok(!projects.some((project) => project.id === id));
+  }
+  assert.ok(!html.includes('class="ferromark-project-backend">WASM</span>'));
   assert.ok(html.includes('class="ferromark-project-backend">Native addon</span>'));
 });

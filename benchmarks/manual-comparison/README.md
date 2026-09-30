@@ -1,6 +1,6 @@
 # Manual benchmark comparisons
 
-Use an otherwise idle machine to remeasure **all nine Native and thirteen Node.js
+Use an otherwise idle machine to remeasure **all nine Native and eleven Node.js
 execution variants** in the homepage table. The workflow detects the host OS and CPU
 architecture. Publishing updates that platform's values and keeps other
 platforms' selections and historical reports intact. No runner registration,
@@ -14,8 +14,10 @@ existing Linux x86-64 harness evidence is retained separately. New platform
 runs still need their own build and output verification before timing.
 
 Before freezing a campaign, review [candidate coverage](candidate-coverage.md).
-The executable 22-row matrix includes the seven direct additions identified in
-that review. Further subset, runtime, and streaming candidates remain deferred. Before allocating runner time after dependency
+The default campaign has 20 rows. The executable inventory also retains three
+optional adapters, for 23 rows with `--scope extended`. TanStack Markdown is
+included despite its deliberately smaller syntax profile. markdown-exit,
+markdown-it-ts, and MD4X WASM remain optional rather than being removed. Further subset, runtime, and streaming candidates remain deferred. Before allocating runner time after dependency
 changes, follow the [dependency readiness checklist](dependency-readiness.md).
 It identifies current pins, release sources, local checks, and the latest
 completed preflight.
@@ -113,7 +115,7 @@ installation are needed for this step; Python 3.11+ and Git suffice.
 
 Publication rechecks complete window coverage, checksums, frozen inputs, HTML
 classification, aggregates, committed sources/adapters, host/build platform,
-runtime and addon identity, and all 22 comparisons. It rejects partial/shortened
+runtime and addon identity, and all comparisons required by the recorded scope. It rejects partial/shortened
 runs and nonpositive or nonfinite scores. It retains compressed raw evidence
 and provenance under a **new** `docs/reports/<name>/` with SHA256SUMS, updates only
 that platform's selection in `benchmarks/manual-comparison/current.json`, and
@@ -183,8 +185,9 @@ Choose the source branch with the workflow's branch selector or `--ref`. The
 checkout itself is the measured revision. Start with `mode=probe` (the default):
 it validates resources and runs `doctor`, without building the comparison or
 timing anything. `mode=verify` prepares every adapter and checks all output and
-option guards without timing. `mode=measure` runs all 22 comparisons and checks
+option guards without timing. `mode=measure` runs all comparisons required by the recorded scope and checks
 complete evidence, but never publishes values, commits, or pushes results.
+The workflow defaults to `scope=main`; select `scope=extended` for all 23 rows.
 
 ```sh
 gh workflow run blacksmith-benchmarks.yml --repo sebastian-software/ferromark \
@@ -206,7 +209,7 @@ After both profiles pass output verification, use `mode=measure` with
 retain each trial separately; do not publish the fastest result or average
 incompatible agreement sets. Probe jobs have a 10-minute timeout, verification
 jobs 90 minutes, and complete measurement jobs 180 minutes per allocation.
-The 22-row suite needs more than 90 minutes for timing windows, warmup, and
+The extended 23-row suite needs more than 90 minutes for timing windows, warmup, and
 default cooldowns alone; builds, output checks, and process starts add overhead.
 These limits cap execution rather than prescribe its duration. Runner time,
 including setup and cooldown, consumes the provider's billed/free minutes.
@@ -225,13 +228,23 @@ and [GitHub App setup](https://docs.blacksmith.sh/introduction/quickstart).
 ## Expanded adapter contracts
 
 [comparisons.json](../markdown-ecosystem/comparisons.json) is the required campaign
-inventory. Preparation and each pair retain its hash; schema-3 publication verifies
-the committed inventory and rejects missing lanes. Historical schema-2 evidence
-continues to describe its original 14 rows and cannot fill the new entries.
+inventory. The default `--scope main` measures 20 rows (nine Native, eleven
+Node.js); `--scope extended` includes markdown-exit, markdown-it-ts, and MD4X
+WASM as well. Preparation builds and tests all available adapters. Measurement
+and output verification execute the selected lanes; an individual ecosystem
+`run.py --competitor` remains available for any optional adapter.
+
+Preparation and each pair retain the inventory hash. Schema-4 publication verifies
+the committed inventory and recorded scope, then rejects missing required lanes.
+Historical schema-3 evidence retains its full 22-row inventory; schema-2 evidence
+retains its original 14 rows. Neither can be downgraded to a selected campaign.
 
 The new public API contracts are documented in the [ecosystem runbook](../markdown-ecosystem/README.md#expanded-public-apis).
 MD4X's fixed extensions, Sätteri's GFM autolinks, and OX-Content's renderer builtins
-remain in output verification; disagreement never receives an inferred factor.
+remain in output verification. TanStack uses its public full-document `renderHtml`
+API with trusted HTML, unchanged URLs, IDs/frontmatter/docs/AI extensions off.
+Its fixed tables/strike/tasks/footnotes and code wrapper markup remain visible;
+its syntax subset cannot be made into a CommonMark preset. Disagreement never receives an inferred factor.
 Every new pair verifies all inputs in a rotating batch and retains separate
 rotating-document timing controls. Single-document factors describe repeated
 calls and may include library caching; the controls do not enter those factors.

@@ -1,5 +1,19 @@
 // Public Markdown-to-HTML APIs; configuration is retained outside timing.
 export async function createNodeRender(engine, gfm) {
+  if (engine === "tanstack-markdown") {
+    const { renderHtml } = await import("@tanstack/markdown/html");
+    const options = {
+      allowHtml: true,
+      headingIds: false,
+      headingAnchors: false,
+      frontmatter: false,
+      codeLineNumbers: false,
+      extensions: [],
+      urlTransform: (url) => url,
+    };
+    // The public subset parser cannot disable tables, strike, tasks, or footnotes.
+    return (source) => renderHtml(source, options);
+  }
   if (engine === "marked") {
     const { Marked } = await import("marked");
     const parser = new Marked({ gfm, breaks: false, pedantic: false, async: false });

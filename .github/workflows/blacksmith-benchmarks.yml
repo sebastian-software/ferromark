@@ -12,10 +12,15 @@ on:
         options: [both, macos-arm64, linux-x86-64]
         default: both
       mode:
-        description: Probe tools/resources, verify all outputs, or measure all 22 comparisons
+        description: Probe tools/resources, verify all outputs, or measure the selected comparisons
         type: choice
         options: [probe, verify, measure]
         default: probe
+      scope:
+        description: 20 main comparisons or all 23 including optional adapters
+        type: choice
+        options: [main, extended]
+        default: main
       repetitions:
         description: Independent jobs per platform (retain every result)
         type: choice
@@ -29,6 +34,9 @@ on:
       mode:
         type: string
         default: probe
+      scope:
+        type: string
+        default: main
       repetitions:
         type: string
         default: "1"
@@ -53,7 +61,7 @@ jobs:
     name: ${{ matrix.profile }} / run ${{ matrix.trial }} / ${{ inputs.mode }}
     if: github.repository == 'sebastian-software/ferromark'
     runs-on: ${{ matrix.profile == 'macos-arm64' && 'blacksmith-6vcpu-macos-26' || 'blacksmith-4vcpu-ubuntu-2404' }}
-    # The 22-row suite needs more than 90 minutes for timing and cooldowns alone.
+    # The extended 23-row suite needs more than 90 minutes for timing and cooldowns alone.
     timeout-minutes: ${{ inputs.mode == 'probe' && 10 || inputs.mode == 'measure' && 180 || 90 }}
     strategy:
       fail-fast: false
@@ -64,6 +72,7 @@ jobs:
         profile: ${{ fromJSON(inputs.platform == 'macos-arm64' && '["macos-arm64"]' || inputs.platform == 'linux-x86-64' && '["linux-x86-64"]' || '["macos-arm64","linux-x86-64"]') }}
         trial: ${{ fromJSON(inputs.repetitions == '3' && '[1,2,3]' || '[1]') }}
     env:
+      SCOPE: ${{ inputs.scope }}
       PROFILE: ${{ matrix.profile }}
       MODE: ${{ inputs.mode }}
       REQUESTED_PLATFORM: ${{ inputs.platform }}
@@ -81,6 +90,7 @@ jobs:
           BENCH_OUTPUT="$RUNNER_TEMP/blacksmith-$PROFILE-$TRIAL"
           echo "BENCH_OUTPUT=$BENCH_OUTPUT" >> "$GITHUB_ENV"
           case "$REQUESTED_PLATFORM" in both|macos-arm64|linux-x86-64) ;; *) exit 1 ;; esac
+          case "$SCOPE" in main|extended) ;; *) exit 1 ;; esac
           case "$MODE" in probe|verify|measure) ;; *) exit 1 ;; esac
           case "$REPETITIONS" in 1|3) ;; *) exit 1 ;; esac
           python3 benchmarks/manual-comparison/runner_context.py "$PROFILE" "$BENCH_OUTPUT/runner-context.json"
@@ -111,13 +121,13 @@ jobs:
       - name: Build and verify all adapters without timing
         if: inputs.mode == 'verify'
         run: |
-          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison prepare "$BENCH_OUTPUT/suite" --runner-context "$BENCH_OUTPUT/runner-context.json"
+          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison prepare "$BENCH_OUTPUT/suite" --scope "$SCOPE" --runner-context "$BENCH_OUTPUT/runner-context.json"
           env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison verify "$BENCH_OUTPUT/suite"
 
       - name: Measure the complete comparison
         if: inputs.mode == 'measure'
         run: |
-          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison run "$BENCH_OUTPUT/suite" --runner-context "$BENCH_OUTPUT/runner-context.json"
+          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison run "$BENCH_OUTPUT/suite" --scope "$SCOPE" --runner-context "$BENCH_OUTPUT/runner-context.json"
           env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison publish "$BENCH_OUTPUT/suite" --check
 
       - name: Retain observations, logs, and portable evidence

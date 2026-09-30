@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { readRepositoryFile, readYaml } from "./lib/contracts.mjs";
 
 const workflow = readYaml(".github", "workflows", "blacksmith-benchmarks.yml");
@@ -52,19 +54,41 @@ test("workflow runner labels match the enforced profiles", () => {
   }
 });
 
-test("managed and per-pair workflows prepare every committed candidate without emulation", () => {
+test("managed and per-pair workflows select main or extended candidates without emulation", () => {
   const candidates = JSON.parse(
     readRepositoryFile("benchmarks", "markdown-ecosystem", "comparisons.json"),
   );
   const pairs = readYaml(".github", "workflows", "markdown-ecosystem.yml");
-  assert.deepEqual(
-    new Set(
-      pairs.jobs.compare.strategy.matrix.include.map(({ track, engine }) => `${track}/${engine}`),
-    ),
-    new Set(
-      candidates.filter(({ lane }) => lane === "pair").map(({ track, id }) => `${track}/${id}`),
-    ),
+  assert.equal(pairs.jobs.compare.needs, "plan");
+  assert.equal(pairs.jobs.compare.strategy.matrix, "${{ fromJSON(needs.plan.outputs.matrix) }}");
+  assert.equal(workflow.on.workflow_dispatch.inputs.scope.default, "main");
+  assert.equal(pairs.on.workflow_dispatch.inputs.scope.default, "main");
+  assert.equal(native.jobs.blacksmith.with.scope, "${{ inputs.blacksmith_scope }}");
+  const planner = pairs.jobs.plan.steps.find((step) => step.id === "matrix");
+  assert.ok(planner.run.includes('contracts.py --scope "$SCOPE"'));
+  assert.equal(planner.env.SCOPE, "${{ inputs.scope || 'main' }}");
+  const script = fileURLToPath(
+    new URL("../benchmarks/markdown-ecosystem/contracts.py", import.meta.url),
   );
+  for (const scope of ["main", "extended"]) {
+    const matrix = JSON.parse(
+      execFileSync("python3", [script, "--scope", scope], { encoding: "utf8" }),
+    );
+    assert.deepEqual(
+      new Set(matrix.include.map(({ track, engine }) => `${track}/${engine}`)),
+      new Set(
+        candidates
+          .filter(({ lane, optional }) => lane === "pair" && (scope === "extended" || !optional))
+          .map(({ track, id }) => `${track}/${id}`),
+      ),
+    );
+    assert.equal(matrix.include.length, scope === "main" ? 16 : 19);
+  }
+  for (const step of workflow.jobs.compare.steps.filter((step) =>
+    /benchmark-comparison (prepare|run) /.test(step.run || ""),
+  )) {
+    assert.ok(step.run.includes('--scope "$SCOPE"'));
+  }
   for (const job of [workflow.jobs.compare, pairs.jobs.compare]) {
     const go = job.steps.find((step) => step.uses?.startsWith("actions/setup-go@"));
     assert.ok(go);
