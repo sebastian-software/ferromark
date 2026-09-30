@@ -1,0 +1,95 @@
+{
+  "purpose": "timing path readiness only; not official performance evidence",
+  "runs": [
+    {
+      "lane": "native",
+      "documents": 57,
+      "paired_windows": 118,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    },
+    {
+      "lane": "native-goldmark",
+      "documents": 57,
+      "paired_windows": 114,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    },
+    {
+      "lane": "node-markdown-exit",
+      "documents": 57,
+      "paired_windows": 114,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    },
+    {
+      "lane": "node-markdown-it-ts",
+      "documents": 57,
+      "paired_windows": 114,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    },
+    {
+      "lane": "node-md4x-napi",
+      "documents": 57,
+      "paired_windows": 114,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    },
+    {
+      "lane": "node-md4x-wasm",
+      "documents": 57,
+      "paired_windows": 114,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    },
+    {
+      "lane": "node-ox-content-napi",
+      "documents": 57,
+      "paired_windows": 114,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    },
+    {
+      "lane": "node-remarkable",
+      "documents": 57,
+      "paired_windows": 114,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    },
+    {
+      "lane": "node-satteri",
+      "documents": 57,
+      "paired_windows": 114,
+      "rounds": 1,
+      "samples": 1,
+      "window_ms": 1,
+      "warmup_ms": 1,
+      "publishable": false
+    }
+  ]
+}

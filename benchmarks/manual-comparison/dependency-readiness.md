@@ -114,3 +114,13 @@ The completed local preflight and its exact tested revision are recorded in
 This refresh does not replace performance figures or demonstrate Blacksmith
 platform compatibility. Existing homepage values identify their original
 measured library versions until a full new campaign is published.
+
+## Direct-addition readiness
+
+The [22-row local adapter readiness report](../../docs/reports/2026-09-30-candidate-adapter-readiness/README.md)
+retains a fresh clean-clone prepare/verify on macOS arm64, all 57 inputs in both
+lifecycles, real Node/NAPI/WASM tests, and short timing-path diagnostics. It verifies
+execution on that host and keeps every public API difference visible. Short smokes
+fail the publication contract; no official factors or platform selection changed.
+The original 14-row readiness report remains immutable. Run the expanded verification
+on each managed platform before allocating a complete campaign.
