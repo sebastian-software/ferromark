@@ -91,15 +91,17 @@ const platformFragments = benchmarks.platforms.flatMap((platform) => [
     ];
   }),
 ]);
-const ecosystemFragments = ecosystemBenchmarks.figures
-  .filter((figure) => !completedKeys.has(`macos-arm64/${figure.id}`))
-  .flatMap((figure) => [
-    libraryLabels.get(figure.id),
-    figure.runtime,
-    `${figure.fresh.toFixed(1)}×`,
-    `${figure.documents}/${figure.corpusDocuments} documents`,
-    figure.revision,
-  ]);
+const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) =>
+  completedKeys.has(`macos-arm64/${figure.id}`)
+    ? []
+    : [
+        libraryLabels.get(figure.id),
+        figure.runtime,
+        `${figure.fresh.toFixed(1)}×`,
+        `${figure.documents}/${figure.corpusDocuments} documents`,
+        figure.revision,
+      ],
+);
 const completedFragments = completedBenchmarks.figures.flatMap((figure) => [
   `${figure.fresh.toFixed(1)}×`,
   `${figure.documents}/${figure.corpusDocuments} documents`,

@@ -20,6 +20,7 @@ class ManualTests(unittest.TestCase):
         self.folder.mkdir()
         self.suite = {'schema': 1, 'revision': '290801961e2433d29d5a32ddb78c8384a0fcd336',
                       'machine': 'Test host: retained measurements, not a new run',
+                      'host_platform': 'macOS-27.0-arm64-arm-64bit',
                       'addon_sha256': 'unused', 'node': 'v24.21.0', 'corpus_sha256': cli.native.sha(cli.CORPUS)}
         cli.write(self.folder / 'suite.json', self.suite)
 

@@ -74,6 +74,8 @@ def preflight():
     missing = [name for name in required if shutil.which(name) is None]
     if missing:
         raise ValueError('Missing tools: ' + ', '.join(missing) + '. See benchmarks/manual-macos/README.md.')
+    if os.environ.get('NODE_OPTIONS'):
+        raise ValueError('Unset NODE_OPTIONS so Node uses its default runtime configuration.')
     version = subprocess.check_output(['node', '--version'], text=True).strip()
     if not version.startswith('v24.'):
         raise ValueError('Use Node.js 24 for this comparison, found ' + version)
@@ -83,7 +85,7 @@ def preflight():
     cpu = subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip()
     memory = int(subprocess.check_output(['sysctl', '-n', 'hw.memsize'], text=True)) // (1024 ** 3)
     os_version = subprocess.check_output(['sw_vers', '-productVersion'], text=True).strip()
-    return {'machine': f'{cpu}, {memory} GB RAM, macOS {os_version}', 'hostname': platform.node()}
+    return {'machine': f'{cpu}, {memory} GB RAM, macOS {os_version}', 'hostname': platform.node(), 'host_platform': platform.platform()}
 
 
 def prepare(output):
@@ -180,7 +182,10 @@ def measure(output, cooldown, verify_only=False):
         time.sleep(cooldown)
         execute([*native_command, fresh_attempt(native_results)], source, logs / 'native-measure.log')
     execute([python, source / NATIVE.relative_to(REPO) / 'report.py', native_results], source, logs / 'native-report.log')
-    if not (evidence / 'native').exists():
+    native_evidence = evidence / 'native'
+    if native_evidence.exists() and not (native_evidence / 'SHA256SUMS').exists():
+        native_evidence.rename(output / ('native-archive-interrupted-' + str(time.time_ns())))
+    if not native_evidence.exists():
         execute([python, source / NATIVE.relative_to(REPO) / 'archive.py', evidence,
                  '--name', 'native', '--results', native_results, '--build-dir', output / 'native-build',
                  '--seed-lock', source / REFERENCE.relative_to(REPO) / 'Cargo.lock', '--reference', source / REFERENCE.relative_to(REPO),
@@ -191,9 +196,13 @@ def measure(output, cooldown, verify_only=False):
     for name, base in pair_commands:
         destination = evidence / name
         if destination.exists():
-            eco_archive.validate(destination, prepared['revision'])
-            print('Already complete: ' + name, flush=True)
-            continue
+            try:
+                eco_archive.validate(destination, prepared['revision'])
+            except (AssertionError, KeyError, OSError, json.JSONDecodeError):
+                destination.rename(output / (name + '-archive-interrupted-' + str(time.time_ns())))
+            else:
+                print('Already complete: ' + name, flush=True)
+                continue
         raw = output / ('results-' + name)
         if not (raw / 'summary.json').exists():
             print(f'Cooling down for {cooldown} seconds before {name}.', flush=True)
@@ -231,10 +240,12 @@ def verify_evidence(folder):
     revision = suite['revision']
     assert re.fullmatch(r'[0-9a-f]{40}', revision), 'full source revision required'
     assert suite['corpus_sha256'] == native.sha(CORPUS)
+    assert suite['host_platform'].startswith('macOS-') and 'arm64' in suite['host_platform']
     for track, engine in PAIRS:
         config, _ = eco_archive.validate(folder / (track + '-' + engine), revision)
         assert config['engines'] == ['v2', engine] and config['track'] == track
         assert 'host_after' in config, 'incomplete run'
+        assert config['host_before']['platform'] == config['host_after']['platform'] == suite['host_platform'], 'mixed host platforms'
         if track == 'node':
             assert set(config['native_addon_sha256'].values()) == {suite['addon_sha256']}
             assert config['runtime'] == suite['node']
@@ -245,6 +256,7 @@ def verify_evidence(folder):
     assert corpus['cases'] == frozen['cases'] and config['corpus_sha256'] == suite['corpus_sha256']
     assert (config['rounds'], config['samples'], config['window_ms'], config['warmup_ms']) == (3, 6, 40, 60)
     assert config['case_filter'] is None and config['corpus_case_count'] == 57 and 'host_after' in config
+    assert config['host_before']['platform'] == config['host_after']['platform'] == suite['host_platform']
     assert tuple(config['engines']) == native.ENGINES and tuple(config['modes']) == native.MODES
     assert build['platform']['system'] == 'Darwin' and build['platform']['machine'] == 'arm64'
     assert build['engines']['ferromark_v2']['revision'] == revision
@@ -267,6 +279,9 @@ def verify_evidence(folder):
         assert hashlib.sha256(committed(revision, 'benchmarks/native-comparison/' + path)).hexdigest() == digest
     audit = read(directory, 'source-audit')
     assert audit['v2']['revision'] == revision and audit['v2']['sha256']
+    source_paths = git('ls-tree', '-r', '--name-only', revision, '--', 'src', 'crates', 'Cargo.toml', 'Cargo.lock').splitlines()
+    assert set(audit['v2']['sha256']) == set(source_paths), 'incomplete native core source audit'
+    assert audit['v2']['checked_files'] == len(source_paths)
     for path, digest in audit['v2']['sha256'].items():
         assert hashlib.sha256(committed(revision, path)).hexdigest() == digest
     for value in [*audit.values(), *audit['native_dependencies'].values()]:
@@ -281,20 +296,20 @@ def figures(folder, report):
     for track, engine in PAIRS:
         result = read(folder / (track + '-' + engine), 'summary')
         config = read(folder / (track + '-' + engine), 'run')
-        values[engine] = (result['agreeing_documents'], result['v2_relative_throughput'], config['profile_scope'], track + '-' + engine)
+        values[engine] = (result['agreeing_documents'], result['v2_relative_throughput'], config['profile_scope'], track + '-' + engine, config['host_before']['time_utc'][:10])
     directory = folder / 'native'
     six, five, scores = native_archive.main_scores(read(directory, 'summary'), read(directory, 'verification'))
     for engine in LEGACY:
         group, members = ('six', six) if engine == 'ox-content' else ('five', five)
         speed = {mode: 1 / scores[group, mode][engine] for mode in native.MODES}
-        values[engine] = (len(members), speed, 'Frozen profiles; shared ' + group + '-engine equivalent-HTML set', 'native')
+        values[engine] = (len(members), speed, 'Frozen profiles; shared ' + group + '-engine equivalent-HTML set', 'native', read(directory, 'run')['host_before']['time_utc'][:10])
     assert set(values) == {project['id'] for project in catalog}, 'every homepage project must be measured'
     result = []
     for project in catalog:
-        count, speed, scope, lane = values[project['id']]
+        count, speed, scope, lane, measured = values[project['id']]
         assert count > 0 and all(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in speed.values())
         result.append({**{key: project[key] for key in ('id', 'label', 'runtime')}, 'platform': 'macos-arm64',
-                       'platformLabel': 'macOS arm64', 'machine': suite['machine'], 'measured': read(directory, 'run')['host_before']['time_utc'][:10],
+                       'platformLabel': 'macOS arm64', 'machine': suite['machine'], 'measured': measured,
                        'revision': suite['revision'][:8], 'report': report + '/' + lane, 'profileScope': scope,
                        'documents': count, 'corpusDocuments': 57, 'fresh': speed['fresh'], 'reuse': speed['reuse']})
     return result
@@ -308,7 +323,8 @@ def content(values):
         text += f"| {value['runtime']} | {value['label']} | {value['documents']}/57 | {value['fresh']:.2f}× | {value['reuse']:.2f}× |\n"
     first = values[0]
     root = str(Path(first['report']).parent)
-    text += f"\nMachine: {first['machine']}. Measured {first['measured']}, source `{first['revision']}`.\n\n"
+    dates = sorted({value['measured'] for value in values})
+    text += f"\nMachine: {first['machine']}. Measurement dates: {', '.join(dates)}, source `{first['revision']}`.\n\n"
     text += 'Each pair uses three process rounds, six alternating 40 ms windows and\n60 ms warmup. Scores use equal-document geometric means of the per-engine\nmedian of round medians. Only equivalent HTML contributes. The original\nsix-engine harness retains its shared five/six-engine agreement sets, shared\nmimalloc, pinned Bun toolchain and rotating-batch diagnostics. The four other\nnative pairs use system malloc and the stable Rust toolchain; Node uses the\nrelease-node addon without PGO and includes public binding costs and GC.\ncmark and commonmark.js use CommonMark only in both engines on all inputs.\nThese sets and build contracts do not support a shared-set ranking.\n\n'
     text += 'Builds and downloads finish before verification and timing. Lanes run\nsequentially with a cooldown; host observations and per-round ranges remain\nin the raw evidence. Background macOS activity can still add noise. These\nresults describe this machine and corpus, with no significance claim. Linux\nresults and earlier reports remain separate.\n\n'
     text += f'[Raw evidence](https://github.com/sebastian-software/ferromark/tree/main/{root}), [manual workflow](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/manual-macos/README.md).\n'
@@ -391,8 +407,8 @@ def main():
             finally:
                 awake.terminate()
                 awake.wait()
-    except (ValueError, AssertionError, OSError, subprocess.CalledProcessError) as error:
-        parser.exit(1, f'Benchmark stopped: {error}\nLogs and partial attempts remain in the output directory.\n')
+    except (ValueError, AssertionError, KeyError, OSError, subprocess.CalledProcessError) as error:
+        parser.exit(1, f'Benchmark stopped: {error}\nExisting logs and partial attempts are preserved.\n')
 
 
 if __name__ == '__main__':

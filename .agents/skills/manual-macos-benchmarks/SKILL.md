@@ -6,7 +6,7 @@ description: Remeasure all Ferromark homepage comparisons on a manually operated
 # Manual macOS benchmarks
 
 Use the repository's `scripts/benchmark-macos` commands. Read
-[the runbook](../../../../benchmarks/manual-macos/README.md) before executing;
+[the runbook](../../../benchmarks/manual-macos/README.md) before executing;
 resolve all commands from the repository root. Follow root AGENTS.md and
 CONTRIBUTING.md for checks and PR conventions.
 

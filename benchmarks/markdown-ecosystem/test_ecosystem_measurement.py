@@ -29,6 +29,7 @@ class MeasurementTests(unittest.TestCase):
         section = publish.content()
         if publish_values.FIGURES.exists():
             section += publish_values.content()
+        section += publish_values.current_content()
         guide = publish.GUIDE.read_text()
         self.assertEqual(guide.split(publish.MARKER, 1)[1], section.split(publish.MARKER, 1)[1])
         for track in ('native', 'node', *('node-' + engine for engine, _ in publish.NODE_PAIRS)):
