@@ -53,7 +53,8 @@ jobs:
     name: ${{ matrix.profile }} / run ${{ matrix.trial }} / ${{ inputs.mode }}
     if: github.repository == 'sebastian-software/ferromark'
     runs-on: ${{ matrix.profile == 'macos-arm64' && 'blacksmith-6vcpu-macos-26' || 'blacksmith-4vcpu-ubuntu-2404' }}
-    timeout-minutes: ${{ inputs.mode == 'probe' && 10 || 90 }}
+    # The 22-row suite needs more than 90 minutes for timing and cooldowns alone.
+    timeout-minutes: ${{ inputs.mode == 'probe' && 10 || inputs.mode == 'measure' && 180 || 90 }}
     strategy:
       fail-fast: false
       # Independent allocations stay sequential; builds never run alongside

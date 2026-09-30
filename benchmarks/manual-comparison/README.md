@@ -204,8 +204,11 @@ gh workflow run native-comparison.yml --repo sebastian-software/ferromark \
 After both profiles pass output verification, use `mode=measure` with
 `repetitions=3` to assess independent allocations. Jobs run sequentially and
 retain each trial separately; do not publish the fastest result or average
-incompatible agreement sets. Probe jobs have a 10-minute timeout; verification
-and measurement jobs have a 90-minute timeout per allocation. Runner time,
+incompatible agreement sets. Probe jobs have a 10-minute timeout, verification
+jobs 90 minutes, and complete measurement jobs 180 minutes per allocation.
+The 22-row suite needs more than 90 minutes for timing windows, warmup, and
+default cooldowns alone; builds, output checks, and process starts add overhead.
+These limits cap execution rather than prescribe its duration. Runner time,
 including setup and cooldown, consumes the provider's billed/free minutes.
 
 Artifacts retain observations, preparation/verification logs, and portable
