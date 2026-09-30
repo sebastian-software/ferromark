@@ -53,10 +53,9 @@ runs on macOS (Apple Silicon) and Linux (x86-64); the few platform differences
 are listed under [Platforms](#platforms).
 
 The single Cargo workspace also uses a common pinned dependency resolution,
-seeded from the existing Bun comparison lock. This differs from individual
+seeded from the committed campaign lock. This differs from individual
 engines' own lockfiles. Current campaigns use the committed
-`benchmarks/native-comparison/Cargo.lock` with `--lockfile` and locked fetching. The report
-records these differences; this is a controlled native engine comparison,
+`benchmarks/native-comparison/Cargo.lock` with `--lockfile` and locked fetching. The report records these differences; this is a controlled native engine comparison,
 not a comparison of untouched release build environments. Pass the archived
 `Cargo.lock` with `prepare.py --lockfile` to replay that exact resolution.
 
@@ -285,7 +284,8 @@ python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-build 
   --bun-native-cache /private/tmp/native-bench-cache/native \
   --md4c-source /private/tmp/native-bench-cache/md4c \
   --ox-archive /private/tmp/native-bench-cache/ox.tar.gz \
-  --ferromark-v1-source ../ferromark --ferromark-v2-source . \
+  --ferromark-v1-source . --ferromark-v2-source . \
+  --ferromark-v2-revision "$(git rev-parse HEAD)" \
   --worker benchmarks/native-comparison/worker.rs --compile \
   --lockfile benchmarks/native-comparison/Cargo.lock
 python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py'
@@ -311,7 +311,8 @@ python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-pgo-bu
   --bun-native-cache /private/tmp/native-bench-cache/native \
   --md4c-source /private/tmp/native-bench-cache/md4c \
   --ox-archive /private/tmp/native-bench-cache/ox.tar.gz \
-  --ferromark-v1-source ../ferromark --ferromark-v2-source . \
+  --ferromark-v1-source . --ferromark-v2-source . \
+  --ferromark-v2-revision "$(git rev-parse HEAD)" \
   --worker benchmarks/native-comparison/worker.rs --compile \
   --lockfile benchmarks/native-comparison/Cargo.lock \
   --pgo --pgo-training-corpus /private/tmp/native-bench-training-corpus.json.gz \

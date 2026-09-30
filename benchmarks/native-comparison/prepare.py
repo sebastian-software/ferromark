@@ -839,6 +839,7 @@ serde_json = "1"
     env.update(linker_env)
     env["BUN_CODEGEN_DIR"] = str(build / "codegen")
     (build / "codegen").mkdir()
+    major, minor, patch = BUN_VERSION.split(".")
     (build / "codegen" / "build_options.rs").write_text(
         f'pub const SHA: &str = "{BUN_REVISION}";\n'
         'pub const REPORTED_NODEJS_VERSION: &str = "24.0.0";\n'
@@ -847,7 +848,7 @@ serde_json = "1"
         'pub const CANARY_REVISION: &str = "benchmark";\n'
         'pub const ENABLE_FUZZILLI: bool = false;\n'
         'pub const FALLBACK_HTML_VERSION: &str = "0000000000000000";\n'
-        'pub const VERSION: crate::Version = crate::Version { major: 1, minor: 4, patch: 2 };\n'
+        f'pub const VERSION: crate::Version = crate::Version {{ major: {major}, minor: {minor}, patch: {patch} }};\n'
         f'pub const BASE_PATH: &[u8] = {json.dumps(str(bun))}.as_bytes();\n'
         f'pub const CODEGEN_PATH: &[u8] = {json.dumps(str(build / "codegen"))}.as_bytes();\n'
         'pub const ENABLE_LOGS: bool = cfg!(bun_debug);\n'
