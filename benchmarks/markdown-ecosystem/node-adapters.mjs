@@ -70,5 +70,83 @@ export async function createNodeRender(engine, gfm) {
     const renderer = new commonmark.HtmlRenderer({ safe: false, softbreak: "\n" });
     return (source) => renderer.render(parser.parse(source));
   }
+  if (engine === "remarkable") {
+    if (gfm)
+      throw new Error("Remarkable uses the CommonMark-only lane; no task-list plugin is installed");
+    const { Remarkable } = await import("remarkable");
+    const parser = new Remarkable("commonmark", { html: true, breaks: false, typographer: false });
+    return (source) => parser.render(source);
+  }
+  if (engine === "markdown-exit" || engine === "markdown-it-ts") {
+    const { default: MarkdownIt } = await import(engine);
+    const parser = new MarkdownIt("commonmark", {
+      html: true,
+      linkify: false,
+      typographer: false,
+      ...(engine === "markdown-it-ts"
+        ? { experimental: { stream: false, fullChunkedFallback: false } }
+        : {}),
+    });
+    parser.validateLink = () => true;
+    if (gfm) {
+      const { default: tasks } = await import("markdown-it-task-lists");
+      parser.enable(["table", "strikethrough"]).use(tasks);
+    }
+    return (source) => parser.render(source);
+  }
+  if (engine === "satteri") {
+    const { markdownToHtml } = await import("satteri");
+    const options = {
+      features: {
+        gfm: gfm ? { footnotes: false } : false,
+        frontmatter: false,
+        math: false,
+        headingAttributes: false,
+        directive: false,
+        superscript: false,
+        subscript: false,
+        wikilinks: false,
+        definitionList: false,
+        smartPunctuation: false,
+        rawHtml: false,
+      },
+    };
+    // Public GFM enables autolinks too; retain that difference rather than rewriting HTML.
+    return (source) => markdownToHtml(source, options).html;
+  }
+  if (engine === "md4x-napi" || engine === "md4x-wasm") {
+    const api = await import(engine === "md4x-napi" ? "md4x/napi" : "md4x/wasm");
+    if (engine === "md4x-wasm") {
+      const { readFileSync } = await import("node:fs");
+      const bytes = readFileSync(new URL("./node_modules/md4x/build/md4x.wasm", import.meta.url));
+      await api.init({
+        wasm: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+      });
+    } else await api.init();
+    const options = { headingIds: false, full: false, heal: false };
+    // The released public API cannot disable its parser extensions.
+    return (source) => api.renderToHtml(source, options);
+  }
+  if (engine === "ox-content-napi") {
+    const { parseAndRender } = await import("@ox-content/napi");
+    const options = {
+      gfm: false,
+      mdx: false,
+      footnotes: false,
+      tables: gfm,
+      strikethrough: gfm,
+      taskLists: gfm,
+      autolinks: false,
+      superscript: false,
+      subscript: false,
+      smartPunctuation: false,
+      math: false,
+      definitionLists: false,
+      headingAttributes: false,
+      wikiLinks: false,
+    };
+    // Renderer builtins (IDs, TOC, callouts, URL transforms) remain part of this public API.
+    return (source) => parseAndRender(source, options).html;
+  }
   throw new Error(`Unknown Node competitor: ${engine}`);
 }

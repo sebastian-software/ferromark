@@ -51,3 +51,25 @@ test("workflow runner labels match the enforced profiles", () => {
     assert.ok(context.includes(label));
   }
 });
+
+test("managed and per-pair workflows prepare every committed candidate without emulation", () => {
+  const candidates = JSON.parse(
+    readRepositoryFile("benchmarks", "markdown-ecosystem", "comparisons.json"),
+  );
+  const pairs = readYaml(".github", "workflows", "markdown-ecosystem.yml");
+  assert.deepEqual(
+    new Set(
+      pairs.jobs.compare.strategy.matrix.include.map(({ track, engine }) => `${track}/${engine}`),
+    ),
+    new Set(
+      candidates.filter(({ lane }) => lane === "pair").map(({ track, id }) => `${track}/${id}`),
+    ),
+  );
+  for (const job of [workflow.jobs.compare, pairs.jobs.compare]) {
+    const go = job.steps.find((step) => step.uses?.startsWith("actions/setup-go@"));
+    assert.ok(go);
+    assert.equal(go.with["go-version"], "1.27.1");
+    assert.equal(go.with.cache, false);
+    assert.ok(!go.with.architecture);
+  }
+});

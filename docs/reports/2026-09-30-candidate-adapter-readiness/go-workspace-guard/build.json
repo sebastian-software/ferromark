@@ -1,0 +1,176 @@
+{
+  "binaries": {
+    "rust": {
+      "path": "/Users/sebastian/Workspace/.codex/complete-benchmark-values/ferromark/benchmarks/markdown-ecosystem/native/target/release/markdown-ecosystem-worker",
+      "sha256": "ce35d4bf9ab51e1166f08ac545ff2db0da4e09552c7b673ec59068bd686303ca"
+    },
+    "goldmark": {
+      "path": "/private/tmp/ferromark-candidate-final-ecosystem-build/goldmark-worker",
+      "sha256": "82e214d43cfb67abd53a113a6d715be03d79ff4d25090697c77ea6ac1329b746",
+      "version": "2.1.6",
+      "runtime": "go version go1.27.1 darwin/arm64",
+      "gc": "GOMAXPROCS=1; GOGC=100; no memory limit; GC included"
+    },
+    "cmark": {
+      "path": "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-worker",
+      "sha256": "cf4762b40f399e07efe0ab2d167aa7b961b1c6cdc06c84ae09262dcbb261436f",
+      "revision": "eec0eeba6d31189fd828314576494566d539b1e3",
+      "version": "0.31.2"
+    },
+    "cmark-gfm": {
+      "path": "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-worker",
+      "sha256": "64b4e1d0fde9aa97af8209fc5783b335d99aa694eba3a07288d06673171918c0",
+      "revision": "587a12bb54d95ac37241377e6ddc93ea0e45439b",
+      "version": "0.29.0.gfm.13"
+    }
+  },
+  "sources": {
+    "cmark": [
+      "https://github.com/commonmark/cmark.git",
+      "eec0eeba6d31189fd828314576494566d539b1e3",
+      "0.31.2"
+    ],
+    "cmark-gfm": [
+      "https://github.com/github/cmark-gfm.git",
+      "587a12bb54d95ac37241377e6ddc93ea0e45439b",
+      "0.29.0.gfm.13"
+    ]
+  },
+  "commands": [
+    [
+      "cargo",
+      "build",
+      "--release",
+      "--locked",
+      "--manifest-path",
+      "/Users/sebastian/Workspace/.codex/complete-benchmark-values/ferromark/benchmarks/markdown-ecosystem/native/Cargo.toml"
+    ],
+    [
+      "go",
+      "-C",
+      "/Users/sebastian/Workspace/.codex/complete-benchmark-values/ferromark/benchmarks/markdown-ecosystem/goldmark",
+      "build",
+      "-mod=readonly",
+      "-trimpath",
+      "-o",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/goldmark-worker",
+      "."
+    ],
+    [
+      "git",
+      "clone",
+      "--quiet",
+      "https://github.com/commonmark/cmark.git",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-source"
+    ],
+    [
+      "git",
+      "-C",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-source",
+      "checkout",
+      "--quiet",
+      "eec0eeba6d31189fd828314576494566d539b1e3"
+    ],
+    [
+      "cmake",
+      "-S",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-source",
+      "-B",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-build",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+      "-DCMAKE_C_FLAGS_RELEASE=-O3",
+      "-DCMARK_TESTS=OFF",
+      "-DCMARK_SHARED=OFF",
+      "-DCMARK_STATIC=ON"
+    ],
+    [
+      "cmake",
+      "--build",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-build",
+      "--parallel",
+      "2"
+    ],
+    [
+      "clang",
+      "-std=c11",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-source/src",
+      "-I/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-build/src",
+      "/Users/sebastian/Workspace/.codex/complete-benchmark-values/ferromark/benchmarks/markdown-ecosystem/cmark-worker.c",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-build/src/libcmark.a",
+      "-o",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-worker"
+    ],
+    [
+      "git",
+      "clone",
+      "--quiet",
+      "https://github.com/github/cmark-gfm.git",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-source"
+    ],
+    [
+      "git",
+      "-C",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-source",
+      "checkout",
+      "--quiet",
+      "587a12bb54d95ac37241377e6ddc93ea0e45439b"
+    ],
+    [
+      "cmake",
+      "-S",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-source",
+      "-B",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-build",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+      "-DCMAKE_C_FLAGS_RELEASE=-O3",
+      "-DCMARK_TESTS=OFF",
+      "-DCMARK_SHARED=OFF",
+      "-DCMARK_STATIC=ON"
+    ],
+    [
+      "cmake",
+      "--build",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-build",
+      "--parallel",
+      "2"
+    ],
+    [
+      "clang",
+      "-std=c11",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-source/src",
+      "-I/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-build/src",
+      "/Users/sebastian/Workspace/.codex/complete-benchmark-values/ferromark/benchmarks/markdown-ecosystem/cmark-worker.c",
+      "-DGFM",
+      "-I/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-source/extensions",
+      "-I/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-build/extensions",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-build/extensions/libcmark-gfm-extensions.a",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-build/src/libcmark-gfm.a",
+      "-o",
+      "/private/tmp/ferromark-candidate-final-ecosystem-build/cmark-gfm-worker"
+    ]
+  ],
+  "rustflags": "-C target-cpu=generic",
+  "clang": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "rust": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "adapter_sha256": {
+    "worker.rs": "a3d4179e825f5757aab449b50654afccdd761e24a8c54850dc39b51c92e1abbe",
+    "cmark-worker.c": "87b1deda6bb93d6b6f2f2b65094c3bef6d172db15c1ea6aeff6adef699772f3e",
+    "prepare-native.py": "7eddf60975158a065d8a529add2fd560015fd79bc89717012504d755c4e191d0",
+    "goldmark/main.go": "5b3bbd6aaa614e6385e7b210537d01295db667fb8b2026d6c837e4d9864bd62b",
+    "goldmark/go.mod": "1720802741b88338685b47d0a9822115b6443c089f1818828f628f0fdf97396a",
+    "goldmark/go.sum": "34343f6dfeaf391daf733f1add8b9d461df9da5c523b0bbe7e8748cbb2508c67"
+  },
+  "dispatcher_sha256": "2fa31f5a71394bc58968385b4bcd8fb90739c52a3222911686a7cebb0ffd5109",
+  "allocator": "Rust/C: system malloc; Goldmark: Go allocator and GC; no PGO",
+  "go": "go version go1.27.1 darwin/arm64"
+}

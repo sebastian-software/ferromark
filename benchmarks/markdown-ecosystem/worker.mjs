@@ -8,13 +8,15 @@ import { gfmTable, gfmTableHtml } from "micromark-extension-gfm-table";
 import { gfmTaskListItem, gfmTaskListItemHtml } from "micromark-extension-gfm-task-list-item";
 import { createNodeRender } from "./node-adapters.mjs";
 import { loadBenchmarkFacade } from "./benchmark-facade.mjs";
+import comparisons from "./comparisons.json" with { type: "json" };
 import { localTarget } from "./benchmark-target.mjs";
 
 const [engine, profile, mode, ...paths] = process.argv.slice(2);
 if (
-  !["v2", "micromark", "marked", "markdown-it", "remark", "showdown", "commonmark"].includes(
-    engine,
-  ) ||
+  ![
+    "v2",
+    ...comparisons.filter((project) => project.track === "node").map((project) => project.id),
+  ].includes(engine) ||
   !["commonmark", "gfm", "gfm-shared"].includes(profile) ||
   !["fresh", "reuse"].includes(mode) ||
   !paths.length

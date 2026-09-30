@@ -12,10 +12,10 @@ CONTRIBUTING.md for checks and PR conventions.
 
 - Before freezing an official campaign, read [candidate coverage](../../../benchmarks/manual-comparison/candidate-coverage.md).
   Record included/deferred candidates and their runtime/workload contracts. The
-  current 14-project executable matrix has documented gaps; do not treat release
+  current 22-row executable matrix includes the seven direct additions; do not treat release
   freshness as proof that every relevant alternative is covered. Candidate review
   records are not runnable adapters or benchmark evidence.
-- Before an official campaign, check all 14 competitor versions against their
+- Before an official campaign, check all current competitor versions against their
   official registries or released tags, including Node extensions and adapter
   toolchain requirements. Read [dependency readiness](../../../benchmarks/manual-comparison/dependency-readiness.md).
   Refresh the pins and locks in a separate reviewed change when needed; keep
@@ -30,14 +30,17 @@ CONTRIBUTING.md for checks and PR conventions.
   dirty changes; use a clean worktree or commit only the authorized changes.
   Never reset or clean the user's checkout to satisfy preflight.
 - Use the detected host OS and architecture. The native harness supports macOS
-  and Linux on arm64/x86-64. Avoid Rosetta or mismatched Python/Node/Rust targets.
+  and Linux on arm64/x86-64. Avoid Rosetta or mismatched Python/Node/Rust/Go targets.
   Keep workloads quiet and prevent suspend; disclose observed noise.
 - For an explicitly requested Blacksmith run, use the runbook's manual workflow
   in `sebastian-software/ferromark`. Start with the resource/tool probe, then
   output verification, then complete measurements on independent allocations.
   Download the portable evidence and review all trials before importing one.
   Preserve recorded provider/run metadata; a VM is not a local physical host.
-- All eight Native and six Node.js projects must finish. Do not substitute
+- Use the committed `comparisons.json` inventory and Go 1.27.1. Review the
+  documented unavoidable syntax defaults and mandatory rotating-document controls
+  before interpreting repeated-input factors as parsing throughput.
+- All nine Native and thirteen Node.js execution variants must finish. Do not substitute
   shortened windows, synthetic results, or copied historical values. Builds,
   downloads, and HTML verification finish before timing.
 - Resume interrupted measurements with `measure OUTPUT` on the same host and

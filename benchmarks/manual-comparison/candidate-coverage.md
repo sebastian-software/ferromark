@@ -1,10 +1,15 @@
 # Benchmark candidate coverage
 
-Reviewed on **2026-09-30**. The current executable matrix contains eight Native
-and six Node.js competitors. It covers important implementations, but **does not
-yet cover all relevant direct alternatives**. This review identifies additions
-and separate workloads before the next official campaign. Candidate discovery
-is complete for this review; adapter implementation and validation remain work.
+Reviewed on **2026-09-30**. The original review found seven direct gaps in the
+14-row executable matrix. The follow-up implements those projects as **eight new
+lanes**, bringing the required inventory to **nine Native and thirteen Node.js
+execution variants**. MD4X has distinct explicit NAPI and WASM entries; OX-Content
+has separate native and Node binding entries. Their pinned public API contracts
+and local checks are in the [ecosystem runbook](../markdown-ecosystem/README.md#expanded-public-apis).
+No new performance values are published by adding adapters.
+
+The additional subset, language/runtime, and streaming candidates below remain
+an explicit backlog. This matrix is not a claim to cover every Markdown engine.
 
 The [metadata snapshot](candidate-review-2026-09-30.json) retains 57 GitHub
 repository records and 25 npm package records, including sources and the npm
@@ -36,7 +41,7 @@ Native, with its Go runtime and GC disclosed. JVM, .NET, Python, PHP, and Ruby
 need their own runtime contracts if added; do not silently label them Native or
 put their warmup behavior under Node's contract.
 
-## Existing executable coverage
+## Original executable coverage
 
 These are measured project names, not 14 independent parser families. In
 particular, remark includes micromark through its AST pipeline, while the
@@ -56,13 +61,13 @@ an internal historical control rather than a public competitor row.
 [local readiness](../../docs/reports/2026-09-30-comparison-readiness/README.md)
 records execution checks. Those checks apply to these 14 competitors only.
 
-## Direct additions before freezing the next campaign
+## Implemented direct additions
 
-These are concrete gaps in the Native/Node.js selection. Versions below are
-registry/release observations on the review date, **not installed adapter pins**.
-Recheck releases when implementing each adapter. npm counts use the window above.
+These Native/Node.js gaps now have executable adapters and exact package pins.
+Versions were rechecked against their release registries; npm counts remain the
+dated review window above. Read the public API contracts before running them.
 
-| Project | Observed release | Reason to include | Proposed execution |
+| Project | Observed release | Reason to include | Execution |
 | --- | --- | --- | --- |
 | [Remarkable](https://github.com/jonschlinkert/remarkable) | npm 2.0.1 | 5,264,333 npm downloads; direct HTML converter with configurable rules and a CommonMark preset. It is different from remark. | Node.js JavaScript |
 | [Goldmark](https://github.com/yuin/goldmark) | v2.1.6 | [Hugo's default parser](https://gohugo.io/configuration/markup/); independent Go AST/CST implementation and extensions. | Native Go, persistent worker |
@@ -143,7 +148,7 @@ throughput factor to make streaming or incremental claims.
 ## Campaign acceptance
 
 1. Resolve this candidate list into an explicit included/deferred matrix. The
-   seven direct-addition projects above are gaps to address before describing
+   seven direct-addition projects above are implemented; verify them before describing
    the selection as representative of current Native/Node alternatives. Review
    the subset and innovation candidates explicitly as well.
 2. Pin actual released packages/source revisions and supporting toolchains.
@@ -168,7 +173,7 @@ throughput factor to make streaming or incremental claims.
    candidate entry in this document is not an executed benchmark. Existing
    reports and the current 14-project readiness record remain immutable.
 
-The immediate outcome is a sourced selection review and an implementation queue.
-No candidate adapter, homepage value, or performance ranking changes in this
-review. There is no claim that every implementation in every language has been
+The original review supplied a sourced selection and implementation queue. The
+seven direct projects now have adapters; their homepage cells remain unmeasured
+until a complete campaign is reviewed and imported. There is no claim that every implementation in every language has been
 cataloged or measured.

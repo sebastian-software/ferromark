@@ -34,7 +34,7 @@ class ManualTests(unittest.TestCase):
         # Copy real archived data. These heterogeneous historical runs are used
         # only to test calculations/coverage, never to claim one measured suite.
         report = cli.REPO / 'docs/reports/2026-09-30-ecosystem-platforms'
-        for track, engine in cli.PAIRS:
+        for track, engine in cli.HISTORICAL_PAIRS:
             platform = 'macos-arm64' if engine in ('comrak', 'cmark', 'cmark-gfm') else 'linux-x86-64'
             source = report / platform / (track + '-' + engine)
             shutil.copytree(source, self.folder / (track + '-' + engine))
@@ -44,6 +44,8 @@ class ManualTests(unittest.TestCase):
         self.retained_matrix()
         values = cli.figures(self.folder, 'docs/reports/test')
         self.assertEqual(len(values), 14)
+        self.assertNotIn('Goldmark', cli.platform_content(values))
+        self.assertNotIn('Rotating-document controls', cli.platform_content(values))
         self.assertEqual({v['runtime'] for v in values}, {'Native', 'Node.js'})
         self.assertEqual({v['platform'] for v in values}, {'macos-arm64'})
         self.assertNotIn('v1', {v['id'] for v in values})
@@ -129,6 +131,18 @@ class ManualTests(unittest.TestCase):
                              [v for v in historical if v['platform'] != key])
             self.assertEqual(len([v for v in combined if v['platform'] == key]), 14)
             self.assertEqual(len({(v['platform'], v['id']) for v in combined}), len(combined))
+
+    def test_new_campaign_scope_is_committed_and_cannot_downgrade_to_fourteen(self):
+        revision = cli.git('rev-parse', 'HEAD')
+        data = cli.committed(revision, 'benchmarks/markdown-ecosystem/comparisons.json')
+        suite = {**self.suite, 'schema': 3, 'revision': revision,
+                 'comparisons_sha256': cli.hashlib.sha256(data).hexdigest()}
+        self.assertEqual(len(cli.suite_projects(suite)), 22)
+        self.assertEqual(set(cli.suite_pairs(suite)), set(cli.PAIRS))
+        with self.assertRaises(AssertionError):
+            cli.suite_projects({**suite, 'comparisons_sha256': '0' * 64})
+        with self.assertRaises(AssertionError):
+            cli.suite_pairs({**suite, 'schema': 2})
 
     def test_platform_aliases_and_addon_libraries(self):
         for system, slug in [('Darwin', 'macos'), ('Linux', 'linux')]:

@@ -16,7 +16,7 @@ class NativeAdapterTests(unittest.TestCase):
         for item in metadata['binaries'].values():
             self.assertEqual(run.native.sha(item['path']), item['sha256'])
         with tempfile.TemporaryDirectory() as directory:
-            for engine in ('comrak', 'cmark', 'cmark-gfm'):
+            for engine in ('comrak', 'cmark', 'cmark-gfm', 'goldmark'):
                 profiles = ('commonmark',) if engine == 'cmark' else ('commonmark', 'gfm-shared')
                 result = run.native.behavior_checks(build / 'worker', Path(directory), ('v2', engine), profiles)
                 self.assertEqual(set(result), set(profiles))

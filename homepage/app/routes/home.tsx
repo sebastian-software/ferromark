@@ -134,9 +134,9 @@ function EvidenceSection() {
       note={
         <>
           Equivalent HTML only, across separate runs and document agreement sets. The Node.js
-          comparisons include binding overhead. cmark and commonmark.js use CommonMark only. Names
-          link to GitHub; values link to their measurement reports.{" "}
-          <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
+          comparisons include binding overhead. cmark, commonmark.js, and Remarkable use CommonMark
+          only. Names link to GitHub; values link to their measurement reports. — means not
+          measured. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
           <Link to="/guide/feature-comparison">Compare features</Link>
         </>
       }
