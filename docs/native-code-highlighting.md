@@ -7,19 +7,24 @@ the highlighter. This integration implements [issue #393].
 
 [issue #393]: https://github.com/sebastian-software/ferromark/issues/393
 [`ferriki` crate]: https://crates.io/crates/ferriki
-[Ferriki asset documentation]: https://github.com/sebastian-software/ferriki/blob/main/docs/rust-api.md#assets-and-lifecycle
+[Ferriki asset documentation]: https://github.com/sebastian-software/ferriki/blob/v0.7.0/docs/rust-api.md#assets-and-lifecycle
 
 ## Use the adapter
 
 Build a Ferriki `Highlighter` once, then borrow it for each render. Ferromark
 does not choose an asset source. The following compiled
 [`ferriki` example](../examples/ferriki.rs) loads Ferriki's current filesystem
-catalog; see the [Ferriki asset documentation] for other sources and the CDN
-work in progress.
+catalog from a matching Ferriki 0.7.0 release checkout. Published Ferriki crates
+contain catalog manifests, not grammar or theme payloads. See the [Ferriki asset
+documentation] for directory, embedded, and verified CDN sources.
+
+This feature is not released yet. To try this branch, use a local checkout:
 
 ```toml
-ferromark = { version = "3", features = ["ferriki"] }
+ferromark = { path = "../ferromark", features = ["ferriki"] }
 ```
+
+After the feature ships, use a published Ferromark 2.x version that includes it.
 
 ```rust
 use std::path::Path;
@@ -49,7 +54,38 @@ or unknown languages and failed highlighting. Add `with_error_handler` to record
 errors other than unknown languages. The handler is called synchronously.
 Ferriki can lazily load local assets on first use; preload the languages and
 themes you need if rendering must avoid asset I/O. Ferriki owns the asset source,
-including the planned optional CDN source; Ferromark does not fetch assets.
+including its optional CDN source; Ferromark does not select or fetch assets.
+
+## Use release-pinned CDN assets
+
+Ferriki 0.7.0 provides the `remote` feature. Enable it in the application alongside
+Ferromark's adapter; the `ferriki` feature alone keeps network code disabled:
+
+```toml
+ferromark = { path = "../ferromark", features = ["ferriki"] }
+ferriki = { version = "0.7.0", features = ["remote"] }
+```
+
+Construct the highlighter before rendering and load the required assets eagerly:
+
+```rust
+use ferromark::ferriki::{Highlighter, RemoteAssets, StandardAssetCatalogs};
+
+let mut highlighter = Highlighter::builder()
+    .with_assets(StandardAssetCatalogs::remote(RemoteAssets::default())?)
+    .load_languages(["rust"])
+    .load_themes(["nord"])
+    .build()?;
+```
+
+Use this highlighter with `FerrikiHighlightHooks` as above. Ferriki verifies payload
+sizes, SHA-256 digests, and format versions against its compiled release manifest,
+then caches payloads by digest. An unavailable asset is an error during eager
+construction; handle that error before rendering. If an application leaves an
+asset lazy, loading can still occur synchronously on first use during rendering.
+Preload every language and theme needed to keep network/file I/O out of render
+timing. Ferriki's environment settings support a mirror or pre-populated cache;
+see its [remote asset documentation](https://github.com/sebastian-software/ferriki/blob/v0.7.0/docs/rust-api.md#remote-assets).
 
 ## Contract
 
@@ -94,4 +130,5 @@ for one render and can be reconstructed for subsequent renders.
 The self-contained [lifecycle benchmark](../benches/ferriki.rs) measures
 highlighter construction, construction plus first render, and repeated render
 with custom in-memory assets. Its [initial report](reports/2026-09-29-ferriki-integration/README.md)
-does not cover standard catalog or CDN I/O.
+records Ferriki 0.4.1 and does not cover standard catalog or CDN I/O. Those
+historical timings are not measurements of the current Ferriki 0.7.0 adapter.

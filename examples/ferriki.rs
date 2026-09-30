@@ -1,4 +1,6 @@
 //! Run with `cargo run --features ferriki --example ferriki -- /path/to/assets/shiki`.
+//! Use assets from a matching Ferriki 0.7.0 release checkout. This directory
+//! example preloads Rust and Nord; remote asset sources belong to the caller.
 
 #[cfg(feature = "ferriki")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -8,7 +10,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     use ferromark::ferriki::{Highlighter, StandardAssetCatalogs};
     use ferromark::{Allocator, FerrikiHighlightHooks, HtmlRenderer, Parser};
 
-    let asset_root = std::env::args().nth(1).ok_or("pass a Ferriki asset root")?;
+    let asset_root = std::env::args()
+        .nth(1)
+        .ok_or("pass an asset root from a matching Ferriki 0.7.0 release checkout")?;
     let assets = StandardAssetCatalogs::load_from_root(Path::new(&asset_root))?;
     let mut highlighter = Highlighter::builder()
         .with_assets(assets)

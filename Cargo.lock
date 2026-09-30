@@ -327,9 +327,9 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "ferriki"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c6b55f54899cee4c06212a0e97bb9633df39a580b3220abf60446bb078edb6f"
+checksum = "c8f0a243e992e6f24914f5e73d729c19a3864e70b6a72f5402f692bd0eab39e2"
 dependencies = [
  "ferriki-asset-gen",
  "ferriki-textmate",
@@ -340,20 +340,21 @@ dependencies = [
 
 [[package]]
 name = "ferriki-asset-gen"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7758022071228b544763f2d00cc853627207f1be15a2f7f9bfcd80d0f0dbbb09"
+checksum = "59b2ab535a26fde7278fc19b59a3aa0434f1fa2a94428761d0225f883faa4e11"
 dependencies = [
  "postcard",
  "serde",
  "serde_json",
+ "sha2",
 ]
 
 [[package]]
 name = "ferriki-textmate"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9279511519bacb2395b16418216a9d9d07123b97bda7eca1827b68fa5a395a00"
+checksum = "c9dc4090e4554d89dffa8a54e0ded92900784126301541cfc2ee586994b898a1"
 dependencies = [
  "ferroni",
  "serde",

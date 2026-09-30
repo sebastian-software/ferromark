@@ -14,7 +14,9 @@ Use `HtmlRenderHooks` to replace output for selected AST nodes. The normal
 
 For syntax highlighting, enable Ferromark's optional `ferriki` Cargo feature and
 use `FerrikiHighlightHooks` with an initialized Ferriki highlighter. Ferromark
-keeps the code-block wrappers, line numbers, and annotations. See the
+keeps the code-block wrappers, line numbers, and annotations. Ferriki 0.7.0 supports
+release-pinned CDN assets through its separate `remote` feature. Build the
+highlighter and preload required languages/themes before rendering. See the
 [native highlighting guide](https://github.com/sebastian-software/ferromark/blob/main/docs/native-code-highlighting.md) for the adapter contract.
 
 ````rust

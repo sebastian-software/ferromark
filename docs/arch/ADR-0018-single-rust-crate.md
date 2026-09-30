@@ -85,10 +85,10 @@ source. Ferromark borrows it for synchronous rendering, forwards only normalized
 code and language to Ferriki, and keeps code-block wrappers, metadata and
 annotations. Unknown languages and highlighter failures use the existing escaped
 plain-code fallback. Optional error observation stays with the application.
-Ferriki's planned CDN source is an asset-source choice outside Ferromark. The
-adapter does not initiate a download, but Ferriki can lazily load local assets
-on first use unless callers preload the required languages and themes. The
-feature does not enable Ferriki's remote-loading feature or change Ferromark's
+Ferriki 0.7.0's optional CDN source is an asset-source choice outside Ferromark.
+The adapter does not select that source, but calls into a highlighter which can
+lazily load directory or remote assets on first use unless callers preload the
+required languages and themes. The feature does not enable Ferriki's remote-loading feature or change Ferromark's
 default dependency graph.
 
 Validate the feature with a compiled public-API example, a dedicated Rust-only
