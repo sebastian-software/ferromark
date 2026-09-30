@@ -512,6 +512,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.ferromark-comparison tfoot td {
+  padding-top: 0.75rem;
+  color: var(--ink-soft);
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
 .ferromark-comparison .ferromark-project-link {
   display: inline-flex;
   align-items: center;

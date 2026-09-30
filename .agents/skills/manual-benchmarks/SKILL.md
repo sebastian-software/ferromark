@@ -12,7 +12,7 @@ CONTRIBUTING.md for checks and PR conventions.
 
 - Before freezing an official campaign, read [candidate coverage](../../../benchmarks/manual-comparison/candidate-coverage.md).
   Record included/deferred candidates and their runtime/workload contracts. The
-  current 22-row executable matrix includes the seven direct additions; do not treat release
+  current main campaign has 20 rows; the executable inventory retains 23 with optional adapters; do not treat release
   freshness as proof that every relevant alternative is covered. Candidate review
   records are not runnable adapters or benchmark evidence.
 - Before an official campaign, check all current competitor versions against their
@@ -40,7 +40,9 @@ CONTRIBUTING.md for checks and PR conventions.
 - Use the committed `comparisons.json` inventory and Go 1.27.1. Review the
   documented unavoidable syntax defaults and mandatory rotating-document controls
   before interpreting repeated-input factors as parsing throughput.
-- All nine Native and thirteen Node.js execution variants must finish. Do not substitute
+- All nine Native and eleven Node.js main execution variants must finish. Use
+  `--scope extended` to include markdown-exit, markdown-it-ts, and MD4X WASM.
+  The recorded scope must stay fixed across preparation, verification, and timing. Do not substitute
   shortened windows, synthetic results, or copied historical values. Builds,
   downloads, and HTML verification finish before timing.
 - Resume interrupted measurements with `measure OUTPUT` on the same host and
@@ -49,11 +51,16 @@ CONTRIBUTING.md for checks and PR conventions.
 - Import an existing run using its portable `evidence/` directory under OUTPUT.
   The importing checkout needs the measured commit in Git history. It can be
   on a different host; publication uses the recorded measurement platform.
-- Run `publish OUTPUT --check`, inspect agreement exclusions, per-round ranges,
+- Run `publish OUTPUT --check`, inspect output differences, per-round ranges,
   host observations and source provenance, then `publish OUTPUT` to prepare a
   local update. It selects only the measured platform; other OS/architecture
   values and historical reports stay intact. Do not hand-edit factors, mix
-  platform results, or claim a ranking across different agreement sets/contracts.
+  platform results, or claim identical functionality across different API contracts.
+- New campaigns score all 57 inputs. Retain HTML agreement as descriptive metadata
+  and annotate different outputs with `*`; never use agreement or conformance to
+  exclude a candidate or document from the performance factor. Preserve historical
+  reports and their original matched-only scoring. See the
+  [scoring decision](../../../docs/decisions/2026-09-30-benchmark-performance-scope.md).
 - Review the new evidence, platform selection, generated values and guide.
   Run both ecosystem publishers with `--check` and applicable repository and
   homepage checks. Report checks that could not run and distinguish platform

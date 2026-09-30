@@ -69,12 +69,10 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
   for (const id of [
     "goldmark",
     "remarkable",
-    "markdown-exit",
-    "markdown-it-ts",
     "satteri",
     "md4x-napi",
-    "md4x-wasm",
     "ox-content-napi",
+    "tanstack-markdown",
   ]) {
     const project = projects.find((row) => row.id === id);
     assert.ok(project);
@@ -82,7 +80,64 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
     assert.ok(html.includes(`${project.label} · ${project.backend}`));
     assert.ok(!completed.figures.some((row) => row.id === id));
   }
-  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 16);
-  assert.ok(html.includes('class="ferromark-project-backend">WASM</span>'));
+  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 12);
+  assert.equal(projects.length, 20);
+  for (const id of ["markdown-exit", "markdown-it-ts", "md4x-wasm"]) {
+    assert.ok(!projects.some((project) => project.id === id));
+  }
+  assert.ok(!html.includes('class="ferromark-project-backend">WASM</span>'));
   assert.ok(html.includes('class="ferromark-project-backend">Native addon</span>'));
+});
+
+test("full-corpus factors annotate output differences without changing legacy cells", async () => {
+  const baseline = await renderComparison(completed.figures);
+  // Rendering fixture only; no new measurement or performance value is invented.
+  const selected = completed.figures[0];
+  const figures = completed.figures.map((figure) =>
+    figure === selected
+      ? {
+          ...figure,
+          scoringScope: "all-documents",
+          documents: 57,
+          agreeingDocuments: 31,
+          overviewReport: "docs/reports/test-overview",
+        }
+      : figure,
+  );
+  const html = await renderComparison(figures);
+  assert.equal([...html.matchAll(/<sup /g)].length, 1);
+  assert.match(html, /57\/57 timed documents · 31 equivalent outputs/);
+  assert.match(html, /All inputs contribute to the/);
+  assert.match(
+    html,
+    /href="https:\/\/github.com\/sebastian-software\/ferromark\/tree\/main\/docs\/reports\/test-overview"/,
+  );
+  assert.ok(!baseline.includes("<tfoot>"));
+  assertOnlyOneChangedCell(baseline, html);
+});
+
+function assertOnlyOneChangedCell(baseline, html) {
+  const before = [...baseline.matchAll(/<td>(.*?)<\/td>/gs)].map((match) => match[1]);
+  const after = [...html.matchAll(/<td>(.*?)<\/td>/gs)].map((match) => match[1]);
+  assert.equal(before.length, after.length);
+  let changed = 0;
+  for (const [index, cell] of before.entries()) {
+    if (cell !== after[index]) {
+      changed += 1;
+      assert.match(after[index], /Output differs for some inputs/);
+    }
+  }
+  assert.equal(changed, 1);
+}
+
+test("full-corpus factors with equivalent outputs do not need an asterisk", async () => {
+  const figures = completed.figures.map((figure) => ({
+    ...figure,
+    scoringScope: "all-documents",
+    documents: 57,
+    agreeingDocuments: 57,
+  }));
+  const html = await renderComparison(figures);
+  assert.ok(!html.includes("<sup "));
+  assert.ok(!html.includes("<tfoot>"));
 });

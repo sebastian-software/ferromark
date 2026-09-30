@@ -33,6 +33,11 @@ on:
         type: choice
         options: [probe, verify, measure]
         default: probe
+      blacksmith_scope:
+        description: Main comparisons or include the three optional adapters
+        type: choice
+        options: [main, extended]
+        default: main
       blacksmith_repetitions:
         description: Independent Blacksmith jobs per platform
         type: choice
@@ -71,6 +76,7 @@ jobs:
       platform: ${{ inputs.blacksmith_platform }}
       mode: ${{ inputs.blacksmith_mode }}
       repetitions: ${{ inputs.blacksmith_repetitions }}
+      scope: ${{ inputs.blacksmith_scope }}
 
   compare:
     if: inputs.runner_provider != 'blacksmith'

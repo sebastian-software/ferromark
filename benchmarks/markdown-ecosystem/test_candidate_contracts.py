@@ -14,9 +14,16 @@ class CandidateContractTests(unittest.TestCase):
     def test_every_homepage_entry_has_an_executable_campaign_lane_and_pinned_dependency(self):
         catalog = json.loads((run.REPO / 'homepage/app/data/benchmark-projects.json').read_text())
         projects = run.contracts.PROJECTS
-        self.assertEqual(catalog, [{key: project[key] for key in ('id', 'label', 'runtime', 'github', 'backend')} for project in projects])
-        self.assertEqual(len(projects), 22)
-        self.assertEqual(len(run.contracts.PAIRS), 18)
+        self.assertEqual(catalog, [{key: project[key] for key in ('id', 'label', 'runtime', 'github', 'backend')} for project in run.contracts.campaign_projects(projects)])
+        self.assertEqual(len(projects), 23)
+        self.assertEqual(len(run.contracts.campaign_projects(projects)), 20)
+        self.assertEqual(len(run.contracts.campaign_pairs()), 16)
+        self.assertEqual(len(run.contracts.campaign_pairs('extended')), 19)
+        self.assertEqual({project['id'] for project in projects if project.get('optional')},
+                         {'markdown-exit', 'markdown-it-ts', 'md4x-wasm'})
+        with self.assertRaises(ValueError):
+            run.contracts.campaign_projects(projects, 'unknown')
+        self.assertEqual(len(run.contracts.PAIRS), 19)
         self.assertEqual(sum(project['runtime'] == 'Native' for project in projects), 9)
         lock = json.loads((run.HERE / 'package-lock.json').read_text())['packages']
         package = json.loads((run.HERE / 'package.json').read_text())['dependencies']

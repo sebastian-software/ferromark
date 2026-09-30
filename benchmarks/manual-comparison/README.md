@@ -1,6 +1,6 @@
 # Manual benchmark comparisons
 
-Use an otherwise idle machine to remeasure **all nine Native and thirteen Node.js
+Use an otherwise idle machine to remeasure **all nine Native and eleven Node.js
 execution variants** in the homepage table. The workflow detects the host OS and CPU
 architecture. Publishing updates that platform's values and keeps other
 platforms' selections and historical reports intact. No runner registration,
@@ -14,8 +14,10 @@ existing Linux x86-64 harness evidence is retained separately. New platform
 runs still need their own build and output verification before timing.
 
 Before freezing a campaign, review [candidate coverage](candidate-coverage.md).
-The executable 22-row matrix includes the seven direct additions identified in
-that review. Further subset, runtime, and streaming candidates remain deferred. Before allocating runner time after dependency
+The default campaign has 20 rows. The executable inventory also retains three
+optional adapters, for 23 rows with `--scope extended`. TanStack Markdown is
+included despite its deliberately smaller syntax profile. markdown-exit,
+markdown-it-ts, and MD4X WASM remain optional rather than being removed. Further subset, runtime, and streaming candidates remain deferred. Before allocating runner time after dependency
 changes, follow the [dependency readiness checklist](dependency-readiness.md).
 It identifies current pins, release sources, local checks, and the latest
 completed preflight.
@@ -66,8 +68,10 @@ jobs to keep memory use reasonable. Your checkout and its addon are untouched.
 All HTML/option guards finish before the first timed comparison. The script
 waits 60 seconds between lanes and runs one lane at a time. Each uses the
 existing **three process rounds, six samples, 40 ms windows, and 60 ms warmup**.
-All 57 frozen inputs are timed, including diagnostic disagreements; only
-equivalent HTML contributes to the factors. There is no shortened publishable
+All 57 frozen inputs are timed and contribute to the factors, including different
+HTML outputs. Agreement is descriptive metadata, not a scoring filter or a
+conformance gate. A `*` on new homepage factors discloses output differences;
+the linked reports explain public API and syntax differences. There is no shortened publishable
 mode. Logs are under `OUTPUT/logs`; commands and current phases are printed in
 the terminal. Allow a long uninterrupted session; duration depends on the host
 and the competitor.
@@ -113,7 +117,7 @@ installation are needed for this step; Python 3.11+ and Git suffice.
 
 Publication rechecks complete window coverage, checksums, frozen inputs, HTML
 classification, aggregates, committed sources/adapters, host/build platform,
-runtime and addon identity, and all 22 comparisons. It rejects partial/shortened
+runtime and addon identity, and all comparisons required by the recorded scope. It rejects partial/shortened
 runs and nonpositive or nonfinite scores. It retains compressed raw evidence
 and provenance under a **new** `docs/reports/<name>/` with SHA256SUMS, updates only
 that platform's selection in `benchmarks/manual-comparison/current.json`, and
@@ -122,15 +126,16 @@ adds its own table column, such as macOS x86-64. Existing platforms and reports
 are preserved. No Git commit, push, PR, or deployment happens automatically.
 
 The original native harness uses shared mimalloc and a pinned Bun toolchain;
-its four displayed libraries retain the historical five/six-engine matching
-sets. It still measures v1 internally for those sets but does not publish a v1
-homepage row. Other Rust/C pairs use system malloc; Goldmark uses the Go allocator and GC
+its four displayed libraries use all 57 documents in new manual campaigns.
+Historical reports retain their original five/six-engine matching sets. It still
+measures v1 internally as a control but does not publish a v1 homepage row. Other Rust/C pairs use system malloc; Goldmark uses the Go allocator and GC
 with GOMAXPROCS=1, GOGC=100, and no memory limit; Node uses the release-node
 addon without PGO, including string conversion and GC. cmark/commonmark.js/Remarkable use
-CommonMark only in both engines. Different agreement sets and build contracts
-remain disclosed; the table does not establish a shared-set ranking.
+CommonMark only in both engines. Different syntax, renderer, and build contracts
+remain disclosed; the table compares public API performance on the same inputs,
+without claiming identical functionality or a conformance ranking.
 
-Review the generated report, agreement exclusions, per-round ranges, source
+Review the generated report, output differences, per-round ranges, source
 revision, host observations, and Git diff. Validate generated content:
 
 ```sh
@@ -183,8 +188,9 @@ Choose the source branch with the workflow's branch selector or `--ref`. The
 checkout itself is the measured revision. Start with `mode=probe` (the default):
 it validates resources and runs `doctor`, without building the comparison or
 timing anything. `mode=verify` prepares every adapter and checks all output and
-option guards without timing. `mode=measure` runs all 22 comparisons and checks
+option guards without timing. `mode=measure` runs all comparisons required by the recorded scope and checks
 complete evidence, but never publishes values, commits, or pushes results.
+The workflow defaults to `scope=main`; select `scope=extended` for all 23 rows.
 
 ```sh
 gh workflow run blacksmith-benchmarks.yml --repo sebastian-software/ferromark \
@@ -204,9 +210,9 @@ gh workflow run native-comparison.yml --repo sebastian-software/ferromark \
 After both profiles pass output verification, use `mode=measure` with
 `repetitions=3` to assess independent allocations. Jobs run sequentially and
 retain each trial separately; do not publish the fastest result or average
-incompatible agreement sets. Probe jobs have a 10-minute timeout, verification
+incompatible campaign contracts. Probe jobs have a 10-minute timeout, verification
 jobs 90 minutes, and complete measurement jobs 180 minutes per allocation.
-The 22-row suite needs more than 90 minutes for timing windows, warmup, and
+The extended 23-row suite needs more than 90 minutes for timing windows, warmup, and
 default cooldowns alone; builds, output checks, and process starts add overhead.
 These limits cap execution rather than prescribe its duration. Runner time,
 including setup and cooldown, consumes the provider's billed/free minutes.
@@ -225,13 +231,28 @@ and [GitHub App setup](https://docs.blacksmith.sh/introduction/quickstart).
 ## Expanded adapter contracts
 
 [comparisons.json](../markdown-ecosystem/comparisons.json) is the required campaign
-inventory. Preparation and each pair retain its hash; schema-3 publication verifies
-the committed inventory and rejects missing lanes. Historical schema-2 evidence
-continues to describe its original 14 rows and cannot fill the new entries.
+inventory. The default `--scope main` measures 20 rows (nine Native, eleven
+Node.js); `--scope extended` includes markdown-exit, markdown-it-ts, and MD4X
+WASM as well. Preparation builds and tests all available adapters. Measurement
+and output verification execute the selected lanes; an individual ecosystem
+`run.py --competitor` remains available for any optional adapter.
+
+Preparation and each pair retain the inventory hash. Schema-5 publication verifies
+the committed inventory, recorded selection, and all-document scoring policy,
+then rejects missing lanes or documents. The committed policy and its hash prevent
+new evidence from being downgraded to historical matched-only scoring.
+Schema-4 selection, schema-3 full 22-row coverage, and schema-2 original 14-row
+reports remain readable under their recorded contracts. Historical factors are
+not recomputed or relabeled. See the [scoring decision](../../docs/decisions/2026-09-30-benchmark-performance-scope.md).
 
 The new public API contracts are documented in the [ecosystem runbook](../markdown-ecosystem/README.md#expanded-public-apis).
 MD4X's fixed extensions, Sätteri's GFM autolinks, and OX-Content's renderer builtins
-remain in output verification; disagreement never receives an inferred factor.
+remain in output verification. TanStack uses its public full-document `renderHtml`
+API with trusted HTML, unchanged URLs, IDs/frontmatter/docs/AI extensions off.
+Its fixed tables/strike/tasks/footnotes and code wrapper markup remain visible;
+its syntax subset cannot be made into a CommonMark preset. That does not exclude
+it or any input from performance scoring. All new factors come from actual timed
+calls, not inferred values; output agreement counts are not conformance rates.
 Every new pair verifies all inputs in a rotating batch and retains separate
 rotating-document timing controls. Single-document factors describe repeated
 calls and may include library caching; the controls do not enter those factors.

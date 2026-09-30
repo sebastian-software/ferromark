@@ -62,16 +62,22 @@ Node reclamation follows the runtime's GC schedule.
 The shared native option guards exercise CommonMark, extension toggles, raw
 HTML, reference isolation, literal code whitespace and disabled renderer extras.
 Every document is verified in both lifecycles twice before timing, and again
-before/after each process's timing windows. All raw HTML is retained. Only exact
-or conservative serialization-equivalent output pairs enter the score; heading
-IDs and code whitespace are never normalized away. All 57 documents are timed
-and retained, including disagreements as diagnostics.
+before/after each process's timing windows. All raw HTML is retained. New scores
+include every one of the 57 frozen documents, including different outputs.
+Exact or conservative serialization-equivalent output counts are descriptive
+metadata, not a scoring filter or a conformance gate; heading IDs and code
+whitespace are never normalized away. Different syntax and rendering features
+remain documented alongside performance. Historical schema-1/2 reports retain
+their original equivalent-output scoring.
 
 The result archives retain inputs, outputs, behavior guards, every timing
 window, lockfiles, worker/addon hashes, source hashes, runtime, local Git status,
 and host observations. Aggregation uses the median of each process round's
 medians, then an equal-document geometric mean of competitor time / Ferromark
-time on the agreeing set. Values above 1 mean higher Ferromark throughput.
+time on all 57 documents. Values above 1 mean higher Ferromark throughput.
+Schema-3 pairs retain the committed [scoring policy](scoring-policy.json), whose
+hash and source revision prevent downgrading to historical matched-only scoring.
+See the [decision](../../docs/decisions/2026-09-30-benchmark-performance-scope.md).
 Shared-workstation results do not establish statistical significance or a
 universal ranking. Source attribution and licenses remain in the original
 [broad corpus](../broad-comparison/README.md).
@@ -96,7 +102,7 @@ archived aggregates; `publish.py --check` rejects drift.
 - **markdown-it 15.0.2:** CommonMark preset, HTML enabled, linkify and typographer
   off; enable table/strikethrough rules and markdown-it-task-lists 2.1.1 only in
   the extension lane. Trusted link protocols pass through. Its `<s>` tags and
-  plugin classes remain in verification and may exclude documents from scoring.
+  plugin classes remain in verification and do not exclude documents from scoring.
 - **remark 15.0.1:** frozen processor with remark-rehype 11.1.2 and
   rehype-stringify 10.0.1; `processSync` returns the HTML string. Three pinned
   micromark/mdast extensions enable tables, strikethrough, and task lists.
@@ -104,7 +110,7 @@ archived aggregates; `publish.py --check` rejects drift.
 - **Showdown 2.1.0:** retained Converter and public `makeHtml`; heading IDs,
   ellipsis conversion, metadata, literal autolinking, and renderer extras off.
   Tables, strikethrough, and task lists follow the profile. Its Markdown dialect
-  and styled task markup remain unchanged; only agreeing outputs enter scoring.
+  and styled task markup remain unchanged; every input contributes to scoring.
 - **commonmark.js 0.31.2:** retained Parser and HtmlRenderer, smart punctuation
   and safe rendering off. It has no GFM extensions, so both engines parse the
   entire frozen input corpus with CommonMark only.
@@ -180,8 +186,9 @@ and homepage JSON. Run `publish.py` to refresh the benchmark guide; both support
 
 ## Expanded public APIs
 
-The complete [campaign inventory](comparisons.json) includes 22 displayed rows
-(18 independent pairs plus the original native harness's four displayed engines).
+The complete [campaign inventory](comparisons.json) retains 23 executable rows. The default
+campaign and homepage show 20 (16 independent pairs plus the original native harness's four displayed engines). The extended scope adds markdown-exit, markdown-it-ts,
+and MD4X WASM. Their adapters and pins remain available.
 The [manual workflow](../manual-comparison/README.md) is the entry point for a new
 complete campaign. Existing archives retain their original versions and scope.
 
@@ -194,13 +201,16 @@ complete campaign. Existing archives retain their original versions and scope.
 | Sätteri | npm 0.10.5; `markdownToHtml(...).html` | Native Node pipeline without MDX/plugins. Other extensions off. Public GFM also enables literal autolinks; there is no individual public switch, so the difference remains. `rawHtml: false` disables the extra AST conversion feature, while ordinary raw HTML remains verified. |
 | MD4X NAPI | npm 0.0.30; explicit `md4x/napi` init then `renderToHtml` | Native Node addon with no WASM fallback. `headingIds`, `full`, `heal` off. Public API has no parser-feature flags; tables, strike, tasks, autolinks, footnotes, callouts, and frontmatter extraction remain enabled even for CommonMark-profile inputs. |
 | MD4X WASM | npm 0.0.30; explicit `md4x/wasm` init with installed WASM bytes then `renderToHtml` | WASM initialization is untimed; identical public parser contract, separately timed JS/WASM boundary. No NAPI fallback. |
+| TanStack Markdown | @tanstack/markdown 0.0.16; public `renderHtml(source, options)` from `/html` | Trusted raw HTML and unchanged URLs; heading IDs/anchors, frontmatter, highlighting, docs/AI extensions off. No public switches for tables, strike, tasks, footnotes, or code wrapper attributes. Deliberate syntax subset; differences are disclosed, and every input contributes to performance scoring. |
 | OX-Content Node | @ox-content/napi 3.2.13; `parseAndRender(...).html` | Individual parser flags enable only shared extensions. Public renderer heading IDs, TOC, callouts, fence metadata handling, and literal URL transformations cannot be disabled. Complete public API cost is timed, including returned metadata. |
 
 Every pair retains the manifest and contract code hashes. `contracts.py` asserts
 these actual differences and keeps raw guard HTML; it never rewrites competitor
 output. The v2 worker continues using the frozen input profile (CommonMark only
-for cmark/commonmark.js/Remarkable). Only equivalent outputs contribute, so each
-pair can have a different agreement set. There is no shared-set ranking.
+for cmark/commonmark.js/Remarkable). All 57 inputs contribute to every new factor.
+A `*` beside a new homepage factor means some outputs differ. The report retains
+actual agreement counts and API contracts; this compares public API performance
+on the same inputs, without claiming identical feature sets or conformance.
 
 New runs also retain `rotating-controls.json`: all 57 inputs grouped by effective
 profile, both lifecycles, three independent process rounds, six alternating

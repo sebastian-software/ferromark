@@ -53,6 +53,29 @@ class PlatformArchiveTests(unittest.TestCase):
         self.assertEqual(config['engines'], ['v2', 'marked'])
         self.assertIn('worker.mjs', sources)
 
+    def test_full_corpus_scoring_includes_different_outputs(self):
+        # Synthetic calculation fixture only, never retained as measured evidence.
+        for name, output in self.outputs.items():
+            if name == 'doc-0':
+                continue
+            output['outputs']['marked'] = '<p>different</p>'
+            output['agreement'] = 'semantic-difference'
+        matched = {'doc-0'}
+        for row in self.rows:
+            if row['case'] != 'doc-0':
+                row['marked']['elapsed_ns'] = 320_000_000
+        config = {**self.config, 'schema': 3, 'scoring_scope': 'all-documents'}
+        summary = {**self.summary, 'scored_documents': 57,
+                   'v2_relative_throughput': {mode: run.aggregate(self.rows, set(self.outputs), mode, 'marked') for mode in run.native.MODES}}
+        archive.validate_scores(config, summary, self.outputs, self.rows, matched)
+        self.assertGreater(summary['v2_relative_throughput']['fresh'], 7)
+        with self.assertRaises(AssertionError):
+            archive.validate_scores(config, self.summary | {'scored_documents': 57}, self.outputs, self.rows, matched)
+        with self.assertRaises(AssertionError):
+            archive.validate_scores(config, summary | {'scored_documents': 1}, self.outputs, self.rows, matched)
+        # Historical scores continue to use the agreeing set.
+        archive.validate_scores(self.config, self.summary, self.outputs, self.rows, matched)
+
     def test_incomplete_round_is_rejected(self):
         self.rows.pop()
         with self.assertRaises(AssertionError): self.validate()

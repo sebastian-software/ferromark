@@ -2,7 +2,7 @@
 
 Review [candidate coverage](candidate-coverage.md) before freezing the scope of
 an official campaign, then check every included dependency. The current
-22-row executable inventory includes the seven direct additions; release freshness
+23-row executable inventory has 20 default rows and three optional rows; release freshness
 and successful execution do not establish complete ecosystem coverage. Pin stable
 releases explicitly; do not resolve "latest" while timing or mix versions between
 platforms. A successful local preflight proves execution on that host. Each new
@@ -34,6 +34,9 @@ latest stable direct versions compatible with these projects.
 Additional current pins: Goldmark v2.1.6 (Go module `github.com/yuin/goldmark/v2`),
 Go 1.27.1; Remarkable 2.0.1; markdown-exit 1.3.0; markdown-it-ts 1.1.2;
 Sätteri 0.10.5; MD4X 0.0.30 in explicit NAPI and WASM lanes; @ox-content/napi 3.2.13.
+TanStack Markdown is pinned to @tanstack/markdown 0.0.16, rechecked on 2026-09-30.
+Its direct HTML entry point has no runtime dependencies. It is a documented syntax
+subset, not another complete CommonMark implementation.
 The [Go module and sum file](../markdown-ecosystem/goldmark/go.mod) and npm lockfile
 pin the released implementations. Public API constraints and readiness of this
 extension are separate from the immutable original 14-row preflight report.
@@ -124,3 +127,14 @@ execution on that host and keeps every public API difference visible. Short smok
 fail the publication contract; no official factors or platform selection changed.
 The original 14-row readiness report remains immutable. Run the expanded verification
 on each managed platform before allocating a complete campaign.
+
+## Main campaign and TanStack readiness
+
+The [20-row main readiness report](../../docs/reports/2026-09-30-main-campaign-readiness/README.md)
+records a fresh macOS arm64 prepare/verify with TanStack Markdown 0.0.16 and the
+all-document scoring policy. All 57 inputs execute in both lifecycles for every
+selected candidate; output agreement is descriptive, never an exclusion filter.
+The real TanStack timing-path smoke includes all 57 documents and remains
+unpublishable. This adds execution evidence, not official speed values. The three optional
+adapters retain their pinned contracts and tests; the previous
+22-row readiness record remains immutable.

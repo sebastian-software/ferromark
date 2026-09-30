@@ -133,16 +133,78 @@ class ManualTests(unittest.TestCase):
             self.assertEqual(len({(v['platform'], v['id']) for v in combined}), len(combined))
 
     def test_new_campaign_scope_is_committed_and_cannot_downgrade_to_fourteen(self):
-        revision = cli.git('rev-parse', 'HEAD')
+        revision = '43693790c059093e048f34adaabe25454814945a'
         data = cli.committed(revision, 'benchmarks/markdown-ecosystem/comparisons.json')
         suite = {**self.suite, 'schema': 3, 'revision': revision,
                  'comparisons_sha256': cli.hashlib.sha256(data).hexdigest()}
         self.assertEqual(len(cli.suite_projects(suite)), 22)
-        self.assertEqual(set(cli.suite_pairs(suite)), set(cli.PAIRS))
+        self.assertEqual(set(cli.suite_pairs(suite)), {(p['track'], p['id']) for p in json.loads(data) if p['lane'] == 'pair'})
         with self.assertRaises(AssertionError):
             cli.suite_projects({**suite, 'comparisons_sha256': '0' * 64})
         with self.assertRaises(AssertionError):
             cli.suite_pairs({**suite, 'schema': 2})
+
+    def test_selected_scope_keeps_optional_adapters_out_of_required_coverage(self):
+        from unittest.mock import patch
+        data = (cli.ECO / 'comparisons.json').read_bytes()
+        suite = {**self.suite, 'schema': 4, 'comparison_scope': 'main',
+                 'comparisons_sha256': cli.hashlib.sha256(data).hexdigest()}
+        with patch.object(cli, 'committed', return_value=data):
+            self.assertEqual(len(cli.suite_projects(suite)), 20)
+            self.assertEqual(set(cli.suite_pairs(suite)), set(cli.PAIRS))
+            self.assertEqual(len(cli.suite_projects({**suite, 'comparison_scope': 'extended'})), 23)
+            for bad in ({**suite, 'schema': 3}, {**suite, 'comparison_scope': 'unknown'},
+                        {key: value for key, value in suite.items() if key != 'comparison_scope'}):
+                with self.assertRaises(AssertionError):
+                    cli.suite_projects(bad)
+
+    def test_full_corpus_policy_cannot_be_omitted_or_downgraded(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        inventory = (cli.ECO / 'comparisons.json').read_bytes()
+        policy = (cli.ECO / 'scoring-policy.json').read_bytes()
+        suite = {**self.suite, 'schema': 5, 'comparison_scope': 'main',
+                 'scoring_scope': 'all-documents', 'comparisons_sha256': cli.hashlib.sha256(inventory).hexdigest(),
+                 'scoring_policy_sha256': cli.hashlib.sha256(policy).hexdigest()}
+        def committed(revision, path):
+            return policy if path.endswith('scoring-policy.json') else inventory
+        with patch.object(cli.subprocess, 'run', return_value=SimpleNamespace(returncode=0)), patch.object(cli, 'committed', side_effect=committed):
+            self.assertEqual(len(cli.suite_projects(suite)), 20)
+            for bad in ({**suite, 'schema': 4}, {**suite, 'scoring_scope': 'equivalent-only'},
+                        {**suite, 'scoring_policy_sha256': '0' * 64},
+                        {key: value for key, value in suite.items() if key != 'scoring_scope'}):
+                with self.assertRaises((AssertionError, KeyError)):
+                    cli.suite_projects(bad)
+
+    def test_full_corpus_figures_use_all_native_documents_and_describe_agreement(self):
+        from unittest.mock import patch
+        self.retained_matrix()
+        # Recalculate retained samples as a test fixture, not a new publishable campaign.
+        historical_catalog = cli.suite_projects(self.suite)
+        for track, engine in cli.HISTORICAL_PAIRS:
+            pair = self.folder / (track + '-' + engine)
+            summary = cli.read(pair, 'summary')
+            outputs, rows = cli.read(pair, 'verification'), cli.read(pair, 'samples')
+            summary['scored_documents'] = 57
+            summary['v2_relative_throughput'] = {mode: cli.ecosystem.aggregate(rows, set(outputs), mode, engine) for mode in cli.native.MODES}
+            cli.write(pair / 'summary.json', summary)
+        cli.write(self.folder / 'suite.json', {**self.suite, 'schema': 5})
+        with patch.object(cli, 'suite_projects', return_value=historical_catalog), patch.object(cli, 'suite_pairs', return_value=cli.HISTORICAL_PAIRS):
+            values = cli.figures(self.folder, 'docs/reports/test')
+        outputs = cli.read(self.folder / 'native', 'verification')
+        summary = cli.read(self.folder / 'native', 'summary')
+        for value in values:
+            self.assertEqual(value['documents'], 57)
+            self.assertEqual(value['scoringScope'], 'all-documents')
+            self.assertEqual(value['overviewReport'], 'docs/reports/test')
+            if value['id'] in cli.LEGACY:
+                expected = cli.native_archive.tables.aggregate(summary, set(outputs), 'fresh')[value['id']]
+                self.assertAlmostEqual(value['fresh'], 1 / expected)
+                self.assertEqual(value['agreeingDocuments'], sum(item['versus_v2'][value['id']] in ('exact', 'serialization-equivalent') for item in outputs.values()))
+        text = cli.platform_content(values)
+        self.assertIn('Timed documents', text)
+        self.assertIn('not a scoring filter', text)
+        self.assertIn('*', text)
 
     def test_platform_aliases_and_addon_libraries(self):
         for system, slug in [('Darwin', 'macos'), ('Linux', 'linux')]:

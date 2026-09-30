@@ -46,7 +46,7 @@ native = ecosystem.native
 HISTORICAL_PAIRS = (('native', 'markdown-rs'), ('native', 'comrak'), ('native', 'cmark'), ('native', 'cmark-gfm'),
          ('node', 'micromark'), ('node', 'marked'), ('node', 'markdown-it'), ('node', 'remark'),
          ('node', 'showdown'), ('node', 'commonmark'))
-PAIRS = ecosystem.contracts.PAIRS
+PAIRS = ecosystem.contracts.campaign_pairs()
 LEGACY = ('pulldown-cmark', 'md4c', 'bun', 'ox-content')
 
 
@@ -134,7 +134,8 @@ def preflight():
             'host_platform': platform.platform(), 'addon_file': 'ferromark.' + node['target'] + '.node'}
 
 
-def prepare(output, context_path=None):
+def prepare(output, context_path=None, scope='main'):
+    ecosystem.contracts.campaign_projects(ecosystem.contracts.PROJECTS, scope)
     host = preflight()
     context = json.loads(context_path.read_text()) if context_path else None
     if context is not None:
@@ -182,7 +183,7 @@ def prepare(output, context_path=None):
     addon = source / 'node/ferromark' / host['addon_file']
     shutil.copyfile(source / 'target/release-node' / addon_library(host['system']), addon)
     execute(['node', '--test', source / ECO.relative_to(REPO) / 'test-node-adapters.mjs', source / ECO.relative_to(REPO) / 'test-benchmark-loader.mjs'], source, logs / 'node-loader-tests.log', {**env, 'FERROMARK_BENCH_TEST_ADDON': str(addon)})
-    write(output / 'prepared.json', {'schema': 3, 'revision': revision, 'comparisons_sha256': native.sha(ECO / 'comparisons.json'), 'go': subprocess.check_output(['go', 'version'], text=True).strip(), **host, 'node': subprocess.check_output(['node', '--version'], text=True).strip(),
+    write(output / 'prepared.json', {'schema': 5, 'comparison_scope': scope, 'scoring_scope': 'all-documents', 'scoring_policy_sha256': native.sha(ECO / 'scoring-policy.json'), 'revision': revision, 'comparisons_sha256': native.sha(ECO / 'comparisons.json'), 'go': subprocess.check_output(['go', 'version'], text=True).strip(), **host, 'node': subprocess.check_output(['node', '--version'], text=True).strip(),
                                    'addon_sha256': native.sha(addon), 'corpus_sha256': native.sha(CORPUS),
                                    **({'runner_context': context} if context else {})})
     (output / 'host.txt').write_text(host['machine'] + '\n')
@@ -195,7 +196,7 @@ def measure(output, cooldown, verify_only=False):
     context = prepared.get('runner_context')
     if context is not None:
         runner_context.assert_host(context)
-    assert prepared['schema'] == 3 and prepared['revision'] == git('rev-parse', 'HEAD'), 'checkout revision changed since preparation'
+    assert prepared['schema'] in (3, 4, 5) and prepared['revision'] == git('rev-parse', 'HEAD'), 'checkout revision changed since preparation'
     assert all(host[key] == prepared[key] for key in host), 'run on the same host used for preparation'
     source = output / 'source'
     assert git('rev-parse', 'HEAD', cwd=source) == prepared['revision'] and not git('status', '--porcelain', cwd=source)
@@ -208,7 +209,7 @@ def measure(output, cooldown, verify_only=False):
     logs = output / 'logs'
     python = sys.executable
     native_command = [python, source / NATIVE.relative_to(REPO) / 'run.py', output / 'native-build/build.json', source / CORPUS.relative_to(REPO)]
-    pair_commands = [(track + '-' + engine, [python, source / ECO.relative_to(REPO) / 'run.py', track]) for track, engine in PAIRS]
+    pair_commands = [(track + '-' + engine, [python, source / ECO.relative_to(REPO) / 'run.py', track]) for track, engine in suite_pairs(prepared)]
 
     def pair_command(name, base, destination, verify=False):
         track, engine = name.split('-', 1)
@@ -308,16 +309,32 @@ def suite_projects(suite):
     """Use the measured campaign's scope; historical 14-row suites stay readable."""
     if suite['schema'] == 2:
         new_contract = subprocess.run(['git', 'cat-file', '-e', suite['revision'] + ':benchmarks/markdown-ecosystem/comparisons.json'], cwd=REPO, capture_output=True).returncode == 0
-        assert not new_contract, 'new campaigns require the committed 22-row scope'
+        assert not new_contract, 'new campaigns require their committed comparison scope'
         ids = {*LEGACY, *(engine for _, engine in HISTORICAL_PAIRS)}
         return [project for project in ecosystem.contracts.PROJECTS if project['id'] in ids]
-    assert suite['schema'] == 3
+    assert suite['schema'] in (3, 4, 5)
+    policy_path = 'benchmarks/markdown-ecosystem/scoring-policy.json'
+    has_policy = subprocess.run(['git', 'cat-file', '-e', suite['revision'] + ':' + policy_path], cwd=REPO, capture_output=True).returncode == 0
+    if has_policy:
+        policy_data = committed(suite['revision'], policy_path)
+        policy = json.loads(policy_data)
+        assert suite['schema'] == policy['suite_schema'], 'scoring policy cannot be downgraded'
+        assert suite['scoring_scope'] == policy['scoring_scope']
+        assert hashlib.sha256(policy_data).hexdigest() == suite['scoring_policy_sha256']
+    else:
+        assert suite['schema'] < 5, 'full-corpus campaigns require their committed scoring policy'
     data = committed(suite['revision'], 'benchmarks/markdown-ecosystem/comparisons.json')
     assert hashlib.sha256(data).hexdigest() == suite['comparisons_sha256'], 'measured comparison scope changed'
     projects = json.loads(data)
     assert len({project['id'] for project in projects}) == len(projects)
     assert {project['id'] for project in projects if project['lane'] == 'legacy'} == set(LEGACY)
-    return projects
+    if suite['schema'] == 3:
+        assert not any(project.get('optional') for project in projects), 'selected campaigns require schema 4'
+        return projects
+    assert suite.get('comparison_scope') in ('main', 'extended'), 'missing or invalid comparison scope'
+    if suite['schema'] == 5:
+        assert suite.get('scoring_scope') == 'all-documents', 'missing or invalid scoring scope'
+    return ecosystem.contracts.campaign_projects(projects, suite['comparison_scope'])
 
 
 def suite_pairs(suite):
@@ -329,7 +346,7 @@ def suite_pairs(suite):
 
 def verify_evidence(folder):
     suite = read(folder, 'suite')
-    assert suite['schema'] in (2, 3)
+    assert suite['schema'] in (2, 3, 4, 5)
     revision = suite['revision']
     assert re.fullmatch(r'[0-9a-f]{40}', revision), 'full source revision required'
     assert suite['corpus_sha256'] == native.sha(CORPUS)
@@ -347,8 +364,10 @@ def verify_evidence(folder):
         assert config['engines'] == ['v2', engine] and config['track'] == track
         assert 'host_after' in config, 'incomplete run'
         verify_platform(suite, config)
-        if suite['schema'] == 3:
-            assert config['schema'] == 2 and config['manifest_sha256'] == suite['comparisons_sha256']
+        if suite['schema'] >= 3:
+            assert config['schema'] == (3 if suite['schema'] == 5 else 2) and config['manifest_sha256'] == suite['comparisons_sha256']
+        if suite['schema'] == 5:
+            assert config['scoring_scope'] == suite['scoring_scope']
         if engine == 'goldmark':
             assert config['runtime'] == suite['go']
         if track == 'node':
@@ -400,19 +419,25 @@ def figures(folder, report):
     for track, engine in suite_pairs(suite):
         result = read(folder / (track + '-' + engine), 'summary')
         config = read(folder / (track + '-' + engine), 'run')
-        values[engine] = (result['agreeing_documents'], result['v2_relative_throughput'], config['profile_scope'], track + '-' + engine, config['host_before']['time_utc'][:10])
+        values[engine] = (result['scored_documents'] if suite['schema'] == 5 else result['agreeing_documents'], result['v2_relative_throughput'], config['profile_scope'], track + '-' + engine, config['host_before']['time_utc'][:10])
     directory = folder / 'native'
-    six, five, scores = native_archive.main_scores(read(directory, 'summary'), read(directory, 'verification'))
+    outputs = read(directory, 'verification')
+    all_documents = set(outputs)
+    six, five, scores = native_archive.main_scores(read(directory, 'summary'), outputs)
+    all_scores = {mode: native_archive.tables.aggregate(read(directory, 'summary'), all_documents, mode) for mode in native.MODES} if suite['schema'] == 5 else None
     for engine in LEGACY:
         group, members = ('six', six) if engine == 'ox-content' else ('five', five)
-        speed = {mode: 1 / scores[group, mode][engine] for mode in native.MODES}
-        values[engine] = (len(members), speed, 'Frozen profiles; shared ' + group + '-engine equivalent-HTML set', 'native', read(directory, 'run')['host_before']['time_utc'][:10])
+        speed = {mode: 1 / (all_scores[mode][engine] if all_scores else scores[group, mode][engine]) for mode in native.MODES}
+        values[engine] = (len(all_documents) if all_scores else len(members), speed, 'Frozen profiles; all documents, output differences included' if all_scores else 'Frozen profiles; shared ' + group + '-engine equivalent-HTML set', 'native', read(directory, 'run')['host_before']['time_utc'][:10])
     assert set(values) == {project['id'] for project in catalog}, 'every homepage project must be measured'
     result = []
     for project in catalog:
         count, speed, scope, lane, measured = values[project['id']]
+        assert suite['schema'] != 5 or count == 57, 'full corpus must contribute'
         assert count > 0 and all(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in speed.values())
-        result.append({**{key: project[key] for key in ('id', 'label', 'runtime')}, 'platform': suite['platform'],
+        agreement = sum(item['versus_v2'][project['id']] in ('exact', 'serialization-equivalent') for item in outputs.values()) if project['id'] in LEGACY else read(folder / lane, 'summary')['agreeing_documents']
+        scoring = {'scoringScope': 'all-documents', 'agreeingDocuments': agreement, 'overviewReport': report} if suite['schema'] == 5 else {}
+        result.append({**scoring, **{key: project[key] for key in ('id', 'label', 'runtime')}, 'platform': suite['platform'],
                        'platformLabel': suite['platform_label'], 'machine': suite['machine'], 'measured': measured,
                        'revision': suite['revision'][:8], 'report': report + '/' + lane, 'profileScope': scope,
                        'documents': count, 'corpusDocuments': 57, 'fresh': speed['fresh'], 'reuse': speed['reuse']})
@@ -428,18 +453,26 @@ def content(values):
 
 def platform_content(values):
     text = f"\n## Manual comparison — {values[0]['platformLabel']}\n\n"
-    text += f'All {len(values)} homepage comparisons were remeasured on one host from the same committed\nsource revision. Factors mean Ferromark throughput relative to the library.\nNative and Node.js calls have separate build and allocation contracts.\n\n'
-    text += '| Runtime | Project | Equivalent documents | Fresh | Reuse |\n| --- | --- | ---: | ---: | ---: |\n'
+    full_corpus = all(value.get('scoringScope') == 'all-documents' for value in values)
+    selection = 'selected' if full_corpus else 'homepage'
+    text += f'All {len(values)} {selection} comparisons were remeasured on one host from the same committed\nsource revision. Factors mean Ferromark throughput relative to the library.\nNative and Node.js calls have separate build and allocation contracts.\n\n'
+    document_label = 'Timed documents' if full_corpus else 'Equivalent documents'
+    text += f'| Runtime | Project | {document_label} | Fresh | Reuse |\n| --- | --- | ---: | ---: | ---: |\n'
     for value in values:
-        text += f"| {value['runtime']} | {value['label']} | {value['documents']}/57 | {value['fresh']:.2f}× | {value['reuse']:.2f}× |\n"
+        marker = '*' if value.get('agreeingDocuments', value['documents']) < value['corpusDocuments'] and full_corpus else ''
+        text += f"| {value['runtime']} | {value['label']}{marker} | {value['documents']}/57 | {value['fresh']:.2f}× | {value['reuse']:.2f}× |\n"
     first = values[0]
     root = str(Path(first['report']).parent)
     dates = sorted({value['measured'] for value in values})
     text += f"\nMachine: {first['machine']}. Measurement dates: {', '.join(dates)}, source `{first['revision']}`.\n\n"
-    if any(value['id'] == 'goldmark' for value in values):
+    if full_corpus:
+        text += '*Output differs for some inputs. Every factor includes all 57 frozen documents;\nHTML agreement is retained as descriptive metadata, not a scoring filter or a\nconformance test. Public syntax, output, allocator, runtime and GC contracts\nremain documented; these figures compare the public APIs on the same inputs,\nnot identical implemented features. Three rounds, six alternating 40 ms windows\nand 60 ms warmup use equal-document geometric means. Rotating-document cache\ncontrols remain separate. Native and Node binding costs remain distinct.\n\n'
+    elif any(value['id'] == 'goldmark' for value in values):
         text += 'Each pair uses three process rounds, six alternating 40 ms windows and\n60 ms warmup. Scores use equal-document geometric means of the per-engine\nmedian of round medians. Only equivalent HTML contributes. The original\nsix-engine harness retains its shared five/six-engine agreement sets, shared\nmimalloc, pinned Bun toolchain and rotating-batch diagnostics. Other Rust/C\nnative pairs use system malloc and the stable Rust toolchain; Goldmark uses\nthe pinned Go compiler and includes Go allocation and GC; Node uses the\nrelease-node addon without PGO and includes public binding costs and GC.\ncmark, commonmark.js, and Remarkable use CommonMark only in both engines on all inputs.\nPublic API differences (MD4X fixed extensions, Sätteri GFM autolinks, OX renderer\nbuiltins) remain verified and disclosed. Rotating-document controls are retained\nseparately to expose caching. These contracts do not support a shared-set ranking.\n\n'
     else:
         text += 'Each pair uses three process rounds, six alternating 40 ms windows and\n60 ms warmup. Scores use equal-document geometric means of the per-engine\nmedian of round medians. Only equivalent HTML contributes. The original\nsix-engine harness retains its shared five/six-engine agreement sets, shared\nmimalloc, pinned Bun toolchain and rotating-batch diagnostics. The four other\nnative pairs use system malloc and the stable Rust toolchain; Node uses the\nrelease-node addon without PGO and includes public binding costs and GC.\ncmark and commonmark.js use CommonMark only in both engines on all inputs.\nThese sets and build contracts do not support a shared-set ranking.\n\n'
+    if not full_corpus and any(value['id'] == 'tanstack-markdown' for value in values):
+        text += 'TanStack Markdown uses a deliberately smaller syntax profile. Its fixed\ntable/strike/task/footnote behavior and code wrapper markup remain visible;\nonly equivalent outputs contribute. This is not a complete CommonMark/GFM\ncomparison or a conformance percentage.\n\n'
     text += 'Builds and downloads finish before verification and timing. Lanes run\nsequentially with a cooldown; host observations and per-round ranges remain\nin the raw evidence. Background system activity can still add noise. These\nresults describe this machine and corpus, with no significance claim. Other platforms\nand earlier reports remain separate.\n\n'
     text += f'[Raw evidence](https://github.com/sebastian-software/ferromark/tree/main/{root}), [manual workflow](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/manual-comparison/README.md).\n'
     return text
@@ -504,6 +537,7 @@ def main():
         sub.add_argument('output', type=lambda value: Path(value).expanduser().resolve())
         if command in ('prepare', 'run'):
             sub.add_argument('--runner-context', type=Path, help='retained, validated managed-runner metadata')
+            sub.add_argument('--scope', choices=('main', 'extended'), default='main', help='20 main comparisons or all 23 including optional adapters')
         if command in ('run', 'measure'):
             sub.add_argument('--cooldown-seconds', type=int, default=60)
         if command == 'publish':
@@ -520,10 +554,10 @@ def main():
         elif args.command == 'publish':
             publish(args.output, args.name, args.check)
         elif args.command == 'prepare':
-            prepare(args.output, args.runner_context)
+            prepare(args.output, args.runner_context, args.scope)
         else:
             if args.command == 'run':
-                prepare(args.output, args.runner_context)
+                prepare(args.output, args.runner_context, args.scope)
             awake = subprocess.Popen(['caffeinate', '-i', '-w', str(os.getpid())]) if platform.system() == 'Darwin' else None
             try:
                 measure(args.output, getattr(args, 'cooldown_seconds', 0), verify_only=args.command == 'verify')

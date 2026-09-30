@@ -83,3 +83,25 @@ test("unavoidable public defaults remain visible", async () => {
   assert.match(ox("> [!NOTE]\n> Note\n"), /ox-callout/);
   await assert.rejects(createNodeRender("remarkable", true), /CommonMark-only/);
 });
+
+test("TanStack Markdown measures complete public rendering with its fixed subset semantics", async () => {
+  const render = await createNodeRender("tanstack-markdown", false);
+  const gfmRender = await createNodeRender("tanstack-markdown", true);
+  const input = "| A | B |\n| --- | --- |\n| x | y |\n\n- [x] Done\n\n~~old~~\n";
+  assert.equal(render(input), gfmRender(input));
+  assert.match(render(input), /<table>/);
+  assert.match(render(input), /type="checkbox"/);
+  assert.match(render(input), /<del>old<\/del>/);
+  assert.doesNotMatch(render("# Title\n"), / id=/);
+  assert.match(render("---\ntitle: Visible\n---\n"), /title: Visible/);
+  assert.match(render("<script>raw()<\/script>\n"), /<script>raw\(\)<\/script>/);
+  assert.match(render("[x](javascript:alert)\n"), /href="javascript:alert"/);
+  assert.match(render("Text[^n]\n\n[^n]: note\n"), /data-footnotes/);
+  assert.match(render("[x][ref]\n\n[ref]: /first\n"), /href="\/first"/);
+  assert.match(render("[x][ref]\n"), /\[x\]\[ref\]/);
+  const unicode = "🪐 é 漢字 ".repeat(2048);
+  const first = render(unicode);
+  assert.match(first, /🪐 é 漢字/);
+  render("different input");
+  assert.equal(render(unicode), first);
+});
