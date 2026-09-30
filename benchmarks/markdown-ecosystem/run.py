@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure two independent matched pairs on the frozen native corpus."""
+"""Measure independent Markdown-to-HTML pairs on the frozen corpus."""
 import argparse
 from collections import Counter
 import importlib.util
@@ -42,6 +42,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('track', choices=('native', 'node'))
     p.add_argument('output', type=Path)
+    p.add_argument('--competitor', choices=('micromark', 'marked', 'markdown-it', 'remark', 'showdown', 'commonmark'))
     p.add_argument('--corpus', type=Path, default=REPO / 'docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz')
     p.add_argument('--binary', type=Path, default=HERE / 'native/target/release/markdown-ecosystem-worker')
     p.add_argument('--rounds', type=int, default=3)
@@ -52,7 +53,9 @@ def main():
     args = p.parse_args()
     if min(args.rounds, args.samples, args.window_ms, args.warmup_ms) <= 0:
         p.error('rounds, samples, and timing windows must be positive')
-    competitor = 'markdown-rs' if args.track == 'native' else 'micromark'
+    if args.track == 'native' and args.competitor:
+        p.error('--competitor applies only to node')
+    competitor = 'markdown-rs' if args.track == 'native' else args.competitor or 'micromark'
     engines = ('v2', competitor)
     command = args.binary.resolve() if args.track == 'native' else HERE / 'worker.mjs'
     args.output.mkdir(parents=True, exist_ok=False)
@@ -60,13 +63,17 @@ def main():
     inputs.mkdir()
     corpus = native.read_json(args.corpus)
     cases = corpus['cases']
+    if competitor == 'commonmark':
+        # commonmark.js has no GFM extensions: keep every input, disable extras in both engines.
+        for case in cases:
+            case['profile'] = 'commonmark'
     native.write_json(args.output / 'corpus.json', corpus)
     for case in cases:
         path = inputs / (case['name'] + '.md')
         path.write_bytes(case['input'].encode())
         assert path.stat().st_size == case['byte_count'] and native.sha(path) == case['sha256']
     # Same executable option guards as the six-engine harness.
-    native.write_json(args.output / 'behavior.json', native.behavior_checks(command, inputs, engines))
+    native.write_json(args.output / 'behavior.json', native.behavior_checks(command, inputs, engines, ('commonmark',) if competitor == 'commonmark' else ('commonmark', 'gfm-shared')))
     verification = {}
     for case in cases:
         outputs = {}
@@ -97,6 +104,8 @@ def main():
         'host_before': native.host(), 'corpus_sha256': native.sha(args.corpus),
         'lock_sha256': native.sha(lock), 'worker_sha256': native.sha(command),
         'adapter_sha256': native.sha(HERE / ('worker.rs' if args.track == 'native' else 'worker.mjs')),
+        'node_adapters_sha256': native.sha(HERE / 'node-adapters.mjs') if args.track == 'node' else None,
+        'profile_scope': 'CommonMark only on all inputs' if competitor == 'commonmark' else 'CommonMark or tables/strikethrough/tasks, per frozen input profile',
         'runner_sha256': native.sha(__file__), 'verifier_sha256': native.sha(HERE.parent / 'native-comparison/verify.py'),
         'guards_sha256': native.sha(HERE.parent / 'native-comparison/run.py'),
         'git_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=REPO, text=True).strip(),
@@ -105,7 +114,7 @@ def main():
         'native_addon_sha256': {str(path.relative_to(REPO)): native.sha(path) for path in (REPO / 'node/ferromark').glob('*.node')} if args.track == 'node' else None,
         'native_build': 'RUSTFLAGS=-C target-cpu=generic; opt-level=3; fat LTO; codegen-units=1; panic=abort; system allocator' if args.track == 'native' else 'Cargo release-node; no PGO; system allocator; panic=unwind',
         'runtime': subprocess.check_output(['rustc' if args.track == 'native' else 'node', '--version'], text=True).strip(),
-        'lifecycle': 'markdown-rs and micromark retain configuration only; each call returns fresh owned HTML. Ferromark reuse retains arena/renderer storage.',
+        'lifecycle': 'Competitors retain configured public parser/processor objects in both modes; each call parses and returns fresh owned HTML. Ferromark reuse retains arena/renderer storage.',
         'timing_boundary': 'Complete Markdown to owned HTML, consumed by output length; no I/O, startup, or normalization. Native: UTF-8 bytes, system allocator. Node: UTF-16 strings, public binding overhead and JS GC included.',
     }
     native.write_json(args.output / 'run.json', config)

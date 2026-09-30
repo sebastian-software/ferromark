@@ -130,7 +130,7 @@ def host():
     return result
 
 
-def behavior_checks(binary, directory, engines=ENGINES):
+def behavior_checks(binary, directory, engines=ENGINES, profiles=('commonmark', 'gfm-shared')):
     """Exercise effective options in all six native adapters, including md4c's FFI bits."""
     fixtures = {
         'empty': '',
@@ -154,7 +154,7 @@ def behavior_checks(binary, directory, engines=ENGINES):
         path.write_text(value)
         paths.append(path)
     result = {}
-    for profile in ('commonmark', 'gfm-shared'):
+    for profile in profiles:
         result[profile] = {}
         for engine in engines:
             outputs = {}
@@ -198,7 +198,8 @@ def behavior_checks(binary, directory, engines=ENGINES):
             if not extension:
                 assert 'H~2~O' in out['extras'], (engine, profile, 'strikethrough must be off')
             assert ('<table>' in out['extensions']) == extension, (engine, profile, 'tables')
-            assert ('<del>old</del>' in out['extensions']) == extension, (engine, profile, 'strike')
+            strike = '<s>old</s>' if engine == 'markdown-it' else '<del>old</del>'
+            assert (strike in out['extensions']) == extension, (engine, profile, 'strike')
             assert out['extensions'].count('type="checkbox"') == (2 if extension else 0), (engine, profile, 'tasks')
             result[profile][engine] = out
     return result

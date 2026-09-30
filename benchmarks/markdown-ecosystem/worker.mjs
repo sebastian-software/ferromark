@@ -6,13 +6,16 @@ import { micromark } from "micromark";
 import { gfmStrikethrough, gfmStrikethroughHtml } from "micromark-extension-gfm-strikethrough";
 import { gfmTable, gfmTableHtml } from "micromark-extension-gfm-table";
 import { gfmTaskListItem, gfmTaskListItemHtml } from "micromark-extension-gfm-task-list-item";
+import { createNodeRender } from "./node-adapters.mjs";
 import { Renderer, toHtml } from "../../node/ferromark/index.mjs";
 
 import { linuxLibc, nativeTarget } from "../../node/ferromark/native-target.mjs";
 
 const [engine, profile, mode, ...paths] = process.argv.slice(2);
 if (
-  !["v2", "micromark"].includes(engine) ||
+  !["v2", "micromark", "marked", "markdown-it", "remark", "showdown", "commonmark"].includes(
+    engine,
+  ) ||
   !["commonmark", "gfm", "gfm-shared"].includes(profile) ||
   !["fresh", "reuse"].includes(mode) ||
   !paths.length
@@ -78,11 +81,13 @@ const microOptions = {
 };
 const renderer = engine === "v2" && mode === "reuse" ? new Renderer(options) : null;
 const render =
-  engine === "micromark"
-    ? (source) => micromark(source, microOptions)
-    : renderer
+  engine === "v2"
+    ? renderer
       ? (source) => renderer.toHtml(source)
-      : (source) => toHtml(source, options);
+      : (source) => toHtml(source, options)
+    : engine === "micromark"
+      ? (source) => micromark(source, microOptions)
+      : await createNodeRender(engine, gfm);
 
 for await (const line of createInterface({ input: process.stdin })) {
   if (line === "quit") break;
