@@ -53,7 +53,7 @@ const { version } = JSON.parse(
 // The landing page states the measured figures that
 // scripts/publish-native-readme.py derives from one archived native comparison
 // per platform; a hard-coded number would survive the next measurement, so the
-// prerendered page must carry every platform's lead figure, machine and
+// prerendered page must carry every platform's library figures, machine and
 // measured revision.
 const benchmarks = JSON.parse(
   await readFile(new URL("../app/data/native-benchmarks.json", import.meta.url), "utf8"),
@@ -61,17 +61,45 @@ const benchmarks = JSON.parse(
 if (benchmarks.platforms.length < 2) {
   throw new Error("native-benchmarks.json must publish every measured platform");
 }
+const projects = JSON.parse(
+  await readFile(new URL("../app/data/benchmark-projects.json", import.meta.url), "utf8"),
+);
+const libraryLabels = new Map(projects.map((project) => [project.id, project.label]));
 const platformFragments = benchmarks.platforms.flatMap((platform) => {
-  const leadFigure = platform.figures.find((figure) => figure.id === "pulldown-cmark");
   return [
-    `${leadFigure.fresh.toFixed(1)}×`,
+    ...platform.figures.flatMap((figure) => {
+      if (figure.id === "v1") return [];
+      return [libraryLabels.get(figure.id) ?? figure.label, `${figure.fresh.toFixed(1)}×`];
+    }),
     platform.label,
     ...platform.machine.split(", "),
     platform.revision,
   ];
 });
 
+const ecosystemBenchmarks = JSON.parse(
+  await readFile(
+    new URL("../app/data/markdown-ecosystem-benchmarks.json", import.meta.url),
+    "utf8",
+  ),
+);
+const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) => [
+  libraryLabels.get(figure.id),
+  figure.runtime,
+  `${figure.fresh.toFixed(1)}×`,
+  `${figure.documents}/${figure.corpusDocuments} documents`,
+  figure.revision,
+]);
+
 const requiredFragments = [
+  ...ecosystemFragments,
+  ...projects.flatMap((project) => [project.label, `href="${project.github}"`]),
+  'id="markdown-ecosystem"',
+  "Ferromark speedup over each library",
+  "2× means twice the throughput",
+  'class="ferromark-comparison"',
+  'id="comparison-native"',
+  'id="comparison-node"',
   ...platformFragments,
   'href="/guide/benchmarks"',
   '"/assets/',
@@ -117,7 +145,10 @@ check(footer, "family footer", {
   forbidden: ["https://sebastian-software.github.io/ferromark/"],
 });
 
-check(homepage, "homepage", { required: requiredFragments, forbidden: forbiddenFragments });
+check(homepage, "homepage", {
+  required: requiredFragments,
+  forbidden: [...forbiddenFragments, "Ferromark v1", "OX-Content original"],
+});
 check(benchmarkPage, "v2 benchmark evidence", {
   required: [
     "v2",
@@ -129,7 +160,10 @@ check(benchmarkPage, "v2 benchmark evidence", {
     ]),
   ],
 });
-check(guidePage, "guide page", { required: requiredGuideFragments, forbidden: forbiddenFragments });
+check(guidePage, "guide page", {
+  required: requiredGuideFragments,
+  forbidden: forbiddenFragments,
+});
 
 // eslint-disable-next-line security/detect-unsafe-regex -- This scans local build output, not externally supplied HTML.
 if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {

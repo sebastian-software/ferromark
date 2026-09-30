@@ -7,6 +7,10 @@ and Bun's original native Markdown engine. It uses the frozen 57-document
 attribution and licenses. It does not run Markdown through a JavaScript, WASM,
 CLI, or network boundary in a timed operation.
 
+The separate [markdown-rs and micromark harness](../markdown-ecosystem/README.md)
+extends the comparison with a native Rust pair and a Node pair on the same
+frozen corpus. Its runtime and allocator contracts are recorded separately.
+
 ## Native calls and lifecycles
 
 | Engine | Fresh call | Reuse call |
