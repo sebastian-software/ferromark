@@ -53,7 +53,7 @@ const { version } = JSON.parse(
 // The landing page states the measured figures that
 // scripts/publish-native-readme.py derives from one archived native comparison
 // per platform; a hard-coded number would survive the next measurement, so the
-// prerendered page must carry every platform's lead figure, machine and
+// prerendered page must carry every platform's library figures, machine and
 // measured revision.
 const benchmarks = JSON.parse(
   await readFile(new URL("../app/data/native-benchmarks.json", import.meta.url), "utf8"),
@@ -62,9 +62,8 @@ if (benchmarks.platforms.length < 2) {
   throw new Error("native-benchmarks.json must publish every measured platform");
 }
 const platformFragments = benchmarks.platforms.flatMap((platform) => {
-  const leadFigure = platform.figures.find((figure) => figure.id === "pulldown-cmark");
   return [
-    `${leadFigure.fresh.toFixed(1)}×`,
+    ...platform.figures.flatMap((figure) => [figure.label, `${figure.fresh.toFixed(1)}×`]),
     platform.label,
     ...platform.machine.split(", "),
     platform.revision,
@@ -88,7 +87,9 @@ const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) => [
 const requiredFragments = [
   ...ecosystemFragments,
   'id="markdown-ecosystem"',
-  'href="/guide/benchmarks#markdown-rs-and-micromark"',
+  "Ferromark speedup over each library",
+  "2× means twice the throughput",
+  'class="ferromark-comparison"',
   ...platformFragments,
   'href="/guide/benchmarks"',
   '"/assets/',

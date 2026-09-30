@@ -1,6 +1,5 @@
 import {
   ClosingAction,
-  EvidenceFigures,
   IronBand,
   Ledger,
   Mark,
@@ -12,27 +11,11 @@ import {
 } from "ferramenta-family";
 import { Link } from "react-router";
 
+import { BenchmarkComparison } from "../components/benchmark-comparison";
 import { FlavoredMarkdownSection } from "../components/ffm-showcase";
-import { agreementDocuments, formatSpeed, nativeBenchmarks } from "../components/native-benchmarks";
 import landingSample from "../data/landing-sample.json";
-import ecosystemBenchmarks from "../data/markdown-ecosystem-benchmarks.json";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
 import { version } from "../version";
-
-const benchmarkFigures = nativeBenchmarks.platforms.flatMap((platform) =>
-  platform.figures
-    .filter((figure) => figure.id !== "ox-content")
-    .map((figure) => ({
-      label: `${platform.label} · ${figure.label}`,
-      value: formatSpeed(figure.fresh),
-      detail: `${figure.documents} documents · fresh parser state`,
-      measure: (
-        <a href={`https://github.com/sebastian-software/ferromark/tree/main/${platform.report}`}>
-          {platform.machine} · {platform.measured} · {platform.revision}
-        </a>
-      ),
-    })),
-);
 
 const conformanceEntries = [
   {
@@ -146,54 +129,18 @@ function EvidenceSection() {
     <Section
       id="evidence"
       layout="split"
-      title="Measured on real documents."
-      intro={`On ${agreementDocuments()} real documents, five native engines render equivalent HTML. Fresh parser state; higher is faster.`}
+      title="Faster on real documents."
+      intro="Each value shows Ferromark’s throughput relative to the library in that row. 2× means twice the throughput."
       note={
         <>
-          Ratios are relative to each engine and platform. Each figure links to its archived report,
-          including the machine, measurement date, source revisions, and reproduction commands. See
-          the <Link to="/guide/benchmarks">full benchmark guide</Link> for reuse lifecycles and
-          per-document results.
+          Equivalent HTML only, across separate runs and document agreement sets. The Node.js row
+          includes binding overhead. Every value links to its measurement report; a dash means
+          unmeasured. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
+          <Link to="/guide/feature-comparison">Compare features</Link>
         </>
       }
     >
-      <EvidenceFigures figures={benchmarkFigures} />
-    </Section>
-  );
-}
-
-function EcosystemEvidenceSection() {
-  const figures = ecosystemBenchmarks.figures.map((figure) => ({
-    label: `${figure.runtime} · ${figure.label}`,
-    value: formatSpeed(figure.fresh),
-    detail: `${figure.documents}/${figure.corpusDocuments} documents · equivalent HTML · fresh`,
-    measure: (
-      <a
-        href={`https://github.com/sebastian-software/ferromark/tree/main/${ecosystemBenchmarks.report}`}
-      >
-        macOS arm64 · {ecosystemBenchmarks.measured} · {figure.revision}
-      </a>
-    ),
-  }));
-  return (
-    <Section
-      id="markdown-ecosystem"
-      layout="split"
-      title="Compared with markdown-rs and micromark."
-      intro="The Rust engine and Node.js bindings each have a direct comparison on the same frozen document corpus. Higher means greater Ferromark throughput."
-      note={
-        <>
-          These are separate pairs with their own runtime and build settings. The Node.js pair
-          includes the public binding and string conversion costs. Both builds use no PGO. Only
-          equivalent HTML enters the score. See the{" "}
-          <Link to="/guide/benchmarks#markdown-rs-and-micromark">
-            options, reuse results, and output differences
-          </Link>
-          , or compare <Link to="/guide/feature-comparison">syntax and AST capabilities</Link>.
-        </>
-      }
-    >
-      <EvidenceFigures figures={figures} />
+      <BenchmarkComparison />
     </Section>
   );
 }
@@ -259,7 +206,6 @@ export default function HomePage() {
         <PipelineSection />
         <FlavoredMarkdownSection />
         <EvidenceSection />
-        <EcosystemEvidenceSection />
         <ConformanceSection />
         <StartSection />
       </div>
