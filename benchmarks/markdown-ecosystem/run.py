@@ -107,6 +107,8 @@ def main():
         'lock_sha256': native.sha(lock), 'worker_sha256': native.sha(command),
         'adapter_sha256': native.sha(HERE / ('worker.rs' if args.track == 'native' else 'worker.mjs')),
         'node_adapters_sha256': native.sha(HERE / 'node-adapters.mjs') if args.track == 'node' else None,
+        'benchmark_facade_sha256': native.sha(HERE / 'benchmark-facade.mjs') if args.track == 'node' else None,
+        'benchmark_target_sha256': native.sha(HERE / 'benchmark-target.mjs') if args.track == 'node' else None,
         'profile_scope': 'CommonMark only on all inputs' if competitor in ('commonmark', 'cmark') else 'CommonMark or tables/strikethrough/tasks, per frozen input profile',
         'runner_sha256': native.sha(__file__), 'verifier_sha256': native.sha(HERE.parent / 'native-comparison/verify.py'),
         'guards_sha256': native.sha(HERE.parent / 'native-comparison/run.py'),

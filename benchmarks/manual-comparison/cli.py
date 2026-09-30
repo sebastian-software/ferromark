@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare, measure, validate, and publish the complete manual macOS comparison."""
+"""Prepare, measure, validate, and publish the complete manual comparison."""
 from __future__ import annotations
 
 import argparse
@@ -23,7 +23,7 @@ ECO = REPO / 'benchmarks/markdown-ecosystem'
 NATIVE = REPO / 'benchmarks/native-comparison'
 REFERENCE = REPO / 'docs/reports/2026-09-21-native-round-4'
 CORPUS = REPO / 'docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz'
-CURRENT = REPO / 'benchmarks/manual-macos/current.json'
+CURRENT = REPO / 'benchmarks/manual-comparison/current.json'
 
 # The established harnesses own semantics, timing, and aggregation.
 sys.path.insert(0, str(ECO))
@@ -67,25 +67,64 @@ def execute(args, cwd, log, env=None):
                        stderr=subprocess.STDOUT, check=True)
 
 
+def platform_details(system, machine):
+    """Canonical platform keys, independent of Python/Node architecture spelling."""
+    architectures = {'arm64': 'arm64', 'aarch64': 'arm64', 'x86_64': 'x86-64', 'amd64': 'x86-64', 'x64': 'x86-64', 'x86-64': 'x86-64'}
+    systems = {'Darwin': ('macos', 'macOS'), 'Linux': ('linux', 'Linux')}
+    architecture = architectures.get(machine.lower())
+    if system not in systems or architecture is None:
+        raise ValueError(f'The native harness supports macOS/Linux on arm64 and x86-64, found {system}/{machine}.')
+    slug, label = systems[system]
+    return {'system': system, 'architecture': architecture, 'platform': f'{slug}-{architecture}',
+            'platform_label': f'{label} {architecture}'}
+
+
+def addon_library(system):
+    return 'libferromark_node.dylib' if system == 'Darwin' else 'libferromark_node.so'
+
+
+def host_description(details):
+    if details['system'] == 'Darwin':
+        cpu = subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip()
+        memory = int(subprocess.check_output(['sysctl', '-n', 'hw.memsize'], text=True)) // (1024 ** 3)
+        os_version = subprocess.check_output(['sw_vers', '-productVersion'], text=True).strip()
+        return f'{cpu}, {memory} GB RAM, macOS {os_version}'
+    cpuinfo = Path('/proc/cpuinfo').read_text()
+    cpu = next((line.split(':', 1)[1].strip() for line in cpuinfo.splitlines()
+                if line.lower().startswith(('model name', 'hardware'))), details['architecture'])
+    memory_kb = next(int(line.split()[1]) for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:'))
+    return f'{cpu}, {memory_kb / (1024 ** 2):.1f} GB RAM, Linux {platform.release()}'
+
+
 def preflight():
-    if platform.system() != 'Darwin' or platform.machine() != 'arm64':
-        raise ValueError('Run the measurements on macOS arm64, outside Rosetta.')
-    required = ('git', 'curl', 'clang', 'clang++', 'cmake', 'cargo', 'rustup', 'node', 'npm', 'caffeinate')
+    details = platform_details(platform.system(), platform.machine())
+    required = ('git', 'curl', 'clang', 'clang++', 'cmake', 'cargo', 'rustup', 'node', 'npm')
+    if details['system'] == 'Darwin':
+        required += ('caffeinate',)
+        translated = subprocess.run(['sysctl', '-in', 'sysctl.proc_translated'], capture_output=True, text=True)
+        if translated.stdout.strip() == '1':
+            raise ValueError('Use native executables outside Rosetta so recorded hardware and process architectures agree.')
     missing = [name for name in required if shutil.which(name) is None]
     if missing:
-        raise ValueError('Missing tools: ' + ', '.join(missing) + '. See benchmarks/manual-macos/README.md.')
+        raise ValueError('Missing tools: ' + ', '.join(missing) + '. See benchmarks/manual-comparison/README.md.')
     if os.environ.get('NODE_OPTIONS'):
         raise ValueError('Unset NODE_OPTIONS so Node uses its default runtime configuration.')
     version = subprocess.check_output(['node', '--version'], text=True).strip()
     if not version.startswith('v24.'):
         raise ValueError('Use Node.js 24 for this comparison, found ' + version)
+    probe = "import { localTarget } from './benchmarks/markdown-ecosystem/benchmark-target.mjs'; console.log(JSON.stringify({system: process.platform === 'darwin' ? 'Darwin' : process.platform === 'linux' ? 'Linux' : process.platform, architecture: process.arch, target: localTarget()}));"
+    node = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', probe], cwd=REPO, text=True))
+    assert platform_details(node['system'], node['architecture']) == details, 'Python and Node process architectures differ'
+    if os.environ.get('RUSTUP_TOOLCHAIN'):
+        raise ValueError('Unset RUSTUP_TOOLCHAIN so the committed toolchain pin selects the compiler.')
+    rustc = subprocess.check_output(['rustc', '-vV'], cwd=REPO, text=True)
+    triple = native_archive.prepare.host_triple(rustc)
+    assert triple.split('-', 1)[0] in (('aarch64',) if details['architecture'] == 'arm64' else ('x86_64',)), 'Rust host architecture differs'
     if git('status', '--porcelain'):
         raise ValueError('Commit the measured changes first, or use a clean worktree; no files were changed.')
     git('cat-file', '-e', native_archive.prepare.FERROMARK_V1_REVISION + '^{commit}')
-    cpu = subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip()
-    memory = int(subprocess.check_output(['sysctl', '-n', 'hw.memsize'], text=True)) // (1024 ** 3)
-    os_version = subprocess.check_output(['sw_vers', '-productVersion'], text=True).strip()
-    return {'machine': f'{cpu}, {memory} GB RAM, macOS {os_version}', 'hostname': platform.node(), 'host_platform': platform.platform()}
+    return {**details, 'machine': host_description(details), 'hostname': platform.node(),
+            'host_platform': platform.platform(), 'addon_file': 'ferromark.' + node['target'] + '.node'}
 
 
 def prepare(output):
@@ -130,22 +169,23 @@ def prepare(output):
     execute([python, source / ECO.relative_to(REPO) / 'prepare-native.py', output / 'ecosystem-build'], source, logs / 'ecosystem-build.log', env)
     execute(['npm', 'ci', '--ignore-scripts', '--prefix', 'benchmarks/markdown-ecosystem'], source, log, env)
     execute(['cargo', 'build', '-p', 'ferromark-node', '--profile', 'release-node', '--locked'], source, logs / 'node-build.log', env)
-    addon = source / 'node/ferromark/ferromark.darwin-arm64.node'
-    shutil.copyfile(source / 'target/release-node/libferromark_node.dylib', addon)
-    write(output / 'prepared.json', {'schema': 1, 'revision': revision, **host, 'node': subprocess.check_output(['node', '--version'], text=True).strip(),
+    addon = source / 'node/ferromark' / host['addon_file']
+    shutil.copyfile(source / 'target/release-node' / addon_library(host['system']), addon)
+    execute(['node', '--test', source / ECO.relative_to(REPO) / 'test-benchmark-loader.mjs'], source, logs / 'node-loader-tests.log', {**env, 'FERROMARK_BENCH_TEST_ADDON': str(addon)})
+    write(output / 'prepared.json', {'schema': 2, 'revision': revision, **host, 'node': subprocess.check_output(['node', '--version'], text=True).strip(),
                                    'addon_sha256': native.sha(addon), 'corpus_sha256': native.sha(CORPUS)})
     (output / 'host.txt').write_text(host['machine'] + '\n')
-    print('Prepared. Measure with: ./scripts/benchmark-macos measure ' + shlex.quote(str(output)), flush=True)
+    print('Prepared. Measure with: ./scripts/benchmark-comparison measure ' + shlex.quote(str(output)), flush=True)
 
 
 def measure(output, cooldown, verify_only=False):
     host = preflight()
     prepared = read(output, 'prepared')
-    assert prepared['schema'] == 1 and prepared['revision'] == git('rev-parse', 'HEAD'), 'checkout revision changed since preparation'
-    assert all(host[key] == prepared[key] for key in host), 'run on the same Mac used for preparation'
+    assert prepared['schema'] == 2 and prepared['revision'] == git('rev-parse', 'HEAD'), 'checkout revision changed since preparation'
+    assert all(host[key] == prepared[key] for key in host), 'run on the same host used for preparation'
     source = output / 'source'
     assert git('rev-parse', 'HEAD', cwd=source) == prepared['revision'] and not git('status', '--porcelain', cwd=source)
-    assert native.sha(source / 'node/ferromark/ferromark.darwin-arm64.node') == prepared['addon_sha256']
+    assert native.sha(source / 'node/ferromark' / prepared['addon_file']) == prepared['addon_sha256']
     assert subprocess.check_output(['node', '--version'], text=True).strip() == prepared['node'], 'Node runtime changed'
     evidence = output / 'evidence'
     evidence.mkdir(exist_ok=True)
@@ -190,7 +230,7 @@ def measure(output, cooldown, verify_only=False):
                  '--name', 'native', '--results', native_results, '--build-dir', output / 'native-build',
                  '--seed-lock', source / REFERENCE.relative_to(REPO) / 'Cargo.lock', '--reference', source / REFERENCE.relative_to(REPO),
                  '--restore-dir', output / 'cache', '--host-file', output / 'host.txt', '--host-summary', prepared['machine'],
-                 '--origin', 'A manual macOS benchmark run used an isolated committed checkout.', '--host-kind', 'local',
+                 '--origin', 'A manual benchmark run used an isolated committed checkout.', '--host-kind', 'local',
                  '--verify-only-passed', '--harness-revision', prepared['revision'], '--build-log', logs / 'native-build.log',
                  '--source-audit', output / 'source-audit.json', '--tests-log', logs / 'native-comparison-tests.log'], source, logs / 'native-archive.log')
     for name, base in pair_commands:
@@ -212,12 +252,12 @@ def measure(output, cooldown, verify_only=False):
         eco_archive.retain(raw, destination, prepared['revision'])
     shutil.copyfile(output / 'prepared.json', evidence / 'suite.json')
     shutil.copyfile(output / 'host.txt', evidence / 'host.txt')
-    shutil.copyfile(source / 'benchmarks/manual-macos/cli.py', evidence / 'manual-cli.py')
-    shutil.copyfile(source / 'scripts/benchmark-macos', evidence / 'benchmark-macos')
+    shutil.copyfile(source / 'benchmarks/manual-comparison/cli.py', evidence / 'manual-cli.py')
+    shutil.copyfile(source / 'scripts/benchmark-comparison', evidence / 'benchmark-comparison')
     verify_evidence(evidence)
     write(evidence / 'figures.json', {'figures': figures(evidence, 'LOCAL')})
     checksums(evidence)
-    print('Complete. Publish with: ./scripts/benchmark-macos publish ' + shlex.quote(str(output)), flush=True)
+    print('Complete. Publish with: ./scripts/benchmark-comparison publish ' + shlex.quote(str(output)), flush=True)
 
 
 def checksums(folder, check=False):
@@ -234,20 +274,30 @@ def committed(revision, path):
     return subprocess.check_output(['git', 'show', revision + ':' + path], cwd=REPO)
 
 
+def verify_platform(suite, config, build=None):
+    details = platform_details(suite['system'], suite['architecture'])
+    assert all(suite[key] == value for key, value in details.items()), 'inconsistent recorded platform'
+    assert config['host_before']['platform'] == config['host_after']['platform'] == suite['host_platform'], 'mixed host platforms'
+    if build is not None:
+        assert platform_details(build['platform']['system'], build['platform']['machine']) == details, 'build target differs from recorded platform'
+    return details
+
+
 def verify_evidence(folder):
     suite = read(folder, 'suite')
-    assert suite['schema'] == 1
+    assert suite['schema'] == 2
     revision = suite['revision']
     assert re.fullmatch(r'[0-9a-f]{40}', revision), 'full source revision required'
     assert suite['corpus_sha256'] == native.sha(CORPUS)
-    assert suite['host_platform'].startswith('macOS-') and 'arm64' in suite['host_platform']
+    details = platform_details(suite['system'], suite['architecture'])
+    assert all(suite[key] == value for key, value in details.items()), 'inconsistent recorded platform'
     for track, engine in PAIRS:
         config, _ = eco_archive.validate(folder / (track + '-' + engine), revision)
         assert config['engines'] == ['v2', engine] and config['track'] == track
         assert 'host_after' in config, 'incomplete run'
-        assert config['host_before']['platform'] == config['host_after']['platform'] == suite['host_platform'], 'mixed host platforms'
+        verify_platform(suite, config)
         if track == 'node':
-            assert set(config['native_addon_sha256'].values()) == {suite['addon_sha256']}
+            assert config['native_addon_sha256'] == {'node/ferromark/' + suite['addon_file']: suite['addon_sha256']}
             assert config['runtime'] == suite['node']
     directory = folder / 'native'
     config, build = read(directory, 'run'), read(directory, 'build')
@@ -256,9 +306,8 @@ def verify_evidence(folder):
     assert corpus['cases'] == frozen['cases'] and config['corpus_sha256'] == suite['corpus_sha256']
     assert (config['rounds'], config['samples'], config['window_ms'], config['warmup_ms']) == (3, 6, 40, 60)
     assert config['case_filter'] is None and config['corpus_case_count'] == 57 and 'host_after' in config
-    assert config['host_before']['platform'] == config['host_after']['platform'] == suite['host_platform']
+    verify_platform(suite, config, build)
     assert tuple(config['engines']) == native.ENGINES and tuple(config['modes']) == native.MODES
-    assert build['platform']['system'] == 'Darwin' and build['platform']['machine'] == 'arm64'
     assert build['engines']['ferromark_v2']['revision'] == revision
     assert native.sha(directory / 'Cargo.lock') == build['lock_sha256']
     expected_jobs = [dict(name=c['name'], profile=c['profile'], members=[c['name']]) for c in frozen['cases']]
@@ -308,16 +357,23 @@ def figures(folder, report):
     for project in catalog:
         count, speed, scope, lane, measured = values[project['id']]
         assert count > 0 and all(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in speed.values())
-        result.append({**{key: project[key] for key in ('id', 'label', 'runtime')}, 'platform': 'macos-arm64',
-                       'platformLabel': 'macOS arm64', 'machine': suite['machine'], 'measured': measured,
+        result.append({**{key: project[key] for key in ('id', 'label', 'runtime')}, 'platform': suite['platform'],
+                       'platformLabel': suite['platform_label'], 'machine': suite['machine'], 'measured': measured,
                        'revision': suite['revision'][:8], 'report': report + '/' + lane, 'profileScope': scope,
                        'documents': count, 'corpusDocuments': 57, 'fresh': speed['fresh'], 'reuse': speed['reuse']})
     return result
 
 
 def content(values):
-    text = '\n## Manual macOS comparison\n\n'
-    text += 'All 14 homepage libraries were remeasured on one Mac from the same committed\nsource revision. Factors mean Ferromark throughput relative to the library.\nNative and Node.js calls have separate build and allocation contracts.\n\n'
+    groups = {}
+    for value in values:
+        groups.setdefault(value['platform'], []).append(value)
+    return ''.join(platform_content(group) for group in groups.values())
+
+
+def platform_content(values):
+    text = f"\n## Manual comparison — {values[0]['platformLabel']}\n\n"
+    text += 'All 14 homepage libraries were remeasured on one host from the same committed\nsource revision. Factors mean Ferromark throughput relative to the library.\nNative and Node.js calls have separate build and allocation contracts.\n\n'
     text += '| Runtime | Project | Equivalent documents | Fresh | Reuse |\n| --- | --- | ---: | ---: | ---: |\n'
     for value in values:
         text += f"| {value['runtime']} | {value['label']} | {value['documents']}/57 | {value['fresh']:.2f}× | {value['reuse']:.2f}× |\n"
@@ -326,19 +382,26 @@ def content(values):
     dates = sorted({value['measured'] for value in values})
     text += f"\nMachine: {first['machine']}. Measurement dates: {', '.join(dates)}, source `{first['revision']}`.\n\n"
     text += 'Each pair uses three process rounds, six alternating 40 ms windows and\n60 ms warmup. Scores use equal-document geometric means of the per-engine\nmedian of round medians. Only equivalent HTML contributes. The original\nsix-engine harness retains its shared five/six-engine agreement sets, shared\nmimalloc, pinned Bun toolchain and rotating-batch diagnostics. The four other\nnative pairs use system malloc and the stable Rust toolchain; Node uses the\nrelease-node addon without PGO and includes public binding costs and GC.\ncmark and commonmark.js use CommonMark only in both engines on all inputs.\nThese sets and build contracts do not support a shared-set ranking.\n\n'
-    text += 'Builds and downloads finish before verification and timing. Lanes run\nsequentially with a cooldown; host observations and per-round ranges remain\nin the raw evidence. Background macOS activity can still add noise. These\nresults describe this machine and corpus, with no significance claim. Linux\nresults and earlier reports remain separate.\n\n'
-    text += f'[Raw evidence](https://github.com/sebastian-software/ferromark/tree/main/{root}), [manual workflow](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/manual-macos/README.md).\n'
+    text += 'Builds and downloads finish before verification and timing. Lanes run\nsequentially with a cooldown; host observations and per-round ranges remain\nin the raw evidence. Background system activity can still add noise. These\nresults describe this machine and corpus, with no significance claim. Other platforms\nand earlier reports remain separate.\n\n'
+    text += f'[Raw evidence](https://github.com/sebastian-software/ferromark/tree/main/{root}), [manual workflow](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/manual-comparison/README.md).\n'
     return text
 
 
 def active():
     pointer = json.loads(CURRENT.read_text())
-    if pointer['report'] is None:
-        return []
-    path = report_path(pointer['report'])
-    checksums(path, check=True)
-    verify_evidence(path)
-    return figures(path, str(path.relative_to(REPO)))
+    values = []
+    for platform_id, name in sorted(pointer['reports'].items()):
+        path = report_path(name)
+        checksums(path, check=True)
+        suite = verify_evidence(path)
+        assert suite['platform'] == platform_id, 'selected report belongs to another platform'
+        values.extend(figures(path, str(path.relative_to(REPO))))
+    return values
+
+
+def select_report(pointer, platform_id, name):
+    """Replace only the measured platform's selected report."""
+    return {'reports': {**pointer['reports'], platform_id: name}}
 
 
 def report_path(name):
@@ -353,22 +416,22 @@ def publish(output, name, check=False):
     checksums(evidence, check=True)
     verify_evidence(evidence)
     if check:
-        print('Validated all 14 macOS comparisons; no files changed.')
+        print('Validated all 14 comparisons; no files changed.')
         return
     suite = read(evidence, 'suite')
-    name = name or read(evidence / 'native', 'run')['host_before']['time_utc'][:10] + '-manual-macos-' + suite['revision'][:8]
+    name = name or read(evidence / 'native', 'run')['host_before']['time_utc'][:10] + '-manual-' + suite['platform'] + '-' + suite['revision'][:8]
     target = report_path(name)
     if target.exists():
         raise ValueError('Report already exists; choose a new name. Historical reports are immutable.')
-    with tempfile.TemporaryDirectory(prefix='.manual-macos-', dir=target.parent) as temp:
+    with tempfile.TemporaryDirectory(prefix='.manual-comparison-', dir=target.parent) as temp:
         staged = Path(temp) / 'report'
         shutil.copytree(evidence, staged)
         values = figures(staged, str(target.relative_to(REPO)))
         write(staged / 'figures.json', {'figures': values})
-        (staged / 'README.md').write_text('# Manual macOS comparison\n' + content(values) + '\n[SHA256SUMS](SHA256SUMS) covers all retained evidence.\n')
+        (staged / 'README.md').write_text('# Manual comparison\n' + content(values) + '\n[SHA256SUMS](SHA256SUMS) covers all retained evidence.\n')
         checksums(staged)
         staged.rename(target)
-    write(CURRENT, {'report': name})
+    write(CURRENT, select_report(json.loads(CURRENT.read_text()), suite['platform'], name))
     for script in ('publish_values.py', 'publish.py'):
         subprocess.run([sys.executable, ECO / script], cwd=REPO, check=True)
     print('Published local report and homepage data: ' + str(target))
@@ -377,14 +440,14 @@ def publish(output, name, check=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('doctor', help='check the Mac, prerequisites, and clean committed checkout')
+    commands.add_parser('doctor', help='check the host, prerequisites, and clean committed checkout')
     for command in ('prepare', 'run', 'measure', 'verify', 'publish'):
         sub = commands.add_parser(command)
         sub.add_argument('output', type=lambda value: Path(value).expanduser().resolve())
         if command in ('run', 'measure'):
             sub.add_argument('--cooldown-seconds', type=int, default=60)
         if command == 'publish':
-            sub.add_argument('--name', help='new immutable report name, e.g. 2026-10-01-mac-mini-m1')
+            sub.add_argument('--name', help='new immutable report name, e.g. 2026-10-01-linux-x86-64')
             sub.add_argument('--check', action='store_true', help='validate the complete evidence without changing files')
     args = parser.parse_args()
     if sys.flags.optimize:
@@ -401,12 +464,13 @@ def main():
         else:
             if args.command == 'run':
                 prepare(args.output)
-            awake = subprocess.Popen(['caffeinate', '-i', '-w', str(os.getpid())])
+            awake = subprocess.Popen(['caffeinate', '-i', '-w', str(os.getpid())]) if platform.system() == 'Darwin' else None
             try:
                 measure(args.output, getattr(args, 'cooldown_seconds', 0), verify_only=args.command == 'verify')
             finally:
-                awake.terminate()
-                awake.wait()
+                if awake is not None:
+                    awake.terminate()
+                    awake.wait()
     except (ValueError, AssertionError, KeyError, OSError, subprocess.CalledProcessError) as error:
         parser.exit(1, f'Benchmark stopped: {error}\nExisting logs and partial attempts are preserved.\n')
 

@@ -77,6 +77,9 @@ def validate(source, revision=None):
     if config['track'] == 'node':
         files.update({'worker.mjs': ('benchmarks/markdown-ecosystem/worker.mjs', 'worker_sha256'),
                       'node-adapters.mjs': ('benchmarks/markdown-ecosystem/node-adapters.mjs', 'node_adapters_sha256')})
+        for name, key in [('benchmark-facade.mjs', 'benchmark_facade_sha256'), ('benchmark-target.mjs', 'benchmark_target_sha256')]:
+            if key in config:
+                files[name] = ('benchmarks/markdown-ecosystem/' + name, key)
     else:
         files['worker.rs'] = ('benchmarks/markdown-ecosystem/worker.rs', 'adapter_sha256')
         build = config['build_metadata']

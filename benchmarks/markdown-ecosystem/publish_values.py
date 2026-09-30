@@ -34,8 +34,8 @@ def figures():
 
 def manual_workflow():
     import importlib.util
-    path = REPO / 'benchmarks/manual-macos/cli.py'
-    spec = importlib.util.spec_from_file_location('manual_macos', path)
+    path = REPO / 'benchmarks/manual-comparison/cli.py'
+    spec = importlib.util.spec_from_file_location('manual_comparison', path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -43,8 +43,8 @@ def manual_workflow():
 
 def current_figures():
     historical = figures()
-    pointer = json.loads((REPO / 'benchmarks/manual-macos/current.json').read_text())
-    current = manual_workflow().active() if pointer['report'] else []
+    pointer = json.loads((REPO / 'benchmarks/manual-comparison/current.json').read_text())
+    current = manual_workflow().active() if pointer['reports'] else []
     return merge_figures(historical, current)
 
 
@@ -55,8 +55,8 @@ def merge_figures(historical, current):
 
 
 def current_content():
-    pointer = json.loads((REPO / 'benchmarks/manual-macos/current.json').read_text())
-    if not pointer['report']:
+    pointer = json.loads((REPO / 'benchmarks/manual-comparison/current.json').read_text())
+    if not pointer['reports']:
         return ''
     workflow = manual_workflow()
     values = workflow.active()

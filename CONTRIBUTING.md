@@ -84,9 +84,9 @@ node ./scripts/check-readme-family.mjs
 
 ## Benchmarks and conformance
 
-For a complete manual Apple Silicon comparison and homepage update, use the
-[macOS benchmark runbook](benchmarks/manual-macos/README.md). A repo-local
-[agent skill](.agents/skills/manual-macos-benchmarks/SKILL.md) follows the same commands.
+For a complete manual comparison and homepage update, use the
+[benchmark runbook](benchmarks/manual-comparison/README.md). A repo-local
+[agent skill](.agents/skills/manual-benchmarks/SKILL.md) follows the same commands.
 
 Preserve archived measurements and specification fixtures byte for byte.
 Do not edit benchmark numbers by hand. Each directory under `benchmarks/`

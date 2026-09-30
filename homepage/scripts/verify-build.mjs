@@ -103,6 +103,7 @@ const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) =>
       ],
 );
 const completedFragments = completedBenchmarks.figures.flatMap((figure) => [
+  figure.platformLabel,
   `${figure.fresh.toFixed(1)}×`,
   `${figure.documents}/${figure.corpusDocuments} documents`,
   figure.machine,

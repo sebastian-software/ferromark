@@ -18,10 +18,10 @@ class ManualTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.folder = Path(self.temp.name) / 'evidence'
         self.folder.mkdir()
-        self.suite = {'schema': 1, 'revision': '290801961e2433d29d5a32ddb78c8384a0fcd336',
+        self.suite = {'schema': 2, **cli.platform_details('Darwin', 'arm64'), 'revision': '290801961e2433d29d5a32ddb78c8384a0fcd336',
                       'machine': 'Test host: retained measurements, not a new run',
                       'host_platform': 'macOS-27.0-arm64-arm-64bit',
-                      'addon_sha256': 'unused', 'node': 'v24.21.0', 'corpus_sha256': cli.native.sha(cli.CORPUS)}
+                      'addon_file': 'ferromark.darwin-arm64.node', 'addon_sha256': 'unused', 'node': 'v24.21.0', 'corpus_sha256': cli.native.sha(cli.CORPUS)}
         cli.write(self.folder / 'suite.json', self.suite)
 
     def retained_matrix(self):
@@ -106,17 +106,57 @@ class ManualTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 cli.report_path(name)
 
-    def test_linux_values_survive_mac_selection(self):
+    def test_only_measured_platform_values_are_replaced(self):
         self.retained_matrix()
         values = cli.figures(self.folder, 'docs/reports/test')
         publisher = cli.load('test_publisher', cli.ECO / 'publish_values.py')
         # Check the real keyed replacement rule without constructing a false
         # publishable report. Publication validity has its own rejection cases.
         historical = publisher.figures()
-        combined = publisher.merge_figures(historical, values)
-        self.assertEqual([v for v in combined if v['platform'] == 'linux-x86-64'],
-                         [v for v in historical if v['platform'] == 'linux-x86-64'])
-        self.assertEqual(len({(v['platform'], v['id']) for v in combined}), len(combined))
+        for system, architecture in [('Darwin', 'arm64'), ('Darwin', 'x86_64'), ('Linux', 'x86_64'), ('Linux', 'aarch64')]:
+            details = cli.platform_details(system, architecture)
+            cli.write(self.folder / 'suite.json', {**self.suite, **details})
+            values = cli.figures(self.folder, 'docs/reports/test')
+            combined = publisher.merge_figures(historical, values)
+            key = details['platform']
+            self.assertEqual([v for v in combined if v['platform'] != key],
+                             [v for v in historical if v['platform'] != key])
+            self.assertEqual(len([v for v in combined if v['platform'] == key]), 14)
+            self.assertEqual(len({(v['platform'], v['id']) for v in combined}), len(combined))
+
+    def test_platform_aliases_and_addon_libraries(self):
+        for system, slug in [('Darwin', 'macos'), ('Linux', 'linux')]:
+            for architecture in ('x64', 'AMD64', 'x86_64', 'x86-64'):
+                self.assertEqual(cli.platform_details(system, architecture)['platform'], slug + '-x86-64')
+            for architecture in ('arm64', 'aarch64'):
+                self.assertEqual(cli.platform_details(system, architecture)['platform'], slug + '-arm64')
+        self.assertEqual(cli.addon_library('Darwin'), 'libferromark_node.dylib')
+        self.assertEqual(cli.addon_library('Linux'), 'libferromark_node.so')
+        with self.assertRaises(ValueError):
+            cli.platform_details('Windows', 'x64')
+        with self.assertRaises(ValueError):
+            cli.platform_details('Linux', 'riscv64')
+
+    def test_recorded_platform_checks_allow_import_on_another_host(self):
+        for slug, system, architecture in [('macos-arm64', 'Darwin', 'arm64'), ('linux-x86-64', 'Linux', 'x86_64')]:
+            directory = cli.REPO / ('docs/reports/2026-09-24-native-' + slug)
+            config, build = cli.read(directory, 'run'), cli.read(directory, 'build')
+            suite = {**cli.platform_details(system, architecture), 'host_platform': config['host_before']['platform']}
+            self.assertEqual(cli.verify_platform(suite, config, build)['platform'], slug)
+            other = {**suite, **cli.platform_details(system, 'x86_64' if architecture == 'arm64' else 'arm64')}
+            with self.assertRaises(AssertionError):
+                cli.verify_platform(other, config, build)
+            with self.assertRaises(AssertionError):
+                cli.verify_platform({**suite, 'host_platform': 'another host platform'}, config, build)
+
+    def test_report_selection_preserves_other_platforms(self):
+        initial = {'reports': {'macos-arm64': '2026-10-01-arm', 'linux-x86-64': '2026-10-01-linux'}}
+        selected = cli.select_report(initial, 'linux-x86-64', '2026-10-02-linux')
+        selected = cli.select_report(selected, 'macos-x86-64', '2026-10-03-intel')
+        self.assertEqual(selected['reports']['macos-arm64'], initial['reports']['macos-arm64'])
+        self.assertEqual(selected['reports']['linux-x86-64'], '2026-10-02-linux')
+        self.assertEqual(selected['reports']['macos-x86-64'], '2026-10-03-intel')
+        self.assertEqual(initial['reports']['linux-x86-64'], '2026-10-01-linux')
 
     def test_cli_help_and_invalid_cooldown_have_no_filesystem_effect(self):
         command = [sys.executable, str(Path(cli.__file__))]
