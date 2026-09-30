@@ -1,28 +1,28 @@
 # Manual benchmark comparisons
 
-Use an otherwise idle machine to remeasure **all eight Native and six Node.js
-libraries** in the homepage table. The workflow detects the host OS and CPU
+Use an otherwise idle machine to remeasure **all nine Native and thirteen Node.js
+execution variants** in the homepage table. The workflow detects the host OS and CPU
 architecture. Publishing updates that platform's values and keeps other
 platforms' selections and historical reports intact. No runner registration,
 CI service, or agent is required.
 
 The native harness supports **macOS and Linux on arm64 or x86-64**. This includes
 Apple Silicon and Intel Macs, Intel/AMD Linux hosts, and arm64 Linux hosts.
-Use native executables outside Rosetta; Python, Node and Rust must use the same
+Use native executables outside Rosetta; Python, Node, Rust, and Go must use the same
 host architecture. The full suite has been built and verified on macOS arm64;
 existing Linux x86-64 harness evidence is retained separately. New platform
 runs still need their own build and output verification before timing.
 
 Before freezing a campaign, review [candidate coverage](candidate-coverage.md).
-The executable 14-project matrix still has documented gaps; the review does not
-add adapters or measurements. Before allocating runner time after dependency
+The executable 22-row matrix includes the seven direct additions identified in
+that review. Further subset, runtime, and streaming candidates remain deferred. Before allocating runner time after dependency
 changes, follow the [dependency readiness checklist](dependency-readiness.md).
 It identifies current pins, release sources, local checks, and the latest
 completed preflight.
 
 ## First setup
 
-Install Git, curl, clang/clang++, CMake, Python 3.11 or newer, Node.js **24**, npm,
+Install Git, curl, clang/clang++, CMake, Python 3.11 or newer, Node.js **24**, npm, Go **1.27.1**,
 and Rust through rustup. On macOS, install Xcode Command Line Tools with
 `xcode-select --install`. On Linux, install your distribution's compiler and
 linker development packages too. Prevent sleep/suspend during Linux runs;
@@ -113,7 +113,7 @@ installation are needed for this step; Python 3.11+ and Git suffice.
 
 Publication rechecks complete window coverage, checksums, frozen inputs, HTML
 classification, aggregates, committed sources/adapters, host/build platform,
-runtime and addon identity, and all 14 projects. It rejects partial/shortened
+runtime and addon identity, and all 22 comparisons. It rejects partial/shortened
 runs and nonpositive or nonfinite scores. It retains compressed raw evidence
 and provenance under a **new** `docs/reports/<name>/` with SHA256SUMS, updates only
 that platform's selection in `benchmarks/manual-comparison/current.json`, and
@@ -124,8 +124,9 @@ are preserved. No Git commit, push, PR, or deployment happens automatically.
 The original native harness uses shared mimalloc and a pinned Bun toolchain;
 its four displayed libraries retain the historical five/six-engine matching
 sets. It still measures v1 internally for those sets but does not publish a v1
-homepage row. Other native pairs use system malloc; Node uses the release-node
-addon without PGO, including string conversion and GC. cmark/commonmark.js use
+homepage row. Other Rust/C pairs use system malloc; Goldmark uses the Go allocator and GC
+with GOMAXPROCS=1, GOGC=100, and no memory limit; Node uses the release-node
+addon without PGO, including string conversion and GC. cmark/commonmark.js/Remarkable use
 CommonMark only in both engines. Different agreement sets and build contracts
 remain disclosed; the table does not establish a shared-set ranking.
 
@@ -182,7 +183,7 @@ Choose the source branch with the workflow's branch selector or `--ref`. The
 checkout itself is the measured revision. Start with `mode=probe` (the default):
 it validates resources and runs `doctor`, without building the comparison or
 timing anything. `mode=verify` prepares every adapter and checks all output and
-option guards without timing. `mode=measure` runs all 14 comparisons and checks
+option guards without timing. `mode=measure` runs all 22 comparisons and checks
 complete evidence, but never publishes values, commits, or pushes results.
 
 ```sh
@@ -217,3 +218,19 @@ a Blacksmith VM as a local physical Mac or GitHub-hosted hardware.
 
 See Blacksmith's [runner profiles and free-minute conversions](https://docs.blacksmith.sh/blacksmith-runners/overview)
 and [GitHub App setup](https://docs.blacksmith.sh/introduction/quickstart).
+
+## Expanded adapter contracts
+
+[comparisons.json](../markdown-ecosystem/comparisons.json) is the required campaign
+inventory. Preparation and each pair retain its hash; schema-3 publication verifies
+the committed inventory and rejects missing lanes. Historical schema-2 evidence
+continues to describe its original 14 rows and cannot fill the new entries.
+
+The new public API contracts are documented in the [ecosystem runbook](../markdown-ecosystem/README.md#expanded-public-apis).
+MD4X's fixed extensions, Sätteri's GFM autolinks, and OX-Content's renderer builtins
+remain in output verification; disagreement never receives an inferred factor.
+Every new pair verifies all inputs in a rotating batch and retains separate
+rotating-document timing controls. Single-document factors describe repeated
+calls and may include library caching; the controls do not enter those factors.
+Review both before making a parsing-throughput claim. Diagnostic short runs and
+verification-only output still fail publication.

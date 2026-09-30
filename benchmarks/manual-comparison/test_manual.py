@@ -34,7 +34,7 @@ class ManualTests(unittest.TestCase):
         # Copy real archived data. These heterogeneous historical runs are used
         # only to test calculations/coverage, never to claim one measured suite.
         report = cli.REPO / 'docs/reports/2026-09-30-ecosystem-platforms'
-        for track, engine in cli.PAIRS:
+        for track, engine in cli.HISTORICAL_PAIRS:
             platform = 'macos-arm64' if engine in ('comrak', 'cmark', 'cmark-gfm') else 'linux-x86-64'
             source = report / platform / (track + '-' + engine)
             shutil.copytree(source, self.folder / (track + '-' + engine))

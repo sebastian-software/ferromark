@@ -63,3 +63,26 @@ test("a newly measured architecture adds one column and preserves existing cells
     assert.match(after[row * 3 + 2], /docs\/reports\/test-fixture/);
   }
 });
+
+test("new candidates have GitHub links and unmeasured cells; variants disclose their backend", async () => {
+  const html = await renderComparison(completed.figures);
+  for (const id of [
+    "goldmark",
+    "remarkable",
+    "markdown-exit",
+    "markdown-it-ts",
+    "satteri",
+    "md4x-napi",
+    "md4x-wasm",
+    "ox-content-napi",
+  ]) {
+    const project = projects.find((row) => row.id === id);
+    assert.ok(project);
+    assert.ok(html.includes(`href="${project.github}"`));
+    assert.ok(html.includes(`${project.label} · ${project.backend}`));
+    assert.ok(!completed.figures.some((row) => row.id === id));
+  }
+  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 16);
+  assert.ok(html.includes('class="ferromark-project-backend">WASM</span>'));
+  assert.ok(html.includes('class="ferromark-project-backend">Native addon</span>'));
+});

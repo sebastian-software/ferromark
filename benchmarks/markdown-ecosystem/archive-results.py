@@ -18,6 +18,8 @@ def validate(source, revision=None):
     read = lambda name: json.loads((source / (name + '.json')).read_text()) if (source / (name + '.json')).exists() else json.loads(gzip.decompress((source / (name + '.json.gz')).read_bytes()))
     config, summary, corpus, outputs, rows = (read(name) for name in ('run', 'summary', 'corpus', 'verification', 'samples'))
     engine = config['engines'][1]
+    new_contract = subprocess.run(['git', 'cat-file', '-e', config['git_head'] + ':benchmarks/markdown-ecosystem/comparisons.json'], cwd=REPO, capture_output=True).returncode == 0
+    assert not new_contract or config.get('schema') == 2, 'new campaigns cannot omit the rotating-control contract'
     assert config['rounds'] == 3 and config['samples'] == 6
     assert config['window_ms'] == 40 and config['warmup_ms'] == 60
     assert len(corpus['cases']) == summary['documents'] == 57
@@ -60,7 +62,7 @@ def validate(source, revision=None):
         assert set(config['local_source_sha256']) == paths, 'incomplete measured source hashes'
     assert config['corpus_sha256'] == baseline['corpus_sha256']
     frozen = run.native.read_json(REPO / 'docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz')
-    if engine in ('cmark', 'commonmark'):
+    if (config['comparison']['profile'] == 'commonmark-only' if config.get('schema') == 2 else engine in ('cmark', 'commonmark')):
         for case in frozen['cases']:
             case['profile'] = 'commonmark'
     assert corpus['cases'] == frozen['cases'], 'frozen inputs or profiles changed'
@@ -71,6 +73,19 @@ def validate(source, revision=None):
     lock_path = 'benchmarks/markdown-ecosystem/' + ('native/Cargo.lock' if config['track'] == 'native' else 'package-lock.json')
     lock_data = subprocess.check_output(['git', 'show', config['git_head'] + ':' + lock_path], cwd=REPO)
     assert hashlib.sha256(lock_data).hexdigest() == config['lock_sha256'], 'committed lock changed'
+    if config.get('schema') == 2:
+        assert config['rotating_controls'] == 1, 'rotating-document controls required'
+        validate_rotation(config, corpus['cases'], outputs, read('rotating-controls'))
+        for name, key in [('comparisons.json', 'manifest_sha256'), ('contracts.py', 'contracts_sha256')]:
+            data = subprocess.check_output(['git', 'show', config['git_head'] + ':benchmarks/markdown-ecosystem/' + name], cwd=REPO)
+            assert hashlib.sha256(data).hexdigest() == config[key], name
+            sources[name] = data
+        manifest = json.loads(sources['comparisons.json'])
+        assert config['comparison'] == next(p for p in manifest if p['id'] == engine)
+        assert config['comparison']['track'] == config['track']
+        if engine == 'goldmark':
+            assert config['build_metadata']['go'] == config['runtime']
+            assert config['build_metadata']['binaries']['goldmark']['version'] == '2.1.6'
     files = {'run.py': ('benchmarks/markdown-ecosystem/run.py', 'runner_sha256'),
              'verify.py': ('benchmarks/native-comparison/verify.py', 'verifier_sha256'),
              'native-run.py': ('benchmarks/native-comparison/run.py', 'guards_sha256')}
@@ -95,10 +110,27 @@ def validate(source, revision=None):
     return config, sources
 
 
+def validate_rotation(config, cases, outputs, rows):
+    engine = config['engines'][1]
+    groups = run.contracts.groups(cases)
+    expected = {(r, s, profile, mode) for r in range(3) for s in range(6)
+                for profile in groups for mode in run.native.MODES}
+    assert len(rows) == len(expected), 'incomplete rotating controls'
+    assert {(row['round'], row['sample'], row['profile'], row['mode']) for row in rows} == expected
+    for row in rows:
+        members = [case['name'] for case in groups[row['profile']]]
+        assert row['members'] == members and set(row['order']) == {'v2', engine}
+        for name in ('v2', engine):
+            timing = row[name]
+            units = sum(run.output_units(outputs[member]['outputs'][name], config['track']) for member in members)
+            assert timing['iterations'] > 0 and timing['elapsed_ns'] >= 40_000_000
+            assert timing['checksum'] == timing['iterations'] * units
+
+
 def retain(source, destination, revision=None):
     config, sources = validate(source, revision)
     destination.mkdir(parents=True, exist_ok=False)
-    for name in ('corpus', 'verification', 'samples', 'behavior'):
+    for name in ('corpus', 'verification', 'samples', 'behavior', *(('rotating-controls',) if config.get('schema') == 2 else ())):
         path = source / (name + '.json')
         data = path.read_bytes() if path.exists() else gzip.decompress(Path(str(path) + '.gz').read_bytes())
         (destination / (name + '.json.gz')).write_bytes(gzip.compress(data, mtime=0))
@@ -108,6 +140,7 @@ def retain(source, destination, revision=None):
     snapshot = destination / 'adapters'
     snapshot.mkdir()
     for name, data in sources.items():
+        (snapshot / name).parent.mkdir(parents=True, exist_ok=True)
         (snapshot / name).write_bytes(data)
 
 

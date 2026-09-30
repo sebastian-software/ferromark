@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build native ecosystem adapters from pinned upstream commits, with system malloc."""
+"""Build native ecosystem adapters from pinned upstream commits, with explicit allocator/runtime contracts."""
 import argparse
 import hashlib
 import json
@@ -26,6 +26,8 @@ def main():
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=False)
     commands = []
+    go_version = subprocess.check_output(['go', 'version'], text=True).strip()
+    assert go_version.split()[2] == 'go1.27.1', 'Use the pinned Go 1.27.1 compiler'
     def run(command, env=None):
         commands.append(command)
         subprocess.run(command, check=True, env=env, cwd=REPO)
@@ -34,6 +36,13 @@ def main():
     run(['cargo', 'build', '--release', '--locked', '--manifest-path', str(HERE / 'native/Cargo.toml')], rust_env)
     rust = HERE / 'native/target/release/markdown-ecosystem-worker'
     binaries = {'rust': {'path': str(rust), 'sha256': sha(rust)}}
+    go_env = {key: value for key, value in os.environ.items() if key not in ('GOFLAGS', 'GOOS', 'GOARCH', 'GOGC', 'GOMEMLIMIT', 'GOMAXPROCS', 'GOEXPERIMENT') and not key.startswith(('GOAMD', 'GOARM', 'GOPPC', 'GOMIPS', 'GOWASM'))}
+    go_env.update(CGO_ENABLED='0', GOTOOLCHAIN='local')
+    # Use Go's native target, without CPU architecture-specific code generation.
+    goldmark = root / 'goldmark-worker'
+    run(['go', '-C', str(HERE / 'goldmark'), 'build', '-mod=readonly', '-trimpath', '-o', str(goldmark), '.'], go_env)
+    binaries['goldmark'] = {'path': str(goldmark), 'sha256': sha(goldmark), 'version': '2.1.6',
+                            'runtime': go_version, 'gc': 'GOMAXPROCS=1; GOGC=100; no memory limit; GC included'}
     for engine, (url, revision, version) in PINS.items():
         source, build = root / (engine + '-source'), root / (engine + '-build')
         run(['git', 'clone', '--quiet', url, str(source)])
@@ -61,8 +70,8 @@ def main():
     metadata = {'binaries': binaries, 'sources': PINS, 'commands': commands,
                 'rustflags': flags, 'clang': subprocess.check_output(['clang', '--version'], text=True),
                 'rust': subprocess.check_output(['rustc', '-vV'], text=True),
-                'adapter_sha256': {name: sha(HERE / name) for name in ('worker.rs', 'cmark-worker.c', 'prepare-native.py')},
-                'dispatcher_sha256': sha(dispatcher), 'allocator': 'system malloc; no PGO'}
+                'adapter_sha256': {name: sha(HERE / name) for name in ('worker.rs', 'cmark-worker.c', 'prepare-native.py', 'goldmark/main.go', 'goldmark/go.mod', 'goldmark/go.sum')},
+                'dispatcher_sha256': sha(dispatcher), 'allocator': 'Rust/C: system malloc; Goldmark: Go allocator and GC; no PGO', 'go': go_version}
     (root / 'build.json').write_text(json.dumps(metadata, indent=2) + '\n')
     print(dispatcher)
 

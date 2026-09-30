@@ -23,17 +23,30 @@ jobs:
           - {track: native, engine: comrak}
           - {track: native, engine: cmark}
           - {track: native, engine: cmark-gfm}
+          - {track: native, engine: goldmark}
           - {track: node, engine: micromark}
           - {track: node, engine: marked}
           - {track: node, engine: markdown-it}
           - {track: node, engine: remark}
           - {track: node, engine: showdown}
           - {track: node, engine: commonmark}
+          - {track: node, engine: remarkable}
+          - {track: node, engine: markdown-exit}
+          - {track: node, engine: markdown-it-ts}
+          - {track: node, engine: satteri}
+          - {track: node, engine: md4x-napi}
+          - {track: node, engine: md4x-wasm}
+          - {track: node, engine: ox-content-napi}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: matrix.track == 'native'
+        with:
+          go-version: 1.27.1
+          cache: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24.21.0
@@ -52,6 +65,9 @@ jobs:
           cargo build -p ferromark-node --profile release-node --locked
           cp target/release-node/libferromark_node.so node/ferromark/ferromark.linux-x64-gnu.node
           npm ci --ignore-scripts --prefix benchmarks/markdown-ecosystem
+      - name: Check public Node adapters
+        if: matrix.track == 'node'
+        run: node --test benchmarks/markdown-ecosystem/test-node-adapters.mjs
       - name: Verify and measure the pair
         env:
           TRACK: ${{ matrix.track }}

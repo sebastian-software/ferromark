@@ -2,7 +2,7 @@
 
 Review [candidate coverage](candidate-coverage.md) before freezing the scope of
 an official campaign, then check every included dependency. The current
-14-project executable inventory has documented selection gaps; release freshness
+22-row executable inventory includes the seven direct additions; release freshness
 and successful execution do not establish complete ecosystem coverage. Pin stable
 releases explicitly; do not resolve "latest" while timing or mix versions between
 platforms. A successful local preflight proves execution on that host. Each new
@@ -31,11 +31,18 @@ latest stable direct versions compatible with these projects.
 | Node.js | Showdown | 2.1.0 | [npm](https://www.npmjs.com/package/showdown) |
 | Node.js | commonmark.js | 0.31.2 | [npm](https://www.npmjs.com/package/commonmark) |
 
+Additional current pins: Goldmark v2.1.6 (Go module `github.com/yuin/goldmark/v2`),
+Go 1.27.1; Remarkable 2.0.1; markdown-exit 1.3.0; markdown-it-ts 1.1.2;
+Sätteri 0.10.5; MD4X 0.0.30 in explicit NAPI and WASM lanes; @ox-content/napi 3.2.13.
+The [Go module and sum file](../markdown-ecosystem/goldmark/go.mod) and npm lockfile
+pin the released implementations. Public API constraints and readiness of this
+extension are separate from the immutable original 14-row preflight report.
+
 Exact Node extension, conversion pipeline and transitive versions are in
 [package-lock.json](../markdown-ecosystem/package-lock.json). In particular,
 micromark-extension-gfm-table is 2.1.2; the other direct dependencies needed no
 release update. Use `npm view PACKAGE version` to recheck every direct dependency,
-not just the six visible project names. Keep prereleases separate from stable
+not just the visible project names. Keep prereleases separate from stable
 registry versions. The historical Ferromark v1 pin is an internal control and
 intentionally stays fixed; it is not a homepage competitor.
 

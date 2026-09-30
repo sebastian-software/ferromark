@@ -12,7 +12,7 @@ on:
         options: [both, macos-arm64, linux-x86-64]
         default: both
       mode:
-        description: Probe tools/resources, verify all outputs, or measure all 14 libraries
+        description: Probe tools/resources, verify all outputs, or measure all 22 comparisons
         type: choice
         options: [probe, verify, measure]
         default: probe
@@ -88,6 +88,11 @@ jobs:
         with:
           node-version: 24.21.0
           package-manager-cache: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.27.1
+          cache: false
 
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:

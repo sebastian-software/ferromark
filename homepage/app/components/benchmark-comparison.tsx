@@ -76,9 +76,14 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
   return (
     <tr>
       <th scope="row">
-        <a className="ferromark-project-link" href={row.github}>
+        <a
+          className="ferromark-project-link"
+          href={row.github}
+          title={`${row.label} · ${row.backend}`}
+        >
           {row.label}
         </a>
+        <span className="ferromark-project-backend">{row.backend}</span>
       </th>
       {row.results.map((result, index) => (
         <td key={platforms[index].id}>

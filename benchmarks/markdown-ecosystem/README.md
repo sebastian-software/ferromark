@@ -5,7 +5,7 @@ Independent Markdown-to-HTML pairs extend the feature inventory:
 | Track | Engines | Output and lifecycle |
 | --- | --- | --- |
 | Native | Local Ferromark v2 and `markdown` 1.0.0 (markdown-rs) | Owned UTF-8 HTML; Ferromark fresh/reused arena and renderer, markdown-rs fresh public HTML call in both modes |
-| Node | Local Ferromark Node bindings and micromark 4.0.2 | Public APIs returning JavaScript strings; Ferromark `toHtml` / reusable `Renderer.toHtml`, micromark fresh public call in both modes |
+| Node | Local Ferromark Node bindings and micromark 4.0.3 | Public APIs returning JavaScript strings; Ferromark `toHtml` / reusable `Renderer.toHtml`, micromark fresh public call in both modes |
 
 These pairs use the same frozen 57-document broad corpus as the
 [six-engine native harness](../native-comparison/README.md). They have their own
@@ -163,7 +163,7 @@ ECOSYSTEM_BUILD=/private/tmp/ecosystem-build python3 -m unittest discover \
   -s benchmarks/markdown-ecosystem -p 'test_native_adapters.py'
 ```
 
-The [Linux workflow](../../.github/workflows/markdown-ecosystem.yml) runs all ten
+The [Linux workflow](../../.github/workflows/markdown-ecosystem.yml) runs all eighteen
 ecosystem pairs on GitHub-hosted Ubuntu 24.04 x86-64 VMs. Each pair alternates on
 one VM; CPU models and hosts may differ between pairs. Install/build steps finish
 before verification and timing. Download its per-pair artifacts, then run
@@ -177,3 +177,39 @@ evidence, with no shared-host ranking or significance claim.
 After all thirteen runs are archived, `publish_values.py` generates the new report
 and homepage JSON. Run `publish.py` to refresh the benchmark guide; both support
 `--check`. Earlier raw archives remain unchanged.
+
+## Expanded public APIs
+
+The complete [campaign inventory](comparisons.json) includes 22 displayed rows
+(18 independent pairs plus the original native harness's four displayed engines).
+The [manual workflow](../manual-comparison/README.md) is the entry point for a new
+complete campaign. Existing archives retain their original versions and scope.
+
+| Adapter | Pin and complete public call | Effective contract |
+| --- | --- | --- |
+| Goldmark | Go module v2.1.6; `parser.Parse` then `html.Render` into a fresh bytes.Buffer | Native Go 1.27.1, CGO off, native generic target; raw HTML enabled; only table, strike, and task extensions, without Linkify. Configuration retained; output allocation and Go GC included, GOMAXPROCS=1, GOGC=100, no memory limit. |
+| Remarkable | npm 2.0.1; retained Remarkable `render` | CommonMark preset on all 57 inputs in both engines. Its default bundle lacks task lists; no custom task plugin is invented. HTML on, typography/break conversion off. |
+| markdown-exit | npm 1.3.0; retained parser `render` | CommonMark preset plus table/strike rules and pinned task-list plugin in the shared profile; `<s>` and plugin classes remain in verification. |
+| markdown-it-ts | npm 1.1.2; ordinary full-document `render` | Same shared rules/plugin; streaming and chunked fallback explicitly disabled. Public repeated-input caches are not flushed inside timing; alternating-document guards and rotating controls remain mandatory. |
+| Sätteri | npm 0.10.5; `markdownToHtml(...).html` | Native Node pipeline without MDX/plugins. Other extensions off. Public GFM also enables literal autolinks; there is no individual public switch, so the difference remains. `rawHtml: false` disables the extra AST conversion feature, while ordinary raw HTML remains verified. |
+| MD4X NAPI | npm 0.0.30; explicit `md4x/napi` init then `renderToHtml` | Native Node addon with no WASM fallback. `headingIds`, `full`, `heal` off. Public API has no parser-feature flags; tables, strike, tasks, autolinks, footnotes, callouts, and frontmatter extraction remain enabled even for CommonMark-profile inputs. |
+| MD4X WASM | npm 0.0.30; explicit `md4x/wasm` init with installed WASM bytes then `renderToHtml` | WASM initialization is untimed; identical public parser contract, separately timed JS/WASM boundary. No NAPI fallback. |
+| OX-Content Node | @ox-content/napi 3.2.13; `parseAndRender(...).html` | Individual parser flags enable only shared extensions. Public renderer heading IDs, TOC, callouts, fence metadata handling, and literal URL transformations cannot be disabled. Complete public API cost is timed, including returned metadata. |
+
+Every pair retains the manifest and contract code hashes. `contracts.py` asserts
+these actual differences and keeps raw guard HTML; it never rewrites competitor
+output. The v2 worker continues using the frozen input profile (CommonMark only
+for cmark/commonmark.js/Remarkable). Only equivalent outputs contribute, so each
+pair can have a different agreement set. There is no shared-set ranking.
+
+New runs also retain `rotating-controls.json`: all 57 inputs grouped by effective
+profile, both lifecycles, three independent process rounds, six alternating
+40 ms windows after 60 ms warmup. The output is checked against per-document
+verification before and after timing. Controls include disagreements for diagnosis
+and do not enter per-document factors. Single-document timing may include a
+library's repeated-input cache; review rotating controls before making claims
+about parsing work. Full publication rejects missing/shortened controls.
+
+The homepage exposes the new rows with GitHub links and backend labels, but
+shows unmeasured cells until a complete validated run is imported. Dependency
+installation and local smoke checks do not update official figures.
