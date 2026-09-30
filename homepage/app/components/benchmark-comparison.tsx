@@ -14,22 +14,29 @@ const nativeFigures = [
   ).values(),
 ];
 
+const libraryLabels = new Map([
+  ["bun", "Bun MD"],
+  ["ox-content", "OX-Content"],
+]);
+
 const rows = [
-  ...nativeFigures.map((figure) => ({
-    id: figure.id,
-    label: figure.id === "bun" ? "Bun MD" : figure.label,
-    runtime: "Native",
-    results: platforms.map((platform, index) => {
-      const result = figuresByPlatform[index].get(figure.id);
-      return result
-        ? {
-            speed: result.fresh,
-            report: platform.report,
-            evidence: `${result.documents} equivalent documents · ${platform.label} · ${platform.machine} · ${platform.measured} · ${platform.revision}`,
-          }
-        : null;
-    }),
-  })),
+  ...nativeFigures
+    .filter((figure) => figure.id !== "v1")
+    .map((figure) => ({
+      id: figure.id,
+      label: libraryLabels.get(figure.id) ?? figure.label,
+      runtime: "Native",
+      results: platforms.map((platform, index) => {
+        const result = figuresByPlatform[index].get(figure.id);
+        return result
+          ? {
+              speed: result.fresh,
+              report: platform.report,
+              evidence: `${result.documents} equivalent documents · ${platform.label} · ${platform.machine} · ${platform.measured} · ${platform.revision}`,
+            }
+          : null;
+      }),
+    })),
   ...ecosystemBenchmarks.figures.map((figure) => ({
     id: figure.label,
     label: figure.label,

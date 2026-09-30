@@ -61,12 +61,16 @@ const benchmarks = JSON.parse(
 if (benchmarks.platforms.length < 2) {
   throw new Error("native-benchmarks.json must publish every measured platform");
 }
+const libraryLabels = new Map([
+  ["bun", "Bun MD"],
+  ["ox-content", "OX-Content"],
+]);
 const platformFragments = benchmarks.platforms.flatMap((platform) => {
   return [
-    ...platform.figures.flatMap((figure) => [
-      figure.id === "bun" ? "Bun MD" : figure.label,
-      `${figure.fresh.toFixed(1)}×`,
-    ]),
+    ...platform.figures.flatMap((figure) => {
+      if (figure.id === "v1") return [];
+      return [libraryLabels.get(figure.id) ?? figure.label, `${figure.fresh.toFixed(1)}×`];
+    }),
     platform.label,
     ...platform.machine.split(", "),
     platform.revision,
@@ -140,7 +144,10 @@ check(footer, "family footer", {
   forbidden: ["https://sebastian-software.github.io/ferromark/"],
 });
 
-check(homepage, "homepage", { required: requiredFragments, forbidden: forbiddenFragments });
+check(homepage, "homepage", {
+  required: requiredFragments,
+  forbidden: [...forbiddenFragments, "Ferromark v1", "OX-Content original"],
+});
 check(benchmarkPage, "v2 benchmark evidence", {
   required: [
     "v2",
@@ -152,7 +159,10 @@ check(benchmarkPage, "v2 benchmark evidence", {
     ]),
   ],
 });
-check(guidePage, "guide page", { required: requiredGuideFragments, forbidden: forbiddenFragments });
+check(guidePage, "guide page", {
+  required: requiredGuideFragments,
+  forbidden: forbiddenFragments,
+});
 
 // eslint-disable-next-line security/detect-unsafe-regex -- This scans local build output, not externally supplied HTML.
 if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {
