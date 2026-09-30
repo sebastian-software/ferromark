@@ -132,3 +132,16 @@ highlighter construction, construction plus first render, and repeated render
 with custom in-memory assets. Its [initial report](reports/2026-09-29-ferriki-integration/README.md)
 records Ferriki 0.4.1 and does not cover standard catalog or CDN I/O. Those
 historical timings are not measurements of the current Ferriki 0.7.0 adapter.
+The [Ferriki 0.7.0 report](reports/2026-10-01-ferriki-compatibility/README.md)
+retains a new local lifecycle diagnostic and the shared-consumer evidence.
+
+## Shared Rust/Node fixture lane
+
+The [public-consumer contract](../scripts/ferriki-compatibility/README.md) runs
+the same pinned Rust, TypeScript/TSX, Markdown embedding, fallback and metadata
+fixtures through a clean packaged Rust consumer and the published Node
+highlighter. It compares byte-normalized token offsets, available scope paths,
+theme metadata, token types and standalone highlighting HTML. Separate raw
+Markdown snapshots make the existing wrapper and callback differences visible.
+The Rust-only CI lane needs no Node installation; a second lane exercises both
+peers. Both cover reuse and asset-error fallback with deterministic local assets.
