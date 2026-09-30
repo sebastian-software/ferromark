@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 import publish
+import publish_values
 import run
 
 
@@ -26,6 +27,8 @@ class MeasurementTests(unittest.TestCase):
     def test_report_and_website_match_archived_measurements(self):
         subprocess.run([sys.executable, str(publish.REPO / "benchmarks/markdown-ecosystem/publish.py"), "--check"], check=True)
         section = publish.content()
+        if publish_values.FIGURES.exists():
+            section += publish_values.content()
         guide = publish.GUIDE.read_text()
         self.assertEqual(guide.split(publish.MARKER, 1)[1], section.split(publish.MARKER, 1)[1])
         for track in ('native', 'node', *('node-' + engine for engine, _ in publish.NODE_PAIRS)):

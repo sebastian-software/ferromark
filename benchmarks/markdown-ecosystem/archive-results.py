@@ -50,10 +50,19 @@ def validate(source):
     # The measured core must match the earlier clean-core run, across both platforms.
     baseline = json.loads((REPO / 'docs/reports/2026-09-30-markdown-ecosystem-main/node/run.json').read_text())
     assert config['local_source_sha256'] == baseline['local_source_sha256']
+    assert config['corpus_sha256'] == baseline['corpus_sha256']
+    frozen = run.native.read_json(REPO / 'docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz')
+    if engine in ('cmark', 'commonmark'):
+        for case in frozen['cases']:
+            case['profile'] = 'commonmark'
+    assert corpus['cases'] == frozen['cases'], 'frozen inputs or profiles changed'
     for path, digest in config['local_source_sha256'].items():
         data = subprocess.check_output(['git', 'show', config['git_head'] + ':' + path], cwd=REPO)
         assert hashlib.sha256(data).hexdigest() == digest, path
     sources = {}
+    lock_path = 'benchmarks/markdown-ecosystem/' + ('native/Cargo.lock' if config['track'] == 'native' else 'package-lock.json')
+    lock_data = subprocess.check_output(['git', 'show', config['git_head'] + ':' + lock_path], cwd=REPO)
+    assert hashlib.sha256(lock_data).hexdigest() == config['lock_sha256'], 'committed lock changed'
     files = {'run.py': ('benchmarks/markdown-ecosystem/run.py', 'runner_sha256'),
              'verify.py': ('benchmarks/native-comparison/verify.py', 'verifier_sha256'),
              'native-run.py': ('benchmarks/native-comparison/run.py', 'guards_sha256')}

@@ -91,7 +91,18 @@ const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) => [
   figure.revision,
 ]);
 
+const completedBenchmarks = JSON.parse(
+  await readFile(new URL("../app/data/benchmark-platform-values.json", import.meta.url), "utf8"),
+);
+const completedFragments = completedBenchmarks.figures.flatMap((figure) => [
+  `${figure.fresh.toFixed(1)}×`,
+  `${figure.documents}/${figure.corpusDocuments} documents`,
+  figure.revision,
+  `href="https://github.com/sebastian-software/ferromark/tree/main/${figure.report}"`,
+]);
+
 const requiredFragments = [
+  ...completedFragments,
   ...ecosystemFragments,
   ...projects.flatMap((project) => [project.label, `href="${project.github}"`]),
   'id="markdown-ecosystem"',
