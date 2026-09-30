@@ -28,7 +28,7 @@ class MeasurementTests(unittest.TestCase):
         section = publish.content()
         guide = publish.GUIDE.read_text()
         self.assertEqual(guide.split(publish.MARKER, 1)[1], section.split(publish.MARKER, 1)[1])
-        for track in ('native', 'node'):
+        for track in ('native', 'node', *('node-' + engine for engine, _ in publish.NODE_PAIRS)):
             summary = json.loads((publish.REPORT / track / 'summary.json').read_text())
             self.assertEqual(summary['documents'], 57)
             self.assertLessEqual(summary['agreeing_documents'], summary['documents'])

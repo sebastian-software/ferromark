@@ -512,6 +512,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+.ferromark-comparison .ferromark-project-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--line-heavy);
+  text-underline-offset: 0.2em;
+}
+
+.ferromark-comparison .ferromark-project-link:hover {
+  color: var(--rust-deep);
+  text-decoration-color: currentColor;
+}
+
 .ferromark-comparison td a {
   display: inline-flex;
   align-items: center;
@@ -527,7 +542,7 @@
   color: var(--rust-deep);
 }
 
-.ferromark-comparison td a:focus-visible {
+.ferromark-comparison a:focus-visible {
   outline: 2px solid var(--rust);
   outline-offset: 4px;
 }

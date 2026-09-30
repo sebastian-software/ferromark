@@ -1,57 +1,38 @@
+import projects from "../data/benchmark-projects.json";
 import ecosystemBenchmarks from "../data/markdown-ecosystem-benchmarks.json";
 import { formatSpeed, nativeBenchmarks } from "./native-benchmarks";
 
 const platforms = nativeBenchmarks.platforms;
 const reportUrl = (report: string) =>
   `https://github.com/sebastian-software/ferromark/tree/main/${report}`;
+const ecosystemFigures = new Map(ecosystemBenchmarks.figures.map((figure) => [figure.id, figure]));
 
-const figuresByPlatform = platforms.map(
+const nativeFiguresByPlatform = platforms.map(
   (platform) => new Map(platform.figures.map((figure) => [figure.id, figure])),
 );
-const nativeFigures = [
-  ...new Map(
-    platforms.flatMap((platform) => platform.figures).map((figure) => [figure.id, figure]),
-  ).values(),
-];
 
-const libraryLabels = new Map([
-  ["bun", "Bun MD"],
-  ["ox-content", "OX-Content"],
-]);
-
-const rows = [
-  ...nativeFigures
-    .filter((figure) => figure.id !== "v1")
-    .map((figure) => ({
-      id: figure.id,
-      label: libraryLabels.get(figure.id) ?? figure.label,
-      runtime: "Native",
-      results: platforms.map((platform, index) => {
-        const result = figuresByPlatform[index].get(figure.id);
-        return result
-          ? {
-              speed: result.fresh,
-              report: platform.report,
-              evidence: `${result.documents} equivalent documents · ${platform.label} · ${platform.machine} · ${platform.measured} · ${platform.revision}`,
-            }
-          : null;
-      }),
-    })),
-  ...ecosystemBenchmarks.figures.map((figure) => ({
-    id: figure.label,
-    label: figure.label,
-    runtime: figure.runtime,
-    results: platforms.map((platform) =>
-      platform.id === "macos-arm64"
-        ? {
-            speed: figure.fresh,
-            report: ecosystemBenchmarks.report,
-            evidence: `${figure.documents}/${figure.corpusDocuments} documents · equivalent HTML · macOS arm64 · ${ecosystemBenchmarks.measured} · ${figure.revision}`,
-          }
-        : null,
-    ),
-  })),
-];
+const rows = projects.map((project) => ({
+  ...project,
+  results: platforms.map((platform, index) => {
+    const ecosystem = ecosystemFigures.get(project.id);
+    if (ecosystem && platform.id === "macos-arm64") {
+      return {
+        speed: ecosystem.fresh,
+        report: ecosystemBenchmarks.report,
+        evidence: `${ecosystem.documents}/${ecosystem.corpusDocuments} documents · equivalent HTML · ${ecosystem.profileScope} · macOS arm64 · ${ecosystemBenchmarks.measured} · ${ecosystem.revision}`,
+      };
+    }
+    const native =
+      project.runtime === "Native" ? nativeFiguresByPlatform[index].get(project.id) : undefined;
+    return native
+      ? {
+          speed: native.fresh,
+          report: platform.report,
+          evidence: `${native.documents} equivalent documents · ${platform.label} · ${platform.machine} · ${platform.measured} · ${platform.revision}`,
+        }
+      : null;
+  }),
+}));
 
 const groups = [
   { id: "native", label: "Native", rows: rows.filter((row) => row.runtime === "Native") },
@@ -61,7 +42,11 @@ const groups = [
 function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
   return (
     <tr>
-      <th scope="row">{row.label}</th>
+      <th scope="row">
+        <a className="ferromark-project-link" href={row.github}>
+          {row.label}
+        </a>
+      </th>
       {row.results.map((result, index) => (
         <td key={platforms[index].id}>
           {result ? (

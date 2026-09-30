@@ -61,10 +61,10 @@ const benchmarks = JSON.parse(
 if (benchmarks.platforms.length < 2) {
   throw new Error("native-benchmarks.json must publish every measured platform");
 }
-const libraryLabels = new Map([
-  ["bun", "Bun MD"],
-  ["ox-content", "OX-Content"],
-]);
+const projects = JSON.parse(
+  await readFile(new URL("../app/data/benchmark-projects.json", import.meta.url), "utf8"),
+);
+const libraryLabels = new Map(projects.map((project) => [project.id, project.label]));
 const platformFragments = benchmarks.platforms.flatMap((platform) => {
   return [
     ...platform.figures.flatMap((figure) => {
@@ -84,7 +84,7 @@ const ecosystemBenchmarks = JSON.parse(
   ),
 );
 const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) => [
-  figure.label,
+  libraryLabels.get(figure.id),
   figure.runtime,
   `${figure.fresh.toFixed(1)}×`,
   `${figure.documents}/${figure.corpusDocuments} documents`,
@@ -93,6 +93,7 @@ const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) => [
 
 const requiredFragments = [
   ...ecosystemFragments,
+  ...projects.flatMap((project) => [project.label, `href="${project.github}"`]),
   'id="markdown-ecosystem"',
   "Ferromark speedup over each library",
   "2× means twice the throughput",

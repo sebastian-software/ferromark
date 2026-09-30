@@ -1,6 +1,6 @@
-# markdown-rs and micromark comparison
+# Markdown ecosystem comparison
 
-Two independently measured Markdown-to-HTML pairs extend the feature inventory:
+Independent Markdown-to-HTML pairs extend the feature inventory:
 
 | Track | Engines | Output and lifecycle |
 | --- | --- | --- |
@@ -21,8 +21,8 @@ The CommonMark profile disables optional syntax. The extension profile enables
 only tables, strikethrough and task lists. It is not full GFM. Raw HTML and link
 protocols pass through. Bare URL autolinking, tag filtering, footnotes, MDX,
 frontmatter, math, heading IDs, callouts and other renderer extras remain off.
-Micromark installs only the three required GFM syntax/HTML extensions. Both
-competitors retain configuration, but expose no reusable parser/output API.
+Micromark installs only the three required GFM syntax/HTML extensions. Competitors retain configured parser/processor objects in both lifecycle modes;
+each timed call still parses and returns a fresh HTML string.
 
 ## Reproduce
 
@@ -47,6 +47,11 @@ Use `--verify-only` for output checks, or `--corpus` / `--binary` for explicit
 inputs. Output directories must be new. Run the two timing tracks sequentially
 on an otherwise quiet machine. Defaults are three process rounds, six rotating
 engine-order windows of 40 ms, and 60 ms warmup per engine/document/lifecycle.
+Select a Node competitor with `--competitor marked`, `markdown-it`, `remark`,
+`showdown`, or `commonmark`; the default remains `micromark`.
+commonmark.js uses CommonMark only on every input in both engines. The other
+Node adapters use the per-document CommonMark or extension profile.
+
 Native windows consume 32 complete document cycles before checking time; Node
 windows check time after each cycle. Native consumption uses UTF-8 byte lengths;
 Node consumption uses UTF-16 string lengths without a timed UTF-8 conversion.
@@ -72,6 +77,7 @@ universal ranking. Source attribution and licenses remain in the original
 [broad corpus](../broad-comparison/README.md).
 
 ```sh
+node --test benchmarks/markdown-ecosystem/test-node-adapters.mjs
 python3 -m unittest discover -s benchmarks/markdown-ecosystem -p 'test_*.py'
 cargo fmt --manifest-path benchmarks/markdown-ecosystem/native/Cargo.toml --check
 cargo clippy --manifest-path benchmarks/markdown-ecosystem/native/Cargo.toml \
@@ -82,3 +88,51 @@ Measurements of the recorded main revision are in
 [the clean-core report](../../docs/reports/2026-09-30-markdown-ecosystem-main/README.md).
 The publisher generates its website section and homepage JSON from the same
 archived aggregates; `publish.py --check` rejects drift.
+
+## Node adapter contracts and project coverage
+
+- **marked 18.0.14:** retained `Marked` instance, synchronous `parse`; its public
+  URL tokenizer override disables bare-URL autolinking in the extension lane.
+- **markdown-it 15.0.2:** CommonMark preset, HTML enabled, linkify and typographer
+  off; enable table/strikethrough rules and markdown-it-task-lists 2.1.1 only in
+  the extension lane. Trusted link protocols pass through. Its `<s>` tags and
+  plugin classes remain in verification and may exclude documents from scoring.
+- **remark 15.0.1:** frozen processor with remark-rehype 11.1.2 and
+  rehype-stringify 10.0.1; `processSync` returns the HTML string. Three pinned
+  micromark/mdast extensions enable tables, strikethrough, and task lists.
+  Raw HTML passes through without an extra HTML parsing/sanitizing stage.
+- **Showdown 2.1.0:** retained Converter and public `makeHtml`; heading IDs,
+  ellipsis conversion, metadata, literal autolinking, and renderer extras off.
+  Tables, strikethrough, and task lists follow the profile. Its Markdown dialect
+  and styled task markup remain unchanged; only agreeing outputs enter scoring.
+- **commonmark.js 0.31.2:** retained Parser and HtmlRenderer, smart punctuation
+  and safe rendering off. It has no GFM extensions, so both engines parse the
+  entire frozen input corpus with CommonMark only.
+
+The selection includes direct HTML converters, plugin/token parsers, the
+remark/unified AST pipeline, and the JavaScript CommonMark reference. The
+[website feature guide](../../homepage/app/routes/guide/feature-comparison.mdx)
+links these projects, React Markdown and MDX, and identifies native candidates
+that have no archived throughput result yet.
+
+Showdown's current published version has moderate npm advisories with no
+registry fix. It is a benchmark-only dependency, receives frozen local inputs,
+and is never shipped with Ferromark or its homepage. Metadata handling is off.
+The lockfile is retained so this older project's measured implementation remains
+identifiable rather than silently replaced.
+
+## Retain the expanded Node runs
+
+Run each pair sequentially, then verify and compress the raw results. This
+archival command requires the original micromark metadata as a source/addon
+baseline and rejects any change to those measured sources or addon binaries.
+The expanded runs must use a committed adapter revision; the command retains
+that revision's adapter sources and checks their recorded hashes.
+
+```sh
+for engine in marked markdown-it remark showdown commonmark; do
+  python3 benchmarks/markdown-ecosystem/run.py node "/private/tmp/node-comparison-$engine" --competitor "$engine"
+done
+python3 benchmarks/markdown-ecosystem/archive-node.py --input-prefix /private/tmp/node-comparison-
+python3 benchmarks/markdown-ecosystem/publish.py
+```

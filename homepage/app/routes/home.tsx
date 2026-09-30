@@ -133,9 +133,10 @@ function EvidenceSection() {
       intro="Each value shows Ferromark’s throughput relative to the library in that row. 2× means twice the throughput."
       note={
         <>
-          Equivalent HTML only, across separate runs and document agreement sets. The Node.js row
-          includes binding overhead. Every value links to its measurement report; a dash means
-          unmeasured. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
+          Equivalent HTML only, across separate runs and document agreement sets. The Node.js
+          comparisons include binding overhead. commonmark.js uses CommonMark only. Names link to
+          GitHub; values link to their measurement reports; a dash means unmeasured.{" "}
+          <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
           <Link to="/guide/feature-comparison">Compare features</Link>
         </>
       }

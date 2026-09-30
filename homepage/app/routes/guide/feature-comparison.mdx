@@ -90,6 +90,52 @@ requires application-side AST processing/rendering. Frontmatter recognition
 preserves metadata without parsing YAML/TOML values.
 [Reviewed sources and extension scope](https://github.com/sebastian-software/ferromark/blob/main/docs/feature-matrix.md#markdown-rs-and-micromark).
 
+## Node.js projects
+
+The homepage includes the main HTML converters and parser ecosystems:
+[marked](https://github.com/markedjs/marked),
+[markdown-it](https://github.com/markdown-it/markdown-it),
+[remark / unified](https://github.com/remarkjs/remark),
+[micromark](https://github.com/micromark/micromark),
+[Showdown](https://github.com/showdownjs/showdown), and
+[commonmark.js](https://github.com/commonmark/commonmark.js).
+The benchmark pins their versions and compares complete Markdown-to-HTML string
+calls, including Ferromark's Node binding overhead. These projects cover both
+direct converters and AST/plugin pipelines; their rows do not imply identical
+feature sets or document agreement sets.
+
+| Capability                   | marked | markdown-it | remark / unified | micromark               | Showdown | commonmark.js |
+| ---------------------------- | ------ | ----------- | ---------------- | ----------------------- | -------- | ------------- |
+| HTML string output           | ✓      | ✓           | HTML pipeline    | ✓                       | ✓        | HTML renderer |
+| Tables                       | ✓      | ✓           | Ext.             | Ext.                    | Opt-in   | —             |
+| Strikethrough                | ✓      | ✓           | Ext.             | Ext.                    | Opt-in   | —             |
+| Task lists                   | ✓      | Ext.        | Ext.             | Ext.                    | Opt-in   | —             |
+| Public syntax representation | Tokens | Tokens      | mdast / hast     | Tokens; mdast companion | —        | AST           |
+
+“HTML pipeline” means remark + remark-rehype + rehype-stringify; remark alone
+serializes Markdown. “Ext.” means separately installed plugins/extensions.
+The measured pipeline enables only table, strikethrough, and task-list syntax,
+without remark-gfm's additional autolinks or footnotes. markdown-it retains
+its `<s>` spelling and task-list plugin classes; Showdown retains its task-list
+styles and extra fenced-code classes. These differences are not removed to
+enlarge the agreement set.
+commonmark.js enables CommonMark only in both engines on every corpus input.
+[Exact versions, adapters, and measurement scope](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/markdown-ecosystem/README.md).
+
+[react-markdown](https://github.com/remarkjs/react-markdown) belongs to the
+remark/unified ecosystem and returns React elements;
+[MDX](https://github.com/mdx-js/mdx) compiles Markdown with JSX to JavaScript.
+Those operations need their own workload rather than a second HTML-string
+throughput row. Their project links are included here so readers can find the
+framework integrations alongside the parser comparison.
+
+The native overview also lists
+[Comrak](https://github.com/kivikakk/comrak),
+[cmark](https://github.com/commonmark/cmark), and
+[cmark-gfm](https://github.com/github/cmark-gfm). Their throughput cells remain
+unmeasured until matched native reports are available; no factor is inferred
+from another implementation or another runtime.
+
 ### Optional writing syntax
 
 | Behavior                                                     | Rust `ParserOptions`      | Node option              | Default |

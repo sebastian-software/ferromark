@@ -3,9 +3,10 @@
   "report": "docs/reports/2026-09-30-markdown-ecosystem-main",
   "figures": [
     {
-      "id": "native",
+      "id": "markdown-rs",
       "label": "markdown-rs",
       "runtime": "Native",
+      "profileScope": "CommonMark or tables/strikethrough/tasks",
       "documents": 57,
       "corpusDocuments": 57,
       "fresh": 68.03312757799863,
@@ -13,14 +14,70 @@
       "revision": "f77cefd4"
     },
     {
-      "id": "node",
+      "id": "micromark",
       "label": "micromark",
       "runtime": "Node.js",
+      "profileScope": "CommonMark or tables/strikethrough/tasks",
       "documents": 56,
       "corpusDocuments": 57,
       "fresh": 81.19028359456068,
       "reuse": 123.82795776463026,
       "revision": "f77cefd4"
+    },
+    {
+      "id": "marked",
+      "label": "marked",
+      "runtime": "Node.js",
+      "profileScope": "CommonMark or tables/strikethrough/tasks",
+      "documents": 56,
+      "corpusDocuments": 57,
+      "fresh": 8.656371175565447,
+      "reuse": 13.25516281749503,
+      "revision": "4019c6a8"
+    },
+    {
+      "id": "markdown-it",
+      "label": "markdown-it",
+      "runtime": "Node.js",
+      "profileScope": "CommonMark or tables/strikethrough/tasks",
+      "documents": 56,
+      "corpusDocuments": 57,
+      "fresh": 9.386615428880681,
+      "reuse": 14.207102934148258,
+      "revision": "4019c6a8"
+    },
+    {
+      "id": "remark",
+      "label": "remark / unified",
+      "runtime": "Node.js",
+      "profileScope": "CommonMark or tables/strikethrough/tasks",
+      "documents": 56,
+      "corpusDocuments": 57,
+      "fresh": 92.18267591675813,
+      "reuse": 139.00518170878817,
+      "revision": "4019c6a8"
+    },
+    {
+      "id": "showdown",
+      "label": "Showdown",
+      "runtime": "Node.js",
+      "profileScope": "CommonMark or tables/strikethrough/tasks",
+      "documents": 31,
+      "corpusDocuments": 57,
+      "fresh": 37.5710833271957,
+      "reuse": 66.4440475289359,
+      "revision": "4019c6a8"
+    },
+    {
+      "id": "commonmark",
+      "label": "commonmark.js",
+      "runtime": "Node.js",
+      "profileScope": "CommonMark only",
+      "documents": 57,
+      "corpusDocuments": 57,
+      "fresh": 4.084295296282569,
+      "reuse": 6.284195192999678,
+      "revision": "4019c6a8"
     }
   ]
 }
