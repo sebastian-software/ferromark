@@ -18,8 +18,20 @@ def validate(source, revision=None):
     read = lambda name: json.loads((source / (name + '.json')).read_text()) if (source / (name + '.json')).exists() else json.loads(gzip.decompress((source / (name + '.json.gz')).read_bytes()))
     config, summary, corpus, outputs, rows = (read(name) for name in ('run', 'summary', 'corpus', 'verification', 'samples'))
     engine = config['engines'][1]
+    assert config.get('schema', 1) in (1, 2, 3), 'unknown scoring schema'
+    policy_path = 'benchmarks/markdown-ecosystem/scoring-policy.json'
+    has_policy = subprocess.run(['git', 'cat-file', '-e', config['git_head'] + ':' + policy_path], cwd=REPO, capture_output=True).returncode == 0
+    policy_data = None
+    if has_policy:
+        policy_data = subprocess.check_output(['git', 'show', config['git_head'] + ':' + policy_path], cwd=REPO)
+        policy = json.loads(policy_data)
+        assert config['schema'] == policy['pair_schema'], 'scoring policy cannot be downgraded'
+        assert config['scoring_scope'] == policy['scoring_scope']
+        assert hashlib.sha256(policy_data).hexdigest() == config['scoring_policy_sha256']
+    else:
+        assert config.get('schema', 1) < 3, 'full-corpus campaigns require their committed scoring policy'
     new_contract = subprocess.run(['git', 'cat-file', '-e', config['git_head'] + ':benchmarks/markdown-ecosystem/comparisons.json'], cwd=REPO, capture_output=True).returncode == 0
-    assert not new_contract or config.get('schema') == 2, 'new campaigns cannot omit the rotating-control contract'
+    assert not new_contract or config.get('schema', 1) >= 2, 'new campaigns cannot omit the rotating-control contract'
     assert config['rounds'] == 3 and config['samples'] == 6
     assert config['window_ms'] == 40 and config['warmup_ms'] == 60
     assert len(corpus['cases']) == summary['documents'] == 57
@@ -38,8 +50,7 @@ def validate(source, revision=None):
             matched.add(case['name'])
     assert len(matched) == summary['agreeing_documents']
     assert dict(Counter(result['agreement'] for result in outputs.values())) == summary['agreement_counts']
-    for mode in run.native.MODES:
-        assert math.isclose(run.aggregate(rows, matched, mode, engine), summary['v2_relative_throughput'][mode], rel_tol=1e-12)
+    validate_scores(config, summary, outputs, rows, matched)
     for row in rows:
         assert set(row['order']) == {'v2', engine}
         for name in ('v2', engine):
@@ -62,18 +73,18 @@ def validate(source, revision=None):
         assert set(config['local_source_sha256']) == paths, 'incomplete measured source hashes'
     assert config['corpus_sha256'] == baseline['corpus_sha256']
     frozen = run.native.read_json(REPO / 'docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz')
-    if (config['comparison']['profile'] == 'commonmark-only' if config.get('schema') == 2 else engine in ('cmark', 'commonmark')):
+    if (config['comparison']['profile'] == 'commonmark-only' if config.get('schema', 1) >= 2 else engine in ('cmark', 'commonmark')):
         for case in frozen['cases']:
             case['profile'] = 'commonmark'
     assert corpus['cases'] == frozen['cases'], 'frozen inputs or profiles changed'
     for path, digest in config['local_source_sha256'].items():
         data = subprocess.check_output(['git', 'show', config['git_head'] + ':' + path], cwd=REPO)
         assert hashlib.sha256(data).hexdigest() == digest, path
-    sources = {}
+    sources = {'scoring-policy.json': policy_data} if policy_data is not None else {}
     lock_path = 'benchmarks/markdown-ecosystem/' + ('native/Cargo.lock' if config['track'] == 'native' else 'package-lock.json')
     lock_data = subprocess.check_output(['git', 'show', config['git_head'] + ':' + lock_path], cwd=REPO)
     assert hashlib.sha256(lock_data).hexdigest() == config['lock_sha256'], 'committed lock changed'
-    if config.get('schema') == 2:
+    if config.get('schema', 1) >= 2:
         assert config['rotating_controls'] == 1, 'rotating-document controls required'
         validate_rotation(config, corpus['cases'], outputs, read('rotating-controls'))
         for name, key in [('comparisons.json', 'manifest_sha256'), ('contracts.py', 'contracts_sha256')]:
@@ -110,6 +121,15 @@ def validate(source, revision=None):
     return config, sources
 
 
+def validate_scores(config, summary, outputs, rows, matched):
+    scored = set(outputs) if config.get('schema') == 3 else matched
+    if config.get('schema') == 3:
+        assert config['scoring_scope'] == 'all-documents'
+        assert summary['scored_documents'] == len(scored) == 57
+    for mode in run.native.MODES:
+        assert math.isclose(run.aggregate(rows, scored, mode, config['engines'][1]), summary['v2_relative_throughput'][mode], rel_tol=1e-12)
+
+
 def validate_rotation(config, cases, outputs, rows):
     engine = config['engines'][1]
     groups = run.contracts.groups(cases)
@@ -130,7 +150,7 @@ def validate_rotation(config, cases, outputs, rows):
 def retain(source, destination, revision=None):
     config, sources = validate(source, revision)
     destination.mkdir(parents=True, exist_ok=False)
-    for name in ('corpus', 'verification', 'samples', 'behavior', *(('rotating-controls',) if config.get('schema') == 2 else ())):
+    for name in ('corpus', 'verification', 'samples', 'behavior', *(('rotating-controls',) if config.get('schema', 1) >= 2 else ())):
         path = source / (name + '.json')
         data = path.read_bytes() if path.exists() else gzip.decompress(Path(str(path) + '.gz').read_bytes())
         (destination / (name + '.json.gz')).write_bytes(gzip.compress(data, mtime=0))

@@ -88,3 +88,35 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
   assert.ok(!html.includes('class="ferromark-project-backend">WASM</span>'));
   assert.ok(html.includes('class="ferromark-project-backend">Native addon</span>'));
 });
+
+test("full-corpus factors annotate output differences without changing legacy cells", async () => {
+  const baseline = await renderComparison(completed.figures);
+  // Rendering fixture only; no new measurement or performance value is invented.
+  const selected = completed.figures[0];
+  const figures = completed.figures.map((figure) =>
+    figure === selected
+      ? { ...figure, scoringScope: "all-documents", documents: 57, agreeingDocuments: 31 }
+      : figure,
+  );
+  const html = await renderComparison(figures);
+  assert.equal([...html.matchAll(/<sup /g)].length, 1);
+  assert.match(html, /57\/57 timed documents · 31 equivalent outputs/);
+  assert.match(html, /All inputs contribute to the/);
+  assert.ok(!baseline.includes("<tfoot>"));
+  const before = [...baseline.matchAll(/<td>(.*?)<\/td>/gs)].map((match) => match[1]);
+  const after = [...html.matchAll(/<td>(.*?)<\/td>/gs)].map((match) => match[1]);
+  assert.equal(before.length, after.length);
+  let changed = 0;
+  for (let index = 0; index < before.length; index += 1) {
+    if (before[index] !== after[index]) {
+      changed += 1;
+      assert.match(after[index], /Output differs for some inputs/);
+    }
+  }
+  assert.equal(changed, 1);
+  const agreed = await renderComparison(
+    figures.map((figure) => ({ ...figure, agreeingDocuments: 57 })),
+  );
+  assert.ok(!agreed.includes("<sup "));
+  assert.ok(!agreed.includes("<tfoot>"));
+});

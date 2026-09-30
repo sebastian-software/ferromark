@@ -18,7 +18,12 @@ const reportUrl = (report: string) =>
   `https://github.com/sebastian-software/ferromark/tree/main/${report}`;
 const ecosystemFigures = new Map(ecosystemBenchmarks.figures.map((figure) => [figure.id, figure]));
 
-const completedFigures = new Map(
+type CompletedFigure = (typeof completedBenchmarks.figures)[number] & {
+  scoringScope?: string;
+  agreeingDocuments?: number;
+};
+
+const completedFigures = new Map<string, CompletedFigure>(
   completedBenchmarks.figures.map((figure) => [`${figure.platform}/${figure.id}`, figure]),
 );
 
@@ -40,14 +45,18 @@ const rows = projects.map((project) => ({
     if (completed) {
       return {
         speed: completed.fresh,
+        outputDifferences:
+          completed.scoringScope === "all-documents" &&
+          (completed.agreeingDocuments ?? completed.documents) < completed.corpusDocuments,
         report: completed.report,
-        evidence: `${completed.documents}/${completed.corpusDocuments} documents · equivalent HTML · ${completed.profileScope} · ${completed.platformLabel} · ${completed.machine} · ${completed.measured} · ${completed.revision}`,
+        evidence: `${completed.documents}/${completed.corpusDocuments} ${completed.scoringScope === "all-documents" ? `timed documents · ${completed.agreeingDocuments} equivalent outputs` : "documents · equivalent HTML"} · ${completed.profileScope} · ${completed.platformLabel} · ${completed.machine} · ${completed.measured} · ${completed.revision}`,
       };
     }
     const ecosystem = ecosystemFigures.get(project.id);
     if (ecosystem && platform.id === "macos-arm64") {
       return {
         speed: ecosystem.fresh,
+        outputDifferences: false,
         report: ecosystemBenchmarks.report,
         evidence: `${ecosystem.documents}/${ecosystem.corpusDocuments} documents · equivalent HTML · ${ecosystem.profileScope} · macOS arm64 · ${ecosystemBenchmarks.measured} · ${ecosystem.revision}`,
       };
@@ -60,6 +69,7 @@ const rows = projects.map((project) => ({
     return native && historical
       ? {
           speed: native.fresh,
+          outputDifferences: false,
           report: historical.report,
           evidence: `${native.documents} equivalent documents · ${platform.label} · ${historical.machine} · ${historical.measured} · ${historical.revision}`,
         }
@@ -94,6 +104,7 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
               aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
             >
               {formatSpeed(result.speed)}
+              {result.outputDifferences && <sup aria-label="Output differs for some inputs">*</sup>}
             </a>
           ) : (
             <span aria-label="Not measured">—</span>
@@ -130,6 +141,16 @@ export function BenchmarkComparison() {
           ))}
         </tbody>
       ))}
+      {rows.some((row) => row.results.some((result) => result?.outputDifferences)) && (
+        <tfoot>
+          <tr>
+            <td colSpan={platforms.length + 1}>
+              * Same 57 inputs, different output for some documents. All inputs contribute to the
+              performance factor. See the linked reports for syntax and API differences.
+            </td>
+          </tr>
+        </tfoot>
+      )}
     </table>
   );
 }

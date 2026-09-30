@@ -32,8 +32,11 @@ Downloads include CI, transitive installations, and repeat requests; they are
 not user counts. Stars indicate visibility, not quality or usage. A runtime's
 stars, such as Bun's, do not measure adoption of its Markdown component. Avoid
 comparing these numbers across registries as if they used the same definition.
-Maintenance, usable releases, reproducible toolchains, output correctness, and
-the supported syntax profile are reviewed separately from popularity.
+Maintenance, usable releases, reproducible toolchains, output behavior, and
+supported syntax are documented separately from popularity. HTML agreement or
+conformance is not an admission criterion or a performance-scoring filter.
+Every selected implementation processes the same 57 inputs through its public
+HTML API; document feature differences rather than excluding inputs.
 
 Keep **Native** and **Node.js** as the existing top-level groups. Within Node.js,
 record JavaScript, native addon, and WASM execution explicitly. A native core
@@ -117,9 +120,10 @@ imported into our reports or homepage.
 | markdown-it-ts and MD4X WASM | Retained as optional, not overlooked or deleted. |
 | xai-grok-markdown-core (Grok Build) | The [native adapter](https://github.com/ubugeeei-prod/ox-content/blob/main/tools/benchmarks/native-competitors/src/main.rs) measures `offset_events` only in parse-only rows. The [dependency](https://github.com/ubugeeei-prod/ox-content/blob/main/tools/benchmarks/native-competitors/Cargo.toml) is a pinned pulldown-cmark wrapper, not a separate full HTML-rendering implementation. Defer a facade/event-stream workload; pulldown-cmark remains in our HTML campaign. |
 
-OX-Content's conformance column and separate parse-only/parse+render workloads
-are useful presentation ideas. Their host, defaults, corpus, and denominators
-are different; their figures cannot establish our ranking or conformance rate.
+OX-Content distinguishes parse-only from parse+render workloads. Our campaign
+measures full-document HTML API performance. Their host, defaults, corpus, and
+denominators differ; their figures cannot establish our ranking. We retain output
+differences as descriptive metadata rather than importing a conformance column.
 
 ## Additional adoption and innovation candidates
 
@@ -132,7 +136,7 @@ others are deferred; this document does not certify their adapters as ready.
 | --- | --- | --- |
 | [TanStack Markdown](https://github.com/TanStack/markdown) | npm @tanstack/markdown 0.0.16; 258,243 downloads; small parser and serializable AST with direct HTML API. Upstream explicitly targets controlled blog/docs syntax rather than complete CommonMark/GFM. | Implemented in the main Node campaign; disclose its syntax subset and actual agreement coverage. Its AI profile reparses accumulated text, rather than being a stateful incremental parser. |
 | [@mizchi/markdown](https://github.com/mizchi/markdown.mbt) | npm 0.8.3; 780 downloads; MoonBit CST/incremental design with JS, WASM-GC, and native targets. WASM string interop is technically distinct from linear-memory UTF-8 bridges. | Innovation candidate despite small adoption. Validate published backend availability and Node 24 support; separate full-document HTML and edit workloads. |
-| [Snarkdown](https://github.com/developit/snarkdown) | npm 2.0.0; 596,132 downloads; deliberately tiny regex-based parser. Upstream explicitly omits tables. | Relevant small-bundle/subset candidate. Record unsupported features and agreement-set size; no universal GFM ranking. |
+| [Snarkdown](https://github.com/developit/snarkdown) | npm 2.0.0; 596,132 downloads; deliberately tiny regex-based parser. Upstream explicitly omits tables. | Relevant small-bundle/subset candidate. Disclose unsupported features; include every input in performance scoring. |
 | [markdown-wasm](https://github.com/rsms/markdown-wasm) / [md4w](https://github.com/ije/md4w) | npm 1.2.0 / 0.2.7; 26,502 / 52,795 downloads; established MD4C-based WASM bridges. | Secondary Node/WASM candidates alongside MD4X. Verify their bundled MD4C revisions; a latest wrapper release can still contain an older core. |
 | [Blackfriday](https://github.com/russross/blackfriday) / [gomarkdown](https://github.com/gomarkdown/markdown) | Established Go parser family: 5,602 / 1,737 GitHub stars. | Relevant next Native candidates, with exact extension profiles. Goldmark does not automatically cover their behavior or performance. |
 | [Lute](https://github.com/88250/lute) | 1,676 stars; structured Go/JavaScript engine; upstream lists SiYuan and Vditor integrations and CJK/editor features. | Native candidate after Goldmark; disable highlighting and additional formatting in the HTML comparison. Editor-specific features need their own workload. |
@@ -170,7 +174,7 @@ acquire inferred factors or copied measurements.
 | [react-markdown](https://github.com/remarkjs/react-markdown) | 136,497,275 npm downloads; established React renderer on the unified ecosystem | Parser lineage is represented, but React rendering is not measured. Needs React/SSR output, not an HTML-string parser substitute. |
 | [Streamdown](https://github.com/vercel/streamdown) | 24,853,884 downloads; streaming React rendering with remark/rehype plugins and incomplete-Markdown handling | Own chunked-rendering workload. Include repair, React work, and updates if comparing application behavior. |
 | [streaming-markdown](https://github.com/thetarnav/streaming-markdown) | 68,338 downloads; independent chunk parser with rendering callbacks | Own streaming workload with fixed chunks and equivalent output sink; also test final completed-document correctness. |
-| [Brookmd](https://github.com/siinghd/brookmd) | Rust/WASM streaming design; only 425 npm downloads | Innovation watchlist, not established adoption. Verify conformance and the published API before a streaming comparison. |
+| [Brookmd](https://github.com/siinghd/brookmd) | Rust/WASM streaming design; only 425 npm downloads | Innovation watchlist, not established adoption. Verify the published API and chunk-processing behavior before a streaming comparison. |
 | [Lezer Markdown](https://lezer.codemirror.net/docs/ref/#markdown) | 19,687,864 npm downloads; incremental syntax trees for editors | Own edit/reparse workload; it does not supply the current HTML rendering contract. [The old GitHub repository](https://github.com/lezer-parser/markdown) moved to code.haverbeke.berlin; archived does not mean the package was abandoned. |
 | [MDX](https://github.com/mdx-js/mdx) | 44,115,526 npm downloads; Markdown/JSX compilation | Own compiler workload with equivalent JavaScript output and syntax; not another Markdown-to-HTML speed row. |
 | [Swift Markdown](https://github.com/swiftlang/swift-markdown) | Apple ecosystem AST/editing facade backed by cmark-gfm | Native core already represented; Swift-facing costs remain unmeasured. Add a facade/AST workload only if claiming Swift API performance. |
@@ -196,8 +200,9 @@ throughput factor to make streaming or incremental claims.
    MD4X's explicit NAPI/WASM imports must not silently fall back to each other.
 3. Build and verify locally before allocating managed time. Exercise every
    existing frozen corpus input and option guard; retain disagreements without
-   rewriting output to enlarge the agreement set. Check CommonMark/GFM fixtures
-   where the project claims that syntax. Keep source fixtures immutable.
+   rewriting output to disguise differences. Guards check reproducibility, options,
+   state isolation, and actual work; they are not a general spec conformance gate.
+   All 57 inputs contribute to performance. Keep source fixtures immutable.
 4. Inspect caches and repeated-input behavior. In particular, markdown-it-ts
    documents last-output caching in some paths. Add a rotating-document control
    for new Node adapters before claiming parser throughput; report memoized

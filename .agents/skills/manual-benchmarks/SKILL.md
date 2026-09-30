@@ -51,11 +51,16 @@ CONTRIBUTING.md for checks and PR conventions.
 - Import an existing run using its portable `evidence/` directory under OUTPUT.
   The importing checkout needs the measured commit in Git history. It can be
   on a different host; publication uses the recorded measurement platform.
-- Run `publish OUTPUT --check`, inspect agreement exclusions, per-round ranges,
+- Run `publish OUTPUT --check`, inspect output differences, per-round ranges,
   host observations and source provenance, then `publish OUTPUT` to prepare a
   local update. It selects only the measured platform; other OS/architecture
   values and historical reports stay intact. Do not hand-edit factors, mix
-  platform results, or claim a ranking across different agreement sets/contracts.
+  platform results, or claim identical functionality across different API contracts.
+- New campaigns score all 57 inputs. Retain HTML agreement as descriptive metadata
+  and annotate different outputs with `*`; never use agreement or conformance to
+  exclude a candidate or document from the performance factor. Preserve historical
+  reports and their original matched-only scoring. See the
+  [scoring decision](../../../docs/decisions/2026-09-30-benchmark-performance-scope.md).
 - Review the new evidence, platform selection, generated values and guide.
   Run both ecosystem publishers with `--check` and applicable repository and
   homepage checks. Report checks that could not run and distinguish platform

@@ -68,8 +68,10 @@ jobs to keep memory use reasonable. Your checkout and its addon are untouched.
 All HTML/option guards finish before the first timed comparison. The script
 waits 60 seconds between lanes and runs one lane at a time. Each uses the
 existing **three process rounds, six samples, 40 ms windows, and 60 ms warmup**.
-All 57 frozen inputs are timed, including diagnostic disagreements; only
-equivalent HTML contributes to the factors. There is no shortened publishable
+All 57 frozen inputs are timed and contribute to the factors, including different
+HTML outputs. Agreement is descriptive metadata, not a scoring filter or a
+conformance gate. A `*` on new homepage factors discloses output differences;
+the linked reports explain public API and syntax differences. There is no shortened publishable
 mode. Logs are under `OUTPUT/logs`; commands and current phases are printed in
 the terminal. Allow a long uninterrupted session; duration depends on the host
 and the competitor.
@@ -124,15 +126,16 @@ adds its own table column, such as macOS x86-64. Existing platforms and reports
 are preserved. No Git commit, push, PR, or deployment happens automatically.
 
 The original native harness uses shared mimalloc and a pinned Bun toolchain;
-its four displayed libraries retain the historical five/six-engine matching
-sets. It still measures v1 internally for those sets but does not publish a v1
-homepage row. Other Rust/C pairs use system malloc; Goldmark uses the Go allocator and GC
+its four displayed libraries use all 57 documents in new manual campaigns.
+Historical reports retain their original five/six-engine matching sets. It still
+measures v1 internally as a control but does not publish a v1 homepage row. Other Rust/C pairs use system malloc; Goldmark uses the Go allocator and GC
 with GOMAXPROCS=1, GOGC=100, and no memory limit; Node uses the release-node
 addon without PGO, including string conversion and GC. cmark/commonmark.js/Remarkable use
-CommonMark only in both engines. Different agreement sets and build contracts
-remain disclosed; the table does not establish a shared-set ranking.
+CommonMark only in both engines. Different syntax, renderer, and build contracts
+remain disclosed; the table compares public API performance on the same inputs,
+without claiming identical functionality or a conformance ranking.
 
-Review the generated report, agreement exclusions, per-round ranges, source
+Review the generated report, output differences, per-round ranges, source
 revision, host observations, and Git diff. Validate generated content:
 
 ```sh
@@ -207,7 +210,7 @@ gh workflow run native-comparison.yml --repo sebastian-software/ferromark \
 After both profiles pass output verification, use `mode=measure` with
 `repetitions=3` to assess independent allocations. Jobs run sequentially and
 retain each trial separately; do not publish the fastest result or average
-incompatible agreement sets. Probe jobs have a 10-minute timeout, verification
+incompatible campaign contracts. Probe jobs have a 10-minute timeout, verification
 jobs 90 minutes, and complete measurement jobs 180 minutes per allocation.
 The extended 23-row suite needs more than 90 minutes for timing windows, warmup, and
 default cooldowns alone; builds, output checks, and process starts add overhead.
@@ -234,17 +237,22 @@ WASM as well. Preparation builds and tests all available adapters. Measurement
 and output verification execute the selected lanes; an individual ecosystem
 `run.py --competitor` remains available for any optional adapter.
 
-Preparation and each pair retain the inventory hash. Schema-4 publication verifies
-the committed inventory and recorded scope, then rejects missing required lanes.
-Historical schema-3 evidence retains its full 22-row inventory; schema-2 evidence
-retains its original 14 rows. Neither can be downgraded to a selected campaign.
+Preparation and each pair retain the inventory hash. Schema-5 publication verifies
+the committed inventory, recorded selection, and all-document scoring policy,
+then rejects missing lanes or documents. The committed policy and its hash prevent
+new evidence from being downgraded to historical matched-only scoring.
+Schema-4 selection, schema-3 full 22-row coverage, and schema-2 original 14-row
+reports remain readable under their recorded contracts. Historical factors are
+not recomputed or relabeled. See the [scoring decision](../../docs/decisions/2026-09-30-benchmark-performance-scope.md).
 
 The new public API contracts are documented in the [ecosystem runbook](../markdown-ecosystem/README.md#expanded-public-apis).
 MD4X's fixed extensions, Sätteri's GFM autolinks, and OX-Content's renderer builtins
 remain in output verification. TanStack uses its public full-document `renderHtml`
 API with trusted HTML, unchanged URLs, IDs/frontmatter/docs/AI extensions off.
 Its fixed tables/strike/tasks/footnotes and code wrapper markup remain visible;
-its syntax subset cannot be made into a CommonMark preset. Disagreement never receives an inferred factor.
+its syntax subset cannot be made into a CommonMark preset. That does not exclude
+it or any input from performance scoring. All new factors come from actual timed
+calls, not inferred values; output agreement counts are not conformance rates.
 Every new pair verifies all inputs in a rotating batch and retains separate
 rotating-document timing controls. Single-document factors describe repeated
 calls and may include library caching; the controls do not enter those factors.

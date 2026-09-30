@@ -103,7 +103,8 @@ def main():
     source_paths += list((REPO / 'transforms').rglob('*.rs'))
     source_paths += [REPO / path for path in ('Cargo.toml', 'Cargo.lock', 'node/native/Cargo.toml', 'transforms/Cargo.toml', 'node/ferromark/index.mjs', 'node/ferromark/native-target.mjs')]
     config = {
-        'schema': 2, 'track': args.track, 'engines': engines,
+        'schema': 3, 'scoring_scope': 'all-documents', 'scoring_policy_sha256': native.sha(HERE / 'scoring-policy.json'),
+        'track': args.track, 'engines': engines,
         'comparison': contracts.project(competitor), 'manifest_sha256': native.sha(contracts.MANIFEST),
         'contracts_sha256': native.sha(HERE / 'contracts.py'), 'rounds': args.rounds, 'samples': args.samples,
         'window_ms': args.window_ms, 'warmup_ms': args.warmup_ms, 'seed': 20260930,
@@ -198,8 +199,8 @@ def main():
         native.write_json(args.output / 'samples.json', rows)
     config['host_after'] = native.host()
     native.write_json(args.output / 'run.json', config)
-    result = {'documents': len(cases), 'agreeing_documents': len(matched), 'agreement_counts': dict(Counter(v['agreement'] for v in verification.values())),
-              'v2_relative_throughput': {mode: aggregate(rows, matched, mode, competitor) for mode in native.MODES}}
+    result = {'documents': len(cases), 'scored_documents': len(cases), 'agreeing_documents': len(matched), 'agreement_counts': dict(Counter(v['agreement'] for v in verification.values())),
+              'v2_relative_throughput': {mode: aggregate(rows, {case['name'] for case in cases}, mode, competitor) for mode in native.MODES}}
     native.write_json(args.output / 'summary.json', result)
     print(json.dumps(result, indent=2), flush=True)
 
