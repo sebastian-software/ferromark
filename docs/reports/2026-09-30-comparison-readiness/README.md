@@ -8,8 +8,8 @@ started, and no homepage figures or historical reports were updated.
 
 The tested code revision was
 [`acd3bcfd2ebcbb6dcec67c7c0419b22df4c2c651`](https://github.com/sebastian-software/ferromark/commit/acd3bcfd2ebcbb6dcec67c7c0419b22df4c2c651).
-The following commit adds runbooks, skill guidance and these retained records;
-it does not change the tested benchmark code.
+Later commits add runbooks, skill guidance and these retained records;
+they do not change the tested benchmark code.
 See the [version inventory and refresh procedure](../../../benchmarks/manual-comparison/dependency-readiness.md)
 for the checked latest stable releases and upstream changes.
 
@@ -49,7 +49,7 @@ selected through `FERROMARK_BENCH_PYTHON`:
 ./scripts/benchmark-comparison doctor
 ./scripts/benchmark-comparison prepare /private/tmp/ferromark-latest-competitors-20260930-c
 ./scripts/benchmark-comparison verify /private/tmp/ferromark-latest-competitors-20260930-c
-python3 diagnostic-smoke.py /private/tmp/ferromark-latest-competitors-20260930-c
+"$FERROMARK_BENCH_PYTHON" diagnostic-smoke.py /private/tmp/ferromark-latest-competitors-20260930-c
 ```
 
 The retained [diagnostic script](diagnostic-smoke.py) runs the existing harnesses
