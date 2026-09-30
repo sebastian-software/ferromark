@@ -9,6 +9,7 @@ publish = false
 [dependencies]
 ferromark = { path = "../../.." }
 markdown = "=1.0.0"
+comrak = { version = "=0.55.0", default-features = false }
 
 [[bin]]
 name = "markdown-ecosystem-worker"

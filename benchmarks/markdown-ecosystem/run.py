@@ -42,9 +42,10 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('track', choices=('native', 'node'))
     p.add_argument('output', type=Path)
-    p.add_argument('--competitor', choices=('micromark', 'marked', 'markdown-it', 'remark', 'showdown', 'commonmark'))
+    p.add_argument('--competitor', choices=('markdown-rs', 'comrak', 'cmark', 'cmark-gfm', 'micromark', 'marked', 'markdown-it', 'remark', 'showdown', 'commonmark'))
     p.add_argument('--corpus', type=Path, default=REPO / 'docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz')
     p.add_argument('--binary', type=Path, default=HERE / 'native/target/release/markdown-ecosystem-worker')
+    p.add_argument('--build-metadata', type=Path)
     p.add_argument('--rounds', type=int, default=3)
     p.add_argument('--samples', type=int, default=6)
     p.add_argument('--window-ms', type=int, default=40)
@@ -53,9 +54,10 @@ def main():
     args = p.parse_args()
     if min(args.rounds, args.samples, args.window_ms, args.warmup_ms) <= 0:
         p.error('rounds, samples, and timing windows must be positive')
-    if args.track == 'native' and args.competitor:
-        p.error('--competitor applies only to node')
-    competitor = 'markdown-rs' if args.track == 'native' else args.competitor or 'micromark'
+    competitor = args.competitor or ('markdown-rs' if args.track == 'native' else 'micromark')
+    native_engines = ('markdown-rs', 'comrak', 'cmark', 'cmark-gfm')
+    if (competitor in native_engines) != (args.track == 'native'):
+        p.error('competitor does not belong to the selected track')
     engines = ('v2', competitor)
     command = args.binary.resolve() if args.track == 'native' else HERE / 'worker.mjs'
     args.output.mkdir(parents=True, exist_ok=False)
@@ -63,7 +65,7 @@ def main():
     inputs.mkdir()
     corpus = native.read_json(args.corpus)
     cases = corpus['cases']
-    if competitor == 'commonmark':
+    if competitor in ('commonmark', 'cmark'):
         # commonmark.js has no GFM extensions: keep every input, disable extras in both engines.
         for case in cases:
             case['profile'] = 'commonmark'
@@ -73,7 +75,7 @@ def main():
         path.write_bytes(case['input'].encode())
         assert path.stat().st_size == case['byte_count'] and native.sha(path) == case['sha256']
     # Same executable option guards as the six-engine harness.
-    native.write_json(args.output / 'behavior.json', native.behavior_checks(command, inputs, engines, ('commonmark',) if competitor == 'commonmark' else ('commonmark', 'gfm-shared')))
+    native.write_json(args.output / 'behavior.json', native.behavior_checks(command, inputs, engines, ('commonmark',) if competitor in ('commonmark', 'cmark') else ('commonmark', 'gfm-shared')))
     verification = {}
     for case in cases:
         outputs = {}
@@ -105,7 +107,7 @@ def main():
         'lock_sha256': native.sha(lock), 'worker_sha256': native.sha(command),
         'adapter_sha256': native.sha(HERE / ('worker.rs' if args.track == 'native' else 'worker.mjs')),
         'node_adapters_sha256': native.sha(HERE / 'node-adapters.mjs') if args.track == 'node' else None,
-        'profile_scope': 'CommonMark only on all inputs' if competitor == 'commonmark' else 'CommonMark or tables/strikethrough/tasks, per frozen input profile',
+        'profile_scope': 'CommonMark only on all inputs' if competitor in ('commonmark', 'cmark') else 'CommonMark or tables/strikethrough/tasks, per frozen input profile',
         'runner_sha256': native.sha(__file__), 'verifier_sha256': native.sha(HERE.parent / 'native-comparison/verify.py'),
         'guards_sha256': native.sha(HERE.parent / 'native-comparison/run.py'),
         'git_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=REPO, text=True).strip(),
@@ -117,6 +119,10 @@ def main():
         'lifecycle': 'Competitors retain configured public parser/processor objects in both modes; each call parses and returns fresh owned HTML. Ferromark reuse retains arena/renderer storage.',
         'timing_boundary': 'Complete Markdown to owned HTML, consumed by output length; no I/O, startup, or normalization. Native: UTF-8 bytes, system allocator. Node: UTF-16 strings, public binding overhead and JS GC included.',
     }
+    if args.build_metadata:
+        config['build_metadata'] = json.loads(args.build_metadata.read_text())
+        for item in config['build_metadata']['binaries'].values():
+            assert native.sha(item['path']) == item['sha256'], 'build binary changed'
     native.write_json(args.output / 'run.json', config)
     if args.verify_only:
         return

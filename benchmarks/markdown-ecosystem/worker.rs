@@ -41,6 +41,14 @@ impl Engine for Ferromark {
         }
     }
 }
+struct Comrak(comrak::Options<'static>);
+impl Engine for Comrak {
+    fn render<T>(&mut self, source: &str, consume: impl FnOnce(&[u8]) -> T) -> T {
+        // The public convenience API owns and destroys its AST and HTML per call.
+        let html = comrak::markdown_to_html(source, &self.0);
+        consume(html.as_bytes())
+    }
+}
 struct MarkdownRs(markdown::Options);
 impl Engine for MarkdownRs {
     fn render<T>(&mut self, source: &str, consume: impl FnOnce(&[u8]) -> T) -> T {
@@ -85,6 +93,14 @@ fn main() {
             },
             &inputs,
         ),
+        "comrak" => {
+            let mut options = comrak::Options::default();
+            options.extension.table = gfm;
+            options.extension.strikethrough = gfm;
+            options.extension.tasklist = gfm;
+            options.render.r#unsafe = true;
+            serve(Comrak(options), &inputs);
+        }
         "markdown-rs" => serve(
             MarkdownRs(markdown::Options {
                 parse: markdown::ParseOptions {
