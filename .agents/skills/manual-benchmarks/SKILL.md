@@ -10,6 +10,11 @@ Use the repository's `scripts/benchmark-comparison` commands. Read
 resolve commands from the repository root. Follow root AGENTS.md and
 CONTRIBUTING.md for checks and PR conventions.
 
+- Before freezing an official campaign, read [candidate coverage](../../../benchmarks/manual-comparison/candidate-coverage.md).
+  Record included/deferred candidates and their runtime/workload contracts. The
+  current 14-project executable matrix has documented gaps; do not treat release
+  freshness as proof that every relevant alternative is covered. Candidate review
+  records are not runnable adapters or benchmark evidence.
 - Before an official campaign, check all 14 competitor versions against their
   official registries or released tags, including Node extensions and adapter
   toolchain requirements. Read [dependency readiness](../../../benchmarks/manual-comparison/dependency-readiness.md).

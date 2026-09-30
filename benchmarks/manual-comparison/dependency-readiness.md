@@ -1,6 +1,9 @@
 # Comparison dependency readiness
 
-Check the complete competitor inventory before an official campaign. Pin stable
+Review [candidate coverage](candidate-coverage.md) before freezing the scope of
+an official campaign, then check every included dependency. The current
+14-project executable inventory has documented selection gaps; release freshness
+and successful execution do not establish complete ecosystem coverage. Pin stable
 releases explicitly; do not resolve "latest" while timing or mix versions between
 platforms. A successful local preflight proves execution on that host. Each new
 managed runner platform still needs its own resource and output checks.
