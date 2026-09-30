@@ -31,10 +31,14 @@ highlighter error. Ferromark then escapes and renders plain code. A result with
 the wrong line count or a carriage return or newline inside one fragment also
 falls back to plain code.
 
-Fragments are **trusted HTML**. The adapter must escape every source token and
-attribute it emits, and must not return `<pre>`, `<code>`, or tags spanning line
-boundaries. Ferromark escapes its own metadata, attributes, and supplied theme
-colors. The [reference adapter] maps Ferriki failures to plain-code fallback;
+Fragments are **trusted HTML**. Theme colors are also trusted adapter output:
+Ferromark escapes them for the HTML `style` attribute, but does not validate
+their CSS syntax or prevent additional declarations in a supplied value. Never
+pass colors derived from untrusted Markdown or metadata without validation.
+The adapter must escape every source token and attribute it emits, and must not
+return `<pre>`, `<code>`, or tags spanning line boundaries. Ferromark escapes
+its own metadata and attributes. The [reference adapter] maps Ferriki failures
+to plain-code fallback;
 applications can record non-language errors before returning `None`.
 
 The older `render_node` hook still runs first. Its `Handled` result retains the
