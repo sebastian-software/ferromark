@@ -22,6 +22,7 @@ import time
 REPO = Path(__file__).resolve().parents[2]
 ECO = REPO / 'benchmarks/markdown-ecosystem'
 NATIVE = REPO / 'benchmarks/native-comparison'
+SEED_LOCK = NATIVE / 'Cargo.lock'
 REFERENCE = REPO / 'docs/reports/2026-09-21-native-round-4'
 CORPUS = REPO / 'docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz'
 CURRENT = REPO / 'benchmarks/manual-comparison/current.json'
@@ -162,10 +163,10 @@ def prepare(output, context_path=None):
                '--md4c-source', cache / 'md4c', '--ox-archive', cache / 'ox.tar.gz',
                '--ferromark-v1-source', source, '--ferromark-v2-source', source,
                '--ferromark-v2-revision', revision, '--worker', source / NATIVE.relative_to(REPO) / 'worker.rs',
-               '--bun-lock', source / REFERENCE.relative_to(REPO) / 'Cargo.lock']
+               '--lockfile', source / SEED_LOCK.relative_to(REPO)]
     runner = source / NATIVE.relative_to(REPO) / 'prepare.py'
     execute([python, runner, output / 'fetch-workspace', *options], source, log, env)
-    execute(['cargo', '+' + native_archive.prepare.BUN_TOOLCHAIN, 'fetch', '--manifest-path', output / 'fetch-workspace/bun/Cargo.toml'], source, log, env)
+    execute(['cargo', '+' + native_archive.prepare.BUN_TOOLCHAIN, 'fetch', '--locked', '--manifest-path', output / 'fetch-workspace/bun/Cargo.toml'], source, log, env)
     shutil.rmtree(output / 'fetch-workspace')
     execute([python, runner, output / 'native-build', *options, '--compile'], source, logs / 'native-build.log', env)
     execute([python, source / NATIVE.relative_to(REPO) / 'audit_sources.py', output / 'native-build', output / 'source-audit.json',
@@ -236,7 +237,7 @@ def measure(output, cooldown, verify_only=False):
     if not native_evidence.exists():
         execute([python, source / NATIVE.relative_to(REPO) / 'archive.py', evidence,
                  '--name', 'native', '--results', native_results, '--build-dir', output / 'native-build',
-                 '--seed-lock', source / REFERENCE.relative_to(REPO) / 'Cargo.lock', '--reference', source / REFERENCE.relative_to(REPO),
+                 '--seed-lock', source / SEED_LOCK.relative_to(REPO), '--reference', source / REFERENCE.relative_to(REPO),
                  '--restore-dir', output / 'cache', '--host-file', output / 'host.txt', '--host-summary', prepared['machine'],
                  '--origin', (f"The [Blacksmith benchmark run]({context['run_url']}) used an isolated committed checkout."
                               if context else 'A manual benchmark run used an isolated committed checkout.'),

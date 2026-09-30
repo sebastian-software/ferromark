@@ -697,7 +697,7 @@ def main() -> None:
     parser.add_argument("build_dir", type=Path)
     parser.add_argument("--bun-source", type=Path, default=Path("/private/tmp/ferromark-bun-publication-20260911"))
     parser.add_argument("--bun-native-cache", type=Path, default=Path("/private/tmp/ferromark-bun-build-20260911/native"))
-    parser.add_argument("--bun-lock", type=Path, default=Path("/private/tmp/ferromark-bun-publication-20260911/Cargo.lock"), help="local lock containing the cached comparison crates")
+    parser.add_argument("--bun-lock", type=Path, default=HERE / "Cargo.lock", help="seed lock containing the comparison support crates")
     parser.add_argument("--md4c-source", type=Path, default=Path("/private/tmp/ferromark-md4c-publication-20260911"))
     parser.add_argument("--ferromark-v1-source", type=Path, default=REPO.parent / "ferromark")
     parser.add_argument("--ferromark-v2-source", type=Path, default=REPO)
@@ -772,9 +772,9 @@ def main() -> None:
     # tree mutated by preparation; the checked-out source remains untouched.
     shutil.copytree(sources / "bun", bun, symlinks=True)
     rewrite_bun_members(bun / "Cargo.toml", "comparison-worker")
-    # Start from the already-resolved local publication lock so pulldown-cmark
-    # and the comparison support crates are available offline. Cargo still
-    # records any path-package additions in this disposable copy.
+    # Seed the generated workspace from the campaign lock. --lockfile requires
+    # exact replay; --bun-lock permits explicit refresh/revision preparation.
+    # Only this disposable copy can be changed by Cargo.
     seed_lock = (args.lockfile or args.bun_lock).resolve()
     shutil.copyfile(seed_lock, bun / "Cargo.lock")
     native = build / "native"

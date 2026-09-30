@@ -555,7 +555,7 @@ def write_provenance(out: Path, facts: dict) -> None:
         "",
         "### The lock was seeded, not replayed with `--locked`",
         "",
-        f"The build seeded Cargo with `{Path(registry['seed_lock']).as_posix()}` through `--bun-lock` "
+        f"The build seeded Cargo with `{Path(registry['seed_lock']).as_posix()}` through `--lockfile`/`--bun-lock` "
         "because the v2 path package's version line differs from that lock. `CARGO_NET_OFFLINE=true` "
         "and `--offline` kept the build itself offline, and `prepare.py` fails if Cargo resolves "
         "any registry package outside the union of the engine locks. "

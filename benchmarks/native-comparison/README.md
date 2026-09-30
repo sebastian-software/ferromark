@@ -16,7 +16,7 @@ frozen corpus. Its runtime and allocator contracts are recorded separately.
 | Engine | Fresh call | Reuse call |
 | --- | --- | --- |
 | Ferromark v2 | New arena, `Parser::with_options().parse()`, new `HtmlRenderer::render()` | Reset arena and retain renderer; `render_borrowed()` |
-| Original OX-Content | Same original public arena/parser/renderer APIs | Same original arena reset and borrowed-output APIs |
+| OX-Content | Same public arena/parser/renderer APIs | Same arena reset and borrowed-output APIs |
 | Ferromark v1 | `to_html_with_options()` | Retain `Renderer`, use `render_into()` and clear/reuse output |
 | md4c | Original C `md_html()`, grow a fresh byte vector through its callback | Same C call, retain only the callback's output vector |
 | pulldown-cmark | Stream `Parser::new_ext()` directly into `html::push_html()` | New parser/event stream each time, retain output string |
@@ -54,7 +54,8 @@ are listed under [Platforms](#platforms).
 
 The single Cargo workspace also uses a common pinned dependency resolution,
 seeded from the existing Bun comparison lock. This differs from individual
-engines' original lockfiles (for example, shared `memchr` is 2.8.0). The report
+engines' own lockfiles. Current campaigns use the committed
+`benchmarks/native-comparison/Cargo.lock` with `--lockfile` and locked fetching. The report
 records these differences; this is a controlled native engine comparison,
 not a comparison of untouched release build environments. Pass the archived
 `Cargo.lock` with `prepare.py --lockfile` to replay that exact resolution.
@@ -207,8 +208,7 @@ build writes no `pgo` object and its executable is unchanged.
 
 ### Fairness
 
-- PGO is applied to **all four Rust engines** — Ferromark v2, the original
-  OX-Content core, Ferromark v1, and pulldown-cmark — under **one recipe** and
+- PGO is applied to **all four Rust engines** — Ferromark v2, OX-Content core, Ferromark v1, and pulldown-cmark — under **one recipe** and
   **one training set**. `RUSTFLAGS` reaches every Rust crate in the shared
   executable, and every engine is driven during training, so no engine is left
   in a `-Cprofile-use` build with no profile data for its own functions.
@@ -287,7 +287,7 @@ python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-build 
   --ox-archive /private/tmp/native-bench-cache/ox.tar.gz \
   --ferromark-v1-source ../ferromark --ferromark-v2-source . \
   --worker benchmarks/native-comparison/worker.rs --compile \
-  --lockfile docs/reports/2026-09-15-native-arm/Cargo.lock
+  --lockfile benchmarks/native-comparison/Cargo.lock
 python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py'
 python3 benchmarks/native-comparison/run.py \
   /private/tmp/native-bench-build/build.json \
@@ -313,7 +313,7 @@ python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-pgo-bu
   --ox-archive /private/tmp/native-bench-cache/ox.tar.gz \
   --ferromark-v1-source ../ferromark --ferromark-v2-source . \
   --worker benchmarks/native-comparison/worker.rs --compile \
-  --lockfile docs/reports/2026-09-15-native-arm/Cargo.lock \
+  --lockfile benchmarks/native-comparison/Cargo.lock \
   --pgo --pgo-training-corpus /private/tmp/native-bench-training-corpus.json.gz \
   --pgo-training-filter docs/reports/2026-09-16-arm-round-3/harness/filter-broad-train.txt \
   --pgo-measurement-filter docs/reports/2026-09-16-arm-round-3/harness/filter-broad-test.txt
@@ -374,7 +374,7 @@ runner:
 3. Restore the current sources with this harness's `restore.py CACHE`, then
    fill Cargo's registry cache from a throwaway workspace so the real builds
    stay `--offline`.
-4. Build with the latest report's `Cargo.lock` seeded through `--bun-lock`,
+4. Build with this harness's `Cargo.lock` through `--lockfile`,
    run `run.py --verify-only`, and build the PGO executable if requested — all
    builds finish before any timing starts.
 5. Measure all 57 documents (and the held-out half with both builds), generate
