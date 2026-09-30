@@ -21,6 +21,7 @@ const ecosystemFigures = new Map(ecosystemBenchmarks.figures.map((figure) => [fi
 type CompletedFigure = (typeof completedBenchmarks.figures)[number] & {
   scoringScope?: string;
   agreeingDocuments?: number;
+  overviewReport?: string;
 };
 
 const completedFigures = new Map<string, CompletedFigure>(
@@ -38,19 +39,23 @@ const nativeFiguresByPlatform = new Map(
   ]),
 );
 
+function completedResult(completed: CompletedFigure) {
+  return {
+    speed: completed.fresh,
+    outputDifferences:
+      completed.scoringScope === "all-documents" &&
+      (completed.agreeingDocuments ?? completed.documents) < completed.corpusDocuments,
+    report: completed.overviewReport ?? completed.report,
+    evidence: `${completed.documents}/${completed.corpusDocuments} ${completed.scoringScope === "all-documents" ? `timed documents · ${completed.agreeingDocuments} equivalent outputs` : "documents · equivalent HTML"} · ${completed.profileScope} · ${completed.platformLabel} · ${completed.machine} · ${completed.measured} · ${completed.revision}`,
+  };
+}
+
 const rows = projects.map((project) => ({
   ...project,
   results: platforms.map((platform) => {
     const completed = completedFigures.get(`${platform.id}/${project.id}`);
     if (completed) {
-      return {
-        speed: completed.fresh,
-        outputDifferences:
-          completed.scoringScope === "all-documents" &&
-          (completed.agreeingDocuments ?? completed.documents) < completed.corpusDocuments,
-        report: completed.report,
-        evidence: `${completed.documents}/${completed.corpusDocuments} ${completed.scoringScope === "all-documents" ? `timed documents · ${completed.agreeingDocuments} equivalent outputs` : "documents · equivalent HTML"} · ${completed.profileScope} · ${completed.platformLabel} · ${completed.machine} · ${completed.measured} · ${completed.revision}`,
-      };
+      return completedResult(completed);
     }
     const ecosystem = ecosystemFigures.get(project.id);
     if (ecosystem && platform.id === "macos-arm64") {

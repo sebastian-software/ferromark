@@ -436,7 +436,7 @@ def figures(folder, report):
         assert suite['schema'] != 5 or count == 57, 'full corpus must contribute'
         assert count > 0 and all(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in speed.values())
         agreement = sum(item['versus_v2'][project['id']] in ('exact', 'serialization-equivalent') for item in outputs.values()) if project['id'] in LEGACY else read(folder / lane, 'summary')['agreeing_documents']
-        scoring = {'scoringScope': 'all-documents', 'agreeingDocuments': agreement} if suite['schema'] == 5 else {}
+        scoring = {'scoringScope': 'all-documents', 'agreeingDocuments': agreement, 'overviewReport': report} if suite['schema'] == 5 else {}
         result.append({**scoring, **{key: project[key] for key in ('id', 'label', 'runtime')}, 'platform': suite['platform'],
                        'platformLabel': suite['platform_label'], 'machine': suite['machine'], 'measured': measured,
                        'revision': suite['revision'][:8], 'report': report + '/' + lane, 'profileScope': scope,

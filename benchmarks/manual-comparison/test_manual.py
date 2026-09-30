@@ -196,6 +196,7 @@ class ManualTests(unittest.TestCase):
         for value in values:
             self.assertEqual(value['documents'], 57)
             self.assertEqual(value['scoringScope'], 'all-documents')
+            self.assertEqual(value['overviewReport'], 'docs/reports/test')
             if value['id'] in cli.LEGACY:
                 expected = cli.native_archive.tables.aggregate(summary, set(outputs), 'fresh')[value['id']]
                 self.assertAlmostEqual(value['fresh'], 1 / expected)

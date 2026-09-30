@@ -127,3 +127,14 @@ execution on that host and keeps every public API difference visible. Short smok
 fail the publication contract; no official factors or platform selection changed.
 The original 14-row readiness report remains immutable. Run the expanded verification
 on each managed platform before allocating a complete campaign.
+
+## Main campaign and TanStack readiness
+
+The [20-row main readiness report](../../docs/reports/2026-09-30-main-campaign-readiness/README.md)
+records a fresh macOS arm64 prepare/verify with TanStack Markdown 0.0.16 and the
+all-document scoring policy. All 57 inputs execute in both lifecycles for every
+selected candidate; output agreement is descriptive, never an exclusion filter.
+The real TanStack timing-path smoke includes all 57 documents and remains
+unpublishable. This adds execution evidence, not official speed values. The three optional
+adapters retain their pinned contracts and tests; the previous
+22-row readiness record remains immutable.

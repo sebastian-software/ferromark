@@ -1,0 +1,223 @@
+{
+  "source_revision": "df4d85ef45928dae3af87f435f0623072f5a63fe",
+  "platform": "macos-arm64",
+  "machine": "Apple M1 Ultra, 64 GB RAM, macOS 27.0",
+  "comparison_scope": "main",
+  "scoring_scope": "all-documents",
+  "required_variants": 20,
+  "verification_passed": true,
+  "official_measurement": false,
+  "rows": [
+    {
+      "id": "pulldown-cmark",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 14,
+        "serialization-equivalent": 43
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "md4c",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "other": 5,
+        "serialization-equivalent": 33
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "bun",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 16,
+        "other": 1,
+        "serialization-equivalent": 40
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "ox-content",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 16,
+        "heading-id-only": 39,
+        "other": 2
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "markdown-rs",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 38
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "comrak",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 38
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "cmark",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 20,
+        "serialization-equivalent": 37
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "cmark-gfm",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 38
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "goldmark",
+      "runtime": "Native",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 37,
+        "other": 1
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "marked",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 38,
+        "serialization-equivalent": 18,
+        "other": 1
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "markdown-it",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "other": 1,
+        "serialization-equivalent": 37
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "remark",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "serialization-equivalent": 56,
+        "other": 1
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "micromark",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 37,
+        "other": 1
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "showdown",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "serialization-equivalent": 31,
+        "other": 26
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "commonmark",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 20,
+        "serialization-equivalent": 37
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "remarkable",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 25,
+        "other": 13
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "satteri",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 17,
+        "other": 2,
+        "serialization-equivalent": 38
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "md4x-napi",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 19,
+        "other": 16,
+        "serialization-equivalent": 22
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "ox-content-napi",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "exact": 13,
+        "other": 34,
+        "heading-id-only": 10
+      },
+      "agreement_is_descriptive": true
+    },
+    {
+      "id": "tanstack-markdown",
+      "runtime": "Node.js",
+      "documents": 57,
+      "agreement_counts": {
+        "serialization-equivalent": 31,
+        "other": 26
+      },
+      "agreement_is_descriptive": true
+    }
+  ]
+}
