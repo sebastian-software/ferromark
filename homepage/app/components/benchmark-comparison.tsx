@@ -1,3 +1,4 @@
+import completedBenchmarks from "../data/benchmark-platform-values.json";
 import projects from "../data/benchmark-projects.json";
 import ecosystemBenchmarks from "../data/markdown-ecosystem-benchmarks.json";
 import { formatSpeed, nativeBenchmarks } from "./native-benchmarks";
@@ -7,6 +8,10 @@ const reportUrl = (report: string) =>
   `https://github.com/sebastian-software/ferromark/tree/main/${report}`;
 const ecosystemFigures = new Map(ecosystemBenchmarks.figures.map((figure) => [figure.id, figure]));
 
+const completedFigures = new Map(
+  completedBenchmarks.figures.map((figure) => [`${figure.platform}/${figure.id}`, figure]),
+);
+
 const nativeFiguresByPlatform = platforms.map(
   (platform) => new Map(platform.figures.map((figure) => [figure.id, figure])),
 );
@@ -14,6 +19,14 @@ const nativeFiguresByPlatform = platforms.map(
 const rows = projects.map((project) => ({
   ...project,
   results: platforms.map((platform, index) => {
+    const completed = completedFigures.get(`${platform.id}/${project.id}`);
+    if (completed) {
+      return {
+        speed: completed.fresh,
+        report: completed.report,
+        evidence: `${completed.documents}/${completed.corpusDocuments} documents · equivalent HTML · ${completed.profileScope} · ${completed.platformLabel} · ${completed.machine} · ${completed.measured} · ${completed.revision}`,
+      };
+    }
     const ecosystem = ecosystemFigures.get(project.id);
     if (ecosystem && platform.id === "macos-arm64") {
       return {

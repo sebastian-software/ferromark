@@ -136,3 +136,44 @@ done
 python3 benchmarks/markdown-ecosystem/archive-node.py --input-prefix /private/tmp/node-comparison-
 python3 benchmarks/markdown-ecosystem/publish.py
 ```
+
+## Complete native and Linux values
+
+`prepare-native.py` builds Comrak 0.55.0 together with Ferromark and markdown-rs,
+and two separate C API workers pinned to cmark 0.31.2 and cmark-gfm
+0.29.0.gfm.13. The process dispatcher runs before the worker command loop; no
+process startup or dispatcher code is timed. C libraries and adapters use clang
+`-O3` and system malloc, with no PGO, allocator overrides, or cross-language LTO.
+C HTML is consumed with `strlen` and freed inside timing. Rust owned HTML uses
+its byte length and is destroyed inside timing. cmark runs CommonMark only in
+both engines on all 57 documents. Comrak and cmark-gfm use the shared extension
+subset. Competitors create parser/AST/output state per call in both schedules;
+their reuse column retains configuration only.
+
+```sh
+python3 benchmarks/markdown-ecosystem/prepare-native.py /private/tmp/ecosystem-build
+for engine in comrak cmark cmark-gfm; do
+  python3 benchmarks/markdown-ecosystem/run.py native "/private/tmp/ecosystem-$engine" \
+    --competitor "$engine" --binary /private/tmp/ecosystem-build/worker \
+    --build-metadata /private/tmp/ecosystem-build/build.json
+  python3 benchmarks/markdown-ecosystem/archive-results.py \
+    "/private/tmp/ecosystem-$engine" "docs/reports/2026-09-30-ecosystem-platforms/macos-arm64/native-$engine"
+done
+ECOSYSTEM_BUILD=/private/tmp/ecosystem-build python3 -m unittest discover \
+  -s benchmarks/markdown-ecosystem -p 'test_native_adapters.py'
+```
+
+The [Linux workflow](../../.github/workflows/markdown-ecosystem.yml) runs all ten
+ecosystem pairs on GitHub-hosted Ubuntu 24.04 x86-64 VMs. Each pair alternates on
+one VM; CPU models and hosts may differ between pairs. Install/build steps finish
+before verification and timing. Download its per-pair artifacts, then run
+`archive-results.py` for each raw directory and a `linux-x86-64/<track>-<engine>`
+destination. It rejects incomplete/duplicate windows, altered core/adapter
+provenance, invalid output agreement, consumption checksums, or aggregate drift.
+Raw corpus, outputs, behavior guards, timing windows, locks, host metadata, and
+committed adapters remain available per pair. This is independent steady-state
+evidence, with no shared-host ranking or significance claim.
+
+After all thirteen runs are archived, `publish_values.py` generates the new report
+and homepage JSON. Run `publish.py` to refresh the benchmark guide; both support
+`--check`. Earlier raw archives remain unchanged.

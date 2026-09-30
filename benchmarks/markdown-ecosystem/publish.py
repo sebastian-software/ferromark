@@ -169,9 +169,11 @@ The older native report and homepage headline numbers remain historical evidence
             'fresh': result['v2_relative_throughput']['fresh'],
             'reuse': result['v2_relative_throughput']['reuse'], 'revision': record['git_head'][:8],
         })
+    import publish_values
+    completed = publish_values.content() if publish_values.FIGURES.exists() else ''
     original = GUIDE.read_text()
     base = original.split(MARKER)[0].rstrip() + '\n'
-    for path, expected in ((REPORT / 'README.md', report), (GUIDE, base + section), (FIGURES, json.dumps(figures, indent=2) + '\n')):
+    for path, expected in ((REPORT / 'README.md', report), (GUIDE, base + section + completed), (FIGURES, json.dumps(figures, indent=2) + '\n')):
         if args.check:
             if path.read_text() != expected:
                 raise SystemExit(f'stale generated content: {path}')

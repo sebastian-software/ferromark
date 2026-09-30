@@ -1,0 +1,72 @@
+name: Markdown ecosystem measurements
+
+on:
+  pull_request:
+    paths:
+      - benchmarks/markdown-ecosystem/**
+      - .github/workflows/markdown-ecosystem.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: linux x86-64 / ${{ matrix.engine }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {track: native, engine: markdown-rs}
+          - {track: native, engine: comrak}
+          - {track: native, engine: cmark}
+          - {track: native, engine: cmark-gfm}
+          - {track: node, engine: micromark}
+          - {track: node, engine: marked}
+          - {track: node, engine: markdown-it}
+          - {track: node, engine: remark}
+          - {track: node, engine: showdown}
+          - {track: node, engine: commonmark}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.21.0
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.95.0 --profile minimal
+      - name: Describe the host
+        run: |
+          lscpu > "$RUNNER_TEMP/host.txt"
+          echo "BENCH_CPU=$(lscpu | sed -n 's/^Model name:[[:space:]]*//p' | head -1)" >> "$GITHUB_ENV"
+      - name: Build the native adapters
+        if: matrix.track == 'native'
+        run: python3 benchmarks/markdown-ecosystem/prepare-native.py "$RUNNER_TEMP/ecosystem-build" > "$RUNNER_TEMP/build.log" 2>&1
+      - name: Build the Node binding and install benchmark dependencies
+        if: matrix.track == 'node'
+        run: |
+          cargo build -p ferromark-node --profile release-node --locked
+          cp target/release-node/libferromark_node.so node/ferromark/ferromark.linux-x64-gnu.node
+          npm ci --ignore-scripts --prefix benchmarks/markdown-ecosystem
+      - name: Verify and measure the pair
+        env:
+          TRACK: ${{ matrix.track }}
+          ENGINE: ${{ matrix.engine }}
+        run: |
+          args=()
+          if [ "$TRACK" = native ]; then
+            args=(--binary "$RUNNER_TEMP/ecosystem-build/worker" --build-metadata "$RUNNER_TEMP/ecosystem-build/build.json")
+          fi
+          python3 benchmarks/markdown-ecosystem/run.py "$TRACK" "$RUNNER_TEMP/results/$TRACK-$ENGINE" --competitor "$ENGINE" "${args[@]}"
+          cp "$RUNNER_TEMP/host.txt" "$RUNNER_TEMP/results/$TRACK-$ENGINE/host.txt"
+          if [ "$TRACK" = native ]; then cp "$RUNNER_TEMP/build.log" "$RUNNER_TEMP/results/$TRACK-$ENGINE/build.log"; fi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ecosystem-linux-${{ matrix.track }}-${{ matrix.engine }}
+          path: ${{ runner.temp }}/results/
+          if-no-files-found: error
+          retention-days: 90
