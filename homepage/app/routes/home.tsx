@@ -1,6 +1,5 @@
 import {
   ClosingAction,
-  EvidenceFigures,
   IronBand,
   Ledger,
   Mark,
@@ -12,26 +11,11 @@ import {
 } from "ferramenta-family";
 import { Link } from "react-router";
 
+import { BenchmarkComparison } from "../components/benchmark-comparison";
 import { FlavoredMarkdownSection } from "../components/ffm-showcase";
-import { agreementDocuments, formatSpeed, nativeBenchmarks } from "../components/native-benchmarks";
 import landingSample from "../data/landing-sample.json";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
 import { version } from "../version";
-
-const benchmarkFigures = nativeBenchmarks.platforms.flatMap((platform) =>
-  platform.figures
-    .filter((figure) => figure.id !== "ox-content")
-    .map((figure) => ({
-      label: `${platform.label} · ${figure.label}`,
-      value: formatSpeed(figure.fresh),
-      detail: `${figure.documents} documents · fresh parser state`,
-      measure: (
-        <a href={`https://github.com/sebastian-software/ferromark/tree/main/${platform.report}`}>
-          {platform.machine} · {platform.measured} · {platform.revision}
-        </a>
-      ),
-    })),
-);
 
 const conformanceEntries = [
   {
@@ -145,18 +129,19 @@ function EvidenceSection() {
     <Section
       id="evidence"
       layout="split"
-      title="Measured on real documents."
-      intro={`On ${agreementDocuments()} real documents, five native engines render equivalent HTML. Fresh parser state; higher is faster.`}
+      title="Faster on real documents."
+      intro="Each value shows Ferromark’s throughput relative to the library in that row. 2× means twice the throughput."
       note={
         <>
-          Ratios are relative to each engine and platform. Each figure links to its archived report,
-          including the machine, measurement date, source revisions, and reproduction commands. See
-          the <Link to="/guide/benchmarks">full benchmark guide</Link> for reuse lifecycles and
-          per-document results.
+          Equivalent HTML only, across separate runs and document agreement sets. The Node.js
+          comparisons include binding overhead. cmark, commonmark.js, and Remarkable use CommonMark
+          only. Names link to GitHub; values link to their measurement reports. — means not
+          measured. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
+          <Link to="/guide/feature-comparison">Compare features</Link>
         </>
       }
     >
-      <EvidenceFigures figures={benchmarkFigures} />
+      <BenchmarkComparison />
     </Section>
   );
 }

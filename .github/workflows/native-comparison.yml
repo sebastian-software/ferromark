@@ -15,9 +15,34 @@ on:
   workflow_dispatch:
     inputs:
       revision:
-        description: Ferromark v2 revision to measure (branch, tag or commit)
+        description: GitHub-hosted lane only — Ferromark v2 revision (branch, tag or commit)
         required: true
         default: main
+      runner_provider:
+        description: Existing native comparison or complete Blacksmith comparison
+        type: choice
+        options: [github, blacksmith]
+        default: github
+      blacksmith_platform:
+        description: Blacksmith runner profile
+        type: choice
+        options: [both, macos-arm64, linux-x86-64]
+        default: both
+      blacksmith_mode:
+        description: Blacksmith comparison mode
+        type: choice
+        options: [probe, verify, measure]
+        default: probe
+      blacksmith_scope:
+        description: Main comparisons or include the three optional adapters
+        type: choice
+        options: [main, extended]
+        default: main
+      blacksmith_repetitions:
+        description: Independent Blacksmith jobs per platform
+        type: choice
+        options: ["1", "3"]
+        default: "1"
       pgo:
         description: Also build the PGO executable and measure both builds on the held-out half
         type: boolean
@@ -32,9 +57,9 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: never
-  # The latest archived Apple Silicon report: its restore.py restores the
-  # sources, its Cargo.lock seeds the registry resolution, and its HTML is the
-  # cross-platform output reference.
+  # Historical HTML remains the cross-platform output reference. Current
+  # competitor sources are restored by the committed native harness.
+  SEED_LOCK: benchmarks/native-comparison/Cargo.lock
   LATEST_REPORT: docs/reports/2026-09-21-native-round-4
   CORPUS: docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz
   SPLIT: docs/reports/2026-09-16-arm-round-3/harness
@@ -44,7 +69,17 @@ defaults:
     shell: bash
 
 jobs:
+  blacksmith:
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_provider == 'blacksmith' && github.repository == 'sebastian-software/ferromark'
+    uses: ./.github/workflows/blacksmith-benchmarks.yml
+    with:
+      platform: ${{ inputs.blacksmith_platform }}
+      mode: ${{ inputs.blacksmith_mode }}
+      repetitions: ${{ inputs.blacksmith_repetitions }}
+      scope: ${{ inputs.blacksmith_scope }}
+
   compare:
+    if: inputs.runner_provider != 'blacksmith'
     name: six engines, linux x86-64
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -107,8 +142,7 @@ jobs:
 
       - name: Restore the pinned sources
         run: |
-          cp "$LATEST_REPORT/restore.py" "$CACHE/restore.py"
-          python3 "$CACHE/restore.py"
+          python3 benchmarks/native-comparison/restore.py "$CACHE"
 
       - name: Fetch registry crates for the offline builds
         # prepare.py builds with --offline. A throwaway workspace from the same
@@ -119,8 +153,8 @@ jobs:
             --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
             --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
             --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
-            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock"
-          cargo "+$TOOLCHAIN" fetch --manifest-path "$WORK/fetch-workspace/bun/Cargo.toml"
+            --worker benchmarks/native-comparison/worker.rs --lockfile "$SEED_LOCK"
+          cargo "+$TOOLCHAIN" fetch --locked --manifest-path "$WORK/fetch-workspace/bun/Cargo.toml"
           rm -rf "$WORK/fetch-workspace"
 
       - name: Build the default executable
@@ -129,7 +163,7 @@ jobs:
             --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
             --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
             --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
-            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock" \
+            --worker benchmarks/native-comparison/worker.rs --lockfile "$SEED_LOCK" \
             --compile 2>&1 | tee "$WORK/build-log.txt"
 
       - name: Verify every engine's output before timing
@@ -147,7 +181,7 @@ jobs:
             --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
             --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
             --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
-            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock" \
+            --worker benchmarks/native-comparison/worker.rs --lockfile "$SEED_LOCK" \
             --compile --pgo --pgo-training-corpus "$WORK/training-corpus.json.gz" \
             --pgo-training-filter "$SPLIT/filter-broad-train.txt" \
             --pgo-measurement-filter "$SPLIT/filter-broad-test.txt" \
@@ -193,7 +227,7 @@ jobs:
           fi
           report="$(python3 benchmarks/native-comparison/archive.py "$WORK/report" \
             --results "$WORK/results" --build-dir "$WORK/build" \
-            --seed-lock "$LATEST_REPORT/Cargo.lock" --reference "$LATEST_REPORT" \
+            --seed-lock "$SEED_LOCK" --reference "$LATEST_REPORT" \
             --restore-dir "$CACHE" --host-file "$WORK/host.txt" --host-summary "$HOST_SUMMARY" \
             --origin "The [native comparison workflow]($RUN_URL) ran on a GitHub-hosted ubuntu-latest runner for a $EVENT event." \
             --host-kind github-hosted --verify-only-passed \

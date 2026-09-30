@@ -1,0 +1,1146 @@
+{
+  "review_date": "2026-09-30",
+  "purpose": "Candidate discovery and coverage review; not a benchmark manifest or performance evidence.",
+  "limitations": [
+    "npm downloads count requests, including CI and transitive installs, not distinct users.",
+    "GitHub stars indicate visibility, not adoption, conformance, performance, or component-specific usage.",
+    "pushed_at can include non-code activity and does not establish maintained releases.",
+    "GitHub releases/latest can lag registry latest or omit projects that publish tags only.",
+    "Project documentation may describe unreleased main; verify the pinned package API before adding an adapter.",
+    "This is a bounded ecosystem review, not an exhaustive census of every Markdown implementation."
+  ],
+  "github_repositories": [
+    {
+      "repo": "88250/lute",
+      "url": "https://github.com/88250/lute",
+      "description": "🎼 一款结构化的 Markdown 引擎，支持 Go 和 JavaScript。A structured Markdown engine that supports Go and JavaScript. ",
+      "stars": 1676,
+      "language": "Go",
+      "archived": false,
+      "pushed_at": "2026-09-29T10:17:43Z",
+      "release": {
+        "tag_name": "v1.7.8",
+        "published_at": "2026-09-23T10:54:08Z",
+        "html_url": "https://github.com/88250/lute/releases/tag/v1.7.8"
+      },
+      "source": "https://api.github.com/repos/88250/lute",
+      "github_release_source": "https://api.github.com/repos/88250/lute/releases/latest"
+    },
+    {
+      "repo": "bruits/satteri",
+      "url": "https://github.com/bruits/satteri",
+      "description": "High-performance Markdown and MDX processing for the JavaScript ecosystem",
+      "stars": 1265,
+      "language": "Rust",
+      "archived": false,
+      "pushed_at": "2026-09-29T16:44:10Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/bruits/satteri"
+    },
+    {
+      "repo": "commonmark/cmark",
+      "url": "https://github.com/commonmark/cmark",
+      "description": "CommonMark parsing and rendering library and program in C",
+      "stars": 2038,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2026-09-01T00:21:21Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/commonmark/cmark"
+    },
+    {
+      "repo": "commonmark/commonmark-java",
+      "url": "https://github.com/commonmark/commonmark-java",
+      "description": "Java library for parsing and rendering CommonMark (Markdown)",
+      "stars": 2695,
+      "language": "Java",
+      "archived": false,
+      "pushed_at": "2026-08-07T04:28:11Z",
+      "release": {
+        "tag_name": "commonmark-parent-0.30.0",
+        "published_at": "2026-08-06T11:24:12Z",
+        "html_url": "https://github.com/commonmark/commonmark-java/releases/tag/commonmark-parent-0.30.0"
+      },
+      "source": "https://api.github.com/repos/commonmark/commonmark-java",
+      "github_release_source": "https://api.github.com/repos/commonmark/commonmark-java/releases/latest"
+    },
+    {
+      "repo": "commonmark/commonmark.js",
+      "url": "https://github.com/commonmark/commonmark.js",
+      "description": "CommonMark parser and renderer in JavaScript",
+      "stars": 1568,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2026-09-14T23:19:19Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/commonmark/commonmark.js"
+    },
+    {
+      "repo": "developit/snarkdown",
+      "url": "https://github.com/developit/snarkdown",
+      "description": ":smirk_cat: A snarky 1kb Markdown parser written in JavaScript",
+      "stars": 2402,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2022-11-29T17:36:42Z",
+      "release": {
+        "tag_name": "2.0.0",
+        "published_at": "2020-08-31T21:57:17Z",
+        "html_url": "https://github.com/developit/snarkdown/releases/tag/2.0.0"
+      },
+      "source": "https://api.github.com/repos/developit/snarkdown",
+      "github_release_source": "https://api.github.com/repos/developit/snarkdown/releases/latest"
+    },
+    {
+      "repo": "erusev/parsedown",
+      "url": "https://github.com/erusev/parsedown",
+      "description": "Better Markdown Parser in PHP",
+      "stars": 15057,
+      "language": "PHP",
+      "archived": false,
+      "pushed_at": "2026-02-18T15:50:34Z",
+      "release": {
+        "tag_name": "1.8.0",
+        "published_at": "2026-02-16T12:37:27Z",
+        "html_url": "https://github.com/erusev/parsedown/releases/tag/1.8.0"
+      },
+      "source": "https://api.github.com/repos/erusev/parsedown",
+      "github_release_source": "https://api.github.com/repos/erusev/parsedown/releases/latest"
+    },
+    {
+      "repo": "evilstreak/markdown-js",
+      "url": "https://github.com/evilstreak/markdown-js",
+      "description": "A Markdown parser for javascript",
+      "stars": 7671,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2020-03-27T01:02:30Z",
+      "release": null,
+      "source": "https://api.github.com/repos/evilstreak/markdown-js",
+      "github_release_source": "https://api.github.com/repos/evilstreak/markdown-js/releases/latest"
+    },
+    {
+      "repo": "executablebooks/markdown-it-py",
+      "url": "https://github.com/executablebooks/markdown-it-py",
+      "description": "Markdown parser, done right. 100% CommonMark support, extensions, syntax plugins & high speed. Now in Python!",
+      "stars": 1369,
+      "language": "Python",
+      "archived": false,
+      "pushed_at": "2026-09-28T16:43:56Z",
+      "release": {
+        "tag_name": "v4.2.0",
+        "published_at": "2026-05-07T12:06:59Z",
+        "html_url": "https://github.com/executablebooks/markdown-it-py/releases/tag/v4.2.0"
+      },
+      "source": "https://api.github.com/repos/executablebooks/markdown-it-py",
+      "github_release_source": "https://api.github.com/repos/executablebooks/markdown-it-py/releases/latest"
+    },
+    {
+      "repo": "fletcher/MultiMarkdown-7",
+      "url": "https://github.com/fletcher/MultiMarkdown-7",
+      "description": "Lightweight markup processor to produce HTML, LaTeX, and more. (Currently in pre-release.)",
+      "stars": 56,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2026-09-22T01:33:10Z",
+      "default_branch": "develop",
+      "source": "https://api.github.com/repos/fletcher/MultiMarkdown-7"
+    },
+    {
+      "repo": "gettalong/kramdown",
+      "url": "https://github.com/gettalong/kramdown",
+      "description": "kramdown is a fast, pure Ruby Markdown superset converter, using a strict syntax definition and supporting several common extensions.",
+      "stars": 1782,
+      "language": "Ruby",
+      "archived": false,
+      "pushed_at": "2026-01-31T18:52:28Z",
+      "release": {
+        "tag_name": "REL_1_5_0",
+        "published_at": "2014-10-25T21:30:13Z",
+        "html_url": "https://github.com/gettalong/kramdown/releases/tag/REL_1_5_0"
+      },
+      "source": "https://api.github.com/repos/gettalong/kramdown",
+      "github_release_source": "https://api.github.com/repos/gettalong/kramdown/releases/latest"
+    },
+    {
+      "repo": "github/cmark-gfm",
+      "url": "https://github.com/github/cmark-gfm",
+      "description": "GitHub's fork of cmark, a CommonMark parsing and rendering library and program in C",
+      "stars": 1134,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2026-09-28T14:25:05Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/github/cmark-gfm"
+    },
+    {
+      "repo": "gomarkdown/markdown",
+      "url": "https://github.com/gomarkdown/markdown",
+      "description": "markdown parser and HTML renderer for Go",
+      "stars": 1737,
+      "language": "Go",
+      "archived": false,
+      "pushed_at": "2026-09-23T18:07:48Z",
+      "release": null,
+      "source": "https://api.github.com/repos/gomarkdown/markdown",
+      "github_release_source": "https://api.github.com/repos/gomarkdown/markdown/releases/latest"
+    },
+    {
+      "repo": "hoedown/hoedown",
+      "url": "https://github.com/hoedown/hoedown",
+      "description": "Standards compliant, fast, secure markdown processing library in C",
+      "stars": 994,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2020-06-22T14:06:16Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/hoedown/hoedown"
+    },
+    {
+      "repo": "ije/md4w",
+      "url": "https://github.com/ije/md4w",
+      "description": "A Markdown renderer written in Zig & C, compiled to WebAssymbly.",
+      "stars": 155,
+      "language": "Zig",
+      "archived": false,
+      "pushed_at": "2025-05-28T17:37:52Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/ije/md4w"
+    },
+    {
+      "repo": "JetBrains/markdown",
+      "url": "https://github.com/JetBrains/markdown",
+      "description": "Markdown parser written in kotlin",
+      "stars": 960,
+      "language": "Kotlin",
+      "archived": false,
+      "pushed_at": "2026-09-29T16:04:26Z",
+      "release": null,
+      "source": "https://api.github.com/repos/JetBrains/markdown",
+      "github_release_source": "https://api.github.com/repos/JetBrains/markdown/releases/latest"
+    },
+    {
+      "repo": "jgm/commonmark-hs",
+      "url": "https://github.com/jgm/commonmark-hs",
+      "description": "Pure Haskell commonmark parsing library, designed to be flexible and extensible",
+      "stars": 147,
+      "language": "Haskell",
+      "archived": false,
+      "pushed_at": "2026-09-28T14:54:05Z",
+      "release": null,
+      "source": "https://api.github.com/repos/jgm/commonmark-hs",
+      "github_release_source": "https://api.github.com/repos/jgm/commonmark-hs/releases/latest"
+    },
+    {
+      "repo": "jgm/djot",
+      "url": "https://github.com/jgm/djot",
+      "description": "A light markup language",
+      "stars": 2047,
+      "language": "Emacs Lisp",
+      "archived": false,
+      "pushed_at": "2026-07-01T11:53:19Z",
+      "release": {
+        "tag_name": "0.2.0",
+        "published_at": "2023-01-03T00:44:02Z",
+        "html_url": "https://github.com/jgm/djot/releases/tag/0.2.0"
+      },
+      "source": "https://api.github.com/repos/jgm/djot",
+      "github_release_source": "https://api.github.com/repos/jgm/djot/releases/latest"
+    },
+    {
+      "repo": "jgm/pandoc",
+      "url": "https://github.com/jgm/pandoc",
+      "description": "Universal markup converter",
+      "stars": 46458,
+      "language": "Haskell",
+      "archived": false,
+      "pushed_at": "2026-09-30T16:35:30Z",
+      "release": {
+        "tag_name": "3.12",
+        "published_at": "2026-09-29T06:30:47Z",
+        "html_url": "https://github.com/jgm/pandoc/releases/tag/3.12"
+      },
+      "source": "https://api.github.com/repos/jgm/pandoc",
+      "github_release_source": "https://api.github.com/repos/jgm/pandoc/releases/latest"
+    },
+    {
+      "repo": "jonschlinkert/remarkable",
+      "url": "https://github.com/jonschlinkert/remarkable",
+      "description": "Markdown parser, done right. Commonmark support, extensions, syntax plugins, high speed - all in one. Gulp and metalsmith plugins available. Used by Facebook, Docusaurus and many others! Use https://github.com/breakdance/breakdance for HTML-to-markdown conversion. Use https://github.com/jonschlinkert/markdown-toc to generate a table of contents.",
+      "stars": 5844,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2024-05-17T12:20:51Z",
+      "release": {
+        "tag_name": "v2.0.0",
+        "published_at": "2019-08-07T10:07:56Z",
+        "html_url": "https://github.com/jonschlinkert/remarkable/releases/tag/v2.0.0"
+      },
+      "source": "https://api.github.com/repos/jonschlinkert/remarkable",
+      "github_release_source": "https://api.github.com/repos/jonschlinkert/remarkable/releases/latest"
+    },
+    {
+      "repo": "kivikakk/comrak",
+      "url": "https://github.com/kivikakk/comrak",
+      "description": "CommonMark + GFM compatible Markdown parser and renderer",
+      "stars": 1714,
+      "language": "Rust",
+      "archived": false,
+      "pushed_at": "2026-09-23T11:32:56Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/kivikakk/comrak"
+    },
+    {
+      "repo": "lepture/mistune",
+      "url": "https://github.com/lepture/mistune",
+      "description": "A fast yet powerful Python Markdown parser with renderers and plugins.",
+      "stars": 3075,
+      "language": "Python",
+      "archived": false,
+      "pushed_at": "2026-08-21T04:48:29Z",
+      "release": {
+        "tag_name": "v3.3.4",
+        "published_at": "2026-07-22T05:22:46Z",
+        "html_url": "https://github.com/lepture/mistune/releases/tag/v3.3.4"
+      },
+      "source": "https://api.github.com/repos/lepture/mistune",
+      "github_release_source": "https://api.github.com/repos/lepture/mistune/releases/latest"
+    },
+    {
+      "repo": "lezer-parser/markdown",
+      "url": "https://github.com/lezer-parser/markdown",
+      "description": "A lezer-integrated Markdown parser",
+      "stars": 147,
+      "language": "TypeScript",
+      "archived": true,
+      "pushed_at": "2026-04-15T06:41:52Z",
+      "release": null,
+      "source": "https://api.github.com/repos/lezer-parser/markdown",
+      "github_release_source": "https://api.github.com/repos/lezer-parser/markdown/releases/latest"
+    },
+    {
+      "repo": "markdown-it/markdown-it",
+      "url": "https://github.com/markdown-it/markdown-it",
+      "description": "Markdown parser, done right. 100% CommonMark support, extensions, syntax plugins & high speed",
+      "stars": 21950,
+      "language": "TypeScript",
+      "archived": false,
+      "pushed_at": "2026-09-12T05:27:05Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/markdown-it/markdown-it"
+    },
+    {
+      "repo": "markedjs/marked",
+      "url": "https://github.com/markedjs/marked",
+      "description": "A markdown parser and compiler. Built for speed.",
+      "stars": 37218,
+      "language": "TypeScript",
+      "archived": false,
+      "pushed_at": "2026-09-29T22:56:59Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/markedjs/marked"
+    },
+    {
+      "repo": "mdx-js/mdx",
+      "url": "https://github.com/mdx-js/mdx",
+      "description": "Markdown for the component era",
+      "stars": 19810,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2026-09-29T12:30:05Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/mdx-js/mdx"
+    },
+    {
+      "repo": "micromark/micromark",
+      "url": "https://github.com/micromark/micromark",
+      "description": "small, safe, and great commonmark (optionally gfm, mdx) compliant markdown parser",
+      "stars": 2229,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2026-09-26T15:53:43Z",
+      "release": {
+        "tag_name": "4.0.3",
+        "published_at": "2026-09-26T15:59:42Z",
+        "html_url": "https://github.com/micromark/micromark/releases/tag/4.0.3"
+      },
+      "source": "https://api.github.com/repos/micromark/micromark",
+      "github_release_source": "https://api.github.com/repos/micromark/micromark/releases/latest"
+    },
+    {
+      "repo": "miekg/mmark",
+      "url": "https://github.com/miekg/mmark",
+      "description": "**OBSOLETE** See https://github.com/mmarkdown/mmark",
+      "stars": 249,
+      "language": "Go",
+      "archived": true,
+      "pushed_at": "2020-11-10T11:59:05Z",
+      "release": {
+        "tag_name": "v1.3.6",
+        "published_at": "2017-07-10T20:28:54Z",
+        "html_url": "https://github.com/miekg/mmark/releases/tag/v1.3.6"
+      },
+      "source": "https://api.github.com/repos/miekg/mmark",
+      "github_release_source": "https://api.github.com/repos/miekg/mmark/releases/latest"
+    },
+    {
+      "repo": "mity/md4c",
+      "url": "https://github.com/mity/md4c",
+      "description": "C Markdown parser. Fast. SAX-like interface. Compliant to CommonMark specification.",
+      "stars": 1463,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2026-09-28T19:03:29Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/mity/md4c"
+    },
+    {
+      "repo": "mizchi/markdown.mbt",
+      "url": "https://github.com/mizchi/markdown.mbt",
+      "description": "Markdown Parser for incremental update",
+      "stars": 102,
+      "language": "MoonBit",
+      "archived": false,
+      "pushed_at": "2026-09-22T15:31:37Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/mizchi/markdown.mbt"
+    },
+    {
+      "repo": "mmarkdown/mmark",
+      "url": "https://github.com/mmarkdown/mmark",
+      "description": "Mmark: a powerful markdown processor in Go geared towards the IETF ",
+      "stars": 515,
+      "language": "Go",
+      "archived": false,
+      "pushed_at": "2026-04-19T17:27:36Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/mmarkdown/mmark"
+    },
+    {
+      "repo": "Orc/discount",
+      "url": "https://github.com/Orc/discount",
+      "description": "My C implementation of John Gruber's Markdown markup language",
+      "stars": 889,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2026-08-29T03:49:47Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/Orc/discount"
+    },
+    {
+      "repo": "oven-sh/bun",
+      "url": "https://github.com/oven-sh/bun",
+      "description": "Incredibly fast JavaScript runtime, bundler, test runner, and package manager – all in one",
+      "stars": 96087,
+      "language": "Rust",
+      "archived": false,
+      "pushed_at": "2026-09-30T17:19:24Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/oven-sh/bun"
+    },
+    {
+      "repo": "pulldown-cmark/pulldown-cmark",
+      "url": "https://github.com/pulldown-cmark/pulldown-cmark",
+      "description": "An efficient, reliable parser for CommonMark, a standard dialect of Markdown",
+      "stars": 2731,
+      "language": "Rust",
+      "archived": false,
+      "pushed_at": "2026-09-30T06:29:44Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/pulldown-cmark/pulldown-cmark"
+    },
+    {
+      "repo": "Python-Markdown/markdown",
+      "url": "https://github.com/Python-Markdown/markdown",
+      "description": "A Python implementation of John Gruber’s Markdown with Extension support.",
+      "stars": 4254,
+      "language": "Python",
+      "archived": false,
+      "pushed_at": "2026-09-30T12:55:01Z",
+      "release": {
+        "tag_name": "3.11.0",
+        "published_at": "2026-09-25T13:46:25Z",
+        "html_url": "https://github.com/Python-Markdown/markdown/releases/tag/3.11.0"
+      },
+      "source": "https://api.github.com/repos/Python-Markdown/markdown",
+      "github_release_source": "https://api.github.com/repos/Python-Markdown/markdown/releases/latest"
+    },
+    {
+      "repo": "remarkjs/remark",
+      "url": "https://github.com/remarkjs/remark",
+      "description": "markdown processor powered by plugins part of the @unifiedjs collective",
+      "stars": 9010,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2026-09-27T13:21:39Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/remarkjs/remark"
+    },
+    {
+      "repo": "rsms/markdown-wasm",
+      "url": "https://github.com/rsms/markdown-wasm",
+      "description": "Very fast Markdown parser and HTML generator implemented in WebAssembly, based on md4c",
+      "stars": 1674,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2022-11-22T17:28:20Z",
+      "release": null,
+      "source": "https://api.github.com/repos/rsms/markdown-wasm",
+      "github_release_source": "https://api.github.com/repos/rsms/markdown-wasm/releases/latest"
+    },
+    {
+      "repo": "russross/blackfriday",
+      "url": "https://github.com/russross/blackfriday",
+      "description": "Blackfriday: a markdown processor for Go",
+      "stars": 5602,
+      "language": "Go",
+      "archived": false,
+      "pushed_at": "2024-01-29T03:41:57Z",
+      "release": {
+        "tag_name": "v2.1.0",
+        "published_at": "2020-11-07T22:28:37Z",
+        "html_url": "https://github.com/russross/blackfriday/releases/tag/v2.1.0"
+      },
+      "source": "https://api.github.com/repos/russross/blackfriday",
+      "github_release_source": "https://api.github.com/repos/russross/blackfriday/releases/latest"
+    },
+    {
+      "repo": "serkodev/markdown-exit",
+      "url": "https://github.com/serkodev/markdown-exit",
+      "description": "Fast, customizable Markdown parser and renderer with full CommonMark support. TypeScript rewrite of markdown-it with enhancements.",
+      "stars": 1366,
+      "language": "TypeScript",
+      "archived": false,
+      "pushed_at": "2026-08-24T16:47:59Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/serkodev/markdown-exit"
+    },
+    {
+      "repo": "showdownjs/showdown",
+      "url": "https://github.com/showdownjs/showdown",
+      "description": "A bidirectional Markdown to HTML to Markdown converter written in Javascript",
+      "stars": 14868,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2026-09-29T07:54:22Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/showdownjs/showdown"
+    },
+    {
+      "repo": "siinghd/brookmd",
+      "url": "https://github.com/siinghd/brookmd",
+      "description": "Zero-dep streaming markdown for the browser — Rust→WASM, 100% CommonMark 0.31 + GFM. Built to not melt the main thread on concurrent LLM streams.",
+      "stars": 9,
+      "language": "Rust",
+      "archived": false,
+      "pushed_at": "2026-09-15T14:23:07Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/siinghd/brookmd"
+    },
+    {
+      "repo": "Simon-He95/markdown-it-ts",
+      "url": "https://github.com/Simon-He95/markdown-it-ts",
+      "description": "A modern, type-safe rewrite of markdown-it in TypeScript: pluggable rules, split parse/render, CommonMark-compatible; fast one-shot parsing and even faster streaming/incremental updates.",
+      "stars": 171,
+      "language": "TypeScript",
+      "archived": false,
+      "pushed_at": "2026-09-07T09:29:39Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/Simon-He95/markdown-it-ts"
+    },
+    {
+      "repo": "swiftlang/swift-markdown",
+      "url": "https://github.com/swiftlang/swift-markdown",
+      "description": "A Swift package for parsing, building, editing, and analyzing Markdown documents.",
+      "stars": 3428,
+      "language": "Swift",
+      "archived": false,
+      "pushed_at": "2026-09-28T08:54:55Z",
+      "release": {
+        "tag_name": "0.9.0",
+        "published_at": "2026-09-21T16:15:54Z",
+        "html_url": "https://github.com/swiftlang/swift-markdown/releases/tag/0.9.0"
+      },
+      "source": "https://api.github.com/repos/swiftlang/swift-markdown",
+      "github_release_source": "https://api.github.com/repos/swiftlang/swift-markdown/releases/latest"
+    },
+    {
+      "repo": "syntax-tree/mdast-util-from-markdown",
+      "url": "https://github.com/syntax-tree/mdast-util-from-markdown",
+      "description": "mdast utility to parse markdown",
+      "stars": 290,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2026-09-26T06:52:04Z",
+      "release": {
+        "tag_name": "2.0.3",
+        "published_at": "2026-02-21T13:24:02Z",
+        "html_url": "https://github.com/syntax-tree/mdast-util-from-markdown/releases/tag/2.0.3"
+      },
+      "source": "https://api.github.com/repos/syntax-tree/mdast-util-from-markdown",
+      "github_release_source": "https://api.github.com/repos/syntax-tree/mdast-util-from-markdown/releases/latest"
+    },
+    {
+      "repo": "TanStack/markdown",
+      "url": "https://github.com/TanStack/markdown",
+      "description": "Tiny, fast Markdown parsing and rendering for blogs and documentation",
+      "stars": 414,
+      "language": "TypeScript",
+      "archived": false,
+      "pushed_at": "2026-09-30T03:19:20Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/TanStack/markdown"
+    },
+    {
+      "repo": "thephpleague/commonmark",
+      "url": "https://github.com/thephpleague/commonmark",
+      "description": "Highly-extensible PHP Markdown parser which fully supports the CommonMark and GFM specs.",
+      "stars": 2980,
+      "language": "PHP",
+      "archived": false,
+      "pushed_at": "2026-09-30T00:08:43Z",
+      "release": {
+        "tag_name": "2.10.3",
+        "published_at": "2026-09-21T13:07:50Z",
+        "html_url": "https://github.com/thephpleague/commonmark/releases/tag/2.10.3"
+      },
+      "source": "https://api.github.com/repos/thephpleague/commonmark",
+      "github_release_source": "https://api.github.com/repos/thephpleague/commonmark/releases/latest"
+    },
+    {
+      "repo": "thetarnav/streaming-markdown",
+      "url": "https://github.com/thetarnav/streaming-markdown",
+      "description": "🔴Ⓜ️⬇️ Streaming markdown à la ChatGPT (WIP)",
+      "stars": 390,
+      "language": "JavaScript",
+      "archived": false,
+      "pushed_at": "2026-02-17T19:46:50Z",
+      "release": {
+        "tag_name": "v0.2.0",
+        "published_at": "2025-03-22T12:03:43Z",
+        "html_url": "https://github.com/thetarnav/streaming-markdown/releases/tag/v0.2.0"
+      },
+      "source": "https://api.github.com/repos/thetarnav/streaming-markdown",
+      "github_release_source": "https://api.github.com/repos/thetarnav/streaming-markdown/releases/latest"
+    },
+    {
+      "repo": "trentm/python-markdown2",
+      "url": "https://github.com/trentm/python-markdown2",
+      "description": "markdown2: A fast and complete implementation of Markdown in Python",
+      "stars": 2823,
+      "language": "Python",
+      "archived": false,
+      "pushed_at": "2026-09-30T01:08:40Z",
+      "release": null,
+      "source": "https://api.github.com/repos/trentm/python-markdown2",
+      "github_release_source": "https://api.github.com/repos/trentm/python-markdown2/releases/latest"
+    },
+    {
+      "repo": "ubugeeei-prod/ox-content",
+      "url": "https://github.com/ubugeeei-prod/ox-content",
+      "description": "all-in-one markdown toolchain ― fastest, tiniest, framework agnostic, powerful, customizable",
+      "stars": 246,
+      "language": "Rust",
+      "archived": false,
+      "pushed_at": "2026-09-29T07:02:46Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/ubugeeei-prod/ox-content"
+    },
+    {
+      "repo": "unjs/md4x",
+      "url": "https://github.com/unjs/md4x",
+      "description": "📄 Fast and small markdown parser and renderer",
+      "stars": 415,
+      "language": "Zig",
+      "archived": false,
+      "pushed_at": "2026-09-13T16:46:00Z",
+      "default_branch": "main",
+      "source": "https://api.github.com/repos/unjs/md4x"
+    },
+    {
+      "repo": "vercel/streamdown",
+      "url": "https://github.com/vercel/streamdown",
+      "description": "A drop-in replacement for react-markdown, designed for AI-powered streaming.",
+      "stars": 5662,
+      "language": "TypeScript",
+      "archived": false,
+      "pushed_at": "2026-09-30T14:53:22Z",
+      "release": {
+        "tag_name": "streamdown@2.7.0",
+        "published_at": "2026-09-30T14:53:25Z",
+        "html_url": "https://github.com/vercel/streamdown/releases/tag/streamdown%402.7.0"
+      },
+      "source": "https://api.github.com/repos/vercel/streamdown",
+      "github_release_source": "https://api.github.com/repos/vercel/streamdown/releases/latest"
+    },
+    {
+      "repo": "vmg/redcarpet",
+      "url": "https://github.com/vmg/redcarpet",
+      "description": "The safe Markdown parser, reloaded.",
+      "stars": 5078,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2025-03-06T20:05:45Z",
+      "release": {
+        "tag_name": "v3.6.1",
+        "published_at": "2025-03-06T20:07:15Z",
+        "html_url": "https://github.com/vmg/redcarpet/releases/tag/v3.6.1"
+      },
+      "source": "https://api.github.com/repos/vmg/redcarpet",
+      "github_release_source": "https://api.github.com/repos/vmg/redcarpet/releases/latest"
+    },
+    {
+      "repo": "vmg/sundown",
+      "url": "https://github.com/vmg/sundown",
+      "description": "Standards compliant, fast, secure markdown processing library in C",
+      "stars": 2020,
+      "language": "C",
+      "archived": false,
+      "pushed_at": "2018-07-23T10:50:07Z",
+      "default_branch": "master",
+      "source": "https://api.github.com/repos/vmg/sundown"
+    },
+    {
+      "repo": "vsch/flexmark-java",
+      "url": "https://github.com/vsch/flexmark-java",
+      "description": "CommonMark/Markdown Java parser with source level AST. CommonMark 0.28, emulation of: pegdown, kramdown, markdown.pl, MultiMarkdown. With HTML to MD, MD to PDF, MD to DOCX  conversion modules.",
+      "stars": 2641,
+      "language": "Java",
+      "archived": false,
+      "pushed_at": "2025-04-16T19:07:12Z",
+      "release": null,
+      "source": "https://api.github.com/repos/vsch/flexmark-java",
+      "github_release_source": "https://api.github.com/repos/vsch/flexmark-java/releases/latest"
+    },
+    {
+      "repo": "wooorm/markdown-rs",
+      "url": "https://github.com/wooorm/markdown-rs",
+      "description": "CommonMark compliant markdown parser in Rust with ASTs and extensions",
+      "stars": 1579,
+      "language": "Rust",
+      "archived": false,
+      "pushed_at": "2025-04-23T15:50:02Z",
+      "release": {
+        "tag_name": "1.0.0",
+        "published_at": "2025-04-23T15:51:29Z",
+        "html_url": "https://github.com/wooorm/markdown-rs/releases/tag/1.0.0"
+      },
+      "source": "https://api.github.com/repos/wooorm/markdown-rs",
+      "github_release_source": "https://api.github.com/repos/wooorm/markdown-rs/releases/latest"
+    },
+    {
+      "repo": "xoofx/markdig",
+      "url": "https://github.com/xoofx/markdig",
+      "description": "A fast, powerful, CommonMark compliant, extensible Markdown processor for .NET",
+      "stars": 5336,
+      "language": "C#",
+      "archived": false,
+      "pushed_at": "2026-09-20T07:56:19Z",
+      "release": {
+        "tag_name": "1.4.0",
+        "published_at": "2026-09-20T07:59:49Z",
+        "html_url": "https://github.com/xoofx/markdig/releases/tag/1.4.0"
+      },
+      "source": "https://api.github.com/repos/xoofx/markdig",
+      "github_release_source": "https://api.github.com/repos/xoofx/markdig/releases/latest"
+    },
+    {
+      "repo": "yuin/goldmark",
+      "url": "https://github.com/yuin/goldmark",
+      "description": ":trophy: The Golden Swiss Army Knife for markdown processing. 100% CommonMark compliant, AST w/ CST, Extensible, Fast, CJK-friendly.",
+      "stars": 5043,
+      "language": "Go",
+      "archived": false,
+      "pushed_at": "2026-09-27T15:37:14Z",
+      "release": {
+        "tag_name": "v2.1.6",
+        "published_at": "2026-09-27T15:37:14Z",
+        "html_url": "https://github.com/yuin/goldmark/releases/tag/v2.1.6"
+      },
+      "source": "https://api.github.com/repos/yuin/goldmark",
+      "github_release_source": "https://api.github.com/repos/yuin/goldmark/releases/latest"
+    }
+  ],
+  "npm_packages": [
+    {
+      "downloads": 19687864,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "@lezer/markdown",
+      "latest": "1.7.2",
+      "release_date": "2026-07-15T09:07:50.506Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://code.haverbeke.berlin/lezer/markdown.git"
+      },
+      "registry_source": "https://registry.npmjs.org/%40lezer%2Fmarkdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/%40lezer%2Fmarkdown"
+    },
+    {
+      "downloads": 44115526,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "@mdx-js/mdx",
+      "latest": "3.1.1",
+      "release_date": "2025-08-29T18:02:54.780Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mdx-js/mdx.git",
+        "directory": "packages/mdx/"
+      },
+      "registry_source": "https://registry.npmjs.org/%40mdx-js%2Fmdx",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/%40mdx-js%2Fmdx"
+    },
+    {
+      "downloads": 780,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "@mizchi/markdown",
+      "latest": "0.8.3",
+      "release_date": "2026-08-30T15:30:14.235Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mizchi/markdown.mbt.git"
+      },
+      "registry_source": "https://registry.npmjs.org/%40mizchi%2Fmarkdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/%40mizchi%2Fmarkdown"
+    },
+    {
+      "downloads": 61844,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "@ox-content/napi",
+      "latest": "3.2.13",
+      "release_date": "2026-09-29T07:12:38.607Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/ubugeeei-prod/ox-content.git",
+        "type": "git",
+        "directory": "crates/ox_content_napi"
+      },
+      "registry_source": "https://registry.npmjs.org/%40ox-content%2Fnapi",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/%40ox-content%2Fnapi"
+    },
+    {
+      "downloads": 6006,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "@ox-content/wasm",
+      "latest": "3.2.13",
+      "release_date": "2026-09-29T07:17:25.824Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/ubugeeei-prod/ox-content.git",
+        "type": "git",
+        "directory": "crates/ox_content_wasm"
+      },
+      "registry_source": "https://registry.npmjs.org/%40ox-content%2Fwasm",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/%40ox-content%2Fwasm"
+    },
+    {
+      "downloads": 258243,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "@tanstack/markdown",
+      "latest": "0.0.16",
+      "release_date": "2026-09-30T03:24:28.310Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/TanStack/markdown.git",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/%40tanstack%2Fmarkdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/%40tanstack%2Fmarkdown"
+    },
+    {
+      "downloads": 425,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "brookmd",
+      "latest": "0.30.2",
+      "release_date": "2026-09-15T14:29:40.687Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/siinghd/brookmd.git",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/brookmd",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/brookmd"
+    },
+    {
+      "downloads": 2961766,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "commonmark",
+      "latest": "0.31.2",
+      "release_date": "2024-09-19T15:17:23.038Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/commonmark/commonmark.js.git"
+      },
+      "registry_source": "https://registry.npmjs.org/commonmark",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/commonmark"
+    },
+    {
+      "downloads": 477465,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "markdown",
+      "latest": "0.5.0",
+      "release_date": "2013-07-26T09:48:28.455Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git://github.com/evilstreak/markdown-js.git",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/markdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/markdown"
+    },
+    {
+      "downloads": 740273,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "markdown-exit",
+      "latest": "1.3.0",
+      "release_date": "2026-08-24T16:48:16.061Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/serkodev/markdown-exit.git"
+      },
+      "registry_source": "https://registry.npmjs.org/markdown-exit",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/markdown-exit"
+    },
+    {
+      "downloads": 115274620,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "markdown-it",
+      "latest": "15.0.2",
+      "release_date": "2026-09-11T04:04:18.194Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/markdown-it/markdown-it.git",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/markdown-it",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/markdown-it"
+    },
+    {
+      "downloads": 224342,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "markdown-it-ts",
+      "latest": "1.1.2",
+      "release_date": "2026-09-05T13:31:00.567Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Simon-He95/markdown-it-ts.git"
+      },
+      "registry_source": "https://registry.npmjs.org/markdown-it-ts",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/markdown-it-ts"
+    },
+    {
+      "downloads": 26502,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "markdown-wasm",
+      "latest": "1.2.0",
+      "release_date": "2021-07-01T03:03:07.254Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rsms/markdown-wasm.git"
+      },
+      "registry_source": "https://registry.npmjs.org/markdown-wasm",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/markdown-wasm"
+    },
+    {
+      "downloads": 303248258,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "marked",
+      "latest": "18.0.14",
+      "release_date": "2026-09-22T06:09:15.277Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/markedjs/marked.git",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/marked",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/marked"
+    },
+    {
+      "downloads": 52795,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "md4w",
+      "latest": "0.2.7",
+      "release_date": "2025-05-28T17:17:17.632Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ije/md4w.git"
+      },
+      "registry_source": "https://registry.npmjs.org/md4w",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/md4w"
+    },
+    {
+      "downloads": 16147,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "md4x",
+      "latest": "0.0.30",
+      "release_date": "2026-09-13T16:52:24.750Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/unjs/md4x.git",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/md4x",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/md4x"
+    },
+    {
+      "downloads": 228631736,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "micromark",
+      "latest": "4.0.3",
+      "release_date": "2026-09-26T15:43:36.558Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/micromark/micromark.git#main",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/micromark",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/micromark"
+    },
+    {
+      "downloads": 136497275,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "react-markdown",
+      "latest": "10.1.0",
+      "release_date": "2025-03-07T10:32:53.222Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/remarkjs/react-markdown.git"
+      },
+      "registry_source": "https://registry.npmjs.org/react-markdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/react-markdown"
+    },
+    {
+      "downloads": 23002787,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "remark",
+      "latest": "15.0.1",
+      "release_date": "2023-09-18T10:20:58.543Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/remarkjs/remark.git#main",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/remark",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/remark"
+    },
+    {
+      "downloads": 5264333,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "remarkable",
+      "latest": "2.0.1",
+      "release_date": "2020-05-25T11:32:44.241Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/jonschlinkert/remarkable"
+      },
+      "registry_source": "https://registry.npmjs.org/remarkable",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/remarkable"
+    },
+    {
+      "downloads": 13649320,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "satteri",
+      "latest": "0.10.5",
+      "release_date": "2026-08-19T20:38:24.126Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/bruits/satteri.git",
+        "type": "git"
+      },
+      "registry_source": "https://registry.npmjs.org/satteri",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/satteri"
+    },
+    {
+      "downloads": 5377954,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "showdown",
+      "latest": "2.1.0",
+      "release_date": "2022-04-21T00:33:05.614Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/showdownjs/showdown.git",
+        "web": "https://github.com/showdownjs/showdown"
+      },
+      "registry_source": "https://registry.npmjs.org/showdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/showdown"
+    },
+    {
+      "downloads": 596132,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "snarkdown",
+      "latest": "2.0.0",
+      "release_date": "2020-08-31T21:51:42.026Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/developit/snarkdown.git"
+      },
+      "registry_source": "https://registry.npmjs.org/snarkdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/snarkdown"
+    },
+    {
+      "downloads": 24853884,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "streamdown",
+      "latest": "2.7.0",
+      "release_date": "2026-09-30T14:56:19.987Z",
+      "deprecated": null,
+      "repository": {
+        "url": "git+https://github.com/vercel/streamdown.git",
+        "type": "git",
+        "directory": "packages/streamdown"
+      },
+      "registry_source": "https://registry.npmjs.org/streamdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/streamdown"
+    },
+    {
+      "downloads": 68338,
+      "start": "2026-08-30",
+      "end": "2026-09-28",
+      "package": "streaming-markdown",
+      "latest": "0.2.15",
+      "release_date": "2025-05-04T08:52:27.405Z",
+      "deprecated": null,
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/thetarnav/streaming-markdown.git"
+      },
+      "registry_source": "https://registry.npmjs.org/streaming-markdown",
+      "downloads_source": "https://api.npmjs.org/downloads/point/last-month/streaming-markdown"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[package]
+name = "markdown-ecosystem-worker"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+ferromark = { path = "../../.." }
+markdown = "=1.0.0"
+comrak = { version = "=0.55.0", default-features = false }
+
+[[bin]]
+name = "markdown-ecosystem-worker"
+path = "../worker.rs"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"

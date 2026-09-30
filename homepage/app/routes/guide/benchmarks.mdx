@@ -171,3 +171,139 @@ and Wikipedia-derived prose. It separates input size, content, output agreement,
 and fresh/reused lifecycles. [Full tables and raw data](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-14-broad-markdown/README.md)
 and the [earlier synthetic diagnostic comparison](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-13-current-ferromark/README.md)
 use the same pinned parser binaries.
+
+## markdown-rs and micromark
+
+Two separate pairs extend the frozen 57-document corpus comparison. These are
+new measurements of the recorded main revision, with no core changes. Their runtime and
+allocator settings differ from the archived six-engine comparison; the results are not pooled. **Values below are Ferromark throughput
+relative to the competitor: higher is faster.**
+
+| Track | Competitor | Agreeing documents | Fresh | Reuse |
+| --- | --- | ---: | ---: | ---: |
+| Native | markdown-rs 1.0.0 | 57/57 | 68.03× | 75.39× |
+| Node | micromark 4.0.2 | 56/57 | 81.19× | 123.83× |
+
+The native pair uses rustc 1.95.0 (59807616e 2026-04-14), a shared system allocator,
+optimization level 3, fat LTO, one codegen unit, and a generic CPU target.
+The Node pair uses Node v24.21.0, Ferromark's local addon built
+with the release-node profile without PGO, and both public JavaScript string APIs.
+It includes wrapper/N-API conversion costs and JavaScript GC. The Node result
+describes application calls, not isolated language overhead.
+
+CommonMark disables optional syntax. The extension lane enables only tables,
+strikethrough and task lists, with raw HTML passthrough. It is not full GFM;
+MDX, math, frontmatter, bare URL autolinking, footnotes, heading IDs and other
+renderer extras are off. The competitors expose no retained parser/output API:
+their reuse column retains only configuration and makes fresh HTML calls.
+
+Every input is checked in both lifecycles before timing and again around timed
+windows. The score uses only exact or serialization-equivalent HTML pairs.
+Micromark differs on one Vite document's code-block line breaks; that document
+remains a measured diagnostic and is excluded from the score. Code whitespace
+is not normalized away. Three process rounds with six rotating engine-order
+windows per round use equal-document geometric means. These are measurements
+on a shared macOS arm64 workstation, not a universal ranking or a significance
+claim. MDX and AST capabilities belong in the separate feature inventory.
+
+[Raw results, source hashes, and output differences](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-09-30-markdown-ecosystem-main/README.md),
+[reproduction commands](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/markdown-ecosystem/README.md).
+
+## Node.js ecosystem coverage
+
+Five further public Markdown-to-HTML APIs use the same frozen 57 inputs.
+Each is independently paired with Ferromark's local Node addon without PGO.
+The core and addon source hashes match the earlier micromark run; the adapter
+commit is recorded separately. Ratios use only each pair's agreeing documents,
+so these rows do not establish a shared-set ranking.
+
+| Project | Version | Agreeing documents | Fresh | Reuse |
+| --- | --- | ---: | ---: | ---: |
+| marked | 18.0.14 | 56/57 | 8.66× | 13.26× |
+| markdown-it | 15.0.2 | 56/57 | 9.39× | 14.21× |
+| remark / unified | 15.0.1 | 56/57 | 92.18× | 139.01× |
+| Showdown | 2.1.0 | 31/57 | 37.57× | 66.44× |
+| commonmark.js | 0.31.2 | 57/57 | 4.08× | 6.28× |
+
+commonmark.js runs **CommonMark only in both engines on all inputs**, because
+its public parser has no GFM extension lane. All other pairs use the frozen
+per-document CommonMark or tables/strikethrough/task-list profile. marked uses
+its public URL-tokenizer override to disable literal autolinking. markdown-it
+keeps its native `<s>` spelling and task-list plugin classes; remark includes
+remark-rehype and rehype-stringify, with only the three matched syntax extensions.
+Showdown keeps its own Markdown dialect, extra fenced-code classes, and task-list
+styles. Its smaller agreement set also includes differences in custom HTML and
+Markdown parsing; the retained outputs show each excluded document. Heading IDs,
+metadata, ellipsis conversion, and optional renderer extras are disabled.
+
+All pairs retain configured public parser/processor objects outside timing;
+each call parses and returns a new JavaScript HTML string. Both Ferromark
+lifecycles are verified before timing and around every process's windows.
+Three process rounds, six alternating windows, 40 ms timing windows, and 60 ms
+warmup use the same median/geometric-mean aggregation as the micromark pair.
+The strict output classifier is unchanged; differing text, tags, task classes,
+styles, code whitespace, and other attributes are not discarded to improve
+agreement. Disagreements remain timed diagnostics and are excluded from ratios.
+
+These macOS arm64 workstation results describe these inputs and build profiles;
+Linux cells stay unmeasured. Configuration, agreement counts, raw windows,
+locks, source hashes, and adapter snapshots are retained in the report below.
+[Reproduction and adapter contracts](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/markdown-ecosystem/README.md),
+[project coverage and framework integrations](https://ferromark.dev/guide/feature-comparison#nodejs-projects).
+
+## Completed native and Linux comparisons
+
+These independently measured pairs fill the remaining homepage cells. The
+Ferromark core source hashes match the earlier clean-core ecosystem runs.
+**Factors mean Ferromark throughput relative to the library.** Each row uses
+its own equivalent-HTML set; rows do not establish a shared-set ranking.
+
+| Platform | Project | Equivalent documents | Fresh | Reuse |
+| --- | --- | ---: | ---: | ---: |
+| macOS arm64 | Comrak | 57/57 | 7.83× | 8.60× |
+| macOS arm64 | cmark | 57/57 | 7.01× | 7.84× |
+| macOS arm64 | cmark-gfm | 57/57 | 7.08× | 7.85× |
+| Linux x86-64 | Comrak | 57/57 | 5.05× | 5.55× |
+| Linux x86-64 | cmark | 57/57 | 5.60× | 6.18× |
+| Linux x86-64 | cmark-gfm | 57/57 | 5.82× | 6.38× |
+| Linux x86-64 | markdown-rs | 57/57 | 99.64× | 109.52× |
+| Linux x86-64 | micromark | 56/57 | 105.10× | 152.72× |
+| Linux x86-64 | marked | 56/57 | 10.45× | 15.25× |
+| Linux x86-64 | markdown-it | 56/57 | 11.11× | 15.87× |
+| Linux x86-64 | remark / unified | 56/57 | 123.65× | 176.62× |
+| Linux x86-64 | Showdown | 31/57 | 34.11× | 55.95× |
+| Linux x86-64 | commonmark.js | 57/57 | 4.95× | 7.28× |
+
+cmark 0.31.2 uses CommonMark only in **both** engines for every document, as
+commonmark.js does. Comrak 0.55.0 and cmark-gfm 0.29.0.gfm.13 enable only tables,
+strikethrough, and task lists on the extension inputs. All use their public
+Markdown-to-HTML APIs and preserve raw HTML. The C adapters call native library
+functions directly; no CLI startup or IPC is timed. cmark's convenience call
+and cmark-gfm's parser/feed/finish/render sequence own fresh parser/AST/output
+state in both schedules. C HTML consumption includes `strlen` before freeing
+the returned allocation. Comrak uses `markdown_to_html`, also with fresh owned
+AST/output. Reuse retains configuration in these competitors; Ferromark retains
+its arena and renderer. AST and output destruction remain within native timing.
+
+The native pairs use system malloc, Rust 1.95.0, generic CPU, optimization level
+3, fat LTO, one codegen unit, and panic abort. C libraries/adapters use clang
+`-O3`, system malloc, and no PGO; no allocator redirection or cross-language LTO.
+The Node pairs use Node 24.21.0 and the release-node addon without PGO, including
+public binding/string conversion costs and JavaScript GC.
+
+Every pair has three process rounds, six rotating 40 ms windows and 60 ms warmup,
+with verification before timing and around each round. All 57 inputs, exact
+outputs, option guards, 2,052 paired windows, locks, source hashes, and committed
+adapter snapshots are retained. Only exact or conservative serialization-
+equivalent HTML contributes to factors; code whitespace, attributes, task-list
+markup, and text differences remain significant.
+
+macOS runs use a shared Apple M1 Ultra workstation. Linux pairs each run on their
+own GitHub-hosted Ubuntu 24.04 x86-64 VM; the pair alternates on one VM, but the
+CPU/host can differ between pairs. Metadata records CPU, load, clocks, thermal
+observations and hypervisor steal counters. No other workflow step runs during
+timing. These are separate steady-state measurements, with no significance
+claim or comparison of absolute durations between hosts.
+
+[Raw evidence and per-pair host metadata](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-09-30-ecosystem-platforms),
+[reproduction](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/markdown-ecosystem/README.md).

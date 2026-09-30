@@ -1,18 +1,22 @@
 # Native engine comparison
 
 This harness measures UTF-8 Markdown to complete HTML for Ferromark v2, the
-original OX-Content core, current local Ferromark v1 main, md4c, pulldown-cmark,
+released OX-Content core, historical Ferromark v1 control, md4c, pulldown-cmark,
 and Bun's original native Markdown engine. It uses the frozen 57-document
 [broad corpus](../broad-comparison/README.md), including the original source
 attribution and licenses. It does not run Markdown through a JavaScript, WASM,
 CLI, or network boundary in a timed operation.
+
+The separate [markdown-rs and micromark harness](../markdown-ecosystem/README.md)
+extends the comparison with a native Rust pair and a Node pair on the same
+frozen corpus. Its runtime and allocator contracts are recorded separately.
 
 ## Native calls and lifecycles
 
 | Engine | Fresh call | Reuse call |
 | --- | --- | --- |
 | Ferromark v2 | New arena, `Parser::with_options().parse()`, new `HtmlRenderer::render()` | Reset arena and retain renderer; `render_borrowed()` |
-| Original OX-Content | Same original public arena/parser/renderer APIs | Same original arena reset and borrowed-output APIs |
+| OX-Content | Same public arena/parser/renderer APIs | Same arena reset and borrowed-output APIs |
 | Ferromark v1 | `to_html_with_options()` | Retain `Renderer`, use `render_into()` and clear/reuse output |
 | md4c | Original C `md_html()`, grow a fresh byte vector through its callback | Same C call, retain only the callback's output vector |
 | pulldown-cmark | Stream `Parser::new_ext()` directly into `html::push_html()` | New parser/event stream each time, retain output string |
@@ -49,9 +53,9 @@ runs on macOS (Apple Silicon) and Linux (x86-64); the few platform differences
 are listed under [Platforms](#platforms).
 
 The single Cargo workspace also uses a common pinned dependency resolution,
-seeded from the existing Bun comparison lock. This differs from individual
-engines' original lockfiles (for example, shared `memchr` is 2.8.0). The report
-records these differences; this is a controlled native engine comparison,
+seeded from the committed campaign lock. This differs from individual
+engines' own lockfiles. Current campaigns use the committed
+`benchmarks/native-comparison/Cargo.lock` with `--lockfile` and locked fetching. The report records these differences; this is a controlled native engine comparison,
 not a comparison of untouched release build environments. Pass the archived
 `Cargo.lock` with `prepare.py --lockfile` to replay that exact resolution.
 
@@ -68,7 +72,7 @@ Markdown input; this is not an MDX feature benchmark.
 
 V2 uses `HtmlRendererOptions::commonmark()` in both lanes, disabling heading
 IDs, callouts, and fence metadata cleanup. V1 also
-disables its renderer extras. Original OX has no native flags to turn off those
+disables its renderer extras. OX-Content has no native flags to turn off those
 three behaviors; it remains unchanged. The harness neither replaces its renderer
 through hooks nor adds a slugifier to an engine that lacks one.
 The [current flag contract](../../docs/reports/2026-09-15-native-arm/FLAGS.md)
@@ -203,8 +207,7 @@ build writes no `pgo` object and its executable is unchanged.
 
 ### Fairness
 
-- PGO is applied to **all four Rust engines** — Ferromark v2, the original
-  OX-Content core, Ferromark v1, and pulldown-cmark — under **one recipe** and
+- PGO is applied to **all four Rust engines** — Ferromark v2, OX-Content core, Ferromark v1, and pulldown-cmark — under **one recipe** and
   **one training set**. `RUSTFLAGS` reaches every Rust crate in the shared
   executable, and every engine is driven during training, so no engine is left
   in a `-Cprofile-use` build with no profile data for its own functions.
@@ -259,15 +262,16 @@ python3 benchmarks/optimization-rounds/make_corpus.py \
 
 `prepare.py --help` lists source/cache inputs. Preparation exports pinned Git
 commits rather than using dirty working trees, re-extracts the checksummed
-original OX archive, builds native support, and records source, adapter, lock,
+pinned OX archive, builds native support, and records source, adapter, lock,
 and executable hashes. It uses a disposable directory and does not change the
 supplied source checkouts. Dependency choices and any lockfile differences are
 recorded with the build.
 
-If the temporary caches are missing, copy the current report's `restore.py` to
-an empty `/private/tmp/native-bench-cache` directory, create its `native/`
-subdirectory, and run it there. It restores the original source pins and checks
-the original archive hashes. Adjust source paths below for your checkout layout;
+For current comparisons, run `python3 benchmarks/native-comparison/restore.py CACHE`
+in a new cache directory. `prepare.py` owns the current released competitor
+pins. To reproduce an archived report, run its retained `restore.py` beside
+its `harness/` directory; that script uses the report's own pins and hashes.
+Adjust source paths below for your checkout layout;
 on Linux, use a directory under `/tmp` instead of `/private/tmp`. The commands
 are the same on both platforms. The builds run with `--offline`, so on a
 machine whose Cargo registry cache lacks the locked crates, fill it first with
@@ -280,9 +284,10 @@ python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-build 
   --bun-native-cache /private/tmp/native-bench-cache/native \
   --md4c-source /private/tmp/native-bench-cache/md4c \
   --ox-archive /private/tmp/native-bench-cache/ox.tar.gz \
-  --ferromark-v1-source ../ferromark --ferromark-v2-source . \
+  --ferromark-v1-source . --ferromark-v2-source . \
+  --ferromark-v2-revision "$(git rev-parse HEAD)" \
   --worker benchmarks/native-comparison/worker.rs --compile \
-  --lockfile docs/reports/2026-09-15-native-arm/Cargo.lock
+  --lockfile benchmarks/native-comparison/Cargo.lock
 python3 -m unittest discover -s benchmarks/native-comparison -p 'test_*.py'
 python3 benchmarks/native-comparison/run.py \
   /private/tmp/native-bench-build/build.json \
@@ -306,9 +311,10 @@ python3 benchmarks/native-comparison/prepare.py /private/tmp/native-bench-pgo-bu
   --bun-native-cache /private/tmp/native-bench-cache/native \
   --md4c-source /private/tmp/native-bench-cache/md4c \
   --ox-archive /private/tmp/native-bench-cache/ox.tar.gz \
-  --ferromark-v1-source ../ferromark --ferromark-v2-source . \
+  --ferromark-v1-source . --ferromark-v2-source . \
+  --ferromark-v2-revision "$(git rev-parse HEAD)" \
   --worker benchmarks/native-comparison/worker.rs --compile \
-  --lockfile docs/reports/2026-09-15-native-arm/Cargo.lock \
+  --lockfile benchmarks/native-comparison/Cargo.lock \
   --pgo --pgo-training-corpus /private/tmp/native-bench-training-corpus.json.gz \
   --pgo-training-filter docs/reports/2026-09-16-arm-round-3/harness/filter-broad-train.txt \
   --pgo-measurement-filter docs/reports/2026-09-16-arm-round-3/harness/filter-broad-test.txt
@@ -322,8 +328,10 @@ for build in native-bench-build native-bench-pgo-build; do
 done
 ```
 
-The default source pins are v2 `e93394e` and v1 `4e15141`; other engine pins are
-unchanged. The
+The low-level v2 default remains the historical `e93394e`; current campaigns
+pass a committed revision explicitly, as the manual CLI does automatically.
+The v1 control stays at `4e15141`. Current competitor pins live in `prepare.py`;
+reproduce older measurements with their retained harness and lock. The
 [previous matched-flags comparison](../../docs/reports/2026-09-14-native-matched/README.md)
 and original pre-correction comparison are preserved separately in
 [`2026-09-14-native-engines`](../../docs/reports/2026-09-14-native-engines/README.md).
@@ -366,10 +374,10 @@ runner:
    clang) into `host.txt`, and pass the CPU model to `run.py` as `BENCH_CPU`.
 2. Install the pinned nightly named by `prepare.BUN_TOOLCHAIN`, with
    `llvm-tools` for PGO, and run the harness unit tests.
-3. Restore the sources with a copy of the latest report's `restore.py`, then
+3. Restore the current sources with this harness's `restore.py CACHE`, then
    fill Cargo's registry cache from a throwaway workspace so the real builds
    stay `--offline`.
-4. Build with the latest report's `Cargo.lock` seeded through `--bun-lock`,
+4. Build with this harness's `Cargo.lock` through `--lockfile`,
    run `run.py --verify-only`, and build the PGO executable if requested — all
    builds finish before any timing starts.
 5. Measure all 57 documents (and the held-out half with both builds), generate
@@ -414,7 +422,7 @@ PGO run about 30; the job stops at 90.
 ## Release-readiness reruns
 
 Pass `--ferromark-v2-revision <commit>` with a committed v2 revision to rerun
-against the same five comparison-engine pins. The default remains the historical
+against the competitor pins recorded in the current harness. The default remains the historical
 `e93394e` measurement for reproducibility. The source audit reads the selected
 v2 revision from the build metadata. Never substitute working-tree sources.
 

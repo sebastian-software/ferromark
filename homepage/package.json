@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "react-router dev",
-    "build": "react-router build && node scripts/verify-build.mjs",
+    "build": "react-router build && node scripts/verify-build.mjs && node --test scripts/test-benchmark-platforms.mjs",
     "lint": "oxlint -c oxlint.config.ts && eslint . --max-warnings=0",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",

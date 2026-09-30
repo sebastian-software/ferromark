@@ -28,7 +28,7 @@ import report as tables  # noqa: E402
 COMPRESSED = ("corpus.json", "verification.json", "behavior.json", "samples.json")
 PLAIN = ("run.json", "summary.json", "TABLES.md", "aggregates.json", "timings.csv")
 # Where the run happened, as the caller states it: the text a report may claim depends on it.
-HOST_KINDS = ("github-hosted", "local")
+HOST_KINDS = ("github-hosted", "local", "managed-runner")
 GENERATED = ("README.md", "PROVENANCE.md", "checks/commands.json", "comparison-rounds.json", "pgo-comparison.json")
 
 
@@ -267,6 +267,14 @@ def host_claims(host_kind: str, steal: float | None) -> list[str]:
             "different CPU. Compare engine ratios, not times.",
             steal_line if steal is not None else "- **Hypervisor steal** was not recorded on this host.",
         ]
+    if host_kind == "managed-runner":
+        return [
+            "- **A managed runner.** The run used a provider-managed virtual machine. "
+            "The recorded CPU, memory, OS image, and run URL identify this allocation; "
+            "exclusive physical hardware is not claimed. Compare engine ratios within "
+            "the run and inspect variation across independent runs.",
+            steal_line if steal is not None else "- **Hypervisor steal** was not recorded on this host.",
+        ]
     if host_kind == "local":
         return [
             "- **A single local machine.** The run used one physical machine that other desktop "
@@ -304,7 +312,7 @@ def write_readme(out: Path, facts: dict) -> None:
         f"# Native comparison on {facts['platform_label']} — {facts['date']}",
         "",
         f"Ferromark **v2 `{v2[:10]}`** and the five pinned comparison engines (v1 `{v1[:7]}`, "
-        "the original OX-Content core, md4c, pulldown-cmark, and Bun's native `bun_md`) were "
+        "OX-Content, md4c, pulldown-cmark, and Bun's native `bun_md`) were "
         f"measured on the frozen **{len(cases)} documents ({min(sizes):,}–{max(sizes):,} UTF-8 bytes)** "
         f"on one host: **{run['host_before']['cpu']}**, {source['host_summary']}. "
         "Each scored column uses the same input set and equivalent HTML for every included engine. "
@@ -468,7 +476,7 @@ def write_provenance(out: Path, facts: dict) -> None:
                          "| ---: | --- | --- | ---: | ---: | ---: |"] if steal_recorded else
                         ["| Round | Start (UTC) | End | Load before | Load after |",
                          "| ---: | --- | --- | ---: | ---: |"])
-    hosted = facts["host_kind"] == "github-hosted"
+    hosted = facts["host_kind"] != "local"
     checkout = (f"The workflow checked out `{source['harness_revision']}` for the harness and exported"
                 if hosted else f"The harness at `{source['harness_revision']}` exported")
     host_file = ""
@@ -479,7 +487,7 @@ def write_provenance(out: Path, facts: dict) -> None:
                 if hosted else
                 "The power, thermal, and clock readings the host exposes are in `run.json`.")
     revision = engines['ferromark_v2']['revision']
-    if hosted:
+    if facts["host_kind"] == "github-hosted":
         reproduction = [
             "Run the workflow again with the same v2 revision:",
             "",
@@ -508,14 +516,14 @@ def write_provenance(out: Path, facts: dict) -> None:
         "| --- | --- |",
         f"| Ferromark v2 | `{engines['ferromark_v2']['revision']}` |",
         f"| Ferromark v1 | `{engines['ferromark_v1']['revision']}` |",
-        f"| OX-Content original | `{engines['ox_content']['revision']}` (archive SHA-256 "
+        f"| OX-Content | `{engines['ox_content']['revision']}` (archive SHA-256 "
         f"`{engines['ox_content'].get('archive_sha256', 'n/a')}`) |",
         f"| md4c | `{engines['md4c']['revision']}` |",
         f"| Bun | `{engines['bun']['revision']}` |",
         "| pulldown-cmark | 0.13.4 from the seeded lock |",
         "",
-        "The five comparison pins are the ones every Apple Silicon report since "
-        "2026-09-14 uses; only v2 moves. [restore.py](restore.py) restored them from their upstream "
+        "This report records the comparison pins above; older reports retain their own pins. "
+        "[restore.py](restore.py) restored the sources from their upstream "
         "URLs and checked the OX, mimalloc, and Highway archive checksums "
         "([restore.json](restore.json)).",
         "",
@@ -547,7 +555,7 @@ def write_provenance(out: Path, facts: dict) -> None:
         "",
         "### The lock was seeded, not replayed with `--locked`",
         "",
-        f"The build seeded Cargo with `{Path(registry['seed_lock']).as_posix()}` through `--bun-lock` "
+        f"The build seeded Cargo with `{Path(registry['seed_lock']).as_posix()}` through `--lockfile`/`--bun-lock` "
         "because the v2 path package's version line differs from that lock. `CARGO_NET_OFFLINE=true` "
         "and `--offline` kept the build itself offline, and `prepare.py` fails if Cargo resolves "
         "any registry package outside the union of the engine locks. "
@@ -602,7 +610,8 @@ def main() -> None:
     p.add_argument("--origin", required=True, help="one sentence naming where and how the run happened")
     p.add_argument("--host-kind", required=True, choices=HOST_KINDS,
                    help="github-hosted: a CI runner virtual machine on shared hardware; "
-                        "local: one physical machine that desktop workloads can share")
+                        "local: one physical machine that desktop workloads can share; "
+                        "managed-runner: a provider-managed virtual machine")
     p.add_argument("--verify-only-passed", action="store_true",
                    help="run.py --verify-only passed on the default build in a separate step before any timing")
     p.add_argument("--harness-revision", required=True)

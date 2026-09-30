@@ -1,0 +1,156 @@
+name: Blacksmith benchmark comparisons
+
+# Provider-managed runners are allocated only for manually dispatched jobs.
+# The existing native-comparison workflow can call this from a branch before
+# this new workflow has been merged into the default branch.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Runner profile
+        type: choice
+        options: [both, macos-arm64, linux-x86-64]
+        default: both
+      mode:
+        description: Probe tools/resources, verify all outputs, or measure the selected comparisons
+        type: choice
+        options: [probe, verify, measure]
+        default: probe
+      scope:
+        description: 20 main comparisons or all 23 including optional adapters
+        type: choice
+        options: [main, extended]
+        default: main
+      repetitions:
+        description: Independent jobs per platform (retain every result)
+        type: choice
+        options: ["1", "3"]
+        default: "1"
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        default: both
+      mode:
+        type: string
+        default: probe
+      scope:
+        type: string
+        default: main
+      repetitions:
+        type: string
+        default: "1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blacksmith-benchmarks-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  CARGO_TERM_COLOR: never
+
+jobs:
+  compare:
+    name: ${{ matrix.profile }} / run ${{ matrix.trial }} / ${{ inputs.mode }}
+    if: github.repository == 'sebastian-software/ferromark'
+    runs-on: ${{ matrix.profile == 'macos-arm64' && 'blacksmith-6vcpu-macos-26' || 'blacksmith-4vcpu-ubuntu-2404' }}
+    # The extended 23-row suite needs more than 90 minutes for timing and cooldowns alone.
+    timeout-minutes: ${{ inputs.mode == 'probe' && 10 || inputs.mode == 'measure' && 180 || 90 }}
+    strategy:
+      fail-fast: false
+      # Independent allocations stay sequential; builds never run alongside
+      # measurement steps within a job. All trials remain separate artifacts.
+      max-parallel: 1
+      matrix:
+        profile: ${{ fromJSON(inputs.platform == 'macos-arm64' && '["macos-arm64"]' || inputs.platform == 'linux-x86-64' && '["linux-x86-64"]' || '["macos-arm64","linux-x86-64"]') }}
+        trial: ${{ fromJSON(inputs.repetitions == '3' && '[1,2,3]' || '[1]') }}
+    env:
+      SCOPE: ${{ inputs.scope }}
+      PROFILE: ${{ matrix.profile }}
+      MODE: ${{ inputs.mode }}
+      REQUESTED_PLATFORM: ${{ inputs.platform }}
+      REPETITIONS: ${{ inputs.repetitions }}
+      BENCH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      TRIAL: ${{ matrix.trial }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Record and enforce the native runner profile
+        run: |
+          BENCH_OUTPUT="$RUNNER_TEMP/blacksmith-$PROFILE-$TRIAL"
+          echo "BENCH_OUTPUT=$BENCH_OUTPUT" >> "$GITHUB_ENV"
+          case "$REQUESTED_PLATFORM" in both|macos-arm64|linux-x86-64) ;; *) exit 1 ;; esac
+          case "$SCOPE" in main|extended) ;; *) exit 1 ;; esac
+          case "$MODE" in probe|verify|measure) ;; *) exit 1 ;; esac
+          case "$REPETITIONS" in 1|3) ;; *) exit 1 ;; esac
+          python3 benchmarks/manual-comparison/runner_context.py "$PROFILE" "$BENCH_OUTPUT/runner-context.json"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.21.0
+          package-manager-cache: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.27.1
+          cache: false
+
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+
+      - name: Install Linux compiler prerequisites
+        if: runner.os == 'Linux' && inputs.mode != 'probe'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake pkg-config libssl-dev
+
+      - name: Check the committed checkout and tools
+        run: env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison doctor > "$BENCH_OUTPUT/doctor.json"
+
+      - name: Build and verify all adapters without timing
+        if: inputs.mode == 'verify'
+        run: |
+          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison prepare "$BENCH_OUTPUT/suite" --scope "$SCOPE" --runner-context "$BENCH_OUTPUT/runner-context.json"
+          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison verify "$BENCH_OUTPUT/suite"
+
+      - name: Measure the complete comparison
+        if: inputs.mode == 'measure'
+        run: |
+          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison run "$BENCH_OUTPUT/suite" --scope "$SCOPE" --runner-context "$BENCH_OUTPUT/runner-context.json"
+          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison publish "$BENCH_OUTPUT/suite" --check
+
+      - name: Retain observations, logs, and portable evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: blacksmith-${{ matrix.profile }}-${{ matrix.trial }}-${{ inputs.mode }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.BENCH_OUTPUT }}/runner-context.json
+            ${{ env.BENCH_OUTPUT }}/doctor.json
+            ${{ env.BENCH_OUTPUT }}/suite/prepared.json
+            ${{ env.BENCH_OUTPUT }}/suite/logs/
+            ${{ env.BENCH_OUTPUT }}/suite/verify/
+            ${{ env.BENCH_OUTPUT }}/suite/evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Summarize the job
+        if: always()
+        run: |
+          {
+            printf '### Blacksmith: %s / %s\n\n' "$PROFILE" "$MODE"
+            printf 'Source: `%s`\n\n' "$(git rev-parse HEAD)"
+            printf 'Run: %s\n\n' "$BENCH_RUN_URL"
+            printf 'Artifacts contain resource observations and available logs. Probe and verification jobs contain no performance measurements. Only complete measurement evidence can be imported; inspect all independent trials before selecting a report.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
