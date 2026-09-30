@@ -13,7 +13,7 @@ import subprocess
 GIB = 1024 ** 3
 PROFILES = {
     'macos-arm64': {'label': 'blacksmith-6vcpu-macos-26', 'system': 'Darwin',
-                    'architecture': 'arm64', 'cpus': 6, 'memory_gib': 24, 'os_version': '26', 'cpu': 'Apple M4'},
+                    'architecture': 'arm64', 'cpus': 6, 'memory_gib': 24, 'os_version': '26', 'cpu': 'Apple M4 Pro (Virtual)'},
     'linux-x86-64': {'label': 'blacksmith-4vcpu-ubuntu-2404', 'system': 'Linux',
                      'architecture': 'x86_64', 'cpus': 4, 'memory_gib': 16, 'os_version': '24.04'},
 }

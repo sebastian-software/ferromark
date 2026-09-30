@@ -152,7 +152,7 @@ provides these initial profiles:
 
 | Profile | Runner label | Resources |
 | --- | --- | --- |
-| macOS arm64 | `blacksmith-6vcpu-macos-26` | Apple M4, 6 vCPU, 24 GiB RAM |
+| macOS arm64 | `blacksmith-6vcpu-macos-26` | Apple M4 Pro VM, 6 vCPU, 24 GiB RAM |
 | Linux x86-64 | `blacksmith-4vcpu-ubuntu-2404` | Native x64, 4 vCPU, 16 GiB RAM |
 
 The resource gate records the actual CPU model, process architecture, CPU count,
