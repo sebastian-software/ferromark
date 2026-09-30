@@ -71,3 +71,27 @@ The extension package and its archive rehearsal are part of the transform
 foundation. The publish workflow lists the core before the extension; crates.io
 Trusted Publishing still needs configuration for the new crate before its first
 release. See [ADR-0022](ADR-0022-native-transform-pipeline.md).
+
+## Amendment (2026-09-29): optional Ferriki integration
+
+Expose the Ferriki code-highlighting adapter as the additive `ferriki` feature of
+the root `ferromark` crate. Ferriki already publishes a reusable Rust highlighter
+without grammar or theme payloads; the default feature set retains no Ferriki
+dependency. A separate adapter crate would add release coordination for one
+small bridge without changing the parser or renderer ownership boundary.
+
+The application initializes and owns the Ferriki highlighter and its asset
+source. Ferromark borrows it for synchronous rendering, forwards only normalized
+code and language to Ferriki, and keeps code-block wrappers, metadata and
+annotations. Unknown languages and highlighter failures use the existing escaped
+plain-code fallback. Optional error observation stays with the application.
+Ferriki 0.7.0's optional CDN source is an asset-source choice outside Ferromark.
+The adapter does not select that source, but calls into a highlighter which can
+lazily load directory or remote assets on first use unless callers preload the
+required languages and themes. The feature does not enable Ferriki's remote-loading feature or change Ferromark's
+default dependency graph.
+
+Validate the feature with a compiled public-API example, a dedicated Rust-only
+CI lane and integration tests. Preserve the existing Node callback path and
+default HTML output. This amends the package boundary without adding a new
+published crate or another release workflow entry.

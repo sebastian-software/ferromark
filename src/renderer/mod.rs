@@ -33,6 +33,9 @@
 
 mod html;
 
+#[cfg(feature = "ferriki")]
+pub use html::FerrikiHighlightHooks;
+
 pub use html::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlRenderContext,

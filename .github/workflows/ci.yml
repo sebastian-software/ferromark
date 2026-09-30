@@ -12,6 +12,25 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  ferriki-rust:
+    name: Ferriki Rust integration (no Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+      - run: cargo test -p ferromark --features ferriki --test ferriki_integration --locked
+      - run: cargo check -p ferromark --features ferriki --example ferriki --locked
+      - run: cargo bench -p ferromark --features ferriki --bench ferriki --no-run --locked
+      - name: Keep the default dependency graph free of Ferriki
+        run: |
+          if cargo tree -p ferromark --no-default-features --edges normal --locked | grep -q ferriki; then
+            echo "Ferriki appeared in the default Ferromark dependency graph" >&2
+            exit 1
+          fi
+
   test:
     strategy:
       fail-fast: false
