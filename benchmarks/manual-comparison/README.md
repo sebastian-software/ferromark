@@ -141,3 +141,67 @@ Ask an agent with access to the benchmark host and checkout:
 An agent that does not discover repository skills can read that SKILL.md directly.
 Measuring through a remote terminal is also fine; keep that session alive. The
 skill uses the same commands and evidence checks as a manual run.
+
+## Blacksmith managed runners
+
+The same commands can run on Blacksmith in **sebastian-software/ferromark**.
+The GitHub App must have access to this repository. Blacksmith provisions an
+on-demand runner for each job; no persistent instance or machine definition is
+required. The manually dispatched [workflow](../../.github/workflows/blacksmith-benchmarks.yml)
+provides these initial profiles:
+
+| Profile | Runner label | Resources |
+| --- | --- | --- |
+| macOS arm64 | `blacksmith-6vcpu-macos-26` | Apple M4, 6 vCPU, 24 GiB RAM |
+| Linux x86-64 | `blacksmith-4vcpu-ubuntu-2404` | Native x64, 4 vCPU, 16 GiB RAM |
+
+The resource gate records the actual CPU model, process architecture, CPU count,
+CPU affinity, usable memory, OS/kernel, runner image identifiers and Actions URL.
+It rejects unexpected CPU counts (including automatic upgrades), memory sizes,
+OS versions, architecture or repositories before setup. Linux kernel memory
+reservations allow up to 5% less usable RAM; this is not permission to substitute
+a smaller runner. An OS label pins the major image family, not its patch level;
+actual versions are retained. Linux CPU models must also be compared between
+independent jobs when reviewing results. Virtualization and shared host activity
+can still affect measurements; fixed VM resources do not establish exclusive
+hardware or stable physical clocks.
+
+Choose the source branch with the workflow's branch selector or `--ref`. The
+checkout itself is the measured revision. Start with `mode=probe` (the default):
+it validates resources and runs `doctor`, without building the comparison or
+timing anything. `mode=verify` prepares every adapter and checks all output and
+option guards without timing. `mode=measure` runs all 14 comparisons and checks
+complete evidence, but never publishes values, commits, or pushes results.
+
+```sh
+gh workflow run blacksmith-benchmarks.yml --repo sebastian-software/ferromark \
+  --ref YOUR_BRANCH -f platform=both -f mode=probe -f repetitions=1
+```
+
+Before the new workflow reaches the default branch, use the already registered
+native workflow as an entry point. Its `revision` and `pgo` inputs apply only to
+the original GitHub-hosted lane; Blacksmith measures the selected source branch.
+
+```sh
+gh workflow run native-comparison.yml --repo sebastian-software/ferromark \
+  --ref codex/manual-macos-benchmarks -f runner_provider=blacksmith \
+  -f blacksmith_platform=both -f blacksmith_mode=probe -f blacksmith_repetitions=1
+```
+
+After both profiles pass output verification, use `mode=measure` with
+`repetitions=3` to assess independent allocations. Jobs run sequentially and
+retain each trial separately; do not publish the fastest result or average
+incompatible agreement sets. Probe jobs have a 10-minute timeout; verification
+and measurement jobs have a 90-minute timeout per allocation. Runner time,
+including setup and cooldown, consumes the provider's billed/free minutes.
+
+Artifacts retain observations, preparation/verification logs, and portable
+`evidence/` for complete measurements for 90 days. They omit build binaries and
+source/build caches. Download a selected measurement artifact, review all trials,
+and point `publish OUTPUT --check` at its `suite/` directory. Then use the normal
+local publication/review flow. Source revision and checksum validation still
+apply. The suite retains managed-runner metadata and provenance; it never labels
+a Blacksmith VM as a local physical Mac or GitHub-hosted hardware.
+
+See Blacksmith's [runner profiles and free-minute conversions](https://docs.blacksmith.sh/blacksmith-runners/overview)
+and [GitHub App setup](https://docs.blacksmith.sh/introduction/quickstart).

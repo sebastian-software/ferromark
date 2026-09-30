@@ -17,6 +17,11 @@ CONTRIBUTING.md for checks and PR conventions.
 - Use the detected host OS and architecture. The native harness supports macOS
   and Linux on arm64/x86-64. Avoid Rosetta or mismatched Python/Node/Rust targets.
   Keep workloads quiet and prevent suspend; disclose observed noise.
+- For an explicitly requested Blacksmith run, use the runbook's manual workflow
+  in `sebastian-software/ferromark`. Start with the resource/tool probe, then
+  output verification, then complete measurements on independent allocations.
+  Download the portable evidence and review all trials before importing one.
+  Preserve recorded provider/run metadata; a VM is not a local physical host.
 - All eight Native and six Node.js projects must finish. Do not substitute
   shortened windows, synthetic results, or copied historical values. Builds,
   downloads, and HTML verification finish before timing.

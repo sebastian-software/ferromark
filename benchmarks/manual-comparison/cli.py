@@ -18,6 +18,7 @@ import sys
 import tempfile
 import time
 
+
 REPO = Path(__file__).resolve().parents[2]
 ECO = REPO / 'benchmarks/markdown-ecosystem'
 NATIVE = REPO / 'benchmarks/native-comparison'
@@ -37,6 +38,7 @@ def load(name, path):
     return module
 
 
+runner_context = load('runner_context', REPO / 'benchmarks/manual-comparison/runner_context.py')
 eco_archive = load('ecosystem_archive', ECO / 'archive-results.py')
 native_archive = load('native_archive', NATIVE / 'archive.py')
 native = ecosystem.native
@@ -127,8 +129,11 @@ def preflight():
             'host_platform': platform.platform(), 'addon_file': 'ferromark.' + node['target'] + '.node'}
 
 
-def prepare(output):
+def prepare(output, context_path=None):
     host = preflight()
+    context = json.loads(context_path.read_text()) if context_path else None
+    if context is not None:
+        runner_context.assert_host(context)
     if output == REPO or REPO in output.parents:
         raise ValueError('Choose an output directory outside the checkout.')
     output.mkdir(parents=True, exist_ok=False)
@@ -173,7 +178,8 @@ def prepare(output):
     shutil.copyfile(source / 'target/release-node' / addon_library(host['system']), addon)
     execute(['node', '--test', source / ECO.relative_to(REPO) / 'test-benchmark-loader.mjs'], source, logs / 'node-loader-tests.log', {**env, 'FERROMARK_BENCH_TEST_ADDON': str(addon)})
     write(output / 'prepared.json', {'schema': 2, 'revision': revision, **host, 'node': subprocess.check_output(['node', '--version'], text=True).strip(),
-                                   'addon_sha256': native.sha(addon), 'corpus_sha256': native.sha(CORPUS)})
+                                   'addon_sha256': native.sha(addon), 'corpus_sha256': native.sha(CORPUS),
+                                   **({'runner_context': context} if context else {})})
     (output / 'host.txt').write_text(host['machine'] + '\n')
     print('Prepared. Measure with: ./scripts/benchmark-comparison measure ' + shlex.quote(str(output)), flush=True)
 
@@ -181,6 +187,9 @@ def prepare(output):
 def measure(output, cooldown, verify_only=False):
     host = preflight()
     prepared = read(output, 'prepared')
+    context = prepared.get('runner_context')
+    if context is not None:
+        runner_context.assert_host(context)
     assert prepared['schema'] == 2 and prepared['revision'] == git('rev-parse', 'HEAD'), 'checkout revision changed since preparation'
     assert all(host[key] == prepared[key] for key in host), 'run on the same host used for preparation'
     source = output / 'source'
@@ -230,7 +239,9 @@ def measure(output, cooldown, verify_only=False):
                  '--name', 'native', '--results', native_results, '--build-dir', output / 'native-build',
                  '--seed-lock', source / REFERENCE.relative_to(REPO) / 'Cargo.lock', '--reference', source / REFERENCE.relative_to(REPO),
                  '--restore-dir', output / 'cache', '--host-file', output / 'host.txt', '--host-summary', prepared['machine'],
-                 '--origin', 'A manual benchmark run used an isolated committed checkout.', '--host-kind', 'local',
+                 '--origin', (f"The [Blacksmith benchmark run]({context['run_url']}) used an isolated committed checkout."
+                              if context else 'A manual benchmark run used an isolated committed checkout.'),
+                 '--host-kind', 'managed-runner' if context else 'local',
                  '--verify-only-passed', '--harness-revision', prepared['revision'], '--build-log', logs / 'native-build.log',
                  '--source-audit', output / 'source-audit.json', '--tests-log', logs / 'native-comparison-tests.log'], source, logs / 'native-archive.log')
     for name, base in pair_commands:
@@ -250,6 +261,9 @@ def measure(output, cooldown, verify_only=False):
             execute(pair_command(name, base, fresh_attempt(raw)), source, logs / (name + '.log'))
         shutil.copyfile(logs / ('ecosystem-build.log' if name.startswith('native-') else 'node-build.log'), raw / 'build.log')
         eco_archive.retain(raw, destination, prepared['revision'])
+    if context is not None:
+        runner_context.assert_host(context)
+        shutil.copyfile(source / 'benchmarks/manual-comparison/runner_context.py', evidence / 'runner-context.py')
     shutil.copyfile(output / 'prepared.json', evidence / 'suite.json')
     shutil.copyfile(output / 'host.txt', evidence / 'host.txt')
     shutil.copyfile(source / 'benchmarks/manual-comparison/cli.py', evidence / 'manual-cli.py')
@@ -289,6 +303,13 @@ def verify_evidence(folder):
     revision = suite['revision']
     assert re.fullmatch(r'[0-9a-f]{40}', revision), 'full source revision required'
     assert suite['corpus_sha256'] == native.sha(CORPUS)
+    context = suite.get('runner_context')
+    if context is not None:
+        runner_context.validate(context)
+        assert context['profile'] == suite['platform'], 'runner profile differs from recorded platform'
+        assert (folder / 'runner-context.py').read_bytes() == committed(revision, 'benchmarks/manual-comparison/runner_context.py')
+        provenance = json.loads((folder / 'native/checks/commands.json').read_text())
+        assert provenance['host_kind'] == 'managed-runner' and context['run_url'] in provenance['workflow_origin']
     details = platform_details(suite['system'], suite['architecture'])
     assert all(suite[key] == value for key, value in details.items()), 'inconsistent recorded platform'
     for track, engine in PAIRS:
@@ -444,6 +465,8 @@ def main():
     for command in ('prepare', 'run', 'measure', 'verify', 'publish'):
         sub = commands.add_parser(command)
         sub.add_argument('output', type=lambda value: Path(value).expanduser().resolve())
+        if command in ('prepare', 'run'):
+            sub.add_argument('--runner-context', type=Path, help='retained, validated managed-runner metadata')
         if command in ('run', 'measure'):
             sub.add_argument('--cooldown-seconds', type=int, default=60)
         if command == 'publish':
@@ -460,10 +483,10 @@ def main():
         elif args.command == 'publish':
             publish(args.output, args.name, args.check)
         elif args.command == 'prepare':
-            prepare(args.output)
+            prepare(args.output, args.runner_context)
         else:
             if args.command == 'run':
-                prepare(args.output)
+                prepare(args.output, args.runner_context)
             awake = subprocess.Popen(['caffeinate', '-i', '-w', str(os.getpid())]) if platform.system() == 'Darwin' else None
             try:
                 measure(args.output, getattr(args, 'cooldown_seconds', 0), verify_only=args.command == 'verify')

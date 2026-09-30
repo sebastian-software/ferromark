@@ -63,6 +63,18 @@ class ArchiveTests(unittest.TestCase):
         self.assertIn('**Hypervisor steal** was 0.00%', claims)
         self.assertIn('not recorded', '\n'.join(archive.host_claims('github-hosted', None)))
 
+    def test_a_managed_runner_never_claims_a_local_or_github_hosted_machine(self):
+        claims = '\n'.join(archive.host_claims('managed-runner', None))
+        self.assertIn('provider-managed virtual machine', claims)
+        self.assertIn('exclusive physical hardware is not claimed', claims)
+        self.assertNotIn('GitHub-hosted', claims)
+        self.assertNotIn('physical machine', claims)
+        with tempfile.TemporaryDirectory() as directory:
+            archive.write_provenance(Path(directory), provenance_facts('managed-runner', 'Darwin', 'r/Cargo.lock'))
+            text = (Path(directory) / 'PROVENANCE.md').read_text()
+        self.assertIn('where the virtual machine exposes them', text)
+        self.assertNotIn('gh workflow run native-comparison.yml', text)
+
     def test_a_local_run_claims_a_local_machine_and_points_at_its_load(self):
         claims = '\n'.join(archive.host_claims('local', None))
         self.assertIn('A single local machine', claims)

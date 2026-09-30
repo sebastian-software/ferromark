@@ -24,6 +24,12 @@ class ManualTests(unittest.TestCase):
                       'addon_file': 'ferromark.darwin-arm64.node', 'addon_sha256': 'unused', 'node': 'v24.21.0', 'corpus_sha256': cli.native.sha(cli.CORPUS)}
         cli.write(self.folder / 'suite.json', self.suite)
 
+    def test_publisher_can_load_the_manual_cli_with_its_runner_validator(self):
+        result = subprocess.run([sys.executable, '-c',
+                                 "import sys; sys.path.insert(0, 'benchmarks/markdown-ecosystem'); import publish_values; publish_values.manual_workflow()"],
+                                cwd=cli.REPO, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def retained_matrix(self):
         # Copy real archived data. These heterogeneous historical runs are used
         # only to test calculations/coverage, never to claim one measured suite.
