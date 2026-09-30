@@ -1,0 +1,132 @@
+"""Exercise publication calculations with retained evidence and CLI rejection paths."""
+import gzip
+import importlib.util
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+import cli
+
+
+class ManualTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='ferromark manual ')
+        self.addCleanup(self.temp.cleanup)
+        self.folder = Path(self.temp.name) / 'evidence'
+        self.folder.mkdir()
+        self.suite = {'schema': 1, 'revision': '290801961e2433d29d5a32ddb78c8384a0fcd336',
+                      'machine': 'Test host: retained measurements, not a new run',
+                      'addon_sha256': 'unused', 'node': 'v24.21.0', 'corpus_sha256': cli.native.sha(cli.CORPUS)}
+        cli.write(self.folder / 'suite.json', self.suite)
+
+    def retained_matrix(self):
+        # Copy real archived data. These heterogeneous historical runs are used
+        # only to test calculations/coverage, never to claim one measured suite.
+        report = cli.REPO / 'docs/reports/2026-09-30-ecosystem-platforms'
+        for track, engine in cli.PAIRS:
+            platform = 'macos-arm64' if engine in ('comrak', 'cmark', 'cmark-gfm') else 'linux-x86-64'
+            source = report / platform / (track + '-' + engine)
+            shutil.copytree(source, self.folder / (track + '-' + engine))
+        shutil.copytree(cli.REPO / 'docs/reports/2026-09-24-native-macos-arm64', self.folder / 'native')
+
+    def test_all_fourteen_values_are_derived_and_native_direction_is_correct(self):
+        self.retained_matrix()
+        values = cli.figures(self.folder, 'docs/reports/test')
+        self.assertEqual(len(values), 14)
+        self.assertEqual({v['runtime'] for v in values}, {'Native', 'Node.js'})
+        self.assertEqual({v['platform'] for v in values}, {'macos-arm64'})
+        self.assertNotIn('v1', {v['id'] for v in values})
+        original = json.loads((cli.REPO / 'homepage/app/data/native-benchmarks.json').read_text())['platforms'][0]
+        expected = {v['id']: v for v in original['figures']}
+        for value in values:
+            if value['id'] in cli.LEGACY:
+                self.assertEqual(round(value['fresh'], 2), expected[value['id']]['fresh'])
+                self.assertEqual(round(value['reuse'], 2), expected[value['id']]['reuse'])
+                self.assertEqual(value['documents'], expected[value['id']]['documents'])
+        markdown = next(v for v in values if v['id'] == 'markdown-rs')
+        result = cli.read(self.folder / 'native-markdown-rs', 'summary')
+        self.assertEqual(markdown['fresh'], result['v2_relative_throughput']['fresh'])
+
+    def test_mixed_historical_runs_are_not_a_publishable_suite(self):
+        self.retained_matrix()
+        cli.checksums(self.folder)
+        with self.assertRaises(AssertionError):
+            cli.publish(self.folder.parent, '2099-01-01-test', check=True)
+
+    def test_missing_project_cannot_produce_values(self):
+        self.retained_matrix()
+        shutil.rmtree(self.folder / 'node-marked')
+        with self.assertRaises(FileNotFoundError):
+            cli.figures(self.folder, 'docs/reports/test')
+
+    def test_new_committed_core_requires_complete_source_proof(self):
+        source = cli.REPO / 'docs/reports/2026-09-30-ecosystem-platforms/linux-x86-64/node-marked'
+        shutil.copytree(source, self.folder / 'pair')
+        pair = self.folder / 'pair'
+        config, _ = cli.eco_archive.validate(pair, self.suite['revision'])
+        config['local_source_sha256'] = {}
+        cli.write(pair / 'run.json', config)
+        with self.assertRaises(AssertionError):
+            cli.eco_archive.validate(pair, self.suite['revision'])
+
+    def test_false_summary_is_rejected_from_compressed_real_evidence(self):
+        source = cli.REPO / 'docs/reports/2026-09-30-ecosystem-platforms/macos-arm64/native-cmark'
+        shutil.copytree(source, self.folder / 'pair')
+        pair = self.folder / 'pair'
+        cli.eco_archive.validate(pair)
+        summary = cli.read(pair, 'summary')
+        summary['v2_relative_throughput']['fresh'] *= 2
+        cli.write(pair / 'summary.json', summary)
+        with self.assertRaises(AssertionError):
+            cli.eco_archive.validate(pair)
+
+    def test_shortened_windows_are_rejected_even_with_updated_file_hashes(self):
+        source = cli.REPO / 'docs/reports/2026-09-30-ecosystem-platforms/macos-arm64/native-cmark'
+        shutil.copytree(source, self.folder / 'pair')
+        pair = self.folder / 'pair'
+        rows = cli.read(pair, 'samples')
+        rows[0]['v2']['elapsed_ns'] = 1
+        (pair / 'samples.json.gz').write_bytes(gzip.compress(json.dumps(rows).encode(), mtime=0))
+        cli.checksums(pair)
+        cli.checksums(pair, check=True)
+        with self.assertRaises(AssertionError):
+            cli.eco_archive.validate(pair)
+
+    def test_checksum_drift_and_path_escape_are_rejected(self):
+        cli.checksums(self.folder)
+        (self.folder / 'new.txt').write_text('unretained change')
+        with self.assertRaises(AssertionError):
+            cli.checksums(self.folder, check=True)
+        for name in ('../escape', '/tmp/report', '2026-10-01-../../escape', 'undated'):
+            with self.assertRaises(AssertionError):
+                cli.report_path(name)
+
+    def test_linux_values_survive_mac_selection(self):
+        self.retained_matrix()
+        values = cli.figures(self.folder, 'docs/reports/test')
+        publisher = cli.load('test_publisher', cli.ECO / 'publish_values.py')
+        # Check the real keyed replacement rule without constructing a false
+        # publishable report. Publication validity has its own rejection cases.
+        historical = publisher.figures()
+        combined = publisher.merge_figures(historical, values)
+        self.assertEqual([v for v in combined if v['platform'] == 'linux-x86-64'],
+                         [v for v in historical if v['platform'] == 'linux-x86-64'])
+        self.assertEqual(len({(v['platform'], v['id']) for v in combined}), len(combined))
+
+    def test_cli_help_and_invalid_cooldown_have_no_filesystem_effect(self):
+        command = [sys.executable, str(Path(cli.__file__))]
+        result = subprocess.run([*command, '--help'], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn('publish', result.stdout)
+        destination = Path(self.temp.name) / 'must not exist'
+        result = subprocess.run([*command, 'run', str(destination), '--cooldown-seconds', '-1'], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(destination.exists())
+
+
+if __name__ == '__main__':
+    unittest.main()
