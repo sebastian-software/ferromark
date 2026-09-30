@@ -1,0 +1,505 @@
+{
+  "schema": 1,
+  "kind": "local-comparison-readiness",
+  "date": "2026-09-30",
+  "publishable": false,
+  "tested_revision": "acd3bcfd2ebcbb6dcec67c7c0419b22df4c2c651",
+  "machine": "Apple M1 Ultra, 64 GB RAM, macOS 27.0",
+  "platform": "macos-arm64",
+  "corpus_sha256": "e8b7e468863b14a90ec4fe2b0ac54382dcc327c513ce9b9fdce8e871f8ffff43",
+  "node": "v24.21.0",
+  "addon_sha256": "9b9a0cde8d2c27f9308ec42e508020b47ad4c03303a98c64a666de79bfdcef51",
+  "python": "Python 3.12.14",
+  "npm": "11.14.0",
+  "cmake": "cmake version 4.4.3",
+  "direct_node_dependencies": {
+    "commonmark": "0.31.2",
+    "markdown-it": "15.0.2",
+    "markdown-it-task-lists": "2.1.1",
+    "marked": "18.0.14",
+    "mdast-util-gfm-strikethrough": "2.0.1",
+    "mdast-util-gfm-table": "2.0.0",
+    "mdast-util-gfm-task-list-item": "2.0.0",
+    "micromark": "4.0.3",
+    "micromark-extension-gfm-strikethrough": "2.1.0",
+    "micromark-extension-gfm-table": "2.1.2",
+    "micromark-extension-gfm-task-list-item": "2.1.0",
+    "rehype-stringify": "10.0.1",
+    "remark": "15.0.1",
+    "remark-rehype": "11.1.2",
+    "showdown": "2.1.0"
+  },
+  "verification": [
+    {
+      "track": "native",
+      "engine": "pulldown-cmark",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 14,
+        "serialization-equivalent": 43
+      }
+    },
+    {
+      "track": "native",
+      "engine": "md4c",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 19,
+        "other": 5,
+        "serialization-equivalent": 33
+      }
+    },
+    {
+      "track": "native",
+      "engine": "bun",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 16,
+        "other": 1,
+        "serialization-equivalent": 40
+      }
+    },
+    {
+      "track": "native",
+      "engine": "ox-content",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 16,
+        "heading-id-only": 39,
+        "other": 2
+      }
+    },
+    {
+      "track": "native",
+      "engine": "cmark",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 20,
+        "serialization-equivalent": 37
+      }
+    },
+    {
+      "track": "native",
+      "engine": "cmark-gfm",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 38
+      }
+    },
+    {
+      "track": "native",
+      "engine": "comrak",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 38
+      }
+    },
+    {
+      "track": "native",
+      "engine": "markdown-rs",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 38
+      }
+    },
+    {
+      "track": "node",
+      "engine": "commonmark",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 20,
+        "serialization-equivalent": 37
+      }
+    },
+    {
+      "track": "node",
+      "engine": "markdown-it",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 19,
+        "other": 1,
+        "serialization-equivalent": 37
+      }
+    },
+    {
+      "track": "node",
+      "engine": "marked",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 38,
+        "serialization-equivalent": 18,
+        "other": 1
+      }
+    },
+    {
+      "track": "node",
+      "engine": "micromark",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "exact": 19,
+        "serialization-equivalent": 37,
+        "other": 1
+      }
+    },
+    {
+      "track": "node",
+      "engine": "remark",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "serialization-equivalent": 56,
+        "other": 1
+      }
+    },
+    {
+      "track": "node",
+      "engine": "showdown",
+      "verified_documents": 57,
+      "status": "passed",
+      "agreement_counts": {
+        "serialization-equivalent": 31,
+        "other": 26
+      }
+    }
+  ],
+  "diagnostic_timing": {
+    "publishable": false,
+    "revision": "acd3bcfd2ebcbb6dcec67c7c0419b22df4c2c651",
+    "lanes": [
+      {
+        "lane": "native-shared",
+        "engines": [
+          "v2",
+          "ox-content",
+          "v1",
+          "md4c",
+          "pulldown-cmark",
+          "bun"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 118,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/native-comparison/run.py",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/native-build/build.json",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/native-shared",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "native-markdown-rs",
+        "engines": [
+          "v2",
+          "markdown-rs"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "native",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/native-markdown-rs",
+          "--competitor",
+          "markdown-rs",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10",
+          "--binary",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/ecosystem-build/worker",
+          "--build-metadata",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/ecosystem-build/build.json"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "native-comrak",
+        "engines": [
+          "v2",
+          "comrak"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "native",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/native-comrak",
+          "--competitor",
+          "comrak",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10",
+          "--binary",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/ecosystem-build/worker",
+          "--build-metadata",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/ecosystem-build/build.json"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "native-cmark",
+        "engines": [
+          "v2",
+          "cmark"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "native",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/native-cmark",
+          "--competitor",
+          "cmark",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10",
+          "--binary",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/ecosystem-build/worker",
+          "--build-metadata",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/ecosystem-build/build.json"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "native-cmark-gfm",
+        "engines": [
+          "v2",
+          "cmark-gfm"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "native",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/native-cmark-gfm",
+          "--competitor",
+          "cmark-gfm",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10",
+          "--binary",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/ecosystem-build/worker",
+          "--build-metadata",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/ecosystem-build/build.json"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "node-micromark",
+        "engines": [
+          "v2",
+          "micromark"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "node",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/node-micromark",
+          "--competitor",
+          "micromark",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "node-marked",
+        "engines": [
+          "v2",
+          "marked"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "node",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/node-marked",
+          "--competitor",
+          "marked",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "node-markdown-it",
+        "engines": [
+          "v2",
+          "markdown-it"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "node",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/node-markdown-it",
+          "--competitor",
+          "markdown-it",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "node-remark",
+        "engines": [
+          "v2",
+          "remark"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "node",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/node-remark",
+          "--competitor",
+          "remark",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "node-showdown",
+        "engines": [
+          "v2",
+          "showdown"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "node",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/node-showdown",
+          "--competitor",
+          "showdown",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10"
+        ],
+        "status": "passed"
+      },
+      {
+        "lane": "node-commonmark",
+        "engines": [
+          "v2",
+          "commonmark"
+        ],
+        "verified_documents": 57,
+        "timing_rows": 114,
+        "command": [
+          "/Users/sebastian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/source/benchmarks/markdown-ecosystem/run.py",
+          "node",
+          "/private/tmp/ferromark-latest-competitors-20260930-c/diagnostic/node-commonmark",
+          "--competitor",
+          "commonmark",
+          "--rounds",
+          "1",
+          "--samples",
+          "1",
+          "--window-ms",
+          "10",
+          "--warmup-ms",
+          "10"
+        ],
+        "status": "passed"
+      }
+    ]
+  },
+  "timing_contract": {
+    "rounds": 1,
+    "samples": 1,
+    "window_ms": 10,
+    "warmup_ms": 10,
+    "publishable": false
+  },
+  "executed_timing_windows": 2988,
+  "source_audit_mismatches": 0,
+  "limits": [
+    "macOS arm64 tested locally; Blacksmith and other platforms not executed",
+    "No full campaign or homepage figure update; short timings are execution diagnostics only",
+    "Showdown latest stable retains moderate advisories without an available patched release"
+  ]
+}

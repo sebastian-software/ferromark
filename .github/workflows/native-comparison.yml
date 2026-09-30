@@ -52,9 +52,9 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: never
-  # The latest archived Apple Silicon report: its restore.py restores the
-  # sources, its Cargo.lock seeds the registry resolution, and its HTML is the
-  # cross-platform output reference.
+  # Historical HTML remains the cross-platform output reference. Current
+  # competitor sources are restored by the committed native harness.
+  SEED_LOCK: benchmarks/native-comparison/Cargo.lock
   LATEST_REPORT: docs/reports/2026-09-21-native-round-4
   CORPUS: docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz
   SPLIT: docs/reports/2026-09-16-arm-round-3/harness
@@ -136,8 +136,7 @@ jobs:
 
       - name: Restore the pinned sources
         run: |
-          cp "$LATEST_REPORT/restore.py" "$CACHE/restore.py"
-          python3 "$CACHE/restore.py"
+          python3 benchmarks/native-comparison/restore.py "$CACHE"
 
       - name: Fetch registry crates for the offline builds
         # prepare.py builds with --offline. A throwaway workspace from the same
@@ -148,8 +147,8 @@ jobs:
             --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
             --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
             --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
-            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock"
-          cargo "+$TOOLCHAIN" fetch --manifest-path "$WORK/fetch-workspace/bun/Cargo.toml"
+            --worker benchmarks/native-comparison/worker.rs --lockfile "$SEED_LOCK"
+          cargo "+$TOOLCHAIN" fetch --locked --manifest-path "$WORK/fetch-workspace/bun/Cargo.toml"
           rm -rf "$WORK/fetch-workspace"
 
       - name: Build the default executable
@@ -158,7 +157,7 @@ jobs:
             --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
             --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
             --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
-            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock" \
+            --worker benchmarks/native-comparison/worker.rs --lockfile "$SEED_LOCK" \
             --compile 2>&1 | tee "$WORK/build-log.txt"
 
       - name: Verify every engine's output before timing
@@ -176,7 +175,7 @@ jobs:
             --bun-source "$CACHE/bun" --bun-native-cache "$CACHE/native" \
             --md4c-source "$CACHE/md4c" --ox-archive "$CACHE/ox.tar.gz" \
             --ferromark-v1-source . --ferromark-v2-source . --ferromark-v2-revision "$V2_SHA" \
-            --worker benchmarks/native-comparison/worker.rs --bun-lock "$LATEST_REPORT/Cargo.lock" \
+            --worker benchmarks/native-comparison/worker.rs --lockfile "$SEED_LOCK" \
             --compile --pgo --pgo-training-corpus "$WORK/training-corpus.json.gz" \
             --pgo-training-filter "$SPLIT/filter-broad-train.txt" \
             --pgo-measurement-filter "$SPLIT/filter-broad-test.txt" \
@@ -222,7 +221,7 @@ jobs:
           fi
           report="$(python3 benchmarks/native-comparison/archive.py "$WORK/report" \
             --results "$WORK/results" --build-dir "$WORK/build" \
-            --seed-lock "$LATEST_REPORT/Cargo.lock" --reference "$LATEST_REPORT" \
+            --seed-lock "$SEED_LOCK" --reference "$LATEST_REPORT" \
             --restore-dir "$CACHE" --host-file "$WORK/host.txt" --host-summary "$HOST_SUMMARY" \
             --origin "The [native comparison workflow]($RUN_URL) ran on a GitHub-hosted ubuntu-latest runner for a $EVENT event." \
             --host-kind github-hosted --verify-only-passed \

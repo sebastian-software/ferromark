@@ -13,6 +13,13 @@ host architecture. The full suite has been built and verified on macOS arm64;
 existing Linux x86-64 harness evidence is retained separately. New platform
 runs still need their own build and output verification before timing.
 
+Before freezing a campaign, review [candidate coverage](candidate-coverage.md).
+The executable 14-project matrix still has documented gaps; the review does not
+add adapters or measurements. Before allocating runner time after dependency
+changes, follow the [dependency readiness checklist](dependency-readiness.md).
+It identifies current pins, release sources, local checks, and the latest
+completed preflight.
+
 ## First setup
 
 Install Git, curl, clang/clang++, CMake, Python 3.11 or newer, Node.js **24**, npm,
@@ -24,7 +31,12 @@ macOS runs use `caffeinate` automatically.
 The script installs the pinned Bun Rust nightly through rustup; Cargo installs
 the stable toolchain from `rust-toolchain.toml`. First preparation needs network
 access to GitHub and the Cargo/npm registries. Dependency versions and source
-archive hashes stay pinned. Node's local addon name follows the OS, architecture,
+archive hashes stay pinned. Current native sources come from
+`benchmarks/native-comparison/prepare.py` and `restore.py`, not from an old
+measurement report. Node competitors and extensions use their private npm
+manifest and lockfile; additional Rust adapters use their separate Cargo lock.
+Refreshing these inputs does not change historical reports or homepage values;
+those still identify the versions actually measured. Node's local addon name follows the OS, architecture,
 and Linux libc. Intel Macs use a private benchmark loader with a byte-for-byte
 copy of the public JS facade, because no darwin-x64 sidecar is published. This
 changes untimed addon selection only; it does not alter published packages.
