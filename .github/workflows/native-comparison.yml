@@ -52,9 +52,8 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: never
-  # The latest archived Apple Silicon report: its restore.py restores the
-  # sources, its Cargo.lock seeds the registry resolution, and its HTML is the
-  # cross-platform output reference.
+  # Historical HTML remains the cross-platform output reference. Current
+  # competitor sources are restored by the committed native harness.
   LATEST_REPORT: docs/reports/2026-09-21-native-round-4
   CORPUS: docs/reports/2026-09-14-optimization-rounds/broad-corpus.json.gz
   SPLIT: docs/reports/2026-09-16-arm-round-3/harness
@@ -136,8 +135,7 @@ jobs:
 
       - name: Restore the pinned sources
         run: |
-          cp "$LATEST_REPORT/restore.py" "$CACHE/restore.py"
-          python3 "$CACHE/restore.py"
+          python3 benchmarks/native-comparison/restore.py "$CACHE"
 
       - name: Fetch registry crates for the offline builds
         # prepare.py builds with --offline. A throwaway workspace from the same

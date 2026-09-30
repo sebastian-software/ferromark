@@ -312,7 +312,7 @@ def write_readme(out: Path, facts: dict) -> None:
         f"# Native comparison on {facts['platform_label']} — {facts['date']}",
         "",
         f"Ferromark **v2 `{v2[:10]}`** and the five pinned comparison engines (v1 `{v1[:7]}`, "
-        "the original OX-Content core, md4c, pulldown-cmark, and Bun's native `bun_md`) were "
+        "OX-Content, md4c, pulldown-cmark, and Bun's native `bun_md`) were "
         f"measured on the frozen **{len(cases)} documents ({min(sizes):,}–{max(sizes):,} UTF-8 bytes)** "
         f"on one host: **{run['host_before']['cpu']}**, {source['host_summary']}. "
         "Each scored column uses the same input set and equivalent HTML for every included engine. "
@@ -516,14 +516,14 @@ def write_provenance(out: Path, facts: dict) -> None:
         "| --- | --- |",
         f"| Ferromark v2 | `{engines['ferromark_v2']['revision']}` |",
         f"| Ferromark v1 | `{engines['ferromark_v1']['revision']}` |",
-        f"| OX-Content original | `{engines['ox_content']['revision']}` (archive SHA-256 "
+        f"| OX-Content | `{engines['ox_content']['revision']}` (archive SHA-256 "
         f"`{engines['ox_content'].get('archive_sha256', 'n/a')}`) |",
         f"| md4c | `{engines['md4c']['revision']}` |",
         f"| Bun | `{engines['bun']['revision']}` |",
         "| pulldown-cmark | 0.13.4 from the seeded lock |",
         "",
-        "The five comparison pins are the ones every Apple Silicon report since "
-        "2026-09-14 uses; only v2 moves. [restore.py](restore.py) restored them from their upstream "
+        "This report records the comparison pins above; older reports retain their own pins. "
+        "[restore.py](restore.py) restored the sources from their upstream "
         "URLs and checked the OX, mimalloc, and Highway archive checksums "
         "([restore.json](restore.json)).",
         "",

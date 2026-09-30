@@ -157,8 +157,7 @@ def prepare(output, context_path=None):
         execute([python, '-m', 'unittest', 'discover', '-s', 'benchmarks/' + lane, '-p', 'test_*.py'], source, logs / (lane + '-tests.log'), env)
     cache = output / 'cache'
     (cache / 'native').mkdir(parents=True)
-    shutil.copyfile(source / REFERENCE.relative_to(REPO) / 'restore.py', cache / 'restore.py')
-    execute([python, cache / 'restore.py'], source, log, env)
+    execute([python, source / NATIVE.relative_to(REPO) / 'restore.py', cache], source, log, env)
     options = ['--bun-source', cache / 'bun', '--bun-native-cache', cache / 'native',
                '--md4c-source', cache / 'md4c', '--ox-archive', cache / 'ox.tar.gz',
                '--ferromark-v1-source', source, '--ferromark-v2-source', source,

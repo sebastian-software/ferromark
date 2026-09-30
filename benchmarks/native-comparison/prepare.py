@@ -33,13 +33,17 @@ import tarfile
 import tomllib
 
 
-BUN_REVISION = "76e9dcc6ad272a4fb1ee4a4dbbde4809201b71d1"
+BUN_REVISION = "744846f844374847c902b5e7fd59b4342a51ef99"
+# Released competitor sources; historical reports retain their own pins.
+BUN_VERSION = "1.4.2"
+OX_VERSION = "3.2.13"
+MD4C_VERSION = "0.6.0"
 BUN_TOOLCHAIN = "nightly-2026-07-20"
 FERROMARK_V1_REVISION = "4e151415a15c67e9d3735f719b0bed3e25d8cff8"
 FERROMARK_V2_REVISION = "e93394ee4c2d5e3022eaf3fd0c3b542bcd5eb97a"
-OX_REVISION = "a71a58939ffe7f154117cea026f6d6e71a139393"
-MD4C_REVISION = "65c6c9d72cebd9a731aaa5597414ce04d9ea5de3"
-OX_ARCHIVE_SHA256 = "7df34e3e2db30678981f6df838eafe3e7950e966453221ae180acfa7938f1cfd"
+OX_REVISION = "616cc793d4d1b2256098d9775d62a3f3baef524f"
+MD4C_REVISION = "7fc1815a5eeba2af7d6120a76202bf59f3b6e6e4"
+OX_ARCHIVE_SHA256 = "acf5720ed792c10d1f94b47719f26d14d567fc457a0384bad445d720cfe6fee1"
 
 MI_ARCHIVE_SHA256 = "f36343416ad823dfcca61bd18ad4bb7f0d8814ab77e0fd5ef169f4a9cddeb8b8"
 HWY_ARCHIVE_SHA256 = "741d705781e0b3e406beda8f1f994fbae01321237ce8023a1ad90fbaf7940c25"
@@ -283,7 +287,7 @@ def extract_source_archive(archive_path: Path, revision: str, destination: Path)
     destination.mkdir(parents=True)
     with tarfile.open(archive_path) as archive:
         roots = {Path(member.name).parts[0] for member in archive.getmembers() if Path(member.name).parts}
-        if roots != {"ubugeeei-prod-ox-content-a71a589"}:
+        if roots != {f"ubugeeei-prod-ox-content-{revision[:7]}"}:
             raise SystemExit(f"unexpected OX archive root(s): {sorted(roots)}")
         for member in archive.getmembers():
             parts = Path(member.name).parts
@@ -839,11 +843,11 @@ serde_json = "1"
         f'pub const SHA: &str = "{BUN_REVISION}";\n'
         'pub const REPORTED_NODEJS_VERSION: &str = "24.0.0";\n'
         'pub const RELEASE_SAFE: bool = false;\n'
-        'pub const IS_CANARY: bool = true;\n'
+        'pub const IS_CANARY: bool = false;\n'
         'pub const CANARY_REVISION: &str = "benchmark";\n'
         'pub const ENABLE_FUZZILLI: bool = false;\n'
         'pub const FALLBACK_HTML_VERSION: &str = "0000000000000000";\n'
-        'pub const VERSION: crate::Version = crate::Version { major: 1, minor: 4, patch: 3 };\n'
+        'pub const VERSION: crate::Version = crate::Version { major: 1, minor: 4, patch: 2 };\n'
         f'pub const BASE_PATH: &[u8] = {json.dumps(str(bun))}.as_bytes();\n'
         f'pub const CODEGEN_PATH: &[u8] = {json.dumps(str(build / "codegen"))}.as_bytes();\n'
         'pub const ENABLE_LOGS: bool = cfg!(bun_debug);\n'

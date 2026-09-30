@@ -3,20 +3,20 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "micromark": "4.0.2",
-    "micromark-extension-gfm-strikethrough": "2.1.0",
-    "micromark-extension-gfm-table": "2.1.1",
-    "micromark-extension-gfm-task-list-item": "2.1.0",
-    "marked": "18.0.14",
+    "commonmark": "0.31.2",
     "markdown-it": "15.0.2",
     "markdown-it-task-lists": "2.1.1",
+    "marked": "18.0.14",
+    "mdast-util-gfm-strikethrough": "2.0.1",
+    "mdast-util-gfm-table": "2.0.0",
+    "mdast-util-gfm-task-list-item": "2.0.0",
+    "micromark": "4.0.3",
+    "micromark-extension-gfm-strikethrough": "2.1.0",
+    "micromark-extension-gfm-table": "2.1.2",
+    "micromark-extension-gfm-task-list-item": "2.1.0",
+    "rehype-stringify": "10.0.1",
     "remark": "15.0.1",
     "remark-rehype": "11.1.2",
-    "rehype-stringify": "10.0.1",
-    "mdast-util-gfm-table": "2.0.0",
-    "mdast-util-gfm-strikethrough": "2.0.1",
-    "mdast-util-gfm-task-list-item": "2.0.0",
-    "showdown": "2.1.0",
-    "commonmark": "0.31.2"
+    "showdown": "2.1.0"
   }
 }

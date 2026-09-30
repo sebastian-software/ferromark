@@ -1,7 +1,7 @@
 # Native engine comparison
 
 This harness measures UTF-8 Markdown to complete HTML for Ferromark v2, the
-original OX-Content core, current local Ferromark v1 main, md4c, pulldown-cmark,
+released OX-Content core, historical Ferromark v1 control, md4c, pulldown-cmark,
 and Bun's original native Markdown engine. It uses the frozen 57-document
 [broad corpus](../broad-comparison/README.md), including the original source
 attribution and licenses. It does not run Markdown through a JavaScript, WASM,
@@ -263,15 +263,16 @@ python3 benchmarks/optimization-rounds/make_corpus.py \
 
 `prepare.py --help` lists source/cache inputs. Preparation exports pinned Git
 commits rather than using dirty working trees, re-extracts the checksummed
-original OX archive, builds native support, and records source, adapter, lock,
+pinned OX archive, builds native support, and records source, adapter, lock,
 and executable hashes. It uses a disposable directory and does not change the
 supplied source checkouts. Dependency choices and any lockfile differences are
 recorded with the build.
 
-If the temporary caches are missing, copy the current report's `restore.py` to
-an empty `/private/tmp/native-bench-cache` directory, create its `native/`
-subdirectory, and run it there. It restores the original source pins and checks
-the original archive hashes. Adjust source paths below for your checkout layout;
+For current comparisons, run `python3 benchmarks/native-comparison/restore.py CACHE`
+in a new cache directory. `prepare.py` owns the current released competitor
+pins. To reproduce an archived report, run its retained `restore.py` beside
+its `harness/` directory; that script uses the report's own pins and hashes.
+Adjust source paths below for your checkout layout;
 on Linux, use a directory under `/tmp` instead of `/private/tmp`. The commands
 are the same on both platforms. The builds run with `--offline`, so on a
 machine whose Cargo registry cache lacks the locked crates, fill it first with
@@ -370,7 +371,7 @@ runner:
    clang) into `host.txt`, and pass the CPU model to `run.py` as `BENCH_CPU`.
 2. Install the pinned nightly named by `prepare.BUN_TOOLCHAIN`, with
    `llvm-tools` for PGO, and run the harness unit tests.
-3. Restore the sources with a copy of the latest report's `restore.py`, then
+3. Restore the current sources with this harness's `restore.py CACHE`, then
    fill Cargo's registry cache from a throwaway workspace so the real builds
    stay `--offline`.
 4. Build with the latest report's `Cargo.lock` seeded through `--bun-lock`,
@@ -418,7 +419,7 @@ PGO run about 30; the job stops at 90.
 ## Release-readiness reruns
 
 Pass `--ferromark-v2-revision <commit>` with a committed v2 revision to rerun
-against the same five comparison-engine pins. The default remains the historical
+against the competitor pins recorded in the current harness. The default remains the historical
 `e93394e` measurement for reproducibility. The source audit reads the selected
 v2 revision from the build metadata. Never substitute working-tree sources.
 
