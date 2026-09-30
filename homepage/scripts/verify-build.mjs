@@ -71,7 +71,24 @@ const platformFragments = benchmarks.platforms.flatMap((platform) => {
   ];
 });
 
+const ecosystemBenchmarks = JSON.parse(
+  await readFile(
+    new URL("../app/data/markdown-ecosystem-benchmarks.json", import.meta.url),
+    "utf8",
+  ),
+);
+const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) => [
+  figure.label,
+  figure.runtime,
+  `${figure.fresh.toFixed(1)}×`,
+  `${figure.documents}/${figure.corpusDocuments} documents`,
+  figure.revision,
+]);
+
 const requiredFragments = [
+  ...ecosystemFragments,
+  'id="markdown-ecosystem"',
+  'href="/guide/benchmarks#markdown-rs-and-micromark"',
   ...platformFragments,
   'href="/guide/benchmarks"',
   '"/assets/',

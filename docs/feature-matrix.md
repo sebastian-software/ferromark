@@ -6,7 +6,8 @@ features. It does not claim that all options are enabled together, that output
 is identical, or that every edge case conforms to a specification. A missing
 built-in feature can often be implemented by a caller using events or hooks.
 
-The comparison uses the same six engines as the native benchmark. Ferromark v2
+The comparison covers the six engines in the archived native benchmark plus
+markdown-rs and micromark in the separate ecosystem benchmark. Ferromark v2
 is the local core at `33c216b`, including the compatibility corrections,
 [smart-punctuation removal](typography.md), [table extensions](table-layout.md),
 and [line comments](line-comments.md), plus [frontmatter extraction](front-matter.md);
@@ -22,6 +23,8 @@ Markdown extensions and disables optional renderer conveniences where possible.
 | OX-Content | [3.2.3, `a71a5893`](https://github.com/ubugeeei-prod/ox-content/tree/a71a58939ffe7f154117cea026f6d6e71a139393) — parser/renderer core |
 | pulldown-cmark | [0.13.4 options](https://docs.rs/pulldown-cmark/0.13.4/pulldown_cmark/struct.Options.html) |
 | md4c | [`65c6c9d7` flags and event types](https://github.com/mity/md4c/blob/65c6c9d72cebd9a731aaa5597414ce04d9ea5de3/src/md4c.h) |
+| markdown-rs | [`markdown` 1.0.0 configuration](https://github.com/wooorm/markdown-rs/blob/1.0.0/src/configuration.rs) and [public APIs](https://docs.rs/markdown/1.0.0/markdown/) |
+| micromark | [4.0.2 core](https://github.com/micromark/micromark/tree/4.0.2), plus the explicitly listed extensions below |
 | Bun native core | [`76e9dcc6` options and render entry points](https://github.com/oven-sh/bun/blob/76e9dcc6ad272a4fb1ee4a4dbbde4809201b71d1/src/md/root.rs) |
 
 The pinned local source exports and registry package were inspected directly.
@@ -136,3 +139,33 @@ and [HTML hooks](https://github.com/ubugeeei-prod/ox-content/blob/a71a58939ffe7f
 establish its extension and customization surface. Its renderer handles callouts
 and `[[toc]]` directly. Frontmatter processing in other OX packages does not count
 as support in the parser/renderer core benchmarked here.
+
+## markdown-rs and micromark
+
+These sibling projects broaden the capability inventory beyond the archived
+six-engine native benchmark. A capability entry does not imply that it was
+measured or enabled in the matched benchmark profile.
+
+- **markdown-rs 1.0.0** (`markdown` on crates.io) provides CommonMark constructs,
+  configurable GFM including single-tilde strikethrough, footnotes and tag
+  filtering, math, frontmatter, MDX syntax, HTML output, and mdast trees.
+  [Configuration](https://github.com/wooorm/markdown-rs/blob/1.0.0/src/configuration.rs)
+  and [APIs](https://docs.rs/markdown/1.0.0/markdown/) define the reviewed scope.
+  ESM requires a parse callback; expression callbacks add language-aware
+  validation. Math is syntax handling, frontmatter is metadata recognition,
+  and custom HTML beyond compile options requires an application renderer.
+- **micromark 4.0.2** provides CommonMark tokens and HTML compilation.
+  [Official extensions](https://github.com/micromark/micromark/tree/4.0.2#list-of-extensions)
+  supply GFM, footnotes, frontmatter, math and MDX. The matrix labels these
+  separately installed packages **Ext.**, rather than built-in core features.
+  [mdast-util-from-markdown](https://github.com/syntax-tree/mdast-util-from-markdown)
+  supplies the companion tree API and needs matching mdast extensions for
+  extension nodes. HTML extensions customize token compilation.
+  Community extensions and remark plugins are outside this inventory.
+
+The [ecosystem harness](../benchmarks/markdown-ecosystem/README.md) pins markdown
+1.0.0, micromark 4.0.2, GFM strikethrough 2.1.0, table 2.1.1 and task-list-item
+2.1.0. Its extension lane enables only those three GFM features. It does not
+measure full GFM, math, frontmatter or MDX. The native pair and Node pair have
+separate runtime/build contracts and results; they are never pooled with the
+archived six-engine measurements.

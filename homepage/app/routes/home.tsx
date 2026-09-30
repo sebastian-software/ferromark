@@ -15,6 +15,7 @@ import { Link } from "react-router";
 import { FlavoredMarkdownSection } from "../components/ffm-showcase";
 import { agreementDocuments, formatSpeed, nativeBenchmarks } from "../components/native-benchmarks";
 import landingSample from "../data/landing-sample.json";
+import ecosystemBenchmarks from "../data/markdown-ecosystem-benchmarks.json";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
 import { version } from "../version";
 
@@ -161,6 +162,42 @@ function EvidenceSection() {
   );
 }
 
+function EcosystemEvidenceSection() {
+  const figures = ecosystemBenchmarks.figures.map((figure) => ({
+    label: `${figure.runtime} · ${figure.label}`,
+    value: formatSpeed(figure.fresh),
+    detail: `${figure.documents}/${figure.corpusDocuments} documents · equivalent HTML · fresh`,
+    measure: (
+      <a
+        href={`https://github.com/sebastian-software/ferromark/tree/main/${ecosystemBenchmarks.report}`}
+      >
+        macOS arm64 · {ecosystemBenchmarks.measured} · {figure.revision}
+      </a>
+    ),
+  }));
+  return (
+    <Section
+      id="markdown-ecosystem"
+      layout="split"
+      title="Compared with markdown-rs and micromark."
+      intro="The Rust engine and Node.js bindings each have a direct comparison on the same frozen document corpus. Higher means greater Ferromark throughput."
+      note={
+        <>
+          These are separate pairs with their own runtime and build settings. The Node.js pair
+          includes the public binding and string conversion costs. Both builds use no PGO. Only
+          equivalent HTML enters the score. See the{" "}
+          <Link to="/guide/benchmarks#markdown-rs-and-micromark">
+            options, reuse results, and output differences
+          </Link>
+          , or compare <Link to="/guide/feature-comparison">syntax and AST capabilities</Link>.
+        </>
+      }
+    >
+      <EvidenceFigures figures={figures} />
+    </Section>
+  );
+}
+
 function ConformanceSection() {
   return (
     <Section
@@ -222,6 +259,7 @@ export default function HomePage() {
         <PipelineSection />
         <FlavoredMarkdownSection />
         <EvidenceSection />
+        <EcosystemEvidenceSection />
         <ConformanceSection />
         <StartSection />
       </div>

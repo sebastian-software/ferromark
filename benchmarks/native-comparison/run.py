@@ -130,7 +130,7 @@ def host():
     return result
 
 
-def behavior_checks(binary, directory):
+def behavior_checks(binary, directory, engines=ENGINES):
     """Exercise effective options in all six native adapters, including md4c's FFI bits."""
     fixtures = {
         'empty': '',
@@ -156,7 +156,7 @@ def behavior_checks(binary, directory):
     result = {}
     for profile in ('commonmark', 'gfm-shared'):
         result[profile] = {}
-        for engine in ENGINES:
+        for engine in engines:
             outputs = {}
             for mode in MODES:
                 worker = Worker(binary, engine, profile, mode, paths)
