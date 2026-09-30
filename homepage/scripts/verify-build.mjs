@@ -79,8 +79,11 @@ const completedKeys = new Set(
 );
 // Historical values remain in the guide; require the currently selected values
 // on the landing page when a new manual report replaces a platform's cells.
+const completedPlatforms = new Map(
+  completedBenchmarks.figures.map((figure) => [figure.platform, figure.platformLabel]),
+);
 const platformFragments = benchmarks.platforms.flatMap((platform) => [
-  platform.label,
+  completedPlatforms.get(platform.id) ?? platform.label,
   ...platform.figures.flatMap((figure) => {
     if (figure.id === "v1" || completedKeys.has(`${platform.id}/${figure.id}`)) return [];
     return [
