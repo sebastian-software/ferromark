@@ -147,7 +147,7 @@ test("the overall speed claim requires every candidate on every displayed platfo
   }
 });
 
-test("full-corpus factors annotate output differences without changing legacy cells", async () => {
+test("one differing platform annotates the library name once and preserves other cells", async () => {
   const legacy = completed.figures.map((figure) => ({
     ...figure,
     scoringScope: undefined,
@@ -171,6 +171,8 @@ test("full-corpus factors annotate output differences without changing legacy ce
   const html = await renderComparison(figures);
   assert.equal([...html.matchAll(/<sup /g)].length, 1);
   assert.match(html, /<\/a><sup aria-label="Output differs for some inputs">\*<\/sup>/);
+  assert.match(html, /pulldown-cmark<\/a><sup /);
+  assert.ok(![...html.matchAll(/<td>(.*?)<\/td>/gs)].some((match) => match[1].includes("<sup ")));
   assert.match(html, /57\/57 timed documents · 31 equivalent outputs/);
   assert.match(html, /All inputs contribute to the/);
   assert.match(
@@ -189,7 +191,7 @@ function assertOnlyOneChangedCell(baseline, html) {
   for (const [index, cell] of before.entries()) {
     if (cell !== after[index]) {
       changed += 1;
-      assert.match(after[index], /Output differs for some inputs/);
+      assert.match(after[index], /31 equivalent outputs/);
     }
   }
   assert.equal(changed, 1);

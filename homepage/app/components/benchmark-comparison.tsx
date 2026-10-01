@@ -128,28 +128,30 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
   return (
     <tr>
       <th scope="row">
-        <a className="ferromark-project-link" href={row.github} title={`${row.label} · ${backend}`}>
-          {row.label}
-        </a>
+        <span className="ferromark-project-name">
+          <a
+            className="ferromark-project-link"
+            href={row.github}
+            title={`${row.label} · ${backend}`}
+          >
+            {row.label}
+          </a>
+          {row.results.some((result) => result?.outputDifferences) && (
+            <sup aria-label="Output differs for some inputs">*</sup>
+          )}
+        </span>
         <span className="ferromark-project-backend">{backend}</span>
       </th>
       {row.results.map((result, index) => (
         <td key={platforms[index].id}>
           {result ? (
-            <span className="ferromark-comparison-value">
-              <a
-                href={reportUrl(result.report)}
-                title={result.evidence}
-                aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
-              >
-                {formatSpeed(result.speed)}
-              </a>
-              {result.outputDifferences ? (
-                <sup aria-label="Output differs for some inputs">*</sup>
-              ) : (
-                <span aria-hidden="true" />
-              )}
-            </span>
+            <a
+              href={reportUrl(result.report)}
+              title={result.evidence}
+              aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
+            >
+              {formatSpeed(result.speed)}
+            </a>
           ) : (
             <span aria-label="Not measured">—</span>
           )}
@@ -189,8 +191,9 @@ export function BenchmarkComparison() {
         <tfoot>
           <tr>
             <td colSpan={platforms.length + 1}>
-              * Same 57 inputs, different output for some documents. All inputs contribute to the
-              performance factor. See the linked reports for syntax and API differences.
+              * Output differs for some of the 57 inputs on at least one shown platform. All inputs
+              contribute to the performance factor. See the linked reports for syntax and API
+              differences.
             </td>
           </tr>
         </tfoot>

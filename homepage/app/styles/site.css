@@ -454,7 +454,6 @@
 /* One comparison row per library, with platform results side by side. */
 .ferromark-comparison {
   --comparison-padding-x: 0.5rem;
-  --comparison-annotation-width: 0.6rem;
 
   width: 100%;
   margin-block: 0.5rem 0;
@@ -493,10 +492,6 @@
 .ferromark-comparison th:not(:first-child),
 .ferromark-comparison td {
   text-align: right;
-}
-
-.ferromark-comparison thead th:not(:first-child) {
-  padding-right: calc(var(--comparison-padding-x) + var(--comparison-annotation-width));
 }
 
 .ferromark-comparison tbody th {
@@ -561,19 +556,20 @@
   font-weight: 700;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
-}
-
-.ferromark-comparison-value {
-  display: inline-grid;
-  grid-template-columns: auto var(--comparison-annotation-width);
-  align-items: baseline;
-  color: var(--rust);
   white-space: nowrap;
 }
 
-.ferromark-comparison-value sup {
+.ferromark-project-name {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.ferromark-project-name sup {
   position: relative;
   top: -0.35em;
+  margin-left: 0.15em;
+  color: var(--rust);
   font-size: 0.75em;
   line-height: 1;
 }
