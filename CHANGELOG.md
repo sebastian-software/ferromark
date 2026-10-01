@@ -1,5 +1,75 @@
 # Changelog
 
+## [3.0.0](https://github.com/sebastian-software/ferromark/compare/v2.4.0...v3.0.0) (2026-10-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* Image and Figure AST metadata now uses optional ElementAttributes. The new ParserOptions fields and Node::Figure variant in this feature require a major Rust API release.
+* Image and Figure AST metadata now uses optional ElementAttributes. The new ParserOptions fields and Node::Figure variant in this feature require a major Rust API release.
+* ParserOptions::wiki_links and the Node.js wikiLinks option are removed. Passing wikiLinks in Node.js throws an unknown-option TypeError.
+* **parser:** Adding ParserOptions::guillemet_digraphs changes the exhaustive public ParserOptions struct and requires a major Rust API release.
+* Adding the exhaustive Node::Insertion variant and ParserOptions::insertions field changes the public Rust API and requires a major release.
+* **parser:** Image and Figure AST metadata now uses optional ElementAttributes. The new ParserOptions fields and Node::Figure variant in this feature require a major Rust API release.
+* Image and Figure AST metadata now uses optional ElementAttributes. The new ParserOptions fields and Node::Figure variant in this feature require a major Rust API release.
+* Image and Figure AST metadata now uses optional ElementAttributes. The new ParserOptions fields and Node::Figure variant in this feature require a major Rust API release.
+
+### Features
+
+* add Ferromark Flavored Markdown preset ([#480](https://github.com/sebastian-software/ferromark/issues/480)) ([7f0772d](https://github.com/sebastian-software/ferromark/commit/7f0772d63b1101e4e580c48d74f1c65a97d47f79))
+* add image attributes and separate captions ([#471](https://github.com/sebastian-software/ferromark/issues/471)) ([f1c6c2b](https://github.com/sebastian-software/ferromark/commit/f1c6c2b8da51ef7bb7d93a3b45a329743b965fcd))
+* add opt-in ++text++ syntax for inserted text ([#474](https://github.com/sebastian-software/ferromark/issues/474)) ([9d4eb3b](https://github.com/sebastian-software/ferromark/commit/9d4eb3b6e7a080d5f732980b3372bda4fd4270b1))
+* add opt-in automatic abbreviation markup with dictionary overrides ([#475](https://github.com/sebastian-software/ferromark/issues/475)) ([3c93afe](https://github.com/sebastian-software/ferromark/commit/3c93afece8cac4160748b2362abde3961d029d02))
+* add optional Ferriki highlighting integration ([5729e4a](https://github.com/sebastian-software/ferromark/commit/5729e4aff2e9e290a6ae14f32b7d5ee18de111fd))
+* add shared attributes and bracketed spans ([#473](https://github.com/sebastian-software/ferromark/issues/473)) ([99da2b2](https://github.com/sebastian-software/ferromark/commit/99da2b21f31ff60ca01219f62898f8403a95546f))
+* **benchmarks:** add balanced campaigns and update TanStack ([9af95fc](https://github.com/sebastian-software/ferromark/commit/9af95fc3175bc7c2a199682ba3e6a1c276bfdad9))
+* **benchmarks:** add manual Blacksmith runner profiles ([4fbfecb](https://github.com/sebastian-software/ferromark/commit/4fbfecbd955760b50fb92b1a6bb622708f4317bf))
+* **benchmarks:** add manual macOS measurement and publication workflow ([50e8be2](https://github.com/sebastian-software/ferromark/commit/50e8be2aa16379de31bad4725b11c34d055db81d))
+* **benchmarks:** add manual workflow, skill and Blacksmith runners ([5a0221e](https://github.com/sebastian-software/ferromark/commit/5a0221e987257adc494b6fc94f3289864e24a334))
+* **benchmarks:** compare markdown-rs and micromark on the homepage ([add4421](https://github.com/sebastian-software/ferromark/commit/add442103b7b1f3ac296bc51b024b3b850710165))
+* **benchmarks:** compare prominent Node Markdown processors ([4019c6a](https://github.com/sebastian-software/ferromark/commit/4019c6a8eaf2916de1038a3a83787782ecb1d721))
+* **benchmarks:** complete missing comparison values ([581251f](https://github.com/sebastian-software/ferromark/commit/581251ffe551c8b6908e53927fe63662f4280818))
+* **benchmarks:** complete the 22-row native and Node comparison ([290459f](https://github.com/sebastian-software/ferromark/commit/290459f0bda2e889227eca732cc31a1b325d8b47))
+* **benchmarks:** complete the native and Node candidate matrix ([5f9c74d](https://github.com/sebastian-software/ferromark/commit/5f9c74d9aa9ec2096f68505d5c04368ae0d1810f))
+* **benchmarks:** expand Markdown ecosystem comparisons ([97acfa1](https://github.com/sebastian-software/ferromark/commit/97acfa1590d96b313d46421be0878fca60a8c9d4))
+* **benchmarks:** focus comparisons and score all inputs ([efa5d62](https://github.com/sebastian-software/ferromark/commit/efa5d6299dade617b676a913e7e450770a17a133))
+* **benchmarks:** focus the main comparison and add TanStack Markdown ([256e961](https://github.com/sebastian-software/ferromark/commit/256e961b073391e32a5256378eb527e325d19f14))
+* **benchmarks:** measure missing native and Linux ecosystem pairs ([2908019](https://github.com/sebastian-software/ferromark/commit/290801961e2433d29d5a32ddb78c8384a0fcd336))
+* **benchmarks:** score every input and annotate output differences ([df4d85e](https://github.com/sebastian-software/ferromark/commit/df4d85ef45928dae3af87f435f0623072f5a63fe))
+* **homepage:** link projects and publish expanded Node comparisons ([2cbca34](https://github.com/sebastian-software/ferromark/commit/2cbca34ed6f0f1d3e45a9dfd25b2399754055735))
+* integrate Ferriki highlighting behind an optional feature ([f8ebc39](https://github.com/sebastian-software/ferromark/commit/f8ebc39a5f2d811dfd7299557808f4501adc829e))
+* **npm:** ship the macOS addon for Apple Silicon only ([#470](https://github.com/sebastian-software/ferromark/issues/470)) ([8e1bff0](https://github.com/sebastian-software/ferromark/commit/8e1bff040a73f8902d63f4a03a0b2433efa7f7e2))
+* **parser:** add blockquote attributions ([#476](https://github.com/sebastian-software/ferromark/issues/476)) ([4d0d598](https://github.com/sebastian-software/ferromark/commit/4d0d598ac02f4a4ac041af61e576a8d8fb6c8e95))
+* **parser:** support opt-in ASCII guillemet digraphs ([#472](https://github.com/sebastian-software/ferromark/issues/472)) ([b69e457](https://github.com/sebastian-software/ferromark/commit/b69e457a9bcdfd721511df2af12f41abcd5dbec3))
+* remove wiki link syntax ([#482](https://github.com/sebastian-software/ferromark/issues/482)) ([f608d7b](https://github.com/sebastian-software/ferromark/commit/f608d7b02d7882161b10b83e4b7c168d1fe7a9f5))
+
+
+### Bug Fixes
+
+* **benchmarks:** allow the full comparison to finish on Blacksmith ([4369379](https://github.com/sebastian-software/ferromark/commit/43693790c059093e048f34adaabe25454814945a))
+* **benchmarks:** derive Bun metadata from the release version ([acd3bcf](https://github.com/sebastian-software/ferromark/commit/acd3bcfd2ebcbb6dcec67c7c0419b22df4c2c651))
+* **benchmarks:** freeze current native dependencies for locked replay ([b58ef83](https://github.com/sebastian-software/ferromark/commit/b58ef83f202ba56ab7867dc10be88b70fc05cf79))
+* **benchmarks:** pin the observed Blacksmith Mac CPU model ([78a43af](https://github.com/sebastian-software/ferromark/commit/78a43aff8fa2e14bb73e7b3408f8a1c12a5db7b0))
+* **benchmarks:** verify host provenance and preserve interrupted archives ([aa5bc63](https://github.com/sebastian-software/ferromark/commit/aa5bc636ac72bc170d0331ba2bb1455d34a9305e))
+* **ci:** retain commit history for benchmark evidence checks ([f914ad4](https://github.com/sebastian-software/ferromark/commit/f914ad4304c768b88c68ff99cf51e8a0bf88273f))
+* clarify highlighted theme color trust boundary ([a880bd4](https://github.com/sebastian-software/ferromark/commit/a880bd4ca6151f62bd5ebb88fbfd6b6281128e3d))
+* clarify theme color trust boundary and derive traits ([ed1a024](https://github.com/sebastian-software/ferromark/commit/ed1a0242be0d9949a90afbd34a6c7cc319385aac))
+* **homepage:** annotate output differences beside library names ([5d36d25](https://github.com/sebastian-software/ferromark/commit/5d36d259906f53fad1980bb3ea678a0ecf73be27))
+* **homepage:** restore implementation labels and align table padding ([0263c21](https://github.com/sebastian-software/ferromark/commit/0263c214325a6307bf9d40d4c1f5e4ca7bc608c0))
+* **homepage:** update brace-expansion security override ([caa6a3b](https://github.com/sebastian-software/ferromark/commit/caa6a3b5838ea9382c44d2ccb0d93921dfe205a7))
+* **homepage:** update brace-expansion security override ([0ae17b3](https://github.com/sebastian-software/ferromark/commit/0ae17b3a6d468165435d87237bed2ab373fd34be))
+* **homepage:** verify canonical comparison platform labels ([be8ac73](https://github.com/sebastian-software/ferromark/commit/be8ac733b8ecc1fb795bd92c3641d01f524314ce))
+
+
+### Performance Improvements
+
+* **renderer:** keep abbreviation checks off the default render path ([#481](https://github.com/sebastian-software/ferromark/issues/481)) ([e2ba904](https://github.com/sebastian-software/ferromark/commit/e2ba904980212d916f45c0760e364d4f93286cdb))
+
+
+### Documentation
+
+* introduce Ferromark Flavored Markdown guide ([#479](https://github.com/sebastian-software/ferromark/issues/479)) ([f7c2c65](https://github.com/sebastian-software/ferromark/commit/f7c2c65ad31395bfa9c115e76bd84fb084fcb505))
+
 ## [2.4.0](https://github.com/sebastian-software/ferromark/compare/v2.3.0...v2.4.0) (2026-09-26)
 
 
