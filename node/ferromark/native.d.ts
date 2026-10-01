@@ -4,7 +4,7 @@
 export declare class JsxCompiler {
   constructor(settings: string)
   /** Compiles source and reuses the loaded native grammars and themes. */
-  compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: CodeCallback | undefined | null): JsxResult
+  compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
 }
 
 /** Reuses arena storage and HTML buffers; documents never outlive a call. */
@@ -17,7 +17,7 @@ export declare class Renderer {
 }
 
 /** Internal entry: the public facade validates and separates its option keys. */
-export declare function compileJsx(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: CodeCallback | undefined | null): JsxResult
+export declare function compileJsx(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
 
 export interface Heading {
   level: number

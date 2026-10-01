@@ -23,7 +23,19 @@ allow = [
     "Zlib",
 ]
 confidence-threshold = 0.8
-exceptions = []
+
+# Oxc's number printer is dual-licensed; select the Boost option for this
+# reviewed version. Source redistribution retains its notices and license.
+[[licenses.exceptions]]
+crate = "dragonbox_ecma@0.1.12"
+allow = ["BSL-1.0"]
+
+# This certificate data is a wasm32-only rustls-platform-verifier dependency.
+# Native Node builds use the operating system's trust store; cargo-deny still
+# checks the union of all targets. See ADR-0023 for the redistribution policy.
+[[licenses.exceptions]]
+crate = "webpki-root-certs@1.0.9"
+allow = ["CDLA-Permissive-2.0"]
 
 [bans]
 # Duplicate versions are surfaced for maintenance review without blocking a

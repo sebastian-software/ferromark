@@ -68,6 +68,9 @@ impl JsxCompiler {
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
         options: Option<Options>,
         jsx_options: Option<JsxOptions>,
+        #[napi(
+            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+        )]
         render_code: Option<CodeCallback<'_>>,
     ) -> Result<JsxResult> {
         let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {

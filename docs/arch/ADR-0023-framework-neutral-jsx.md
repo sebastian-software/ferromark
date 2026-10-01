@@ -52,3 +52,18 @@ The existing HTML snapshots and conformance baseline remain release gates.
 The new parser and renderer need semantic regressions for JavaScript grammar,
 whitespace, component ownership, heading IDs, and source maps. This decision
 makes no performance claim.
+
+The all-features dependency graph introduces two narrowly versioned license
+exceptions without changing the family-wide allow-list. For Oxc's
+`dragonbox_ecma` 0.1.12, select its [Boost Software License
+1.0](https://spdx.org/licenses/BSL-1.0.html) option. Source redistribution must
+retain the copyright notices and license; the license exempts copies solely
+in machine-executable object code from that notice requirement.
+
+`webpki-root-certs` 1.0.9 contains Mozilla certificate data under
+[CDLA-Permissive-2.0](https://cdla.dev/permissive-2-0/). It appears only in the
+wasm32 branch of `rustls-platform-verifier`, which cargo-deny includes when
+checking all targets. The native Node sidecars use platform trust stores and
+do not ship this data. Any future distribution that includes the certificate
+data must include the agreement text with it. Both exceptions require review
+when the dependency version changes.

@@ -190,6 +190,9 @@ pub fn compile_jsx(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
     jsx_options: Option<JsxOptions>,
+    #[napi(
+        ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+    )]
     render_code: Option<CodeCallback<'_>>,
 ) -> Result<JsxResult> {
     compile_jsx_with_highlighter(markdown, options, jsx_options, render_code, None)
