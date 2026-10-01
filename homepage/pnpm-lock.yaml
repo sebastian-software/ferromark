@@ -26,8 +26,8 @@ importers:
         specifier: ^4.2.0
         version: 4.2.0(@react-router/dev@8.3.0(@typescript/typescript6@6.0.2)(react-router@8.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(supports-color@9.4.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(@types/node@26.1.1)(@types/react@19.2.17)(@typescript/typescript6@6.0.2)(esbuild@0.28.1)(jiti@2.7.0)(lightningcss@1.33.0)(lucide-react@1.27.0(react@19.2.8))(mermaid@11.16.0)(react-dom@19.2.8(react@19.2.8))(react-router@8.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rollup@4.59.0)(supports-color@9.4.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       ferramenta-family:
-        specifier: 1.2.0
-        version: 1.2.0(react@19.2.8)
+        specifier: 2.0.0
+        version: 2.0.0(react@19.2.8)
       isbot:
         specifier: '*'
         version: 5.2.1
@@ -2980,10 +2980,9 @@ packages:
       picomatch:
         optional: true
 
-  ferramenta-family@1.2.0:
-    resolution: {integrity: sha512-hlue4jj4pJqUuw1iU0SOq/iZPrZajEjqE9KgKiBcn8K09ZBldfpY7h8CCgXV6cJ5KbPv/QmLBw3Ep8/mKjw2Xw==}
+  ferramenta-family@2.0.0:
+    resolution: {integrity: sha512-Jsv6yKJ8SU/FuUPqf67aFJ8YTY6FOpyLPiFbN+1WeFTIwmeo+PeZO+A/kkKHl9IcgBZw7qlhejJIgkRO0n91LQ==}
     engines: {node: '>=20.11.0'}
-    hasBin: true
     peerDependencies:
       react: '>=19.0.0 <20.0.0'
 
@@ -7997,7 +7996,7 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.5
 
-  ferramenta-family@1.2.0(react@19.2.8):
+  ferramenta-family@2.0.0(react@19.2.8):
     dependencies:
       react: 19.2.8
 

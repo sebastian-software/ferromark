@@ -147,7 +147,7 @@ const requiredGuideFragments = [
   'class="site-header"',
   'class="site-footer"',
   'class="ardo-sidebar',
-  'class="ferromark-guide-menu"',
+  'class="site-menu"',
 ];
 
 function check(page, label, { required, forbidden = [] }) {

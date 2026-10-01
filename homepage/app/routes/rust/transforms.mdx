@@ -6,9 +6,9 @@ order: 4
 # Post-process the Rust AST
 
 Ferromark parses Markdown into a `Document` allocated in an arena. The HTML
-renderer consumes that document. When a Rust application needs to change its
-content between those steps, the optional `ferromark-transforms` crate provides
-an ordered pipeline of passes over the native AST.
+renderer consumes that document. **Afterburner** is the optional processing stage
+between those steps. In Rust, the `ferromark-transforms` crate provides an ordered
+pipeline of passes over the native AST.
 
 ## A Remark-like shape, with a different contract
 
@@ -41,8 +41,9 @@ Markdown source
 `ferromark-transforms` is a separate Rust crate. The core `ferromark` crate
 does not depend on it. Core parsing and rendering do not run transform passes
 implicitly; your application opts in by constructing and running a
-`TransformPipeline`. Node.js exposes the built-in typography behavior through
-an option, but does not expose the Rust API for arbitrary custom passes.
+`TransformPipeline`. Node.js exposes the built-in passes through an ordered
+[`passes` option](/node/pipelines#compose-native-transforms), but does not expose
+the Rust API for arbitrary custom passes.
 
 Each pass is an ordinary Rust type that implements `TransformPass`. The
 pipeline calls passes in the order you add them. A configured pipeline can be
@@ -73,6 +74,31 @@ If a pass returns an error, later passes do not run. A pass may already have
 changed the document before it fails, so discard or reparse that document; the
 pipeline does not roll back mutations. The document and all arena-backed nodes
 must also be dropped before the allocator is reset.
+
+## Link GitHub references and expand emoji
+
+`GitHubReferencesPass` links supported issue numbers, user and team mentions,
+commits, and commit ranges. Supply the repository explicitly; the pass never
+reads Git remotes or accesses the network. `EmojiShortcodesPass` replaces known
+shortcodes with Unicode emoji using a bundled, pinned dictionary. Unknown
+aliases stay unchanged.
+
+```rust
+use ferromark_transforms::{
+    EmojiShortcodesPass, GitHubReferencesPass, TransformPipeline,
+};
+
+let mut pipeline = TransformPipeline::new();
+pipeline.add(GitHubReferencesPass::new("sebastian-software/ferromark")?);
+pipeline.add(EmojiShortcodesPass::new());
+pipeline.run(&mut document, &context)?;
+```
+
+Both passes preserve protected content such as code, math, existing links,
+raw HTML, and MDX expressions. See the
+[native transform reference](https://github.com/sebastian-software/ferromark/blob/main/transforms/README.md)
+for supported reference forms and differences from Remark plugins. Like
+typography, these passes run only when added to your pipeline.
 
 ## Build derived content after transforms
 
