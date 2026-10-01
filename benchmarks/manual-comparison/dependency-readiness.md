@@ -48,6 +48,12 @@ documents the supported APIs and adds opt-in inline extension parsing; existing
 trusted-content options and empty extensions. Historical readiness records and
 measurements remain tied to 0.0.16; the new pin needs its own full prepare/verify.
 
+The [2026-10-01 balanced readiness report](../../docs/reports/2026-10-01-balanced-comparison-readiness/README.md)
+retains that fresh clean-clone build and all-input verification on macOS arm64,
+plus a real 1,026-sample/36-control TanStack timing and archive pilot. It records
+the exact tested source, updated pins and the managed campaign link. A single
+local pair is not a completed homepage campaign or proof of other platforms.
+
 Exact Node extension, conversion pipeline and transitive versions are in
 [package-lock.json](../markdown-ecosystem/package-lock.json). In particular,
 micromark-extension-gfm-table is 2.1.2; the other direct dependencies needed no
