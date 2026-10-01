@@ -124,22 +124,14 @@ const groups = [
 ];
 
 function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
+  const backend = row.backend.replace(" (syntax subset)", "");
   return (
     <tr>
       <th scope="row">
-        <a
-          className="ferromark-project-link"
-          href={row.github}
-          title={`${row.label} · ${row.backend}`}
-        >
+        <a className="ferromark-project-link" href={row.github} title={`${row.label} · ${backend}`}>
           {row.label}
         </a>
-        {row.backend === "Native addon" && (
-          <span className="ferromark-project-backend">Native addon</span>
-        )}
-        {row.id === "tanstack-markdown" && (
-          <span className="ferromark-project-backend">(syntax subset)</span>
-        )}
+        <span className="ferromark-project-backend">{backend}</span>
       </th>
       {row.results.map((result, index) => (
         <td key={platforms[index].id}>

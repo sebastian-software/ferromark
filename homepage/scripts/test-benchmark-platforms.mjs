@@ -78,7 +78,9 @@ test("all main candidates have GitHub links and measured cells; variants disclos
     const project = projects.find((row) => row.id === id);
     assert.ok(project);
     assert.ok(html.includes(`href="${project.github}"`));
-    assert.ok(html.includes(`${project.label} · ${project.backend}`));
+    assert.ok(
+      html.includes(`${project.label} · ${project.backend.replace(" (syntax subset)", "")}`),
+    );
     assert.equal(completed.figures.filter((row) => row.id === id).length, 2);
   }
   assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 0);
@@ -90,9 +92,12 @@ test("all main candidates have GitHub links and measured cells; variants disclos
   assert.ok(html.includes('class="ferromark-project-backend">Native addon</span>'));
 });
 
-test("each runtime group is alphabetical and the syntax subset remains a separate note", async () => {
+test("each runtime group is alphabetical and implementation details remain visible", async () => {
   const html = await renderComparison(completed.figures);
-  assert.ok(html.includes('</a><span class="ferromark-project-backend">(syntax subset)</span>'));
+  for (const backend of ["Rust", "C", "Go", "JavaScript"]) {
+    assert.ok(html.includes(`class="ferromark-project-backend">${backend}</span>`));
+  }
+  assert.ok(!html.includes("(syntax subset)"));
   const names = [...html.matchAll(/class="ferromark-project-link"[^>]*>(.*?)<\/a>/gs)].map(
     (match) => match[1],
   );

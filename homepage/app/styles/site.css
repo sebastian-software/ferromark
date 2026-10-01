@@ -453,6 +453,9 @@
 
 /* One comparison row per library, with platform results side by side. */
 .ferromark-comparison {
+  --comparison-padding-x: 0.5rem;
+  --comparison-annotation-width: 0.6rem;
+
   width: 100%;
   margin-block: 0.5rem 0;
   border-collapse: collapse;
@@ -461,7 +464,7 @@
 }
 
 .ferromark-comparison caption {
-  padding-bottom: 0.5rem;
+  padding: 0 var(--comparison-padding-x) 0.5rem;
   color: var(--ink-soft);
   font-size: 0.875rem;
   text-align: left;
@@ -469,7 +472,7 @@
 
 .ferromark-comparison th,
 .ferromark-comparison td {
-  padding: 0.15rem 0.5rem;
+  padding: 0.15rem var(--comparison-padding-x);
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
@@ -485,7 +488,6 @@
 
 .ferromark-comparison th:first-child {
   width: 46%;
-  padding-left: 0;
 }
 
 .ferromark-comparison th:not(:first-child),
@@ -493,9 +495,8 @@
   text-align: right;
 }
 
-.ferromark-comparison th:last-child,
-.ferromark-comparison td:last-child {
-  padding-right: 0;
+.ferromark-comparison thead th:not(:first-child) {
+  padding-right: calc(var(--comparison-padding-x) + var(--comparison-annotation-width));
 }
 
 .ferromark-comparison tbody th {
@@ -505,7 +506,7 @@
 
 .ferromark-comparison .ferromark-comparison-group th {
   width: auto;
-  padding: 0.3rem 0.4rem;
+  padding: 0.3rem var(--comparison-padding-x);
   border-bottom-color: var(--line-heavy);
   background: color-mix(in srgb, var(--ink) 5%, transparent);
   color: var(--ink);
@@ -564,7 +565,7 @@
 
 .ferromark-comparison-value {
   display: inline-grid;
-  grid-template-columns: auto 0.6em;
+  grid-template-columns: auto var(--comparison-annotation-width);
   align-items: baseline;
   color: var(--rust);
   white-space: nowrap;
@@ -587,9 +588,8 @@
 }
 
 @media (max-width: 30rem) {
-  .ferromark-comparison th,
-  .ferromark-comparison td {
-    padding: 0.15rem 0.35rem;
+  .ferromark-comparison {
+    --comparison-padding-x: 0.35rem;
   }
 
   .ferromark-comparison tbody th {
