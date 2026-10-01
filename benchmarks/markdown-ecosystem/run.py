@@ -108,6 +108,7 @@ def main():
         'comparison': contracts.project(competitor), 'manifest_sha256': native.sha(contracts.MANIFEST),
         'contracts_sha256': native.sha(HERE / 'contracts.py'), 'rounds': args.rounds, 'samples': args.samples,
         'window_ms': args.window_ms, 'warmup_ms': args.warmup_ms, 'seed': 20260930,
+        'timing_profile': contracts.timing_identity(vars(args)),
         'host_before': native.host(), 'corpus_sha256': native.sha(args.corpus),
         'lock_sha256': native.sha(lock), 'worker_sha256': native.sha(command),
         'adapter_sha256': native.sha(HERE / ('worker.rs' if args.track == 'native' else 'worker.mjs')),

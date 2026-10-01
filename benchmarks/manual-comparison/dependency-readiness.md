@@ -34,12 +34,19 @@ latest stable direct versions compatible with these projects.
 Additional current pins: Goldmark v2.1.6 (Go module `github.com/yuin/goldmark/v2`),
 Go 1.27.1; Remarkable 2.0.1; markdown-exit 1.3.0; markdown-it-ts 1.1.2;
 Sätteri 0.10.5; MD4X 0.0.30 in explicit NAPI and WASM lanes; @ox-content/napi 3.2.13.
-TanStack Markdown is pinned to @tanstack/markdown 0.0.16, rechecked on 2026-09-30.
+TanStack Markdown is pinned to @tanstack/markdown 1.0.0, rechecked on 2026-10-01.
 Its direct HTML entry point has no runtime dependencies. It is a documented syntax
 subset, not another complete CommonMark implementation.
 The [Go module and sum file](../markdown-ecosystem/goldmark/go.mod) and npm lockfile
 pin the released implementations. Public API constraints and readiness of this
 extension are separate from the immutable original 14-row preflight report.
+
+The 2026-10-01 registry/release recheck found only TanStack changed among the
+direct candidate/tooling pins. Its [1.0.0 release](https://github.com/TanStack/markdown/releases/tag/v1.0.0)
+documents the supported APIs and adds opt-in inline extension parsing; existing
+0.0.16 calls require no migration. The benchmark keeps the same direct HTML API,
+trusted-content options and empty extensions. Historical readiness records and
+measurements remain tied to 0.0.16; the new pin needs its own full prepare/verify.
 
 Exact Node extension, conversion pipeline and transitive versions are in
 [package-lock.json](../markdown-ecosystem/package-lock.json). In particular,

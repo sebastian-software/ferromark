@@ -105,6 +105,30 @@ class ManualTests(unittest.TestCase):
         with self.assertRaises(AssertionError):
             cli.eco_archive.validate(pair)
 
+    def test_historical_evidence_cannot_be_relabelled_as_balanced(self):
+        source = cli.REPO / 'docs/reports/2026-09-30-ecosystem-platforms/macos-arm64/native-cmark'
+        shutil.copytree(source, self.folder / 'pair')
+        pair = self.folder / 'pair'
+        cli.eco_archive.validate(pair)
+        config = cli.read(pair, 'run')
+        config['timing_profile'] = 'balanced'
+        cli.write(pair / 'run.json', config)
+        cli.checksums(pair)
+        cli.checksums(pair, check=True)
+        with self.assertRaisesRegex(AssertionError, 'historical campaigns require standard timing'):
+            cli.eco_archive.validate(pair)
+
+    def test_generated_description_uses_recorded_sampling_instead_of_standard_text(self):
+        self.retained_matrix()
+        values = cli.figures(self.folder, 'docs/reports/test')
+        # Presentation contract only; heterogeneous archived fixtures cannot be published.
+        values = [value | {'scoringScope': 'all-documents', 'timingProfile': 'balanced',
+                           'sampling': dict(rounds=3, samples=3, window_ms=10, warmup_ms=30)} for value in values]
+        description = cli.platform_content(values)
+        self.assertIn('**balanced**', description)
+        self.assertIn('3 alternating 10 ms windows and 30 ms warmup', description)
+        self.assertNotIn('six alternating 40 ms', description)
+
     def test_checksum_drift_and_path_escape_are_rejected(self):
         cli.checksums(self.folder)
         (self.folder / 'new.txt').write_text('unretained change')
@@ -163,7 +187,7 @@ class ManualTests(unittest.TestCase):
         from unittest.mock import patch
         inventory = (cli.ECO / 'comparisons.json').read_bytes()
         policy = (cli.ECO / 'scoring-policy.json').read_bytes()
-        suite = {**self.suite, 'schema': 5, 'comparison_scope': 'main',
+        suite = {**self.suite, 'schema': 5, 'comparison_scope': 'main', 'timing_profile': 'balanced',
                  'scoring_scope': 'all-documents', 'comparisons_sha256': cli.hashlib.sha256(inventory).hexdigest(),
                  'scoring_policy_sha256': cli.hashlib.sha256(policy).hexdigest()}
         def committed(revision, path):
@@ -172,7 +196,8 @@ class ManualTests(unittest.TestCase):
             self.assertEqual(len(cli.suite_projects(suite)), 20)
             for bad in ({**suite, 'schema': 4}, {**suite, 'scoring_scope': 'equivalent-only'},
                         {**suite, 'scoring_policy_sha256': '0' * 64},
-                        {key: value for key, value in suite.items() if key != 'scoring_scope'}):
+                        {key: value for key, value in suite.items() if key != 'scoring_scope'},
+                        {key: value for key, value in suite.items() if key != 'timing_profile'}):
                 with self.assertRaises((AssertionError, KeyError)):
                     cli.suite_projects(bad)
 

@@ -12,6 +12,11 @@ test("Blacksmith jobs require manual dispatch and stay in the requested organiza
   assert.equal(workflow.permissions.contents, "read");
   assert.equal(workflow.jobs.compare.if, "github.repository == 'sebastian-software/ferromark'");
   assert.equal(workflow.on.workflow_dispatch.inputs.mode.default, "probe");
+  assert.equal(workflow.on.workflow_dispatch.inputs.timing_profile.default, "balanced");
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.timing_profile.options, [
+    "balanced",
+    "standard",
+  ]);
   assert.equal(native.on.workflow_dispatch.inputs.runner_provider.default, "github");
   assert.ok(native.jobs.blacksmith.if.includes("github.event_name == 'workflow_dispatch'"));
   assert.ok(native.jobs.blacksmith.if.includes("inputs.runner_provider == 'blacksmith'"));
@@ -20,7 +25,8 @@ test("Blacksmith jobs require manual dispatch and stay in the requested organiza
 
 test("resource gates finish before any build and only explicit measurement mode times", () => {
   const job = workflow.jobs.compare;
-  assert.equal(job.strategy["max-parallel"], 1);
+  assert.equal(job.strategy["max-parallel"], 2);
+  assert.ok(job["timeout-minutes"].includes("inputs.timing_profile == 'standard'"));
   const guard = job.steps.findIndex((step) => step.run?.includes("runner_context.py"));
   const setup = job.steps.findIndex((step) => step.uses?.startsWith("actions/setup-node@"));
   assert.ok(guard >= 0 && guard < setup);
@@ -88,6 +94,7 @@ test("managed and per-pair workflows select main or extended candidates without 
     /benchmark-comparison (prepare|run) /.test(step.run || ""),
   )) {
     assert.ok(step.run.includes('--scope "$SCOPE"'));
+    assert.ok(step.run.includes('--timing-profile "$TIMING_PROFILE"'));
   }
   for (const job of [workflow.jobs.compare, pairs.jobs.compare]) {
     const go = job.steps.find((step) => step.uses?.startsWith("actions/setup-go@"));

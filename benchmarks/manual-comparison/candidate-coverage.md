@@ -9,6 +9,11 @@ has separate native and Node binding entries. Their pinned public API contracts
 and local checks are in the [ecosystem runbook](../markdown-ecosystem/README.md#expanded-public-apis).
 No new performance values are published by adding adapters.
 
+Campaign pin update on **2026-10-01**: TanStack Markdown is now 1.0.0. The
+2026-09-30 release/download observations below remain historical; the public
+HTML workload and candidate selection are unchanged. See
+[dependency readiness](dependency-readiness.md) for the release and checks.
+
 The additional subset, language/runtime, and streaming candidates below remain
 an explicit backlog. This matrix is not a claim to cover every Markdown engine.
 

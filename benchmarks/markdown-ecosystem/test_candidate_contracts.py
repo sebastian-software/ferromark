@@ -35,7 +35,7 @@ class CandidateContractTests(unittest.TestCase):
 
     def rotation(self):
         # Unit fixture only; not retained or published as measurement evidence.
-        config = dict(engines=['v2', 'md4x-wasm'], track='node')
+        config = dict(engines=['v2', 'md4x-wasm'], track='node', rounds=3, samples=6, window_ms=40, warmup_ms=60)
         cases = [dict(name='one', profile='commonmark'), dict(name='two', profile='commonmark')]
         outputs = {name: {'outputs': {'v2': '🪐é', 'md4x-wasm': '🪐é'}} for name in ('one', 'two')}
         rows = [dict(round=r, sample=s, profile='commonmark', mode=mode, members=['one', 'two'],
@@ -65,3 +65,30 @@ class CandidateContractTests(unittest.TestCase):
         rows[-1] = rows[0]
         with self.assertRaises(AssertionError):
             archive.validate_rotation(config, cases, outputs, rows)
+
+    def test_balanced_controls_still_require_complete_rounds_and_full_windows(self):
+        config, cases, outputs, rows = self.rotation()
+        config.update(run.contracts.TIMING_PROFILES['balanced'])
+        rows = [row for row in rows if row['sample'] < 3]
+        for row in rows:
+            for engine in config['engines']:
+                row[engine]['elapsed_ns'] = 10_000_000
+        archive.validate_rotation(config, cases, outputs, rows)
+        with self.assertRaises(AssertionError):
+            archive.validate_rotation(config, cases, outputs, rows[:-1])
+        rows[0]['v2']['elapsed_ns'] -= 1
+        with self.assertRaises(AssertionError):
+            archive.validate_rotation(config, cases, outputs, rows)
+
+    def test_named_profile_cannot_license_arbitrary_shortening_or_relabel_history(self):
+        policy = json.loads((run.HERE / 'scoring-policy.json').read_text())
+        config = dict(timing_profile='balanced', **run.contracts.TIMING_PROFILES['balanced'])
+        self.assertEqual(run.contracts.validate_timing(config, policy), 'balanced')
+        for change in ({'samples': 1}, {'rounds': 1}, {'warmup_ms': 1},
+                       {'window_ms': 1}, {'timing_profile': 'standard'}, {'timing_profile': 'diagnostic'}):
+            with self.assertRaises(AssertionError):
+                run.contracts.validate_timing(config | change, policy)
+        with self.assertRaises(AssertionError):
+            run.contracts.validate_timing({key: value for key, value in config.items() if key != 'timing_profile'}, policy)
+        with self.assertRaises(AssertionError):
+            run.contracts.validate_timing(config, {'documents': 57})

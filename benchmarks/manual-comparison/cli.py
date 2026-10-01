@@ -134,8 +134,9 @@ def preflight():
             'host_platform': platform.platform(), 'addon_file': 'ferromark.' + node['target'] + '.node'}
 
 
-def prepare(output, context_path=None, scope='main'):
+def prepare(output, context_path=None, scope='main', timing_profile='balanced'):
     ecosystem.contracts.campaign_projects(ecosystem.contracts.PROJECTS, scope)
+    assert timing_profile in ecosystem.contracts.TIMING_PROFILES
     host = preflight()
     context = json.loads(context_path.read_text()) if context_path else None
     if context is not None:
@@ -183,7 +184,7 @@ def prepare(output, context_path=None, scope='main'):
     addon = source / 'node/ferromark' / host['addon_file']
     shutil.copyfile(source / 'target/release-node' / addon_library(host['system']), addon)
     execute(['node', '--test', source / ECO.relative_to(REPO) / 'test-node-adapters.mjs', source / ECO.relative_to(REPO) / 'test-benchmark-loader.mjs'], source, logs / 'node-loader-tests.log', {**env, 'FERROMARK_BENCH_TEST_ADDON': str(addon)})
-    write(output / 'prepared.json', {'schema': 5, 'comparison_scope': scope, 'scoring_scope': 'all-documents', 'scoring_policy_sha256': native.sha(ECO / 'scoring-policy.json'), 'revision': revision, 'comparisons_sha256': native.sha(ECO / 'comparisons.json'), 'go': subprocess.check_output(['go', 'version'], text=True).strip(), **host, 'node': subprocess.check_output(['node', '--version'], text=True).strip(),
+    write(output / 'prepared.json', {'schema': 5, 'timing_profile': timing_profile, 'comparison_scope': scope, 'scoring_scope': 'all-documents', 'scoring_policy_sha256': native.sha(ECO / 'scoring-policy.json'), 'revision': revision, 'comparisons_sha256': native.sha(ECO / 'comparisons.json'), 'go': subprocess.check_output(['go', 'version'], text=True).strip(), **host, 'node': subprocess.check_output(['node', '--version'], text=True).strip(),
                                    'addon_sha256': native.sha(addon), 'corpus_sha256': native.sha(CORPUS),
                                    **({'runner_context': context} if context else {})})
     (output / 'host.txt').write_text(host['machine'] + '\n')
@@ -193,6 +194,10 @@ def prepare(output, context_path=None, scope='main'):
 def measure(output, cooldown, verify_only=False):
     host = preflight()
     prepared = read(output, 'prepared')
+    timing_profile = prepared.get('timing_profile', 'standard')
+    timing_args = ecosystem.contracts.timing_arguments(timing_profile)
+    if cooldown is None:
+        cooldown = ecosystem.contracts.TIMING_PROFILES[timing_profile]['cooldown_seconds']
     context = prepared.get('runner_context')
     if context is not None:
         runner_context.assert_host(context)
@@ -216,7 +221,7 @@ def measure(output, cooldown, verify_only=False):
         args = [*base, destination, '--competitor', engine]
         if track == 'native':
             args += ['--binary', output / 'ecosystem-build/worker', '--build-metadata', output / 'ecosystem-build/build.json']
-        return args + (['--verify-only'] if verify else [])
+        return args + (['--verify-only'] if verify else timing_args)
 
     def fresh_attempt(path):
         # Keep interrupted attempts for diagnosis; never accept them as completed runs.
@@ -237,7 +242,7 @@ def measure(output, cooldown, verify_only=False):
     if not (native_results / 'summary.json').exists():
         print(f'Cooling down for {cooldown} seconds before native timing.', flush=True)
         time.sleep(cooldown)
-        execute([*native_command, fresh_attempt(native_results)], source, logs / 'native-measure.log')
+        execute([*native_command, fresh_attempt(native_results), *timing_args], source, logs / 'native-measure.log')
     execute([python, source / NATIVE.relative_to(REPO) / 'report.py', native_results], source, logs / 'native-report.log')
     native_evidence = evidence / 'native'
     if native_evidence.exists() and not (native_evidence / 'SHA256SUMS').exists():
@@ -321,6 +326,8 @@ def suite_projects(suite):
         assert suite['schema'] == policy['suite_schema'], 'scoring policy cannot be downgraded'
         assert suite['scoring_scope'] == policy['scoring_scope']
         assert hashlib.sha256(policy_data).hexdigest() == suite['scoring_policy_sha256']
+        if 'timing_profiles' in policy:
+            assert suite.get('timing_profile') in policy['timing_profiles'], 'missing or invalid suite timing profile'
     else:
         assert suite['schema'] < 5, 'full-corpus campaigns require their committed scoring policy'
     data = committed(suite['revision'], 'benchmarks/markdown-ecosystem/comparisons.json')
@@ -348,6 +355,7 @@ def verify_evidence(folder):
     suite = read(folder, 'suite')
     assert suite['schema'] in (2, 3, 4, 5)
     revision = suite['revision']
+    timing_profile = suite.get('timing_profile', 'standard')
     assert re.fullmatch(r'[0-9a-f]{40}', revision), 'full source revision required'
     assert suite['corpus_sha256'] == native.sha(CORPUS)
     context = suite.get('runner_context')
@@ -361,6 +369,7 @@ def verify_evidence(folder):
     assert all(suite[key] == value for key, value in details.items()), 'inconsistent recorded platform'
     for track, engine in suite_pairs(suite):
         config, _ = eco_archive.validate(folder / (track + '-' + engine), revision)
+        assert config.get('timing_profile', 'standard') == timing_profile, 'mixed timing profiles'
         assert config['engines'] == ['v2', engine] and config['track'] == track
         assert 'host_after' in config, 'incomplete run'
         verify_platform(suite, config)
@@ -378,7 +387,9 @@ def verify_evidence(folder):
     corpus, outputs, rows = read(directory, 'corpus'), read(directory, 'verification'), read(directory, 'samples')
     frozen = native.read_json(CORPUS)
     assert corpus['cases'] == frozen['cases'] and config['corpus_sha256'] == suite['corpus_sha256']
-    assert (config['rounds'], config['samples'], config['window_ms'], config['warmup_ms']) == (3, 6, 40, 60)
+    policy_data = committed(revision, 'benchmarks/markdown-ecosystem/scoring-policy.json') if suite['schema'] == 5 else None
+    policy = json.loads(policy_data) if policy_data else None
+    ecosystem.contracts.validate_timing({**config, 'timing_profile': timing_profile}, policy)
     assert config['case_filter'] is None and config['corpus_case_count'] == 57 and 'host_after' in config
     verify_platform(suite, config, build)
     assert tuple(config['engines']) == native.ENGINES and tuple(config['modes']) == native.MODES
@@ -437,7 +448,10 @@ def figures(folder, report):
         assert count > 0 and all(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in speed.values())
         agreement = sum(item['versus_v2'][project['id']] in ('exact', 'serialization-equivalent') for item in outputs.values()) if project['id'] in LEGACY else read(folder / lane, 'summary')['agreeing_documents']
         scoring = {'scoringScope': 'all-documents', 'agreeingDocuments': agreement, 'overviewReport': report} if suite['schema'] == 5 else {}
-        result.append({**scoring, **{key: project[key] for key in ('id', 'label', 'runtime')}, 'platform': suite['platform'],
+        timing = ({'timingProfile': suite['timing_profile'],
+                   'sampling': {key: read(folder / 'native', 'run')[key] for key in ecosystem.contracts.TIMING_KEYS}}
+                  if 'timing_profile' in suite else {})
+        result.append({**timing, **scoring, **{key: project[key] for key in ('id', 'label', 'runtime')}, 'platform': suite['platform'],
                        'platformLabel': suite['platform_label'], 'machine': suite['machine'], 'measured': measured,
                        'revision': suite['revision'][:8], 'report': report + '/' + lane, 'profileScope': scope,
                        'documents': count, 'corpusDocuments': 57, 'fresh': speed['fresh'], 'reuse': speed['reuse']})
@@ -466,7 +480,10 @@ def platform_content(values):
     dates = sorted({value['measured'] for value in values})
     text += f"\nMachine: {first['machine']}. Measurement dates: {', '.join(dates)}, source `{first['revision']}`.\n\n"
     if full_corpus:
-        text += '*Output differs for some inputs. Every factor includes all 57 frozen documents;\nHTML agreement is retained as descriptive metadata, not a scoring filter or a\nconformance test. Public syntax, output, allocator, runtime and GC contracts\nremain documented; these figures compare the public APIs on the same inputs,\nnot identical implemented features. Three rounds, six alternating 40 ms windows\nand 60 ms warmup use equal-document geometric means. Rotating-document cache\ncontrols remain separate. Native and Node binding costs remain distinct.\n\n'
+        sampling = first.get('sampling', dict(rounds=3, samples=6, window_ms=40, warmup_ms=60))
+        text += '*Output differs for some inputs. Every factor includes all 57 frozen documents;\nHTML agreement is retained as descriptive metadata, not a scoring filter or a\nconformance test. Public syntax, output, allocator, runtime and GC contracts\nremain documented; these figures compare the public APIs on the same inputs,\nnot identical implemented features. '
+        text += f"Timing profile: **{first.get('timingProfile', 'standard')}**; {sampling['rounds']} process rounds,\n{sampling['samples']} alternating {sampling['window_ms']} ms windows and {sampling['warmup_ms']} ms warmup.\n"
+        text += 'Equal-document geometric means use per-engine medians of round medians.\nRotating-document cache controls remain separate. Native and Node binding costs\nremain distinct. Inspect round spread before making a performance claim; the\nbalanced profile has less timing evidence than standard.\n\n'
     elif any(value['id'] == 'goldmark' for value in values):
         text += 'Each pair uses three process rounds, six alternating 40 ms windows and\n60 ms warmup. Scores use equal-document geometric means of the per-engine\nmedian of round medians. Only equivalent HTML contributes. The original\nsix-engine harness retains its shared five/six-engine agreement sets, shared\nmimalloc, pinned Bun toolchain and rotating-batch diagnostics. Other Rust/C\nnative pairs use system malloc and the stable Rust toolchain; Goldmark uses\nthe pinned Go compiler and includes Go allocation and GC; Node uses the\nrelease-node addon without PGO and includes public binding costs and GC.\ncmark, commonmark.js, and Remarkable use CommonMark only in both engines on all inputs.\nPublic API differences (MD4X fixed extensions, Sätteri GFM autolinks, OX renderer\nbuiltins) remain verified and disclosed. Rotating-document controls are retained\nseparately to expose caching. These contracts do not support a shared-set ranking.\n\n'
     else:
@@ -538,15 +555,16 @@ def main():
         if command in ('prepare', 'run'):
             sub.add_argument('--runner-context', type=Path, help='retained, validated managed-runner metadata')
             sub.add_argument('--scope', choices=('main', 'extended'), default='main', help='20 main comparisons or all 23 including optional adapters')
+            sub.add_argument('--timing-profile', choices=tuple(ecosystem.contracts.TIMING_PROFILES), default='balanced', help='balanced comparison or the longer standard profile; fixed during preparation')
         if command in ('run', 'measure'):
-            sub.add_argument('--cooldown-seconds', type=int, default=60)
+            sub.add_argument('--cooldown-seconds', type=int, help='pause between lanes; default 5 for balanced, 60 for standard')
         if command == 'publish':
             sub.add_argument('--name', help='new immutable report name, e.g. 2026-10-01-linux-x86-64')
             sub.add_argument('--check', action='store_true', help='validate the complete evidence without changing files')
     args = parser.parse_args()
     if sys.flags.optimize:
         parser.error('Python optimization disables evidence checks; use Python without -O.')
-    if hasattr(args, 'cooldown_seconds') and not 0 <= args.cooldown_seconds <= 600:
+    if getattr(args, 'cooldown_seconds', None) is not None and not 0 <= args.cooldown_seconds <= 600:
         parser.error('cooldown must be between 0 and 600 seconds')
     try:
         if args.command == 'doctor':
@@ -554,10 +572,10 @@ def main():
         elif args.command == 'publish':
             publish(args.output, args.name, args.check)
         elif args.command == 'prepare':
-            prepare(args.output, args.runner_context, args.scope)
+            prepare(args.output, args.runner_context, args.scope, args.timing_profile)
         else:
             if args.command == 'run':
-                prepare(args.output, args.runner_context, args.scope)
+                prepare(args.output, args.runner_context, args.scope, args.timing_profile)
             awake = subprocess.Popen(['caffeinate', '-i', '-w', str(os.getpid())]) if platform.system() == 'Darwin' else None
             try:
                 measure(args.output, getattr(args, 'cooldown_seconds', 0), verify_only=args.command == 'verify')

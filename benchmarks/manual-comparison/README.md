@@ -65,14 +65,27 @@ checks the harnesses, builds both native harnesses and the plain Node addon,
 and audits the exported native sources. Build concurrency is capped at four
 jobs to keep memory use reasonable. Your checkout and its addon are untouched.
 
-All HTML/option guards finish before the first timed comparison. The script
-waits 60 seconds between lanes and runs one lane at a time. Each uses the
-existing **three process rounds, six samples, 40 ms windows, and 60 ms warmup**.
+All HTML/option guards finish before the first timed comparison. The script runs
+one lane at a time on each host. Preparation freezes one named sampling profile:
+
+| Profile | Process rounds | Samples per round | Window | Warmup per engine/input | Lane pause |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `balanced` (default) | 3 | 3 | 10 ms | 30 ms | 5 s |
+| `standard` | 3 | 6 | 40 ms | 60 ms | 60 s |
+
+Both keep independent process rounds, alternating engine order, consumed output
+checksums, both lifecycles, and rotating-document controls. Balanced trades
+precision and warmup time for a shorter campaign; it is not the former one-sample
+diagnostic smoke. Review per-round spread and rotating controls, and repeat with
+standard when a close or unstable ranking needs more evidence. The main balanced
+suite has about 15 minutes of requested windows/warmup/pauses; process overhead,
+slow calls, verification, downloads and builds add time. This is a budget estimate,
+not a measured runtime or a ten-minute completion guarantee.
 All 57 frozen inputs are timed and contribute to the factors, including different
 HTML outputs. Agreement is descriptive metadata, not a scoring filter or a
 conformance gate. A `*` on new homepage factors discloses output differences;
-the linked reports explain public API and syntax differences. There is no shortened publishable
-mode. Logs are under `OUTPUT/logs`; commands and current phases are printed in
+the linked reports explain public API and syntax differences. Arbitrary shortened
+runs remain unpublishable; only complete named profiles are accepted. Logs are under `OUTPUT/logs`; commands and current phases are printed in
 the terminal. Allow a long uninterrupted session; duration depends on the host
 and the competitor.
 
@@ -81,7 +94,9 @@ not disable system services or claim exclusive CPU access. Host/load/thermal
 observations and per-round ranges are retained so unusual noise can be reviewed.
 If a result looks unstable, use a fresh output directory and compare full runs;
 do not select only the fastest run. `--cooldown-seconds N` changes the pause
-(default 60; range 0–600), not the measurement windows.
+(profile default; range 0–600), not the measurement windows. Select the longer
+profile with `run OUTPUT --timing-profile standard` or set it during `prepare`.
+`measure` resumes the profile recorded during preparation; it cannot change it.
 
 For separate preparation and measurement:
 
@@ -117,7 +132,7 @@ installation are needed for this step; Python 3.11+ and Git suffice.
 
 Publication rechecks complete window coverage, checksums, frozen inputs, HTML
 classification, aggregates, committed sources/adapters, host/build platform,
-runtime and addon identity, and all comparisons required by the recorded scope. It rejects partial/shortened
+runtime and addon identity, and all comparisons required by the recorded scope. It rejects partial or arbitrarily shortened
 runs and nonpositive or nonfinite scores. It retains compressed raw evidence
 and provenance under a **new** `docs/reports/<name>/` with SHA256SUMS, updates only
 that platform's selection in `benchmarks/manual-comparison/current.json`, and
@@ -207,13 +222,17 @@ gh workflow run native-comparison.yml --repo sebastian-software/ferromark \
   -f blacksmith_platform=both -f blacksmith_mode=probe -f blacksmith_repetitions=1
 ```
 
-After both profiles pass output verification, use `mode=measure` with
-`repetitions=3` to assess independent allocations. Jobs run sequentially and
-retain each trial separately; do not publish the fastest result or average
+After both runner profiles pass output verification, use `mode=measure` with
+`timing_profile=balanced` for an initial complete campaign. Each allocation still
+has three process rounds. Use `repetitions=3` when independent VM allocations are
+needed to investigate noise. At most two jobs run concurrently on separate VMs;
+each job finishes its builds before timing and retains its trial separately.
+Do not publish the fastest result or average
 incompatible campaign contracts. Probe jobs have a 10-minute timeout, verification
-jobs 90 minutes, and complete measurement jobs 180 minutes per allocation.
-The extended 23-row suite needs more than 90 minutes for timing windows, warmup, and
-default cooldowns alone; builds, output checks, and process starts add overhead.
+jobs 90 minutes, balanced measurement jobs 60 minutes and standard measurement
+jobs 180 minutes per allocation. The extended standard suite needs more than
+90 minutes for timing windows, warmup, and default cooldowns alone; builds,
+output checks, and process starts add overhead.
 These limits cap execution rather than prescribe its duration. Runner time,
 including setup and cooldown, consumes the provider's billed/free minutes.
 
