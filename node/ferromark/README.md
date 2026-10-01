@@ -372,7 +372,9 @@ N-API to translate a Rust panic into a JavaScript exception instead of aborting
 the Node.js process.
 
 <!-- ferramenta-family:start -->
+
 **ferromark** is part of the [Ferramenta](https://ferramenta.dev) family — A family of Rust tools.
 
 Siblings: [ferroni](https://ferroni.dev) — Oniguruma-compatible regex engine · [ferriki](https://ferriki.dev) — Shiki-compatible syntax highlighting · [ferrolex](https://github.com/sebastian-software/ferrolex) — Spell checking for text and code · [ferrocat](https://ferrocat.dev) — Translation catalog engine · [ferralk](https://github.com/sebastian-software/ferralk) — Glob matching and parallel filesystem walking · [ferrugo](https://github.com/sebastian-software/ferrugo) — PDF previews for untrusted files · [palamedes](https://palamedes.dev) — Internationalization for TypeScript applications · [dalo](https://dalo.sh) — Your team's agent setup, versioned like code.
+
 <!-- ferramenta-family:end -->
