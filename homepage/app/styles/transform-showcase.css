@@ -1,0 +1,196 @@
+.transform-assembly {
+  display: grid;
+  grid-template-columns: minmax(0, 0.65fr) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+  margin-top: 2.5rem;
+}
+.transform-visual {
+  min-width: 0;
+  text-align: center;
+}
+.transform-rocket {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 18rem;
+  object-fit: contain;
+  margin-inline: auto;
+  transform: rotate(10deg);
+}
+.markdown-capabilities {
+  margin: 0;
+  border-top: 1px solid var(--line-heavy);
+}
+.markdown-capabilities > div {
+  padding-block: 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+.markdown-capabilities dt {
+  font-family: var(--display), var(--body);
+  font-size: 1.875rem;
+  font-weight: var(--disp-weight);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.markdown-capabilities dt a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.markdown-capabilities dt a:hover {
+  color: var(--rust);
+}
+.markdown-capabilities dd {
+  max-width: 46ch;
+  margin: 0.3rem 0 0;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.processing-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 5rem);
+  margin-top: 3.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--line-heavy);
+}
+.processing-demo h3 {
+  font-size: var(--h3-size);
+}
+.processing-intro {
+  max-width: 46ch;
+  margin-top: 0.75rem;
+  margin-bottom: 1.5rem;
+  color: var(--ink-soft);
+}
+.transform-workbench {
+  min-width: 0;
+}
+.transform-module-list {
+  border-top: 1px solid var(--line-heavy);
+}
+.transform-module-control {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.1rem 0.5rem 1.1rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.transform-module-control:hover {
+  background: color-mix(in srgb, var(--rust) 8%, transparent);
+}
+.transform-module-copy {
+  display: grid;
+  gap: 0.4rem;
+}
+.transform-module-copy > strong {
+  font-family: var(--display), var(--body);
+  font-size: 1.625rem;
+  font-weight: var(--disp-weight);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.transform-module-copy > span {
+  max-width: 39ch;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.transform-switch {
+  display: grid;
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid var(--ink-soft);
+  background: var(--bg);
+}
+[aria-pressed="true"] .transform-switch {
+  border-color: var(--rust);
+  background: var(--rust);
+  color: var(--on-rust);
+}
+[aria-pressed="false"] .transform-switch svg {
+  visibility: hidden;
+}
+.transform-preview {
+  margin-top: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg-dim);
+}
+.transform-preview-label {
+  color: var(--ink-soft);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.transform-source {
+  margin-block: 0.35rem 1rem;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+.transform-output {
+  min-height: 3.5em;
+  margin-top: 0.35rem;
+  font-size: 1.125rem;
+}
+.transform-custom-link {
+  margin-top: 1.25rem;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+.transform-custom-link a,
+.transform-guide-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+}
+.transform-footnote {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem 3rem;
+  align-items: baseline;
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+.transform-footnote > p {
+  max-width: 60ch;
+}
+.transform-guide-links {
+  display: flex;
+  gap: 0.5rem 1.5rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+@media (max-width: 760px) {
+  .transform-assembly,
+  .processing-demo {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .transform-rocket {
+    height: 15rem;
+  }
+  .transform-footnote {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

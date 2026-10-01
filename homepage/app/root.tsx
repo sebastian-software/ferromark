@@ -12,9 +12,8 @@ import {
   ArdoSidebarSection,
   ArdoThemeToggle,
 } from "ardo/ui";
-import { MarkDefs, SiteFooter, SiteHeader } from "ferramenta-family";
-import bigShouldersFont from "ferramenta-family/fonts/big-shoulders.woff2?url";
-import { useRef } from "react";
+import { MarkDefs, SiteFooter, SiteHeader, SiteMenu } from "ferramenta-family";
+import displayFont from "ferramenta-family/fonts/barlow-condensed-700.woff2?url";
 import { NavLink, useLocation } from "react-router";
 import config from "virtual:ardo/config";
 
@@ -25,6 +24,7 @@ import "ferramenta-family/tokens.css";
 import "ferramenta-family/fonts.css";
 import "ferramenta-family/theme.css";
 import "ferramenta-family/landing.css";
+import "ferramenta-family/docs.css";
 
 import "./styles/site.css";
 // Last on purpose, as the package README requires: the shared chrome has to win
@@ -34,7 +34,7 @@ import "ferramenta-family/chrome.css";
 export const links: LinksFunction = () => [
   {
     rel: "preload",
-    href: bigShouldersFont,
+    href: displayFont,
     as: "font",
     type: "font/woff2",
     crossOrigin: "anonymous",
@@ -53,7 +53,7 @@ export const meta: MetaFunction = ({ location }) => {
     {
       name: "description",
       content:
-        "A native Markdown-to-HTML engine for Rust and Node.js, with CommonMark and GFM support and measured performance across macOS and Linux. Explore the APIs and reproducible benchmarks.",
+        "A native Markdown engine for Rust and Node.js. Compose typography, GitHub references, and emoji transforms, add publishing features, and explore reproducible benchmarks.",
     },
   ];
 };
@@ -75,7 +75,7 @@ export const handle = { chrome: false };
 function GuideNav() {
   const { pathname } = useLocation();
   return (
-    <nav className="ferromark-nav" aria-label="Documentation">
+    <nav className="site-links" aria-label="Documentation">
       {documentationSections.map((section) => (
         <NavLink
           key={section.id}
@@ -91,24 +91,15 @@ function GuideNav() {
 
 function GuideMenuLinks({
   current,
-  close,
 }: {
   current: (typeof documentationSections)[number] | undefined;
-  close: () => void;
 }) {
   return (
     <nav className="ferromark-guide-flyout" aria-label="Mobile documentation">
-      <NavLink to="/" onClick={close}>
-        ferromark home
-      </NavLink>
+      <NavLink to="/">ferromark home</NavLink>
       <div className="ferromark-section-switch" aria-label="Documentation sections">
         {documentationSections.map((section) => (
-          <NavLink
-            key={section.id}
-            to={section.to}
-            onClick={close}
-            data-active={current?.id === section.id}
-          >
+          <NavLink key={section.id} to={section.to} data-active={current?.id === section.id}>
             {section.label}
           </NavLink>
         ))}
@@ -117,7 +108,7 @@ function GuideMenuLinks({
         <>
           <p className="ferromark-menu-label">{current.label}</p>
           {current.pages.map(([label, to]) => (
-            <NavLink key={to} to={to} onClick={close}>
+            <NavLink key={to} to={to}>
               {label}
             </NavLink>
           ))}
@@ -127,7 +118,7 @@ function GuideMenuLinks({
         <>
           <p className="ferromark-menu-label">Shared concepts</p>
           {sharedConcepts.map(([label, to]) => (
-            <NavLink key={to} to={to} onClick={close}>
+            <NavLink key={to} to={to}>
               {label}
             </NavLink>
           ))}
@@ -138,28 +129,16 @@ function GuideMenuLinks({
 }
 
 function DocsActions() {
-  const menuRef = useRef<HTMLDetailsElement>(null);
   const { pathname } = useLocation();
   const current = documentationSections.find((section) => pathname.startsWith(`/${section.id}/`));
-  const close = () => menuRef.current?.removeAttribute("open");
   return (
     <>
-      <div className="ferromark-search">
+      <div className="site-search">
         <ArdoSearch />
       </div>
-      <details
-        className="ferromark-guide-menu"
-        ref={menuRef}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            close();
-            menuRef.current?.querySelector("summary")?.focus();
-          }
-        }}
-      >
-        <summary aria-label="Documentation menu">Docs</summary>
-        <GuideMenuLinks current={current} close={close} />
-      </details>
+      <SiteMenu label="Docs">
+        <GuideMenuLinks current={current} />
+      </SiteMenu>
     </>
   );
 }
@@ -170,8 +149,7 @@ function FamilyFooter() {
       current="ferromark"
       legal={
         <>
-          {`Ferromark v${version}`} · Released under the MIT License · Copyright{" "}
-          {new Date().getFullYear()} Sebastian Software GmbH ·{" "}
+          {`Ferromark v${version}`} · Released under the MIT License ·{" "}
           <a href="https://ardo-docs.dev">Built with Ardo</a>
         </>
       }
@@ -180,6 +158,7 @@ function FamilyFooter() {
 }
 
 export default function Root() {
+  const { pathname } = useLocation();
   return (
     <>
       <MarkDefs />
@@ -188,14 +167,10 @@ export default function Root() {
         lockup="project"
         nav={<GuideNav />}
         actions={<DocsActions />}
-        themeToggle={<ArdoThemeToggle />}
+        themeToggle={pathname === "/" ? undefined : <ArdoThemeToggle />}
       />
 
-      {/* `ferromark-shell` is the hook site.css needs to turn Ardo's
-          fixed-viewport application shell into a document-scrolling page: the
-          family footer sits below the shell, so the page — not the article —
-          has to be what scrolls. */}
-      <div className="ferromark-shell">
+      <div className="fam-docs-shell ferromark-shell">
         <ArdoRoot config={config}>
           <ArdoSidebar>
             {documentationSections.map((section) => (

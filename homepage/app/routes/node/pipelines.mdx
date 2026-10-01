@@ -47,6 +47,41 @@ your application uses. Headings arrive in document order for application-owned
 navigation or outline processing.
 See the [shared pipeline concepts](/guide/pipelines) for output responsibilities.
 
+## Compose native transforms
+
+**Afterburner** adds the publishing conveniences your content needs through an
+ordered `passes` array. The engine parses once, runs the selected native
+transforms, and renders the result. These passes are opt-in and run in array order.
+
+```js
+import { toHtml } from "ferromark";
+
+const html = toHtml('Ship "small improvements"... Fixes #42 :rocket:.', {
+  passes: [
+    { kind: "typography", language: "en" },
+    { kind: "githubReferences", repository: "sebastian-software/ferromark" },
+    { kind: "emojiShortcodes" },
+  ],
+});
+```
+
+Typography gives the prose language-specific punctuation. GitHub references
+link supported issue, mention, and commit forms using the repository you supply;
+they never infer it or access the network. Known emoji shortcodes become Unicode
+emoji from the bundled dictionary. Unknown aliases remain unchanged. Code,
+math, existing links, and other protected syntax keep their content.
+
+The same options work with `transform()`, byte output, reusable renderers, and
+highlighter helpers. Do not combine `passes` with the separate `typography`
+option; put typography in the array to choose its position. See
+[configuration](/node/configuration) and the
+[native transform reference](https://github.com/sebastian-software/ferromark/blob/main/transforms/README.md)
+for supported forms and language rules.
+
+The processing stages may feel familiar from Remark, but these are Ferromark
+APIs, not JavaScript Remark plugins. Arbitrary custom passes are available
+through the [Rust transform API](/rust/transforms).
+
 ## Reuse a renderer for a collection
 
 ```js
