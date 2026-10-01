@@ -50,6 +50,7 @@ test("a newly measured architecture adds one column and preserves existing cells
     platformLabel: "macOS x86-64",
     machine: "TEST FIXTURE",
     report: "docs/reports/test-fixture",
+    overviewReport: "docs/reports/test-fixture",
   }));
   const extended = await renderComparison([...completed.figures, ...additional]);
   assert.match(extended, /<th scope="col">macOS x86-64<\/th>/);
@@ -64,7 +65,7 @@ test("a newly measured architecture adds one column and preserves existing cells
   }
 });
 
-test("new candidates have GitHub links and unmeasured cells; variants disclose their backend", async () => {
+test("all main candidates have GitHub links and measured cells; variants disclose their backend", async () => {
   const html = await renderComparison(completed.figures);
   for (const id of [
     "goldmark",
@@ -78,9 +79,9 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
     assert.ok(project);
     assert.ok(html.includes(`href="${project.github}"`));
     assert.ok(html.includes(`${project.label} · ${project.backend}`));
-    assert.ok(!completed.figures.some((row) => row.id === id));
+    assert.equal(completed.figures.filter((row) => row.id === id).length, 2);
   }
-  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 12);
+  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 0);
   assert.equal(projects.length, 20);
   for (const id of ["markdown-exit", "markdown-it-ts", "md4x-wasm"]) {
     assert.ok(!projects.some((project) => project.id === id));
@@ -90,10 +91,16 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
 });
 
 test("full-corpus factors annotate output differences without changing legacy cells", async () => {
-  const baseline = await renderComparison(completed.figures);
+  const legacy = completed.figures.map((figure) => ({
+    ...figure,
+    scoringScope: undefined,
+    agreeingDocuments: undefined,
+    overviewReport: undefined,
+  }));
+  const baseline = await renderComparison(legacy);
   // Rendering fixture only; no new measurement or performance value is invented.
-  const selected = completed.figures[0];
-  const figures = completed.figures.map((figure) =>
+  const selected = legacy[0];
+  const figures = legacy.map((figure) =>
     figure === selected
       ? {
           ...figure,

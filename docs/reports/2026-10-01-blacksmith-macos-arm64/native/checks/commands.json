@@ -1,0 +1,77 @@
+{
+  "workflow_origin": "The [Blacksmith benchmark run](https://github.com/sebastian-software/ferromark/actions/runs/36822651743) used an isolated committed checkout.",
+  "host_kind": "managed-runner",
+  "harness_revision": "9af95fc3175bc7c2a199682ba3e6a1c276bfdad9",
+  "harness_tests": "52 tests passed",
+  "verify_before_timing": "run.py --verify-only passed on the default build before any timing",
+  "timed_windows": {
+    "main": 6372,
+    "checksums": "all passed; rechecked from samples.json"
+  },
+  "registry": {
+    "seed_lock": "benchmarks/native-comparison/Cargo.lock",
+    "seed_lock_sha256": "898791409d1b2093f44e4a024ce14cde43143f721876e3116d5378f2faa5fb39",
+    "resolved_lock_sha256": "898791409d1b2093f44e4a024ce14cde43143f721876e3116d5378f2faa5fb39",
+    "registry_packages": 71,
+    "identical_to_seed": true,
+    "added": [],
+    "removed": [],
+    "checksum_changed": []
+  },
+  "outputs_vs_reference": {
+    "reference": "2026-09-21-native-round-4",
+    "documents_compared": 57,
+    "only_in_this_run": [],
+    "only_in_reference": [],
+    "engines": {
+      "v2": {
+        "identical": 57,
+        "different": []
+      },
+      "ox-content": {
+        "identical": 57,
+        "different": []
+      },
+      "v1": {
+        "identical": 57,
+        "different": []
+      },
+      "md4c": {
+        "identical": 57,
+        "different": []
+      },
+      "pulldown-cmark": {
+        "identical": 57,
+        "different": []
+      },
+      "bun": {
+        "identical": 57,
+        "different": []
+      }
+    },
+    "classification_changes": []
+  },
+  "source_audit": {
+    "v1": {
+      "checked_files": 35,
+      "mismatches": 0
+    },
+    "v2": {
+      "checked_files": 190,
+      "mismatches": 0
+    },
+    "bun": {
+      "checked_files": 3495,
+      "mismatches": 0
+    },
+    "md4c": {
+      "checked_files": 10,
+      "mismatches": 0
+    },
+    "ox-content": {
+      "checked_files": 395,
+      "mismatches": 0
+    }
+  },
+  "hypervisor_steal_during_timing": null
+}

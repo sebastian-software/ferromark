@@ -1,0 +1,249 @@
+[
+  {
+    "id": "pulldown-cmark",
+    "label": "pulldown-cmark",
+    "runtime": "Native",
+    "github": "https://github.com/pulldown-cmark/pulldown-cmark",
+    "backend": "Rust",
+    "track": "native",
+    "lane": "legacy",
+    "profile": "frozen-shared"
+  },
+  {
+    "id": "md4c",
+    "label": "md4c",
+    "runtime": "Native",
+    "github": "https://github.com/mity/md4c",
+    "backend": "C",
+    "track": "native",
+    "lane": "legacy",
+    "profile": "frozen-shared"
+  },
+  {
+    "id": "bun",
+    "label": "Bun MD",
+    "runtime": "Native",
+    "github": "https://github.com/oven-sh/bun",
+    "backend": "Rust",
+    "track": "native",
+    "lane": "legacy",
+    "profile": "frozen-shared"
+  },
+  {
+    "id": "ox-content",
+    "label": "OX-Content",
+    "runtime": "Native",
+    "github": "https://github.com/ubugeeei-prod/ox-content",
+    "backend": "Rust",
+    "track": "native",
+    "lane": "legacy",
+    "profile": "frozen-shared"
+  },
+  {
+    "id": "markdown-rs",
+    "label": "markdown-rs",
+    "runtime": "Native",
+    "github": "https://github.com/wooorm/markdown-rs",
+    "backend": "Rust",
+    "track": "native",
+    "lane": "pair",
+    "profile": "frozen-shared"
+  },
+  {
+    "id": "comrak",
+    "label": "Comrak",
+    "runtime": "Native",
+    "github": "https://github.com/kivikakk/comrak",
+    "backend": "Rust",
+    "track": "native",
+    "lane": "pair",
+    "profile": "frozen-shared"
+  },
+  {
+    "id": "cmark",
+    "label": "cmark",
+    "runtime": "Native",
+    "github": "https://github.com/commonmark/cmark",
+    "backend": "C",
+    "track": "native",
+    "lane": "pair",
+    "profile": "commonmark-only"
+  },
+  {
+    "id": "cmark-gfm",
+    "label": "cmark-gfm",
+    "runtime": "Native",
+    "github": "https://github.com/github/cmark-gfm",
+    "backend": "C",
+    "track": "native",
+    "lane": "pair",
+    "profile": "frozen-shared"
+  },
+  {
+    "id": "goldmark",
+    "label": "Goldmark",
+    "runtime": "Native",
+    "backend": "Go",
+    "github": "https://github.com/yuin/goldmark",
+    "track": "native",
+    "lane": "pair",
+    "profile": "frozen-shared"
+  },
+  {
+    "id": "marked",
+    "label": "marked",
+    "runtime": "Node.js",
+    "github": "https://github.com/markedjs/marked",
+    "backend": "JavaScript",
+    "track": "node",
+    "lane": "pair",
+    "profile": "frozen-shared",
+    "package": "marked"
+  },
+  {
+    "id": "markdown-it",
+    "label": "markdown-it",
+    "runtime": "Node.js",
+    "github": "https://github.com/markdown-it/markdown-it",
+    "backend": "JavaScript",
+    "track": "node",
+    "lane": "pair",
+    "profile": "frozen-shared",
+    "package": "markdown-it"
+  },
+  {
+    "id": "remark",
+    "label": "remark / unified",
+    "runtime": "Node.js",
+    "github": "https://github.com/remarkjs/remark",
+    "backend": "JavaScript",
+    "track": "node",
+    "lane": "pair",
+    "profile": "frozen-shared",
+    "package": "remark"
+  },
+  {
+    "id": "micromark",
+    "label": "micromark",
+    "runtime": "Node.js",
+    "github": "https://github.com/micromark/micromark",
+    "backend": "JavaScript",
+    "track": "node",
+    "lane": "pair",
+    "profile": "frozen-shared",
+    "package": "micromark"
+  },
+  {
+    "id": "showdown",
+    "label": "Showdown",
+    "runtime": "Node.js",
+    "github": "https://github.com/showdownjs/showdown",
+    "backend": "JavaScript",
+    "track": "node",
+    "lane": "pair",
+    "profile": "frozen-shared",
+    "package": "showdown"
+  },
+  {
+    "id": "commonmark",
+    "label": "commonmark.js",
+    "runtime": "Node.js",
+    "github": "https://github.com/commonmark/commonmark.js",
+    "backend": "JavaScript",
+    "track": "node",
+    "lane": "pair",
+    "profile": "commonmark-only",
+    "package": "commonmark"
+  },
+  {
+    "id": "remarkable",
+    "label": "Remarkable",
+    "runtime": "Node.js",
+    "backend": "JavaScript",
+    "github": "https://github.com/jonschlinkert/remarkable",
+    "track": "node",
+    "lane": "pair",
+    "profile": "commonmark-only",
+    "package": "remarkable"
+  },
+  {
+    "id": "markdown-exit",
+    "label": "markdown-exit",
+    "runtime": "Node.js",
+    "backend": "JavaScript",
+    "github": "https://github.com/serkodev/markdown-exit",
+    "track": "node",
+    "lane": "pair",
+    "profile": "frozen-shared",
+    "package": "markdown-exit",
+    "optional": true
+  },
+  {
+    "id": "markdown-it-ts",
+    "label": "markdown-it-ts",
+    "runtime": "Node.js",
+    "backend": "JavaScript",
+    "github": "https://github.com/Simon-He95/markdown-it-ts",
+    "track": "node",
+    "lane": "pair",
+    "profile": "frozen-shared",
+    "package": "markdown-it-ts",
+    "optional": true
+  },
+  {
+    "id": "satteri",
+    "label": "Sätteri",
+    "runtime": "Node.js",
+    "backend": "Native addon",
+    "github": "https://github.com/bruits/satteri",
+    "track": "node",
+    "lane": "pair",
+    "profile": "shared-with-gfm-autolinks",
+    "package": "satteri"
+  },
+  {
+    "id": "md4x-napi",
+    "label": "MD4X",
+    "runtime": "Node.js",
+    "backend": "Native addon",
+    "github": "https://github.com/unjs/md4x",
+    "track": "node",
+    "lane": "pair",
+    "profile": "fixed-md4x-defaults",
+    "package": "md4x"
+  },
+  {
+    "id": "md4x-wasm",
+    "label": "MD4X (WASM)",
+    "runtime": "Node.js",
+    "backend": "WASM",
+    "github": "https://github.com/unjs/md4x",
+    "track": "node",
+    "lane": "pair",
+    "profile": "fixed-md4x-defaults",
+    "package": "md4x",
+    "optional": true
+  },
+  {
+    "id": "ox-content-napi",
+    "label": "OX-Content",
+    "runtime": "Node.js",
+    "backend": "Native addon",
+    "github": "https://github.com/ubugeeei-prod/ox-content",
+    "track": "node",
+    "lane": "pair",
+    "profile": "shared-with-ox-renderer-builtins",
+    "package": "@ox-content/napi"
+  },
+  {
+    "id": "tanstack-markdown",
+    "label": "TanStack Markdown",
+    "runtime": "Node.js",
+    "backend": "JavaScript (syntax subset)",
+    "github": "https://github.com/TanStack/markdown",
+    "track": "node",
+    "lane": "pair",
+    "profile": "fixed-tanstack-subset",
+    "package": "@tanstack/markdown"
+  }
+]

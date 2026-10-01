@@ -5,6 +5,22 @@ Native Node.js bindings for the [Ferromark](https://github.com/sebastian-softwar
 [Documentation site](https://ferromark.dev/) ·
 [Rust crate](https://crates.io/crates/ferromark)
 
+## Measured performance
+
+<!-- native-benchmarks -->
+
+In Node.js, Ferromark delivers 9.5–10.5× the throughput of Marked and
+markdown-it, and 4.8–5.7× that of TanStack Markdown in our 57-document
+comparison.
+
+Measured on Linux x86-64 and macOS arm64, 2026-10-01, using fresh calls and all
+57 frozen inputs, including different outputs. Node.js measurements include
+native binding overhead. These are corpus observations; syntax and API contracts
+differ.
+[Machines, versions, methods, and raw data](https://ferromark.dev/guide/benchmarks).
+
+<!-- /native-benchmarks -->
+
 ## Install
 
 ```sh

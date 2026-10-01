@@ -10,7 +10,15 @@ evidence live on the website; the README introduces the product and its first
 working example. Edit the Rust and Node.js sections under `homepage/app/routes/`,
 with common behavior in `guide/` and navigation in `homepage/app/navigation.ts`.
 
-The native comparison is published for two platforms, Apple Silicon and Linux
+Current README claims come from the complete campaigns selected in
+`benchmarks/manual-comparison/current.json`. Import evidence with
+`scripts/benchmark-comparison publish`, then run
+`python3 scripts/publish-native-readme.py` and the README theme commands. The
+publisher validates campaign provenance and derives the same ranges used on the
+homepage, including the performance block in `node/ferromark/README.md`.
+Historical reports and their original scoring remain intact.
+
+The historical native comparison is published for two platforms, Apple Silicon and Linux
 x86-64, each from its own archived report. After archiving a new report, point
 its platform in `REPORTS` at the top of `scripts/publish-native-readme.py` at
 the new directory and run `python3 scripts/publish-native-readme.py`. It

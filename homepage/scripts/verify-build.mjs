@@ -108,10 +108,10 @@ const ecosystemFragments = ecosystemBenchmarks.figures.flatMap((figure) =>
 const completedFragments = completedBenchmarks.figures.flatMap((figure) => [
   figure.platformLabel,
   `${figure.fresh.toFixed(1)}×`,
-  `${figure.documents}/${figure.corpusDocuments} documents`,
+  `${figure.documents}/${figure.corpusDocuments} ${figure.scoringScope === "all-documents" ? "timed documents" : "documents"}`,
   figure.machine,
   figure.revision,
-  `href="https://github.com/sebastian-software/ferromark/tree/main/${figure.report}"`,
+  `href="https://github.com/sebastian-software/ferromark/tree/main/${figure.overviewReport ?? figure.report}"`,
 ]);
 
 const requiredFragments = [

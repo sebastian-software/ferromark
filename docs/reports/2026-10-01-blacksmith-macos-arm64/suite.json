@@ -1,0 +1,41 @@
+{
+  "schema": 5,
+  "timing_profile": "balanced",
+  "comparison_scope": "main",
+  "scoring_scope": "all-documents",
+  "scoring_policy_sha256": "37f037bb78efee19d7018456b2e3d7d96e09387ba80481336a5d79cb1d454073",
+  "revision": "9af95fc3175bc7c2a199682ba3e6a1c276bfdad9",
+  "comparisons_sha256": "66917e12f5b5412beabf26b0dc4d48b2d8189f2c6cfdcac5d05ffc881183badf",
+  "go": "go version go1.27.1 darwin/arm64",
+  "system": "Darwin",
+  "architecture": "arm64",
+  "platform": "macos-arm64",
+  "platform_label": "macOS arm64",
+  "machine": "Apple M4 Pro (Virtual), 24 GB RAM, macOS 26.3",
+  "hostname": "Mac-1790834546291.local",
+  "host_platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+  "addon_file": "ferromark.darwin-arm64.node",
+  "node": "v24.21.0",
+  "addon_sha256": "f5512f2a93fc7cba10406c5543e5141f3b07a04f3d3e6a4b56333eca72529434",
+  "corpus_sha256": "e8b7e468863b14a90ec4fe2b0ac54382dcc327c513ce9b9fdce8e871f8ffff43",
+  "runner_context": {
+    "schema": 1,
+    "provider": "Blacksmith",
+    "profile": "macos-arm64",
+    "runner_label": "blacksmith-6vcpu-macos-26",
+    "observed": {
+      "system": "Darwin",
+      "architecture": "arm64",
+      "cpu": "Apple M4 Pro (Virtual)",
+      "cpus": 6,
+      "available_cpus": 6,
+      "memory_bytes": 25769803776,
+      "os_version": "26.3",
+      "kernel": "25.3.0"
+    },
+    "run_url": "https://github.com/sebastian-software/ferromark/actions/runs/36822651743",
+    "run_attempt": "1",
+    "image_os": "macos26",
+    "image_version": "133416"
+  }
+}

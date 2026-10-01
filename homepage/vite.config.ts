@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     ardo({
       title: "ferromark",
-      description: "High-throughput Markdown to HTML parser for Rust",
+      description: "Native Markdown to HTML for Rust and Node.js, with reproducible benchmarks",
       githubPages: false,
       siteUrl: "https://ferromark.dev",
     }),

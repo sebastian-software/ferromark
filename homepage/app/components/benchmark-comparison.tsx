@@ -18,15 +18,47 @@ const reportUrl = (report: string) =>
   `https://github.com/sebastian-software/ferromark/tree/main/${report}`;
 const ecosystemFigures = new Map(ecosystemBenchmarks.figures.map((figure) => [figure.id, figure]));
 
-type CompletedFigure = (typeof completedBenchmarks.figures)[number] & {
+type CompletedFigure = {
   scoringScope?: string;
   agreeingDocuments?: number;
   overviewReport?: string;
-};
+} & Omit<
+  (typeof completedBenchmarks.figures)[number],
+  "agreeingDocuments" | "overviewReport" | "scoringScope"
+>;
 
 const completedFigures = new Map<string, CompletedFigure>(
   completedBenchmarks.figures.map((figure) => [`${figure.platform}/${figure.id}`, figure]),
 );
+
+/** Marketing ranges use the same selected measurements as the table. */
+export function benchmarkRange(ids: string[]): string {
+  const selected = completedBenchmarks.figures.filter((figure) => ids.includes(figure.id));
+  if (
+    selected.length !== ids.length * platforms.length ||
+    selected.some(
+      (figure) =>
+        figure.fresh <= 1 || figure.documents !== 57 || figure.scoringScope !== "all-documents",
+    )
+  ) {
+    throw new Error("A speed claim needs complete measurements above the baseline");
+  }
+  const values = selected.map((figure) => figure.fresh);
+  const low = Math.min(...values).toFixed(1);
+  const high = Math.max(...values).toFixed(1);
+  return low === high ? `${low}×` : `${low}–${high}×`;
+}
+
+const measuredHosts = new Map(
+  completedBenchmarks.figures.map((figure) => [
+    figure.platform,
+    `${figure.platformLabel}: ${figure.machine.split(", ")[0]} · ${figure.measured}`,
+  ]),
+);
+export const benchmarkHosts = platforms
+  .map((platform) => measuredHosts.get(platform.id))
+  .filter(Boolean)
+  .join("; ");
 
 const nativePlatforms = new Map(
   nativeBenchmarks.platforms.map((platform) => [platform.id, platform]),

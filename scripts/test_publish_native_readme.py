@@ -204,5 +204,37 @@ class TwoPlatforms(unittest.TestCase):
         self.assertIn("[held-out PGO comparison](", wrapped)
 
 
+class CurrentClaims(unittest.TestCase):
+    def setUp(self):
+        self.figures = []
+        for platform in ['macOS arm64', 'Linux x86-64']:
+            for engine in ['marked', 'markdown-it', 'tanstack-markdown', 'pulldown-cmark', 'md4c', 'ox-content']:
+                self.figures.append(dict(id=engine, platformLabel=platform, fresh=2.0,
+                                         documents=57, scoringScope='all-documents', measured='2026-10-01'))
+
+    def test_current_claims_are_derived_and_qualify_outputs_platforms_and_lifecycle(self):
+        self.figures[0]['fresh'] = 3.5
+        block = ' '.join(publisher.comparison_readme_block(self.figures).split())
+        self.assertIn('2.0–3.5× the throughput of Marked and markdown-it', block)
+        self.assertIn('Linux x86-64 and macOS arm64', block)
+        self.assertIn('fresh calls', block)
+        self.assertIn('including different outputs', block)
+        self.assertNotIn('Ferromark v1', block)
+
+    def test_partial_matched_only_or_slower_results_cannot_support_current_claims(self):
+        with self.assertRaises(ValueError):
+            publisher.comparison_readme_block(self.figures[1:])
+        for changes in [dict(fresh=0.9), dict(documents=56), dict(scoringScope='equivalent-only')]:
+            figures = copy.deepcopy(self.figures)
+            figures[0].update(changes)
+            with self.assertRaises(ValueError):
+                publisher.comparison_readme_block(figures)
+
+    def test_node_readme_uses_only_node_claims(self):
+        block = publisher.comparison_readme_block(self.figures, node_only=True)
+        self.assertIn('TanStack', block)
+        self.assertNotIn('pulldown-cmark', block)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -60,7 +60,20 @@ def current_content():
         return ''
     workflow = manual_workflow()
     values = workflow.active()
-    return workflow.content(values) if values else ''
+    if not values:
+        return ''
+    hosts = []
+    for name in pointer['reports'].values():
+        suite = workflow.read(workflow.report_path(name), 'suite')
+        context = suite.get('runner_context')
+        if context:
+            observed = context['observed']
+            hosts.append(f"{suite['platform_label']}: {context['provider']} VM, "
+                         f"{observed['cpus']} vCPU, {observed['memory_bytes'] / 2**30:.1f} GiB observed memory "
+                         f"([workflow]({context['run_url']})).")
+        else:
+            hosts.append(f"{suite['platform_label']}: {suite['machine']}.")
+    return '\n'.join(hosts) + '\n\n' + workflow.content(values)
 
 
 def content(values=None):
