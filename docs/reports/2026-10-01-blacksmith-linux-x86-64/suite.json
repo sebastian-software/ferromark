@@ -1,0 +1,41 @@
+{
+  "schema": 5,
+  "timing_profile": "balanced",
+  "comparison_scope": "main",
+  "scoring_scope": "all-documents",
+  "scoring_policy_sha256": "37f037bb78efee19d7018456b2e3d7d96e09387ba80481336a5d79cb1d454073",
+  "revision": "9af95fc3175bc7c2a199682ba3e6a1c276bfdad9",
+  "comparisons_sha256": "66917e12f5b5412beabf26b0dc4d48b2d8189f2c6cfdcac5d05ffc881183badf",
+  "go": "go version go1.27.1 linux/amd64",
+  "system": "Linux",
+  "architecture": "x86-64",
+  "platform": "linux-x86-64",
+  "platform_label": "Linux x86-64",
+  "machine": "AMD EPYC, 15.4 GB RAM, Linux 6.6.141",
+  "hostname": "ip-172-31-64-123",
+  "host_platform": "Linux-6.6.141-x86_64-with-glibc2.39",
+  "addon_file": "ferromark.linux-x64-gnu.node",
+  "node": "v24.21.0",
+  "addon_sha256": "32846f23b426fecadb1249493fc875a9528c4c1954514f7f8782512a76c5e3b9",
+  "corpus_sha256": "e8b7e468863b14a90ec4fe2b0ac54382dcc327c513ce9b9fdce8e871f8ffff43",
+  "runner_context": {
+    "schema": 1,
+    "provider": "Blacksmith",
+    "profile": "linux-x86-64",
+    "runner_label": "blacksmith-4vcpu-ubuntu-2404",
+    "observed": {
+      "system": "Linux",
+      "architecture": "x86_64",
+      "cpu": "AMD EPYC",
+      "cpus": 4,
+      "available_cpus": 4,
+      "memory_bytes": 16555134976,
+      "os_version": "24.04",
+      "kernel": "6.6.141"
+    },
+    "run_url": "https://github.com/sebastian-software/ferromark/actions/runs/36822651743",
+    "run_attempt": "1",
+    "image_os": "ubuntu24",
+    "image_version": "20260121153938"
+  }
+}

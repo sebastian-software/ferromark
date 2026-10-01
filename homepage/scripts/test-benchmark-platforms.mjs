@@ -13,7 +13,7 @@ const projects = JSON.parse(
   await readFile(new URL("../app/data/benchmark-projects.json", import.meta.url), "utf8"),
 );
 
-async function renderComparison(figures) {
+async function renderComparison(figures, { claim = false } = {}) {
   const server = await createServer({
     configFile: false,
     server: { middlewareMode: true },
@@ -31,10 +31,10 @@ async function renderComparison(figures) {
     ],
   });
   try {
-    const { BenchmarkComparison } = await server.ssrLoadModule(
+    const { BenchmarkComparison, benchmarkLead } = await server.ssrLoadModule(
       "/app/components/benchmark-comparison.tsx",
     );
-    return renderToStaticMarkup(createElement(BenchmarkComparison));
+    return claim ? benchmarkLead() : renderToStaticMarkup(createElement(BenchmarkComparison));
   } finally {
     await server.close();
   }
@@ -50,6 +50,7 @@ test("a newly measured architecture adds one column and preserves existing cells
     platformLabel: "macOS x86-64",
     machine: "TEST FIXTURE",
     report: "docs/reports/test-fixture",
+    overviewReport: "docs/reports/test-fixture",
   }));
   const extended = await renderComparison([...completed.figures, ...additional]);
   assert.match(extended, /<th scope="col">macOS x86-64<\/th>/);
@@ -64,7 +65,7 @@ test("a newly measured architecture adds one column and preserves existing cells
   }
 });
 
-test("new candidates have GitHub links and unmeasured cells; variants disclose their backend", async () => {
+test("all main candidates have GitHub links and measured cells; variants disclose their backend", async () => {
   const html = await renderComparison(completed.figures);
   for (const id of [
     "goldmark",
@@ -77,10 +78,12 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
     const project = projects.find((row) => row.id === id);
     assert.ok(project);
     assert.ok(html.includes(`href="${project.github}"`));
-    assert.ok(html.includes(`${project.label} · ${project.backend}`));
-    assert.ok(!completed.figures.some((row) => row.id === id));
+    assert.ok(
+      html.includes(`${project.label} · ${project.backend.replace(" (syntax subset)", "")}`),
+    );
+    assert.equal(completed.figures.filter((row) => row.id === id).length, 2);
   }
-  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 12);
+  assert.equal([...html.matchAll(/aria-label="Not measured"/g)].length, 0);
   assert.equal(projects.length, 20);
   for (const id of ["markdown-exit", "markdown-it-ts", "md4x-wasm"]) {
     assert.ok(!projects.some((project) => project.id === id));
@@ -89,11 +92,72 @@ test("new candidates have GitHub links and unmeasured cells; variants disclose t
   assert.ok(html.includes('class="ferromark-project-backend">Native addon</span>'));
 });
 
-test("full-corpus factors annotate output differences without changing legacy cells", async () => {
-  const baseline = await renderComparison(completed.figures);
+test("each runtime group is alphabetical and implementation details remain visible", async () => {
+  const html = await renderComparison(completed.figures);
+  for (const backend of ["Rust", "C", "Go", "JavaScript"]) {
+    assert.ok(html.includes(`class="ferromark-project-backend">${backend}</span>`));
+  }
+  assert.ok(!html.includes("(syntax subset)"));
+  const names = [...html.matchAll(/class="ferromark-project-link"[^>]*>(.*?)<\/a>/gs)].map(
+    (match) => match[1],
+  );
+  assert.deepEqual(names, [
+    "Bun MD",
+    "cmark",
+    "cmark-gfm",
+    "Comrak",
+    "Goldmark",
+    "markdown-rs",
+    "md4c",
+    "OX-Content",
+    "pulldown-cmark",
+    "commonmark.js",
+    "markdown-it",
+    "marked",
+    "MD4X",
+    "micromark",
+    "OX-Content",
+    "remark / unified",
+    "Remarkable",
+    "Sätteri",
+    "Showdown",
+    "TanStack Markdown",
+  ]);
+});
+
+test("the overall speed claim requires every candidate on every displayed platform", async () => {
+  assert.equal(
+    await renderComparison(completed.figures, { claim: true }),
+    "Ahead of every measured library.",
+  );
+  await assert.rejects(renderComparison(completed.figures.slice(1), { claim: true }));
+  for (const changes of [
+    { fresh: 1 },
+    { fresh: Number.NaN },
+    { documents: 56 },
+    { corpusDocuments: 58 },
+    { scoringScope: "equivalent-only" },
+  ]) {
+    const figures = completed.figures.map((figure) =>
+      figure.id === "remarkable" && figure.platform === "linux-x86-64"
+        ? { ...figure, ...changes }
+        : figure,
+    );
+    await assert.rejects(renderComparison(figures, { claim: true }));
+  }
+});
+
+test("one differing platform annotates the library name once and preserves other cells", async () => {
+  const legacy = completed.figures.map((figure) => ({
+    ...figure,
+    scoringScope: undefined,
+    agreeingDocuments: undefined,
+    overviewReport: undefined,
+  }));
+  const baseline = await renderComparison(legacy);
   // Rendering fixture only; no new measurement or performance value is invented.
-  const selected = completed.figures[0];
-  const figures = completed.figures.map((figure) =>
+  const selected = legacy[0];
+  const figures = legacy.map((figure) =>
     figure === selected
       ? {
           ...figure,
@@ -106,6 +170,9 @@ test("full-corpus factors annotate output differences without changing legacy ce
   );
   const html = await renderComparison(figures);
   assert.equal([...html.matchAll(/<sup /g)].length, 1);
+  assert.match(html, /<\/a><sup aria-label="Output differs for some inputs">\*<\/sup>/);
+  assert.match(html, /pulldown-cmark<\/a><sup /);
+  assert.ok(![...html.matchAll(/<td>(.*?)<\/td>/gs)].some((match) => match[1].includes("<sup ")));
   assert.match(html, /57\/57 timed documents · 31 equivalent outputs/);
   assert.match(html, /All inputs contribute to the/);
   assert.match(
@@ -124,7 +191,7 @@ function assertOnlyOneChangedCell(baseline, html) {
   for (const [index, cell] of before.entries()) {
     if (cell !== after[index]) {
       changed += 1;
-      assert.match(after[index], /Output differs for some inputs/);
+      assert.match(after[index], /31 equivalent outputs/);
     }
   }
   assert.equal(changed, 1);

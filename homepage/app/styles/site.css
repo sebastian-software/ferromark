@@ -453,6 +453,8 @@
 
 /* One comparison row per library, with platform results side by side. */
 .ferromark-comparison {
+  --comparison-padding-x: 0.5rem;
+
   width: 100%;
   margin-block: 0.5rem 0;
   border-collapse: collapse;
@@ -461,7 +463,7 @@
 }
 
 .ferromark-comparison caption {
-  padding-bottom: 0.75rem;
+  padding: 0 var(--comparison-padding-x) 0.5rem;
   color: var(--ink-soft);
   font-size: 0.875rem;
   text-align: left;
@@ -469,20 +471,22 @@
 
 .ferromark-comparison th,
 .ferromark-comparison td {
-  padding: 0.35rem 0.75rem;
+  padding: 0.15rem var(--comparison-padding-x);
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
 
 .ferromark-comparison thead th {
   border-bottom-color: var(--line-heavy);
+  color: var(--ink);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
 }
 
 .ferromark-comparison th:first-child {
   width: 46%;
-  padding-left: 0;
 }
 
 .ferromark-comparison th:not(:first-child),
@@ -490,22 +494,22 @@
   text-align: right;
 }
 
-.ferromark-comparison th:last-child,
-.ferromark-comparison td:last-child {
-  padding-right: 0;
-}
-
 .ferromark-comparison tbody th {
-  font-weight: 600;
+  font-size: 0.9375rem;
+  font-weight: 500;
 }
 
 .ferromark-comparison .ferromark-comparison-group th {
   width: auto;
-  padding-top: 1rem;
-  padding-bottom: 0.4rem;
-  color: var(--ink-soft);
+  padding: 0.3rem var(--comparison-padding-x);
+  border-bottom-color: var(--line-heavy);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
   font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-align: left;
+  text-transform: uppercase;
 }
 
 .ferromark-comparison td {
@@ -522,7 +526,7 @@
 .ferromark-comparison .ferromark-project-link {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: 28px;
   color: inherit;
   text-decoration: underline;
   text-decoration-color: var(--line-heavy);
@@ -530,10 +534,12 @@
 }
 
 .ferromark-project-backend {
+  display: inline-block;
   margin-left: 0.5rem;
   color: var(--ink-soft);
   font-size: 0.75rem;
   font-weight: 400;
+  white-space: nowrap;
 }
 
 .ferromark-comparison .ferromark-project-link:hover {
@@ -544,12 +550,28 @@
 .ferromark-comparison td a {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: 28px;
   color: var(--rust);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+
+.ferromark-project-name {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.ferromark-project-name sup {
+  position: relative;
+  top: -0.35em;
+  margin-left: 0.15em;
+  color: var(--rust);
+  font-size: 0.75em;
+  line-height: 1;
 }
 
 .ferromark-comparison td a:hover {
@@ -562,9 +584,8 @@
 }
 
 @media (max-width: 30rem) {
-  .ferromark-comparison th,
-  .ferromark-comparison td {
-    padding: 0.35rem;
+  .ferromark-comparison {
+    --comparison-padding-x: 0.35rem;
   }
 
   .ferromark-comparison tbody th {
@@ -573,5 +594,12 @@
 
   .ferromark-comparison thead th {
     font-size: 0.75rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .ferromark-comparison .ferromark-project-link,
+  .ferromark-comparison td a {
+    min-height: 44px;
   }
 }

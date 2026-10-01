@@ -10,13 +10,16 @@ its ``harness/report.py``, so a report written by
 From those reports this script writes three things: the website's native
 comparison section (``homepage/app/routes/guide/benchmarks.mdx``), the homepage
 figures (``homepage/app/data/native-benchmarks.json``), and the marked sentences
-in ``README.md.src`` and its generated ``README.md``. ``--check`` fails when any
-of them drifts from the archives.
+in ``README.md.src`` and its generated ``README.md``. When complete campaigns
+are selected, their validated figures supply the current root and npm README
+claims; the older native tables remain historical. ``--check`` fails when any
+generated content drifts from the archives. Campaign validation needs Python 3.11+.
 """
 
 import argparse
 import importlib.util
 import json
+import math
 import re
 import sys
 import textwrap
@@ -278,6 +281,45 @@ def readme_block(platforms):
     return README_START + "\n" + fill(" ".join(sentences)) + "\n" + README_END
 
 
+def comparison_readme_block(figures, node_only=False):
+    """Derive current claims from complete, validated campaign figures."""
+    platforms = sorted({row['platformLabel'] for row in figures})
+    projects = json.loads((ROOT / 'homepage/app/data/benchmark-projects.json').read_text())
+    ids = {project['id'] for project in projects if not node_only or project['runtime'] == 'Node.js'}
+    selected = [row for row in figures if row['id'] in ids]
+    expected = {(platform, engine) for platform in platforms for engine in ids}
+    observed = {(row['platformLabel'], row['id']) for row in selected}
+    if not platforms or observed != expected or len(selected) != len(expected):
+        raise ValueError('A README claim needs every selected platform and comparison')
+    if any(row.get('scoringScope') != 'all-documents' or row['documents'] != 57
+           or row['corpusDocuments'] != 57 or not math.isfinite(row['fresh'])
+           or row['fresh'] <= 1 for row in selected):
+        raise ValueError('A README speed claim needs complete all-document measurements above baseline')
+    scope = 'Node.js ' if node_only else ''
+    lead = (f"Ferromark leads every measured {scope}library in our 57-document comparison "
+            f"on {' and '.join(platforms)}. CommonMark and GFM, plus opt-in publishing features "
+            "for richer documents. Extra syntax adds parsing work.")
+    dates = ', '.join(sorted({row['measured'] for row in selected}))
+    context = (f"Measured {dates}, using the recorded profiles, fresh calls and all 57 "
+               "frozen inputs, including different outputs. Node.js measurements include native "
+               "binding overhead. Syntax and API contracts differ. "
+               "[Machines, versions, methods, and raw data](https://ferromark.dev/guide/benchmarks).")
+    boundary = '\n\n' if node_only else '\n'
+    return README_START + boundary + '\n\n'.join(fill(text) for text in (lead, context)) + boundary + README_END
+
+
+def selected_figures():
+    """Use the manual publisher's provenance checks, not hand-entered claims."""
+    pointer = json.loads((ROOT / 'benchmarks/manual-comparison/current.json').read_text())
+    if not pointer['reports']:
+        return []
+    path = ROOT / 'benchmarks/markdown-ecosystem/publish_values.py'
+    spec = importlib.util.spec_from_file_location('comparison_values', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.manual_workflow().active()
+
+
 def link(relative):
     return PREFIX + relative
 
@@ -426,7 +468,9 @@ def guide_section(platforms):
         "measured on held-out documents no profile saw. md4c is C and is not PGO-built; a PGO row "
         "is compared only with PGO rows.",
     ]
-    parts = [GUIDE_START] + [fill(paragraph) + "\n" for paragraph in intro]
+    dates = ', '.join(sorted({platform['measured'] for platform in platforms}))
+    parts = [GUIDE_START, f'Historical comparison, measured {dates}. These original agreement-subset\n'
+             'scores remain separate from the latest complete campaigns.\n'] + [fill(paragraph) + "\n" for paragraph in intro]
     parts += [platform_section(p) for p in platforms]
     earlier = earlier_reports({p["report"] for p in platforms})
     if earlier:
@@ -463,11 +507,16 @@ def replace_readme(text, path, block):
 def render(reports=None):
     """The expected content of every published file, keyed by path."""
     platforms = [measure(key, relative) for key, relative in (reports or REPORTS).items()]
-    block = readme_block(platforms)
+    current = selected_figures() if reports is None else []
+    block = comparison_readme_block(current) if current else readme_block(platforms)
     expected = {GUIDE: replace_guide(GUIDE.read_text(), guide_section(platforms)),
                 FIGURES: website_json(platforms)}
     for path in READMES:
         expected[path] = replace_readme(path.read_text(), path, block)
+    if current:
+        node_readme = ROOT / 'node/ferromark/README.md'
+        expected[node_readme] = replace_readme(node_readme.read_text(), node_readme,
+                                              comparison_readme_block(current, node_only=True))
     return expected
 
 

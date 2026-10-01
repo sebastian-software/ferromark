@@ -1,0 +1,87 @@
+$ /usr/bin/python3 /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/source/benchmarks/native-comparison/prepare.py /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build --bun-source /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/cache/bun --bun-native-cache /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/cache/native --md4c-source /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/cache/md4c --ox-archive /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/cache/ox.tar.gz --ferromark-v1-source /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/source --ferromark-v2-source /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/source --ferromark-v2-revision 9af95fc3175bc7c2a199682ba3e6a1c276bfdad9 --worker /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/source/benchmarks/native-comparison/worker.rs --lockfile /home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/source/benchmarks/native-comparison/Cargo.lock --compile
+warning: profile package spec `bun_react_compiler` in profile `release` did not match any packages
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.26
+   Compiling quote v1.0.47
+   Compiling memchr v2.8.3
+   Compiling rustversion v1.0.23
+   Compiling thiserror v2.0.21
+   Compiling itoa v1.0.18
+   Compiling syn v2.0.119
+   Compiling syn v3.0.6
+   Compiling bstr v1.13.1
+   Compiling libc v0.2.189
+   Compiling heck v0.5.0
+   Compiling unicode-xid v0.2.6
+   Compiling bun_opaque v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/opaque)
+   Compiling allocator-api2 v0.2.21
+   Compiling konst_macro_rules v0.2.19
+   Compiling konst v0.2.20
+   Compiling bun_mimalloc_sys v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/mimalloc_sys)
+   Compiling const_format_proc_macros v0.2.34
+   Compiling bun_wyhash v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/wyhash)
+   Compiling bun_highway v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/highway)
+   Compiling bun_output_tags v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/bun_output_tags)
+   Compiling bun_core v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/bun_core)
+   Compiling ident_case v1.0.1
+   Compiling thiserror-impl v2.0.21
+   Compiling fnv v1.0.7
+   Compiling bun_hash v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/hash)
+   Compiling const_format v0.2.36
+   Compiling bun_alloc v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/bun_alloc)
+   Compiling bytemuck v1.25.2
+   Compiling bun_simdutf_sys v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/simdutf_sys)
+   Compiling rustc-hash v2.1.3
+   Compiling zmij v1.0.23
+   Compiling darling_core v0.21.3
+   Compiling smallvec v1.16.2
+   Compiling bitflags v2.13.2
+   Compiling scopeguard v1.2.0
+   Compiling bumpalo v3.20.3
+   Compiling paste v1.0.15
+   Compiling bun_windows_sys v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/windows_sys)
+   Compiling serde_core v1.0.229
+   Compiling castaway v0.2.4
+   Compiling strum_macros v0.26.4
+   Compiling bun_core_macros v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/bun_core_macros)
+   Compiling bun_dispatch v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/dispatch)
+   Compiling darling_macro v0.21.3
+   Compiling enum-map-derive v0.17.0
+   Compiling rustix v0.38.44
+   Compiling hashbrown v0.17.1
+   Compiling darling v0.21.3
+   Compiling enum-map v2.7.3
+   Compiling enumset_derive v0.15.0
+   Compiling equivalent v1.0.2
+   Compiling serde_json v1.0.151
+   Compiling strum v0.26.3
+   Compiling bun_libuv_sys v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/libuv_sys)
+   Compiling static_assertions v1.1.0
+   Compiling cfg-if v1.0.5
+   Compiling compact_str v0.10.0
+   Compiling indexmap v2.14.2
+   Compiling enumset v1.1.14
+   Compiling ox_content_allocator v3.2.13 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/sources/ox_content/crates/ox_content_allocator)
+   Compiling hashbrown v0.15.5
+   Compiling linux-raw-sys v0.4.15
+   Compiling ox_content_ast v3.2.13 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/sources/ox_content/crates/ox_content_ast)
+   Compiling unicode-width v0.2.2
+   Compiling pulldown-cmark v0.13.4
+   Compiling getopts v0.2.24
+   Compiling bun_errno v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/errno)
+   Compiling bun_paths v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/paths)
+   Compiling bun_ptr v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/ptr)
+   Compiling bun_collections v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/collections)
+   Compiling native-comparison-worker v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/comparison-worker)
+   Compiling unicase v2.9.0
+   Compiling pulldown-cmark-escape v0.11.0
+   Compiling html-escape v0.2.14
+   Compiling bun_sys v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/sys)
+   Compiling bun_url v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/url)
+   Compiling ferromark v0.9.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/sources/ferromark_v1)
+   Compiling bun_md v0.0.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/bun/src/md)
+   Compiling ox_content_renderer v3.2.13 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/sources/ox_content/crates/ox_content_renderer)
+   Compiling ferromark v2.4.0 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/sources/ferromark_v2)
+   Compiling ox_content_parser v3.2.13 (/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/sources/ox_content/crates/ox_content_parser)
+    Finished `release` profile [optimized + debuginfo] target(s) in 25.46s
+/home/runner/_work/_temp/blacksmith-linux-x86-64-1/suite/native-build/build.json

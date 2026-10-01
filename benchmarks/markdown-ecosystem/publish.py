@@ -2,6 +2,7 @@
 """Generate the report and website section from the archived measurements."""
 import argparse
 import json
+import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -9,6 +10,8 @@ REPORT = REPO / 'docs/reports/2026-09-30-markdown-ecosystem-main'
 FIGURES = REPO / 'homepage/app/data/markdown-ecosystem-benchmarks.json'
 GUIDE = REPO / 'homepage/app/routes/guide/benchmarks.mdx'
 MARKER = '\n## markdown-rs and micromark\n'
+CURRENT_START = '{/* current-comparisons */}'
+CURRENT_END = '{/* /current-comparisons */}'
 NODE_PAIRS = (('marked', 'marked'), ('markdown-it', 'markdown-it'),
               ('remark', 'remark / unified'), ('showdown', 'Showdown'),
               ('commonmark', 'commonmark.js'))
@@ -173,7 +176,17 @@ The older native report and homepage headline numbers remain historical evidence
     completed = publish_values.content() if publish_values.FIGURES.exists() else ''
     original = GUIDE.read_text()
     base = original.split(MARKER)[0].rstrip() + '\n'
-    for path, expected in ((REPORT / 'README.md', report), (GUIDE, base + section + completed + publish_values.current_content()), (FIGURES, json.dumps(figures, indent=2) + '\n')):
+    base = re.sub(r'<!-- current-comparisons -->.*?<!-- /current-comparisons -->\s*', '', base, flags=re.S)
+    base = re.sub(re.escape(CURRENT_START) + '.*?' + re.escape(CURRENT_END) + r'\s*', '', base, flags=re.S)
+    current = publish_values.current_content()
+    if current:
+        current = (CURRENT_START + '\n\n## Latest complete comparison\n\n'
+                   'The homepage uses these complete campaigns. All 57 frozen inputs contribute,\n'
+                   'with different outputs marked by an asterisk. Each platform ran on its own\n'
+                   'recorded host; each campaign contains three independent process rounds.\n\n'
+                   + current + '\n' + CURRENT_END + '\n\n')
+        base = base.replace('## Native engine comparison\n', current + '## Native engine comparison\n', 1)
+    for path, expected in ((REPORT / 'README.md', report), (GUIDE, base + section + completed), (FIGURES, json.dumps(figures, indent=2) + '\n')):
         if args.check:
             if path.read_text() != expected:
                 raise SystemExit(f'stale generated content: {path}')

@@ -35,7 +35,13 @@ test("README introduces the v3 release and delegates detailed documentation", ()
   assert.match(source, /node\/ferromark\/README\.md/);
   assert.match(source, /UPSTREAM\.md/);
   assert.match(source, /HtmlRendererOptions::sanitize/);
-  assert.doesNotMatch(source, /OX-Content|Ox Content|^\|/m);
+  // Competitor names belong in the generated measurement block, not product positioning.
+  const positioning = source.replace(
+    /<!-- native-benchmarks -->[\s\S]*?<!-- \/native-benchmarks -->/,
+    "",
+  );
+  assert.doesNotMatch(positioning, /OX-Content|Ox Content/m);
+  assert.doesNotMatch(source, /^\|/m);
   assert.ok(source.split(/\s+/).length < 700, "README stays below 700 words");
   const headings = [...source.matchAll(/^#{1,2} (.+)$/gm)].map((m) => m[1]);
   assert.equal(new Set(headings).size, headings.length);

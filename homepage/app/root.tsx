@@ -47,13 +47,13 @@ export const meta: MetaFunction = ({ location }) => {
   const page = section?.pages.find(([, to]) => to === path);
   const title = page
     ? `${page[0]} · ${section?.label} · Ferromark`
-    : "Ferromark — Markdown, ready for your pipeline";
+    : "Ferromark — Markdown at native speed";
   return [
     { title },
     {
       name: "description",
       content:
-        "A focused Markdown-to-HTML engine. Dedicated Rust and Node.js guides, shared syntax and rendering contracts, and reproducible performance evidence.",
+        "A native Markdown-to-HTML engine for Rust and Node.js, with CommonMark and GFM support and measured performance across macOS and Linux. Explore the APIs and reproducible benchmarks.",
     },
   ];
 };

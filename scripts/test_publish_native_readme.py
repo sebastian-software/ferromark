@@ -204,5 +204,51 @@ class TwoPlatforms(unittest.TestCase):
         self.assertIn("[held-out PGO comparison](", wrapped)
 
 
+class CurrentClaims(unittest.TestCase):
+    def setUp(self):
+        self.figures = []
+        projects = json.loads((ROOT / 'homepage/app/data/benchmark-projects.json').read_text())
+        for platform in ['macOS arm64', 'Linux x86-64']:
+            for project in projects:
+                self.figures.append(dict(id=project['id'], platformLabel=platform, fresh=2.0,
+                                         documents=57, corpusDocuments=57,
+                                         scoringScope='all-documents', measured='2026-10-01'))
+
+    def test_current_claims_are_derived_and_qualify_outputs_platforms_and_lifecycle(self):
+        self.figures[0]['fresh'] = 3.5
+        block = ' '.join(publisher.comparison_readme_block(self.figures).split())
+        self.assertIn('leads every measured library', block)
+        self.assertIn('Linux x86-64 and macOS arm64', block)
+        self.assertIn('fresh calls', block)
+        self.assertIn('including different outputs', block)
+        self.assertIn('Extra syntax adds parsing work', block)
+        self.assertNotIn('Ferromark v1', block)
+
+    def test_partial_matched_only_or_slower_results_cannot_support_current_claims(self):
+        with self.assertRaises(ValueError):
+            publisher.comparison_readme_block(self.figures[1:])
+        for index in range(len(self.figures)):
+            for changes in [dict(fresh=0.9), dict(fresh=1), dict(fresh=float('nan')),
+                            dict(documents=56), dict(corpusDocuments=58),
+                            dict(scoringScope='equivalent-only')]:
+                figures = copy.deepcopy(self.figures)
+                figures[index].update(changes)
+                with self.subTest(index=index, changes=changes), self.assertRaises(ValueError):
+                    publisher.comparison_readme_block(figures)
+        with self.assertRaises(ValueError):
+            publisher.comparison_readme_block(self.figures[1:] + [self.figures[1]])
+
+    def test_node_readme_uses_only_node_claims(self):
+        block = publisher.comparison_readme_block(self.figures, node_only=True)
+        self.assertIn('leads every measured Node.js library', block)
+        self.assertNotIn('pulldown-cmark', block)
+        native_ids = {project['id'] for project in json.loads(
+            (ROOT / 'homepage/app/data/benchmark-projects.json').read_text()) if project['runtime'] == 'Native'}
+        node_only = [row for row in self.figures if row['id'] not in native_ids]
+        self.assertEqual(publisher.comparison_readme_block(node_only, node_only=True), block)
+        with self.assertRaises(ValueError):
+            publisher.comparison_readme_block(node_only[1:], node_only=True)
+
+
 if __name__ == "__main__":
     unittest.main()

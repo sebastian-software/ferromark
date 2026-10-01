@@ -1,0 +1,10 @@
+{
+  "pair_schema": 3,
+  "suite_schema": 5,
+  "scoring_scope": "all-documents",
+  "documents": 57,
+  "timing_profiles": {
+    "standard": { "rounds": 3, "samples": 6, "window_ms": 40, "warmup_ms": 60, "cooldown_seconds": 60 },
+    "balanced": { "rounds": 3, "samples": 3, "window_ms": 10, "warmup_ms": 30, "cooldown_seconds": 5 }
+  }
+}

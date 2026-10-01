@@ -11,7 +11,11 @@ import {
 } from "ferramenta-family";
 import { Link } from "react-router";
 
-import { BenchmarkComparison } from "../components/benchmark-comparison";
+import {
+  BenchmarkComparison,
+  benchmarkHosts,
+  benchmarkLead,
+} from "../components/benchmark-comparison";
 import { FlavoredMarkdownSection } from "../components/ffm-showcase";
 import landingSample from "../data/landing-sample.json";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
@@ -51,7 +55,7 @@ function ProjectIntro() {
       mark="ferromark"
       title={
         <>
-          Markdown. <em>Ready for your pipeline.</em>
+          Markdown. <em>At native speed.</em>
         </>
       }
       lede="A focused native Markdown engine for Rust and Node.js. Parse Markdown, render HTML, and inspect the metadata publishing needs, with behavior grounded in CommonMark and GFM."
@@ -81,7 +85,7 @@ function ContractBand() {
   return (
     <IronBand
       title="Correctness is part of the contract."
-      intro="Every speed claim starts with equivalent output. The engine keeps Markdown parsing and HTML rendering in scope; your application keeps control of trust, translation, routing, and presentation."
+      intro="The engine keeps Markdown parsing and HTML rendering in scope, with specification tests for correctness and measured public API comparisons for speed. Your application keeps control of trust, translation, routing, and presentation."
       rows={[
         {
           heading: "Standards first",
@@ -129,19 +133,18 @@ function EvidenceSection() {
     <Section
       id="evidence"
       layout="split"
-      title="Faster on real documents."
-      intro="Each value shows Ferromark’s throughput relative to the library in that row. 2× means twice the throughput."
+      title={benchmarkLead()}
+      intro="CommonMark and GFM, plus opt-in publishing features for richer documents. Enable what you need; extra syntax adds parsing work."
       note={
         <>
-          Equivalent HTML only, across separate runs and document agreement sets. The Node.js
-          comparisons include binding overhead. cmark, commonmark.js, and Remarkable use CommonMark
-          only. Names link to GitHub; values link to their measurement reports. — means not
-          measured. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
-          <Link to="/guide/feature-comparison">Compare features</Link>
+          57 documents on macOS and Linux, fresh calls. 2× means twice the throughput. Node.js
+          includes binding overhead. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
+          <Link to="/guide/feature-comparison">Features and costs</Link>
         </>
       }
     >
       <BenchmarkComparison />
+      <p className="native-benchmark-note">{benchmarkHosts}</p>
     </Section>
   );
 }

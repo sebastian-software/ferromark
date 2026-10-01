@@ -6,6 +6,17 @@ architecture. Publishing updates that platform's values and keeps other
 platforms' selections and historical reports intact. No runner registration,
 CI service, or agent is required.
 
+The complete **2026-10-01 Blacksmith campaign** measured all 20 main variants
+on both platforms from commit `9af95fc3`, with the balanced profile and one VM
+allocation per platform. [macOS ARM64 evidence](../../docs/reports/2026-10-01-blacksmith-macos-arm64/README.md)
+and [Linux x86-64 evidence](../../docs/reports/2026-10-01-blacksmith-linux-x86-64/README.md)
+retain the source revision, locks, windows, output checks, and runner metadata.
+The [successful workflow](https://github.com/sebastian-software/ferromark/actions/runs/36822651743)
+took **35:42** on macOS and **34:06** on Linux including setup and builds.
+The complete comparison step took **35:02** and **33:20**, respectively; that
+step includes preparation, verification, timing, and archive validation. These
+observed durations are separate from the calculated 15-minute sampling budget.
+
 The native harness supports **macOS and Linux on arm64 or x86-64**. This includes
 Apple Silicon and Intel Macs, Intel/AMD Linux hosts, and arm64 Linux hosts.
 Use native executables outside Rosetta; Python, Node, Rust, and Go must use the same

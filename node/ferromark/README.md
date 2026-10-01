@@ -5,6 +5,21 @@ Native Node.js bindings for the [Ferromark](https://github.com/sebastian-softwar
 [Documentation site](https://ferromark.dev/) ·
 [Rust crate](https://crates.io/crates/ferromark)
 
+## Measured performance
+
+<!-- native-benchmarks -->
+
+Ferromark leads every measured Node.js library in our 57-document comparison on
+Linux x86-64 and macOS arm64. CommonMark and GFM, plus opt-in publishing
+features for richer documents. Extra syntax adds parsing work.
+
+Measured 2026-10-01, using the recorded profiles, fresh calls and all 57 frozen
+inputs, including different outputs. Node.js measurements include native binding
+overhead. Syntax and API contracts differ.
+[Machines, versions, methods, and raw data](https://ferromark.dev/guide/benchmarks).
+
+<!-- /native-benchmarks -->
+
 ## Install
 
 ```sh
