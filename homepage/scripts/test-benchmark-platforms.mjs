@@ -13,7 +13,7 @@ const projects = JSON.parse(
   await readFile(new URL("../app/data/benchmark-projects.json", import.meta.url), "utf8"),
 );
 
-async function renderComparison(figures) {
+async function renderComparison(figures, { claim = false } = {}) {
   const server = await createServer({
     configFile: false,
     server: { middlewareMode: true },
@@ -31,10 +31,10 @@ async function renderComparison(figures) {
     ],
   });
   try {
-    const { BenchmarkComparison } = await server.ssrLoadModule(
+    const { BenchmarkComparison, benchmarkLead } = await server.ssrLoadModule(
       "/app/components/benchmark-comparison.tsx",
     );
-    return renderToStaticMarkup(createElement(BenchmarkComparison));
+    return claim ? benchmarkLead() : renderToStaticMarkup(createElement(BenchmarkComparison));
   } finally {
     await server.close();
   }
@@ -90,6 +90,58 @@ test("all main candidates have GitHub links and measured cells; variants disclos
   assert.ok(html.includes('class="ferromark-project-backend">Native addon</span>'));
 });
 
+test("each runtime group is alphabetical and the syntax subset remains a separate note", async () => {
+  const html = await renderComparison(completed.figures);
+  assert.ok(html.includes('</a><span class="ferromark-project-backend">(syntax subset)</span>'));
+  const names = [...html.matchAll(/class="ferromark-project-link"[^>]*>(.*?)<\/a>/gs)].map(
+    (match) => match[1],
+  );
+  assert.deepEqual(names, [
+    "Bun MD",
+    "cmark",
+    "cmark-gfm",
+    "Comrak",
+    "Goldmark",
+    "markdown-rs",
+    "md4c",
+    "OX-Content",
+    "pulldown-cmark",
+    "commonmark.js",
+    "markdown-it",
+    "marked",
+    "MD4X",
+    "micromark",
+    "OX-Content",
+    "remark / unified",
+    "Remarkable",
+    "Sätteri",
+    "Showdown",
+    "TanStack Markdown",
+  ]);
+});
+
+test("the overall speed claim requires every candidate on every displayed platform", async () => {
+  assert.equal(
+    await renderComparison(completed.figures, { claim: true }),
+    "Ahead of every measured library.",
+  );
+  await assert.rejects(renderComparison(completed.figures.slice(1), { claim: true }));
+  for (const changes of [
+    { fresh: 1 },
+    { fresh: Number.NaN },
+    { documents: 56 },
+    { corpusDocuments: 58 },
+    { scoringScope: "equivalent-only" },
+  ]) {
+    const figures = completed.figures.map((figure) =>
+      figure.id === "remarkable" && figure.platform === "linux-x86-64"
+        ? { ...figure, ...changes }
+        : figure,
+    );
+    await assert.rejects(renderComparison(figures, { claim: true }));
+  }
+});
+
 test("full-corpus factors annotate output differences without changing legacy cells", async () => {
   const legacy = completed.figures.map((figure) => ({
     ...figure,
@@ -113,6 +165,7 @@ test("full-corpus factors annotate output differences without changing legacy ce
   );
   const html = await renderComparison(figures);
   assert.equal([...html.matchAll(/<sup /g)].length, 1);
+  assert.match(html, /<\/a><sup aria-label="Output differs for some inputs">\*<\/sup>/);
   assert.match(html, /57\/57 timed documents · 31 equivalent outputs/);
   assert.match(html, /All inputs contribute to the/);
   assert.match(

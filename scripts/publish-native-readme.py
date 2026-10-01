@@ -19,6 +19,7 @@ generated content drifts from the archives. Campaign validation needs Python 3.1
 import argparse
 import importlib.util
 import json
+import math
 import re
 import sys
 import textwrap
@@ -283,31 +284,28 @@ def readme_block(platforms):
 def comparison_readme_block(figures, node_only=False):
     """Derive current claims from complete, validated campaign figures."""
     platforms = sorted({row['platformLabel'] for row in figures})
-
-    def speed_range(ids):
-        selected = [row for row in figures if row['id'] in ids]
-        if len(selected) != len(ids) * len(platforms):
-            raise ValueError('A README claim needs every selected platform and comparison')
-        if any(row.get('scoringScope') != 'all-documents' or row['documents'] != 57
-               or row['fresh'] <= 1 for row in selected):
-            raise ValueError('A README speed claim needs complete all-document measurements above baseline')
-        values = [row['fresh'] for row in selected]
-        low, high = f'{min(values):.1f}', f'{max(values):.1f}'
-        return (low if low == high else low + '–' + high) + '×'
-
-    node = (f"In Node.js, Ferromark delivers {speed_range(['marked', 'markdown-it'])} the throughput "
-            f"of Marked and markdown-it, and {speed_range(['tanstack-markdown'])} that of TanStack "
-            "Markdown in our 57-document comparison.")
-    native = (f"Natively, it reaches {speed_range(['pulldown-cmark'])} the throughput of "
-              f"pulldown-cmark, {speed_range(['md4c'])} that of MD4C, and "
-              f"{speed_range(['ox-content'])} that of OX-Content on the same corpus.") if not node_only else ''
-    dates = ', '.join(sorted({row['measured'] for row in figures}))
-    context = (f"Measured on {' and '.join(platforms)}, {dates}, using fresh calls and all 57 "
+    projects = json.loads((ROOT / 'homepage/app/data/benchmark-projects.json').read_text())
+    ids = {project['id'] for project in projects if not node_only or project['runtime'] == 'Node.js'}
+    selected = [row for row in figures if row['id'] in ids]
+    expected = {(platform, engine) for platform in platforms for engine in ids}
+    observed = {(row['platformLabel'], row['id']) for row in selected}
+    if not platforms or observed != expected or len(selected) != len(expected):
+        raise ValueError('A README claim needs every selected platform and comparison')
+    if any(row.get('scoringScope') != 'all-documents' or row['documents'] != 57
+           or row['corpusDocuments'] != 57 or not math.isfinite(row['fresh'])
+           or row['fresh'] <= 1 for row in selected):
+        raise ValueError('A README speed claim needs complete all-document measurements above baseline')
+    scope = 'Node.js ' if node_only else ''
+    lead = (f"Ferromark leads every measured {scope}library in our 57-document comparison "
+            f"on {' and '.join(platforms)}. CommonMark and GFM, plus opt-in publishing features "
+            "for richer documents. Extra syntax adds parsing work.")
+    dates = ', '.join(sorted({row['measured'] for row in selected}))
+    context = (f"Measured {dates}, using the recorded profiles, fresh calls and all 57 "
                "frozen inputs, including different outputs. Node.js measurements include native "
-               "binding overhead. These are corpus observations; syntax and API contracts differ. "
+               "binding overhead. Syntax and API contracts differ. "
                "[Machines, versions, methods, and raw data](https://ferromark.dev/guide/benchmarks).")
     boundary = '\n\n' if node_only else '\n'
-    return README_START + boundary + '\n\n'.join(fill(text) for text in (node, native, context) if text) + boundary + README_END
+    return README_START + boundary + '\n\n'.join(fill(text) for text in (lead, context)) + boundary + README_END
 
 
 def selected_figures():

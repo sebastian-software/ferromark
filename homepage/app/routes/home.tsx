@@ -14,7 +14,7 @@ import { Link } from "react-router";
 import {
   BenchmarkComparison,
   benchmarkHosts,
-  benchmarkRange,
+  benchmarkLead,
 } from "../components/benchmark-comparison";
 import { FlavoredMarkdownSection } from "../components/ffm-showcase";
 import landingSample from "../data/landing-sample.json";
@@ -133,26 +133,18 @@ function EvidenceSection() {
     <Section
       id="evidence"
       layout="split"
-      title="Faster on real documents."
-      intro={`In Node.js, Ferromark delivers ${benchmarkRange(["marked", "markdown-it"])} the throughput of Marked and markdown-it, and ${benchmarkRange(["tanstack-markdown"])} that of TanStack Markdown in our 57-document comparison.`}
+      title={benchmarkLead()}
+      intro="CommonMark and GFM, plus opt-in publishing features for richer documents. Enable what you need; extra syntax adds parsing work."
       note={
         <>
-          Fresh calls, all 57 inputs, three process rounds per comparison. Each factor is
-          Ferromark’s throughput relative to the library; 2× means twice the throughput. Node.js
-          results include binding overhead. * marks differing outputs, which remain scored. Names
-          link to GitHub; values link to reports.{" "}
-          <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
-          <Link to="/guide/feature-comparison">Compare features</Link>
+          57 documents on macOS and Linux, fresh calls. 2× means twice the throughput. Node.js
+          includes binding overhead. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
+          <Link to="/guide/feature-comparison">Features and costs</Link>
         </>
       }
     >
-      <p>
-        Natively, Ferromark reaches {benchmarkRange(["pulldown-cmark"])} the throughput of
-        pulldown-cmark, {benchmarkRange(["md4c"])} that of MD4C, and{" "}
-        {benchmarkRange(["ox-content"])} that of OX-Content on the same corpus.
-      </p>
-      <p className="native-benchmark-note">{benchmarkHosts}</p>
       <BenchmarkComparison />
+      <p className="native-benchmark-note">{benchmarkHosts}</p>
     </Section>
   );
 }

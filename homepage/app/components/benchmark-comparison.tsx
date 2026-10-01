@@ -31,22 +31,24 @@ const completedFigures = new Map<string, CompletedFigure>(
   completedBenchmarks.figures.map((figure) => [`${figure.platform}/${figure.id}`, figure]),
 );
 
-/** Marketing ranges use the same selected measurements as the table. */
-export function benchmarkRange(ids: string[]): string {
-  const selected = completedBenchmarks.figures.filter((figure) => ids.includes(figure.id));
-  if (
-    selected.length !== ids.length * platforms.length ||
-    selected.some(
-      (figure) =>
-        figure.fresh <= 1 || figure.documents !== 57 || figure.scoringScope !== "all-documents",
-    )
-  ) {
-    throw new Error("A speed claim needs complete measurements above the baseline");
+/** The overall claim must hold for every displayed library on every platform. */
+export function benchmarkLead(): string {
+  for (const project of projects) {
+    for (const platform of platforms) {
+      const figure = completedFigures.get(`${platform.id}/${project.id}`);
+      if (
+        !figure ||
+        !Number.isFinite(figure.fresh) ||
+        figure.fresh <= 1 ||
+        figure.documents !== 57 ||
+        figure.corpusDocuments !== 57 ||
+        figure.scoringScope !== "all-documents"
+      ) {
+        throw new Error("An overall speed claim needs complete measurements above the baseline");
+      }
+    }
   }
-  const values = selected.map((figure) => figure.fresh);
-  const low = Math.min(...values).toFixed(1);
-  const high = Math.max(...values).toFixed(1);
-  return low === high ? `${low}×` : `${low}–${high}×`;
+  return "Ahead of every measured library.";
 }
 
 const measuredHosts = new Map(
@@ -82,37 +84,39 @@ function completedResult(completed: CompletedFigure) {
   };
 }
 
-const rows = projects.map((project) => ({
-  ...project,
-  results: platforms.map((platform) => {
-    const completed = completedFigures.get(`${platform.id}/${project.id}`);
-    if (completed) {
-      return completedResult(completed);
-    }
-    const ecosystem = ecosystemFigures.get(project.id);
-    if (ecosystem && platform.id === "macos-arm64") {
-      return {
-        speed: ecosystem.fresh,
-        outputDifferences: false,
-        report: ecosystemBenchmarks.report,
-        evidence: `${ecosystem.documents}/${ecosystem.corpusDocuments} documents · equivalent HTML · ${ecosystem.profileScope} · macOS arm64 · ${ecosystemBenchmarks.measured} · ${ecosystem.revision}`,
-      };
-    }
-    const historical = nativePlatforms.get(platform.id);
-    const native =
-      project.runtime === "Native"
-        ? nativeFiguresByPlatform.get(platform.id)?.get(project.id)
-        : undefined;
-    return native && historical
-      ? {
-          speed: native.fresh,
+const rows = [...projects]
+  .sort((left, right) => left.label.localeCompare(right.label, "en", { sensitivity: "base" }))
+  .map((project) => ({
+    ...project,
+    results: platforms.map((platform) => {
+      const completed = completedFigures.get(`${platform.id}/${project.id}`);
+      if (completed) {
+        return completedResult(completed);
+      }
+      const ecosystem = ecosystemFigures.get(project.id);
+      if (ecosystem && platform.id === "macos-arm64") {
+        return {
+          speed: ecosystem.fresh,
           outputDifferences: false,
-          report: historical.report,
-          evidence: `${native.documents} equivalent documents · ${platform.label} · ${historical.machine} · ${historical.measured} · ${historical.revision}`,
-        }
-      : null;
-  }),
-}));
+          report: ecosystemBenchmarks.report,
+          evidence: `${ecosystem.documents}/${ecosystem.corpusDocuments} documents · equivalent HTML · ${ecosystem.profileScope} · macOS arm64 · ${ecosystemBenchmarks.measured} · ${ecosystem.revision}`,
+        };
+      }
+      const historical = nativePlatforms.get(platform.id);
+      const native =
+        project.runtime === "Native"
+          ? nativeFiguresByPlatform.get(platform.id)?.get(project.id)
+          : undefined;
+      return native && historical
+        ? {
+            speed: native.fresh,
+            outputDifferences: false,
+            report: historical.report,
+            evidence: `${native.documents} equivalent documents · ${platform.label} · ${historical.machine} · ${historical.measured} · ${historical.revision}`,
+          }
+        : null;
+    }),
+  }));
 
 const groups = [
   { id: "native", label: "Native", rows: rows.filter((row) => row.runtime === "Native") },
@@ -130,19 +134,30 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
         >
           {row.label}
         </a>
-        <span className="ferromark-project-backend">{row.backend}</span>
+        {row.backend === "Native addon" && (
+          <span className="ferromark-project-backend">Native addon</span>
+        )}
+        {row.id === "tanstack-markdown" && (
+          <span className="ferromark-project-backend">(syntax subset)</span>
+        )}
       </th>
       {row.results.map((result, index) => (
         <td key={platforms[index].id}>
           {result ? (
-            <a
-              href={reportUrl(result.report)}
-              title={result.evidence}
-              aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
-            >
-              {formatSpeed(result.speed)}
-              {result.outputDifferences && <sup aria-label="Output differs for some inputs">*</sup>}
-            </a>
+            <span className="ferromark-comparison-value">
+              <a
+                href={reportUrl(result.report)}
+                title={result.evidence}
+                aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
+              >
+                {formatSpeed(result.speed)}
+              </a>
+              {result.outputDifferences ? (
+                <sup aria-label="Output differs for some inputs">*</sup>
+              ) : (
+                <span aria-hidden="true" />
+              )}
+            </span>
           ) : (
             <span aria-label="Not measured">—</span>
           )}
