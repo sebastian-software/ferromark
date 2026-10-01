@@ -13,6 +13,12 @@ Component resolution, framework compilation, and hydration remain application
 responsibilities. Lowercase HTML stays HTML. Do not treat successful parsing as
 proof that arbitrary JavaScript or TypeScript is valid.
 
+In Node.js, `compileJsx()` emits framework-neutral JSX, while the reusable
+`JsxCompiler` also highlights fenced code with native Ferriki support. Both
+preserve MDX imports and exports separately; your application handles component
+bindings and its normal React/Vite module and JSX pipeline. See [Node.js code
+highlighting](/node/highlighting).
+
 Enable `ParserOptions::mdx` in [Rust](/rust/mdx) or `mdx: true` in
 [Node.js configuration](/node/configuration). The v1 segmenter and component
 compiler APIs are absent in v2. See [migration](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md).
