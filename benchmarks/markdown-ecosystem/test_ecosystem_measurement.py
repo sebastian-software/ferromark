@@ -29,9 +29,18 @@ class MeasurementTests(unittest.TestCase):
         section = publish.content()
         if publish_values.FIGURES.exists():
             section += publish_values.content()
-        section += publish_values.current_content()
         guide = publish.GUIDE.read_text()
         self.assertEqual(guide.split(publish.MARKER, 1)[1], section.split(publish.MARKER, 1)[1])
+        # The complete campaigns now precede the historical sections. The publisher
+        # check above validates the raw evidence; compare the selected table content
+        # independently without validating the same archives a second time.
+        selection = json.loads((publish.REPO / 'benchmarks/manual-comparison/current.json').read_text())['reports']
+        if selection:
+            figures = json.loads(publish_values.FIGURES.read_text())['figures']
+            current = [figure for figure in figures if figure['platform'] in selection]
+            self.assertIn(publish_values.manual_workflow().content(current), guide)
+            self.assertEqual(guide.count(publish.CURRENT_START), 1)
+            self.assertLess(guide.index(publish.CURRENT_START), guide.index('## Native engine comparison'))
         for track in ('native', 'node', *('node-' + engine for engine, _ in publish.NODE_PAIRS)):
             summary = json.loads((publish.REPORT / track / 'summary.json').read_text())
             self.assertEqual(summary['documents'], 57)
