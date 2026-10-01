@@ -491,6 +491,97 @@ export function transform(markdown, options) {
     : addon.transform(markdown, packed);
 }
 
+const jsxOnlyKeys = new Set([
+  "format",
+  "componentPrefix",
+  "calloutComponents",
+  "codeComponents",
+  "codeBlockComponent",
+  "omitTitleHeading",
+]);
+const htmlOnlyKeys = new Set([
+  "mdx",
+  "renderPolicy",
+  "allowHtml",
+  "disallowedRawHtml",
+  "tableColgroup",
+  "tableColumnNames",
+  "linkBasePath",
+  "autoAbbreviations",
+  "abbreviations",
+  "preset",
+]);
+
+/**
+ * Validate the syntax and JSX option names before loading the addon.
+ * @param {import('./index.mjs').CompileJsxOptions} [options] Syntax and JSX options.
+ */
+function validateJsxOptions(options) {
+  if (options != null) {
+    if (typeof options !== "object" && typeof options !== "function") {
+      throw new TypeError("options must be an object");
+    }
+    for (const key of Reflect.ownKeys(options)) {
+      if (
+        typeof key !== "string" ||
+        htmlOnlyKeys.has(key) ||
+        (!optionKeys.has(key) && !jsxOnlyKeys.has(key))
+      ) {
+        throw new TypeError(`unknown JSX option "${String(key)}"`);
+      }
+    }
+  }
+}
+
+/**
+ * Compile trusted authored Markdown or MDX to framework-neutral JSX.
+ * @param {string | Uint8Array} markdown Authored source.
+ * @param {import('./index.mjs').CompileJsxOptions} [options] Syntax and JSX options.
+ * @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous JSX hook.
+ * @returns {import('./index.mjs').JsxResult} JSX and source metadata.
+ */
+export function compileJsx(markdown, options, renderCode) {
+  validateJsxOptions(options);
+  if (renderCode !== undefined && typeof renderCode !== "function") {
+    throw new TypeError("renderCode must be a synchronous function");
+  }
+  return loadNative().compileJsx(markdown, options, options, renderCode);
+}
+
+/** Reusable compiler whose Ferriki highlighter lives in the native addon. */
+export class JsxCompiler {
+  /** @type {NativeJsxCompilerSession} */
+  #native;
+
+  /** @param {import('./index.mjs').JsxCompilerOptions} [options] Native highlighting and asset settings. */
+  constructor(options = {}) {
+    if (options == null || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("JSX compiler options must be an object");
+    }
+    for (const key of Reflect.ownKeys(options)) {
+      if (!["theme", "lineNumbers", "languages", "assets"].includes(String(key))) {
+        throw new TypeError(`unknown JSX compiler option "${String(key)}"`);
+      }
+    }
+    const NativeCompiler = loadNative().JsxCompiler;
+    this.#native = new NativeCompiler(JSON.stringify(options));
+  }
+
+  /**
+   * @param {string | Uint8Array} markdown Trusted authored source.
+   * @param {import('./index.mjs').CompileJsxOptions} [options] Syntax and JSX options.
+   * @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Optional whole-fence override.
+   * @returns {import('./index.mjs').JsxResult} Highlighted JSX and metadata.
+   */
+  compile(markdown, options, renderCode) {
+    validateJsxOptions(options);
+    if (renderCode !== undefined && typeof renderCode !== "function") {
+      throw new TypeError("renderCode must be a synchronous function");
+    }
+    return this.#native.compile(markdown, options, options, renderCode);
+  }
+}
+
 /**
  * @param {import('./index.mjs').CodeHighlighter} highlighter Synchronous code highlighter.
  * @param {import('./index.mjs').HighlightOptions} highlightOptions Highlighter options.
@@ -573,6 +664,11 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   toHtml(markdown: string | Uint8Array): string
  *   toHtmlBuffer(markdown: string | Uint8Array): import('node:buffer').Buffer
  * }} NativeRendererSession
+ * @typedef {{
+ *   compile(markdown: string | Uint8Array, options?: import('./index.mjs').CompileJsxOptions,
+ *     jsxOptions?: import('./index.mjs').CompileJsxOptions,
+ *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
+ * }} NativeJsxCompilerSession
  * @typedef {import('./index.mjs').Options | null | undefined} NativeOptions
  * @typedef {[
  *   set: number,
@@ -598,6 +694,13 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     new (options?: NativeOptions): NativeRendererSession
  *     withPackedOptions(...options: NativePackedOptions): NativeRendererSession
  *   }
+ *   JsxCompiler: { new (settings: string): NativeJsxCompilerSession }
+ *   compileJsx(
+ *     markdown: string | Uint8Array,
+ *     options?: import('./index.mjs').CompileJsxOptions,
+ *     jsxOptions?: import('./index.mjs').CompileJsxOptions,
+ *     renderCode?: import('./index.mjs').JsxCodeRenderer,
+ *   ): import('./index.mjs').JsxResult
  *   toHtml(markdown: string | Uint8Array, options?: NativeOptions): string
  *   toHtmlPacked(markdown: string | Uint8Array, ...options: NativePackedOptions): string
  *   toHtmlBuffer(markdown: string | Uint8Array, options?: NativeOptions): import('node:buffer').Buffer

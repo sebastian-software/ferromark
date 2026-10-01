@@ -10,6 +10,7 @@
 use crate::ast::{MdxjsEsm, Node, Span};
 
 use super::Parser;
+use super::error::ParseResult;
 use super::line_scan::{is_line_ending_byte, line_terminator_end};
 
 #[inline]
@@ -185,10 +186,17 @@ impl<'a> Parser<'a> {
         &mut self,
         start: usize,
         trimmed_start: usize,
-    ) -> Option<Node<'a>> {
+    ) -> ParseResult<Option<Node<'a>>> {
         if !self.options.mdx || !looks_like_esm(self.source.as_bytes(), trimmed_start) {
-            return None;
+            return Ok(None);
         }
+        #[cfg(feature = "jsx")]
+        let end = if self.options.mdx_compatible {
+            super::mdx_compatible::esm_end(self.source, trimmed_start)?
+        } else {
+            scan_esm_statement(self.source, trimmed_start)
+        };
+        #[cfg(not(feature = "jsx"))]
         let end = scan_esm_statement(self.source, trimmed_start);
         self.position = end;
         #[allow(
@@ -196,9 +204,11 @@ impl<'a> Parser<'a> {
             reason = "ESM values are JavaScript source, not Markdown block content"
         )]
         let value = self.source[trimmed_start..end].trim_end();
-        Some(Node::MdxjsEsm(MdxjsEsm {
-            value,
-            span: Span::new(start as u32, end as u32),
-        }))
+        let span = if self.options.mdx_compatible {
+            Span::new(trimmed_start as u32, (trimmed_start + value.len()) as u32)
+        } else {
+            Span::new(start as u32, end as u32)
+        };
+        Ok(Some(Node::MdxjsEsm(MdxjsEsm { value, span })))
     }
 }

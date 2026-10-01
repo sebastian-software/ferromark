@@ -32,9 +32,12 @@
 )]
 
 mod html;
+mod jsx;
 
 #[cfg(feature = "ferriki")]
 pub use html::FerrikiHighlightHooks;
+#[cfg(feature = "ferriki")]
+pub use jsx::FerrikiJsxHooks;
 
 pub use html::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
@@ -42,4 +45,9 @@ pub use html::{
     HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
     NoHtmlRenderHooks, collect_heading_text, find_autolink_ranges, map_heading_level,
     slugify_heading,
+};
+
+pub use jsx::{
+    JsxCodeBlock, JsxCodeBlockInput, JsxHighlightedCodeBlock, JsxModuleSource, JsxOutput,
+    JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping, NoJsxRenderHooks,
 };

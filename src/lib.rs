@@ -1,4 +1,4 @@
-//! Ferromark v2: an arena-allocated Markdown parser and HTML renderer.
+//! Ferromark v2: an arena-allocated Markdown parser with HTML and JSX renderers.
 //!
 //! This implementation derives from OX-Content. Its API is not
 //! compatible with Ferromark v1; see the migration guide in the repository.
@@ -12,7 +12,9 @@
 //! Use [`to_html_with_options`] to choose syntax and output settings. Rust
 //! defaults preserve raw HTML; enable [`HtmlRendererOptions::sanitize`] for
 //! untrusted input. For AST access, use [`Allocator`], [`Parser`], and
-//! [`HtmlRenderer`] directly.
+//! [`HtmlRenderer`] or [`JsxRenderer`] directly. JSX output is source code for
+//! a downstream compiler; Ferromark does not compile it or add a framework
+//! runtime.
 
 #![warn(missing_docs)]
 
@@ -40,9 +42,14 @@ pub use renderer::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlRenderContext,
     HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
-    NoHtmlRenderHooks, collect_heading_text, find_autolink_ranges, map_heading_level,
+    JsxCodeBlock, JsxCodeBlockInput, JsxHighlightedCodeBlock, JsxModuleSource, JsxOutput,
+    JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping, NoHtmlRenderHooks,
+    NoJsxRenderHooks, collect_heading_text, find_autolink_ranges, map_heading_level,
     slugify_heading,
 };
 
 #[cfg(feature = "ferriki")]
 pub use renderer::FerrikiHighlightHooks;
+
+#[cfg(feature = "ferriki")]
+pub use renderer::FerrikiJsxHooks;

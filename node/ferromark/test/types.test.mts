@@ -1,6 +1,13 @@
 import type { CodeHighlighter, Options } from "../index.mjs";
 
-import { Renderer, toHtml, toHtmlBuffer, toHtmlWithHighlighter } from "../index.mjs";
+import {
+  compileJsx,
+  JsxCompiler,
+  Renderer,
+  toHtml,
+  toHtmlBuffer,
+  toHtmlWithHighlighter,
+} from "../index.mjs";
 
 const options: Options = {
   renderPolicy: "untrusted",
@@ -59,3 +66,23 @@ toHtmlWithHighlighter(Buffer.from("```ts\nconst typed = true\n```"), highlighter
 });
 // @ts-expect-error -- an ArrayBuffer must be wrapped in a Uint8Array first
 toHtml(new ArrayBuffer(8));
+
+const jsx = compileJsx("# Typed", { format: "mdx", componentPrefix: "_components" }, () => null);
+const jsxBody: string = jsx.body;
+compileJsx(jsxBody);
+const jsxCompiler = new JsxCompiler({
+  theme: { name: "custom", settings: [{ settings: { foreground: "#000000" } }] },
+  languages: [{ name: "custom", scopeName: "source.custom", patterns: [] }],
+  assets: { remote: false },
+});
+const highlightedJsx: string = jsxCompiler.compile("# Typed", {
+  codeBlockComponent: "CodeBlock",
+}).body;
+compileJsx(highlightedJsx);
+// @ts-expect-error -- JSX compilation does not promise HTML sanitization
+compileJsx("# Typed", { renderPolicy: "untrusted" });
+// @ts-expect-error -- callbacks are synchronous
+compileJsx("```js\nvalue\n```", {}, async () => {
+  await Promise.resolve();
+  return "<Code />";
+});

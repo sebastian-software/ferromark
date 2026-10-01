@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 const workspace = path.resolve(import.meta.dirname, "..");
 const artifacts = path.join(workspace, "artifacts");
-const packageTestFile = path.join(workspace, "ferromark", "test", "index.test.mjs");
+const packageTestNames = [
+  "index.test.mjs",
+  "jsx-highlighting.test.mjs",
+  "jsx-title.test.mjs",
+  "jsx.test.mjs",
+];
 const args = process.argv.slice(2);
 const usage = `Usage: node ${path.basename(import.meta.filename)} [--target <platform-target>] [--package-tests]`;
 // `--target` names the platform package this run must install, so a musl
@@ -122,16 +127,25 @@ try {
 async function installPackageTests(consumerDir) {
   const installedPackage = path.join(consumerDir, "node_modules", "ferromark");
   await mkdir(path.join(installedPackage, "test"), { recursive: true });
-  await copyFile(packageTestFile, path.join(installedPackage, "test", "index.test.mjs"));
+  for (const name of packageTestNames) {
+    await copyFile(
+      path.join(workspace, "ferromark", "test", name),
+      path.join(installedPackage, "test", name),
+    );
+  }
   return installedPackage;
 }
 
 /** @param installedPackage Installed package directory the tests run in. */
 function runPackageTests(installedPackage) {
-  const result = spawnSync(process.execPath, ["--test", "test/index.test.mjs"], {
-    cwd: installedPackage,
-    stdio: "inherit",
-  });
+  const result = spawnSync(
+    process.execPath,
+    ["--test", ...packageTestNames.map((name) => path.join("test", name))],
+    {
+      cwd: installedPackage,
+      stdio: "inherit",
+    },
+  );
   if (result.error) {
     throw result.error;
   }

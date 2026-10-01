@@ -230,3 +230,123 @@ export declare function transformWithHighlighter(
   highlightOptions: HighlightOptions,
   options?: Options,
 ): TransformResult;
+
+/** Compile authored source as a program. Unlike HTML rendering, this is not an untrusted-content boundary. */
+export type CompileJsxOptions = {
+  /** Source grammar; defaults to Markdown. MDX enables strict JavaScript/JSX parsing. */
+  format?: "md" | "mdx";
+  /** Prefix generated Markdown tags (for example `_components.p`). Authored JSX is unchanged. */
+  componentPrefix?: string;
+  /** Map normalized callout kinds to JSX component identifiers. */
+  calloutComponents?: Record<string, string>;
+  /** Map fenced languages to JSX component identifiers, such as `mermaid: "Mermaid"`. */
+  codeComponents?: Record<string, string>;
+  /** Wrap highlighted fences in this component, with metadata props and rendered JSX children. */
+  codeBlockComponent?: string;
+  /** Omit the first top-level H1 only when its trimmed visible text equals this title. */
+  omitTitleHeading?: string;
+} & Omit<
+  Options,
+  | "mdx"
+  | "renderPolicy"
+  | "allowHtml"
+  | "disallowedRawHtml"
+  | "tableColgroup"
+  | "tableColumnNames"
+  | "linkBasePath"
+  | "autoAbbreviations"
+  | "abbreviations"
+  | "preset"
+>;
+
+/** A trusted hook may replace an entire code block with JSX. Exceptions propagate. */
+export type JsxCodeRenderer = (
+  code: string,
+  language?: string | null,
+  meta?: string | null,
+) => string | null | undefined;
+
+/** Heading metadata with its original UTF-8 byte range, including heading syntax. */
+export type JsxHeading = {
+  start: number;
+  end: number;
+} & Heading;
+
+export type JsxResult = {
+  /** JSX fragment expression; contains no framework imports or module scaffolding. */
+  body: string;
+  /** Preserved authored module statements; offsets refer to original UTF-8 source bytes. */
+  esm: Array<{ value: string; start: number; end: number }>;
+  /** Authored JSX component root identifiers in first-reference order. */
+  components: string[];
+  /** Generated Markdown intrinsic names, including names under componentPrefix. */
+  elements: string[];
+  codeBlocks: Array<{ code: string; language?: string; meta?: string }>;
+  headings: JsxHeading[];
+  frontMatter?: string;
+  frontMatterSpan?: { start: number; end: number };
+  frontMatterKind?: "yaml" | "toml";
+  /** Original UTF-8 range of the matching top-level H1 omitted from the body. */
+  omittedTitleHeadingSpan?: { start: number; end: number };
+  /** Zero-based positions; columns count UTF-16 code units. */
+  mappings: Array<{
+    generatedLine: number;
+    generatedColumn: number;
+    sourceLine: number;
+    sourceColumn: number;
+  }>;
+};
+
+export declare function compileJsx(
+  markdown: string | Uint8Array,
+  options?: CompileJsxOptions,
+  renderCode?: JsxCodeRenderer,
+): JsxResult;
+
+/** A standard theme name or a JSON theme registration accepted by Ferriki. */
+export type JsxTheme =
+  | string
+  | {
+      name: string;
+      type?: string;
+      fg?: string;
+      bg?: string;
+      settings?: readonly unknown[];
+      tokenColors?: readonly unknown[];
+      colors?: Readonly<Record<string, string>>;
+      include?: string;
+      displayName?: string;
+      $schema?: string;
+      semanticHighlighting?: boolean;
+      semanticTokenColors?: Readonly<Record<string, string>>;
+    };
+
+export type JsxCompilerOptions = {
+  /** A single theme or a light/dark pair. Defaults to the GitHub default pair. */
+  theme?: JsxTheme | { light: JsxTheme; dark: JsxTheme };
+  /** Enable line numbers unless overridden by code fence metadata. */
+  lineNumbers?: boolean;
+  /** Custom TextMate grammar registrations, loaded into this compiler once. */
+  languages?: readonly object[];
+  /** Standard asset source. Unset fields use Ferriki's environment and release defaults. */
+  assets?: {
+    /** Load a complete local standard asset directory instead of the release CDN/cache. */
+    assetRoot?: string;
+    remote?: boolean;
+    baseUrl?: string;
+    cacheDir?: string;
+    commit?: string;
+  };
+};
+
+/** Reusable native JSX compiler with Ferriki highlighting. No JavaScript highlighting callbacks are needed. */
+export declare class JsxCompiler {
+  /** Loads theme assets; first use can download missing, verified standard assets. */
+  constructor(options?: JsxCompilerOptions);
+  /** Compiles source, loading and caching the fence languages on first use. */
+  compile(
+    markdown: string | Uint8Array,
+    options?: CompileJsxOptions,
+    renderCode?: JsxCodeRenderer,
+  ): JsxResult;
+}

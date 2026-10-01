@@ -195,7 +195,13 @@ impl<'a> Parser<'a> {
             }
             b'<' => {
                 let bytes = self.source.as_bytes();
-                if self.options.mdx && super::mdx_jsx::looks_like_jsx_open(bytes, trimmed_start) {
+                if self.options.mdx
+                    && super::mdx_jsx::looks_like_jsx_open(
+                        bytes,
+                        trimmed_start,
+                        self.options.mdx_compatible,
+                    )
+                {
                     true
                 } else {
                     let line = self.line_at(line_start);

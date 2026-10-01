@@ -316,7 +316,8 @@ impl<'a> Parser<'a> {
                 }
             }
             b'{' if self.allows_mdx_text_expression() => {
-                if let Some((node, end)) = self.try_parse_mdx_text_expression(content, *pos, offset)
+                if let Some((node, end)) =
+                    self.try_parse_mdx_text_expression(content, *pos, offset)?
                 {
                     children.push(node);
                     *pos = end;
@@ -470,6 +471,23 @@ impl<'a> Parser<'a> {
         children: &mut Vec<'a, Node<'a>>,
         pos: &mut usize,
     ) -> ParseResult<()> {
+        #[cfg(feature = "jsx")]
+        if self.options.mdx_compatible && content[*pos..].starts_with("</") {
+            return Err(super::mdx_compatible::invalid(
+                Span::new((offset + *pos) as u32, (offset + *pos + 2) as u32),
+                "unexpected JSX closing tag; no matching opening tag in this content",
+            ));
+        }
+        #[cfg(feature = "jsx")]
+        if self.options.mdx_compatible
+            && super::mdx_jsx::looks_like_jsx_open(content.as_bytes(), *pos, true)
+            && !self.has_closer_from(content, *pos + 1, b'>')
+        {
+            return Err(super::mdx_compatible::invalid(
+                Span::new((offset + *pos) as u32, (offset + content.len()) as u32),
+                "unclosed JSX opening tag; expected > or />",
+            ));
+        }
         // An autolink, a JSX tag and an inline HTML tag all have to close
         // with `>`. Each of the three parsers below only reports that there
         // is none by scanning to the end of the content, so a line holding

@@ -27,6 +27,14 @@ pub struct ParseError(Box<ParseErrorKind>);
 #[non_exhaustive]
 #[allow(clippy::disallowed_types)]
 pub enum ParseErrorKind {
+    /// Invalid MDX syntax in JSX-compatible parsing.
+    #[error("invalid MDX at {span:?}: {message}")]
+    InvalidMdx {
+        /// Source range containing the invalid construct.
+        span: Span,
+        /// JavaScript or JSX syntax diagnostic.
+        message: String,
+    },
     /// Nesting too deep.
     #[error("nesting too deep at {span:?}: maximum depth is {max_depth}")]
     NestingTooDeep {
@@ -67,6 +75,7 @@ impl ParseError {
     pub(in crate::parser) fn span_mut(&mut self) -> &mut Span {
         match &mut *self.0 {
             ParseErrorKind::NestingTooDeep { span, .. } => span,
+            ParseErrorKind::InvalidMdx { span, .. } => span,
         }
     }
 
@@ -99,6 +108,7 @@ impl ParseErrorKind {
     pub fn span(&self) -> Span {
         match self {
             Self::NestingTooDeep { span, .. } => *span,
+            Self::InvalidMdx { span, .. } => *span,
         }
     }
 }

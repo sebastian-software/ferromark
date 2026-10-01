@@ -9,6 +9,19 @@ the highlighter. This integration implements [issue #393].
 [`ferriki` crate]: https://crates.io/crates/ferriki
 [Ferriki asset documentation]: https://github.com/sebastian-software/ferriki/blob/v0.7.0/docs/rust-api.md#assets-and-lifecycle
 
+## JSX output
+
+`FerrikiJsxHooks` provides the same native integration for the framework-neutral
+JSX renderer. It supports a single theme or a light/dark pair and preserves
+fence titles, labels, highlighted lines, and line numbers as JSX props and
+children. See the [JSX renderer contract](jsx-renderer.md#native-ferriki-highlighting).
+
+The Node `JsxCompiler` owns that highlighter and loads verified standard assets
+itself; reuse it across documents. Rust applications can enable
+`ferriki-remote` to make Ferriki's CDN/cache source available through Ferromark's
+re-export, or keep `ferriki` for custom/local asset sources. The core's default
+dependency graph remains free of Ferriki, remote-loading code, and Oxc.
+
 ## Use the adapter
 
 Build a Ferriki `Highlighter` once, then borrow it for each render. Ferromark
