@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "ferrikiVersion": "0.7.0",
+  "languageScopes": {
+    "rust": "source.rust", "rs": "source.rust", "typescript": "source.ts",
+    "tsx": "source.tsx", "markdown": "text.html.markdown", "text": "source.text",
+    "ferromark-fixture": "source.ferromark-fixture", "fm-fixture": "source.ferromark-fixture"
+  },
+  "customLanguage": {
+    "name": "ferromark-fixture",
+    "scopeName": "source.ferromark-fixture",
+    "aliases": ["fm-fixture"],
+    "patterns": [{"match": "\\b(note|let)\\b", "name": "keyword.control.fixture"}]
+  },
+  "customTheme": {
+    "name": "ferromark-fixture-dark",
+    "type": "dark",
+    "colors": {"editor.foreground": "#eeeeee", "editor.background": "#111111"},
+    "tokenColors": [{"scope": "keyword.control.fixture", "settings": {"foreground": "#ff0000", "fontStyle": "bold italic"}}]
+  },
+  "tokens": [
+    {"id": "rust", "lang": "rust", "theme": "nord", "code": "fn main() {\n    let message = \"<hello> & café 🦀\";\n    println!(\"{message}\");\n}\n"},
+    {"id": "rust-alias", "lang": "rs", "theme": "nord", "code": "let answer: u32 = 42;"},
+    {"id": "typescript", "lang": "typescript", "theme": "github-light", "code": "interface User { name: string }\nconst user: User = { name: \"Zoë 🚀\" };\n"},
+    {"id": "tsx", "lang": "tsx", "theme": "nord", "code": "const Greeting = ({ name }: { name: string }) => (\n  <span title=\"a&b\">Hello {name}</span>\n);\n"},
+    {"id": "markdown-embedding", "lang": "markdown", "theme": "nord", "code": "# Embedded TypeScript\n\n```typescript\nconst answer: number = 42;\n```\n\n**bold** and `inline`.\n"},
+    {"id": "unicode-offsets", "lang": "rust", "theme": "nord", "code": "let x = \"é🦀\"; let y = 1;\nlet z = \"東京\";\n"},
+    {"id": "crlf", "lang": "rust", "theme": "nord", "code": "fn main() {\r\n\r\n    let x = 1;\r\n}\r\n"},
+    {"id": "empty", "lang": "rust", "theme": "nord", "code": ""},
+    {"id": "empty-lines", "lang": "rust", "theme": "nord", "code": "\n\n"},
+    {"id": "plain", "lang": "text", "theme": "nord", "code": "<tag> & \"quote\" é🦀\n"},
+    {"id": "custom-registration", "lang": "ferromark-fixture", "theme": "ferromark-fixture-dark", "code": "note <tag> & let é🦀\n"},
+    {"id": "custom-alias", "lang": "fm-fixture", "theme": "ferromark-fixture-dark", "code": "let x = 1;\n"},
+    {"id": "unknown-language", "lang": "ferromark-missing", "theme": "nord", "code": "<unknown>"},
+    {"id": "unknown-theme", "lang": "rust", "theme": "ferromark-missing-theme", "code": "fn main() {}"}
+  ],
+  "markdown": [
+    {"id": "fenced-rust", "theme": "nord", "source": "```rust\nfn main() {}\n```"},
+    {"id": "fenced-tsx", "theme": "nord", "source": "```tsx\nconst view = <span>café 🦀</span>;\n```"},
+    {"id": "fenced-markdown", "theme": "nord", "source": "````markdown\n```typescript\nconst x: number = 1;\n```\n````"},
+    {"id": "unknown-language", "theme": "nord", "source": "```ferromark-missing\n<unknown> & code\n```"},
+    {"id": "missing-language", "theme": "nord", "source": "```\n<plain> & code\n```"},
+    {"id": "indented", "theme": "nord", "source": "    <plain> & code\n"},
+    {"id": "empty-block", "theme": "nord", "source": "```rust\n```"},
+    {"id": "crlf-unicode", "theme": "nord", "source": "```rust\r\nlet x = \"<é🦀>\";\r\n\r\n```\r\n"},
+    {"id": "lone-cr", "theme": "nord", "source": "```rust\rlet x = 1;\r```\r"},
+    {"id": "fence-metadata", "theme": "nord", "source": "```rust title=\"a&b.rs\"\nlet x = 1;\n```"},
+    {"id": "vitepress", "theme": "nord", "source": "```rust:line-numbers=7 [a&b.rs] {1}\n// [!code warning]\nlet x = 1;\n```"},
+    {"id": "unknown-theme", "theme": "ferromark-missing-theme", "source": "```rust\n<code>\n```"},
+    {"id": "custom", "theme": "ferromark-fixture-dark", "source": "```fm-fixture\nnote <tag> & let é🦀\n```"},
+    {"id": "many-blocks", "theme": "nord", "source": "# Reuse\n\n```rust\nfn one() {}\n```\n\n```typescript\nconst x = 1;\n```\n\n    plain & code\n"}
+  ],
+  "nodeDualTheme": {"code": "let x = \"é🦀\";\n", "lang": "rust", "themes": {"light": "github-light", "dark": "nord"}}
+}

@@ -24,12 +24,54 @@ jobs:
       - run: cargo test -p ferromark --features ferriki --test ferriki_integration --locked
       - run: cargo check -p ferromark --features ferriki --example ferriki --locked
       - run: cargo bench -p ferromark --features ferriki --bench ferriki --no-run --locked
+      - name: Verify packaged Rust consumer and frozen highlighting fixtures
+        run: python3 scripts/ferriki-compatibility/run.py "$RUNNER_TEMP/ferriki-rust"
+      - name: Upload Rust fixture evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ferriki-rust-contract
+          path: |
+            ${{ runner.temp }}/ferriki-rust/*.log
+            ${{ runner.temp }}/ferriki-rust/*.stdout
+            ${{ runner.temp }}/ferriki-rust/*.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Keep the default dependency graph free of Ferriki
         run: |
           if cargo tree -p ferromark --no-default-features --edges normal --locked | grep -q ferriki; then
             echo "Ferriki appeared in the default Ferromark dependency graph" >&2
             exit 1
           fi
+
+  ferriki-node-contract:
+    name: Ferriki shared Rust/Node fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: scripts/ferriki-compatibility/package-lock.json
+      - run: npm ci --prefix scripts/ferriki-compatibility --ignore-scripts --no-audit --no-fund
+      - run: cargo fetch --locked
+      - run: python3 scripts/ferriki-compatibility/run.py "$RUNNER_TEMP/ferriki-peers" --node
+      - name: Upload shared fixture evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ferriki-rust-node-contract
+          path: |
+            ${{ runner.temp }}/ferriki-peers/*.log
+            ${{ runner.temp }}/ferriki-peers/*.stdout
+            ${{ runner.temp }}/ferriki-peers/*.json
+          if-no-files-found: error
+          retention-days: 30
 
   test:
     strategy:

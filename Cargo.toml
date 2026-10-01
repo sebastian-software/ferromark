@@ -62,6 +62,10 @@ ferriki = { version = "0.7.0", optional = true, default-features = false }
 criterion.workspace = true
 insta.workspace = true
 
+[[example]]
+name = "ferriki_contract"
+required-features = ["ferriki"]
+
 [[bench]]
 name = "parser"
 harness = false
