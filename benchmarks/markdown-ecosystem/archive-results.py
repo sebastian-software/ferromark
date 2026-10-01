@@ -22,6 +22,7 @@ def validate(source, revision=None):
     policy_path = 'benchmarks/markdown-ecosystem/scoring-policy.json'
     has_policy = subprocess.run(['git', 'cat-file', '-e', config['git_head'] + ':' + policy_path], cwd=REPO, capture_output=True).returncode == 0
     policy_data = None
+    policy = None
     if has_policy:
         policy_data = subprocess.check_output(['git', 'show', config['git_head'] + ':' + policy_path], cwd=REPO)
         policy = json.loads(policy_data)
@@ -32,12 +33,11 @@ def validate(source, revision=None):
         assert config.get('schema', 1) < 3, 'full-corpus campaigns require their committed scoring policy'
     new_contract = subprocess.run(['git', 'cat-file', '-e', config['git_head'] + ':benchmarks/markdown-ecosystem/comparisons.json'], cwd=REPO, capture_output=True).returncode == 0
     assert not new_contract or config.get('schema', 1) >= 2, 'new campaigns cannot omit the rotating-control contract'
-    assert config['rounds'] == 3 and config['samples'] == 6
-    assert config['window_ms'] == 40 and config['warmup_ms'] == 60
+    run.contracts.validate_timing(config, policy)
     assert len(corpus['cases']) == summary['documents'] == 57
-    expected = {(r, s, case['name'], mode) for r in range(3) for s in range(6)
+    expected = {(r, s, case['name'], mode) for r in range(config['rounds']) for s in range(config['samples'])
                 for case in corpus['cases'] for mode in run.native.MODES}
-    assert len(rows) == len(expected) == 2052
+    assert len(rows) == len(expected)
     assert {(row['round'], row['sample'], row['case'], row['mode']) for row in rows} == expected
     assert set(outputs) == {case['name'] for case in corpus['cases']}
     matched = set()
@@ -56,7 +56,7 @@ def validate(source, revision=None):
         for name in ('v2', engine):
             timing = row[name]
             units = run.output_units(outputs[row['case']]['outputs'][name], config['track'])
-            assert timing['iterations'] > 0 and timing['elapsed_ns'] >= 40_000_000
+            assert timing['iterations'] > 0 and timing['elapsed_ns'] >= config['window_ms'] * 1_000_000
             assert timing['checksum'] == timing['iterations'] * units
     lock = 'Cargo.lock' if config['track'] == 'native' else 'package-lock.json'
     assert run.native.sha(source / lock) == config['lock_sha256']
@@ -133,7 +133,7 @@ def validate_scores(config, summary, outputs, rows, matched):
 def validate_rotation(config, cases, outputs, rows):
     engine = config['engines'][1]
     groups = run.contracts.groups(cases)
-    expected = {(r, s, profile, mode) for r in range(3) for s in range(6)
+    expected = {(r, s, profile, mode) for r in range(config['rounds']) for s in range(config['samples'])
                 for profile in groups for mode in run.native.MODES}
     assert len(rows) == len(expected), 'incomplete rotating controls'
     assert {(row['round'], row['sample'], row['profile'], row['mode']) for row in rows} == expected
@@ -143,7 +143,7 @@ def validate_rotation(config, cases, outputs, rows):
         for name in ('v2', engine):
             timing = row[name]
             units = sum(run.output_units(outputs[member]['outputs'][name], config['track']) for member in members)
-            assert timing['iterations'] > 0 and timing['elapsed_ns'] >= 40_000_000
+            assert timing['iterations'] > 0 and timing['elapsed_ns'] >= config['window_ms'] * 1_000_000
             assert timing['checksum'] == timing['iterations'] * units
 
 
@@ -171,7 +171,7 @@ def main():
     p.add_argument('--revision', help='full committed revision for a new measurement; default requires the historical clean core')
     args = p.parse_args()
     retain(args.source, args.destination, args.revision)
-    print('Verified and retained 2,052 windows:', args.destination)
+    print('Verified and retained complete timing windows:', args.destination)
 
 
 if __name__ == '__main__':

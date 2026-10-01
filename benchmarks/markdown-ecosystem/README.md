@@ -201,7 +201,7 @@ complete campaign. Existing archives retain their original versions and scope.
 | Sätteri | npm 0.10.5; `markdownToHtml(...).html` | Native Node pipeline without MDX/plugins. Other extensions off. Public GFM also enables literal autolinks; there is no individual public switch, so the difference remains. `rawHtml: false` disables the extra AST conversion feature, while ordinary raw HTML remains verified. |
 | MD4X NAPI | npm 0.0.30; explicit `md4x/napi` init then `renderToHtml` | Native Node addon with no WASM fallback. `headingIds`, `full`, `heal` off. Public API has no parser-feature flags; tables, strike, tasks, autolinks, footnotes, callouts, and frontmatter extraction remain enabled even for CommonMark-profile inputs. |
 | MD4X WASM | npm 0.0.30; explicit `md4x/wasm` init with installed WASM bytes then `renderToHtml` | WASM initialization is untimed; identical public parser contract, separately timed JS/WASM boundary. No NAPI fallback. |
-| TanStack Markdown | @tanstack/markdown 0.0.16; public `renderHtml(source, options)` from `/html` | Trusted raw HTML and unchanged URLs; heading IDs/anchors, frontmatter, highlighting, docs/AI extensions off. No public switches for tables, strike, tasks, footnotes, or code wrapper attributes. Deliberate syntax subset; differences are disclosed, and every input contributes to performance scoring. |
+| TanStack Markdown | @tanstack/markdown 1.0.0; public `renderHtml(source, options)` from `/html` | Trusted raw HTML and unchanged URLs; heading IDs/anchors, frontmatter, highlighting, docs/AI extensions off. No public switches for tables, strike, tasks, footnotes, or code wrapper attributes. Deliberate syntax subset; differences are disclosed, and every input contributes to performance scoring. |
 | OX-Content Node | @ox-content/napi 3.2.13; `parseAndRender(...).html` | Individual parser flags enable only shared extensions. Public renderer heading IDs, TOC, callouts, fence metadata handling, and literal URL transformations cannot be disabled. Complete public API cost is timed, including returned metadata. |
 
 Every pair retains the manifest and contract code hashes. `contracts.py` asserts
@@ -213,12 +213,16 @@ actual agreement counts and API contracts; this compares public API performance
 on the same inputs, without claiming identical feature sets or conformance.
 
 New runs also retain `rotating-controls.json`: all 57 inputs grouped by effective
-profile, both lifecycles, three independent process rounds, six alternating
-40 ms windows after 60 ms warmup. The output is checked against per-document
+profile, both lifecycles, and the same named timing profile as their pair. Direct
+runner defaults stay at three rounds, six alternating 40 ms windows after 60 ms
+warmup (`standard`). The manual CLI defaults to `balanced`: three rounds, three
+10 ms windows after 30 ms warmup. The output is checked against per-document
 verification before and after timing. Controls include disagreements for diagnosis
 and do not enter per-document factors. Single-document timing may include a
 library's repeated-input cache; review rotating controls before making claims
-about parsing work. Full publication rejects missing/shortened controls.
+about parsing work. Full publication rejects missing controls, windows shorter
+than the declared profile, and arbitrary diagnostic parameter combinations.
+The committed scoring policy binds the named profiles; a suite cannot mix them.
 
 The homepage exposes the new rows with GitHub links and backend labels, but
 shows unmeasured cells until a complete validated run is imported. Dependency

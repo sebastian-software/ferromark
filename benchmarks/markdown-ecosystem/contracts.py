@@ -10,6 +10,33 @@ COMMONMARK_ONLY = {p['id'] for p in PROJECTS if p['profile'] == 'commonmark-only
 SPECIAL = {'remarkable', 'markdown-exit', 'markdown-it-ts', 'satteri', 'md4x-napi', 'md4x-wasm', 'ox-content-napi'}
 
 
+TIMING_KEYS = ('rounds', 'samples', 'window_ms', 'warmup_ms')
+TIMING_PROFILES = json.loads(MANIFEST.with_name('scoring-policy.json').read_text())['timing_profiles']
+
+
+def timing_identity(config):
+    return next((name for name, values in TIMING_PROFILES.items()
+                 if all(config[key] == values[key] for key in TIMING_KEYS)), 'diagnostic')
+
+
+def validate_timing(config, policy=None):
+    # Historical campaigns have no named profile and retain their original windows.
+    profiles = policy.get('timing_profiles') if policy else None
+    name = config.get('timing_profile', 'standard')
+    if profiles is None:
+        assert name == 'standard', 'historical campaigns require standard timing'
+        values = dict(rounds=3, samples=6, window_ms=40, warmup_ms=60)
+    else:
+        assert config.get('timing_profile') in profiles, 'missing or unknown timing profile'
+        values = profiles[name]
+    assert all(config[key] == values[key] for key in TIMING_KEYS), 'timing differs from the committed profile'
+    return name
+
+
+def timing_arguments(name):
+    return [arg for key in TIMING_KEYS for arg in ('--' + key.replace('_', '-'), str(TIMING_PROFILES[name][key]))]
+
+
 
 def campaign_projects(projects, scope='main'):
     """Keep optional adapters executable without requiring them in every campaign."""

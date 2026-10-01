@@ -1,0 +1,21 @@
+{
+  "revision": "9af95fc3175bc7c2a199682ba3e6a1c276bfdad9",
+  "localPlatform": "macos-arm64",
+  "mainVariants": 20,
+  "inputsPerVariant": 57,
+  "lifecycles": [
+    "fresh",
+    "reuse"
+  ],
+  "profile": "balanced",
+  "pilotWindows": 1026,
+  "pilotRotatingControls": 36,
+  "pilotArchive": "accepted",
+  "realEvidenceMutationChecks": {
+    "missing-window": "rejected",
+    "missing-rotating-control": "rejected",
+    "short-window": "rejected"
+  },
+  "blacksmithRun": "https://github.com/sebastian-software/ferromark/actions/runs/36822651743",
+  "blacksmithStatusAtRecording": "running; no new factors published"
+}

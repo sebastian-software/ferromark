@@ -42,8 +42,11 @@ CONTRIBUTING.md for checks and PR conventions.
   before interpreting repeated-input factors as parsing throughput.
 - All nine Native and eleven Node.js main execution variants must finish. Use
   `--scope extended` to include markdown-exit, markdown-it-ts, and MD4X WASM.
-  The recorded scope must stay fixed across preparation, verification, and timing. Do not substitute
-  shortened windows, synthetic results, or copied historical values. Builds,
+  The recorded scope and timing profile must stay fixed across preparation,
+  verification, and timing. The default `balanced` profile retains three process
+  rounds, three 10 ms samples and 30 ms warmup with 5-second lane pauses. Use
+  `--timing-profile standard` for the original longer campaign. Do not substitute
+  arbitrary shortened windows, synthetic results, or copied historical values. Builds,
   downloads, and HTML verification finish before timing.
 - Resume interrupted measurements with `measure OUTPUT` on the same host and
   revision. Inspect `OUTPUT/logs` on failure; partial attempts are preserved.
@@ -55,7 +58,7 @@ CONTRIBUTING.md for checks and PR conventions.
   host observations and source provenance, then `publish OUTPUT` to prepare a
   local update. It selects only the measured platform; other OS/architecture
   values and historical reports stay intact. Do not hand-edit factors, mix
-  platform results, or claim identical functionality across different API contracts.
+  platform results or sampling profiles, or claim identical functionality across different API contracts.
 - New campaigns score all 57 inputs. Retain HTML agreement as descriptive metadata
   and annotate different outputs with `*`; never use agreement or conformance to
   exclude a candidate or document from the performance factor. Preserve historical

@@ -21,6 +21,11 @@ on:
         type: choice
         options: [main, extended]
         default: main
+      timing_profile:
+        description: Balanced sampling or the longer standard campaign
+        type: choice
+        options: [balanced, standard]
+        default: balanced
       repetitions:
         description: Independent jobs per platform (retain every result)
         type: choice
@@ -37,6 +42,9 @@ on:
       scope:
         type: string
         default: main
+      timing_profile:
+        type: string
+        default: balanced
       repetitions:
         type: string
         default: "1"
@@ -61,18 +69,19 @@ jobs:
     name: ${{ matrix.profile }} / run ${{ matrix.trial }} / ${{ inputs.mode }}
     if: github.repository == 'sebastian-software/ferromark'
     runs-on: ${{ matrix.profile == 'macos-arm64' && 'blacksmith-6vcpu-macos-26' || 'blacksmith-4vcpu-ubuntu-2404' }}
-    # The extended 23-row suite needs more than 90 minutes for timing and cooldowns alone.
-    timeout-minutes: ${{ inputs.mode == 'probe' && 10 || inputs.mode == 'measure' && 180 || 90 }}
+    # Setup/build time is additional to timing; keep a bound for each campaign.
+    timeout-minutes: ${{ inputs.mode == 'probe' && 10 || inputs.mode == 'measure' && inputs.timing_profile == 'standard' && 180 || inputs.mode == 'measure' && 60 || 90 }}
     strategy:
       fail-fast: false
-      # Independent allocations stay sequential; builds never run alongside
-      # measurement steps within a job. All trials remain separate artifacts.
-      max-parallel: 1
+      # Each job gets its own VM. Builds finish before timing within that VM;
+      # the two platforms can run concurrently. Retain every independent trial.
+      max-parallel: 2
       matrix:
         profile: ${{ fromJSON(inputs.platform == 'macos-arm64' && '["macos-arm64"]' || inputs.platform == 'linux-x86-64' && '["linux-x86-64"]' || '["macos-arm64","linux-x86-64"]') }}
         trial: ${{ fromJSON(inputs.repetitions == '3' && '[1,2,3]' || '[1]') }}
     env:
       SCOPE: ${{ inputs.scope }}
+      TIMING_PROFILE: ${{ inputs.timing_profile }}
       PROFILE: ${{ matrix.profile }}
       MODE: ${{ inputs.mode }}
       REQUESTED_PLATFORM: ${{ inputs.platform }}
@@ -91,6 +100,7 @@ jobs:
           echo "BENCH_OUTPUT=$BENCH_OUTPUT" >> "$GITHUB_ENV"
           case "$REQUESTED_PLATFORM" in both|macos-arm64|linux-x86-64) ;; *) exit 1 ;; esac
           case "$SCOPE" in main|extended) ;; *) exit 1 ;; esac
+          case "$TIMING_PROFILE" in balanced|standard) ;; *) exit 1 ;; esac
           case "$MODE" in probe|verify|measure) ;; *) exit 1 ;; esac
           case "$REPETITIONS" in 1|3) ;; *) exit 1 ;; esac
           python3 benchmarks/manual-comparison/runner_context.py "$PROFILE" "$BENCH_OUTPUT/runner-context.json"
@@ -121,13 +131,13 @@ jobs:
       - name: Build and verify all adapters without timing
         if: inputs.mode == 'verify'
         run: |
-          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison prepare "$BENCH_OUTPUT/suite" --scope "$SCOPE" --runner-context "$BENCH_OUTPUT/runner-context.json"
+          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison prepare "$BENCH_OUTPUT/suite" --scope "$SCOPE" --timing-profile "$TIMING_PROFILE" --runner-context "$BENCH_OUTPUT/runner-context.json"
           env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison verify "$BENCH_OUTPUT/suite"
 
       - name: Measure the complete comparison
         if: inputs.mode == 'measure'
         run: |
-          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison run "$BENCH_OUTPUT/suite" --scope "$SCOPE" --runner-context "$BENCH_OUTPUT/runner-context.json"
+          env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison run "$BENCH_OUTPUT/suite" --scope "$SCOPE" --timing-profile "$TIMING_PROFILE" --runner-context "$BENCH_OUTPUT/runner-context.json"
           env -u NODE_OPTIONS -u RUSTUP_TOOLCHAIN ./scripts/benchmark-comparison publish "$BENCH_OUTPUT/suite" --check
 
       - name: Retain observations, logs, and portable evidence
@@ -152,5 +162,6 @@ jobs:
             printf '### Blacksmith: %s / %s\n\n' "$PROFILE" "$MODE"
             printf 'Source: `%s`\n\n' "$(git rev-parse HEAD)"
             printf 'Run: %s\n\n' "$BENCH_RUN_URL"
+            printf 'Sampling profile: `%s`\n\n' "$TIMING_PROFILE"
             printf 'Artifacts contain resource observations and available logs. Probe and verification jobs contain no performance measurements. Only complete measurement evidence can be imported; inspect all independent trials before selecting a report.\n'
           } >> "$GITHUB_STEP_SUMMARY"
