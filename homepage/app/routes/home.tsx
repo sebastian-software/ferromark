@@ -3,11 +3,12 @@ import {
   IronBand,
   Ledger,
   Mark,
-  PipelineAssembly,
+  Principles,
   ProjectHero,
   RegistryFacts,
-  RunSample,
+  Relations,
   Section,
+  WorkWithUs,
 } from "ferramenta-family";
 import { Link } from "react-router";
 
@@ -17,7 +18,7 @@ import {
   benchmarkLead,
 } from "../components/benchmark-comparison";
 import { FlavoredMarkdownSection } from "../components/ffm-showcase";
-import landingSample from "../data/landing-sample.json";
+import { TransformShowcase } from "../components/transform-showcase";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
 import { version } from "../version";
 
@@ -52,13 +53,15 @@ const conformanceEntries = [
 function ProjectIntro() {
   return (
     <ProjectHero
-      mark="ferromark"
-      title={
-        <>
-          Markdown. <em>At native speed.</em>
-        </>
-      }
-      lede="A focused native Markdown engine for Rust and Node.js. Parse Markdown, render HTML, and inspect the metadata publishing needs, with behavior grounded in CommonMark and GFM."
+      icon="ferromark"
+      title="Ferromark"
+      what="A native Markdown engine for Rust and Node.js."
+      lede="Publish Markdown with CommonMark and GFM, add richer publishing features with FFM, and give your content its final polish with Afterburner."
+      facts={[
+        { label: "Built to", value: "CommonMark / GFM" },
+        { label: "Checked against", value: "Specification and reference corpora" },
+        { label: "Release", value: `v${version}` },
+      ]}
       actions={
         <>
           <Link className="fam-btn fam-btn-primary" to="/rust/getting-started">
@@ -86,44 +89,35 @@ function ContractBand() {
     <IronBand
       title="Correctness is part of the contract."
       intro="The engine keeps Markdown parsing and HTML rendering in scope, with specification tests for correctness and measured public API comparisons for speed. Your application keeps control of trust, translation, routing, and presentation."
-      rows={[
-        {
-          heading: "Standards first",
-          text: "CommonMark and GFM define the syntax. Conformance results and retained reference corpora make the behavior reviewable.",
-        },
-        {
-          heading: "Trust stays explicit",
-          text: "Rust preserves raw HTML unless you enable sanitizing. Node.js escapes authored HTML and filters unsafe URL schemes until you trust the source.",
-        },
-        {
-          heading: "A focused core",
-          text: "Ferromark parses Markdown and renders HTML, with opt-in typography and technical abbreviation markup. Translation, site assembly, templates, and syntax highlighting stay in your pipeline.",
-        },
-      ]}
-    />
+    >
+      <Principles
+        items={[
+          {
+            heading: "Standards first",
+            text: "CommonMark and GFM define the syntax. Conformance results and retained reference corpora make the behavior reviewable.",
+          },
+          {
+            heading: "Trust stays explicit",
+            text: "Rust preserves raw HTML unless you enable sanitizing. Node.js escapes authored HTML and filters unsafe URL schemes until you trust the source.",
+          },
+          {
+            heading: "A focused core",
+            text: "Ferromark parses Markdown and renders HTML, with opt-in typography and technical abbreviation markup. Translation, site assembly, templates, and syntax highlighting stay in your pipeline.",
+          },
+        ]}
+      />
+    </IronBand>
   );
 }
 
-function PipelineSection() {
+function FamilySection() {
   return (
     <Section
-      id="pipeline"
-      title="A Markdown stage that fits your pipeline."
-      intro="Connect the renderer to the rest of your content tooling. Ferromark is the Markdown step; the surrounding tools remain independently useful."
+      id="family"
+      title="A place in your toolchain."
+      intro="Use Ferromark on its own, pair it with Ferriki for syntax highlighting, or find it inside Palamedes. Each engine has its own job and its own API."
     >
-      <PipelineAssembly current="ferromark" />
-      <RunSample
-        input={landingSample.markdown}
-        inputCaption="content.md"
-        inputKind="Markdown source"
-        output={landingSample.html}
-        outputCaption={
-          <>
-            Rendered by Ferromark {landingSample.renderedWith} from commit{" "}
-            <code>{landingSample.sourceCommit}</code>
-          </>
-        }
-      />
+      <Relations current="ferromark" />
     </Section>
   );
 }
@@ -206,12 +200,14 @@ export default function HomePage() {
       {/* A div, not a second <main>: Ardo already renders the page's main landmark. */}
       <div className="fam-page">
         <ProjectIntro />
-        <ContractBand />
-        <PipelineSection />
+        <TransformShowcase />
         <FlavoredMarkdownSection />
+        <ContractBand />
+        <FamilySection />
         <EvidenceSection />
         <ConformanceSection />
         <StartSection />
+        <WorkWithUs title="Need Ferromark in your stack?" />
       </div>
     </RegistryFacts>
   );
