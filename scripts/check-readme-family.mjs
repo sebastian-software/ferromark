@@ -17,7 +17,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // `pnpm install` in scripts/.
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-export const FAMILY_GENERATOR_REVISION = "05fadd21d86b69bb15179ef4461bef6b3b531f88";
+export const FAMILY_GENERATOR_REVISION = "0537f205d375dca2939b18d7d5d23e8fd6fe9e7b";
 
 export const FAMILY_GENERATOR_SPEC =
   `github:sebastian-software/ferramenta#${FAMILY_GENERATOR_REVISION}` + "&path:/packages/family";
