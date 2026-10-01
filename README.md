@@ -120,28 +120,23 @@ separate licenses.
 
 [Ferramenta](https://ferramenta.dev) — A family of Rust tools.
 
-**The content pipeline**
+**Engines**
 
 | Tool | Job |
 | --- | --- |
-| [ferroni](https://sebastian-software.github.io/ferroni/) | Oniguruma-compatible regex engine |
-| [ferriki](https://github.com/sebastian-software/ferriki) | Shiki-compatible syntax highlighting |
-
-**The language workshop**
-
-| Tool | Job |
-| --- | --- |
+| [ferroni](https://ferroni.dev) | Oniguruma-compatible regex engine |
+| [ferriki](https://ferriki.dev) | Shiki-compatible syntax highlighting |
 | [ferrolex](https://github.com/sebastian-software/ferrolex) | Spell checking for text and code |
 | [ferrocat](https://ferrocat.dev) | Translation catalog engine |
-| [palamedes](https://palamedes.dev) | Internationalization for TypeScript applications |
+| [ferralk](https://github.com/sebastian-software/ferralk) | Glob matching and parallel filesystem walking |
+| [ferrugo](https://github.com/sebastian-software/ferrugo) | PDF previews for untrusted files |
 
-**On the workbench**
+**Applications**
 
 | Tool | Job |
 | --- | --- |
-| [ferrovia](https://github.com/sebastian-software/ferrovia) | SVGO-compatible SVG optimizer |
-| [ferralk](https://github.com/sebastian-software/ferralk) | Glob matching and parallel filesystem walking |
-| [ferrugo](https://github.com/sebastian-software/ferrugo) | PDF previews for untrusted files |
+| [palamedes](https://palamedes.dev) | Internationalization for TypeScript applications |
+| [dalo](https://dalo.sh) | Your team's agent setup, versioned like code |
 
 ---
 
