@@ -36,6 +36,13 @@ pub(super) fn looks_like_jsx_open(bytes: &[u8], at: usize) -> bool {
         }
 }
 
+pub(super) fn looks_like_compatible_jsx_open(bytes: &[u8], at: usize) -> bool {
+    bytes.get(at) == Some(&b'<')
+        && bytes.get(at + 1).is_some_and(|byte| {
+            byte.is_ascii_alphabetic() || matches!(byte, b'>' | b'_' | b'$') || *byte >= 0x80
+        })
+}
+
 pub(super) fn only_ws_until_eol(bytes: &[u8], mut cursor: usize) -> bool {
     while cursor < bytes.len() {
         match bytes[cursor] {
@@ -72,8 +79,34 @@ pub(super) fn scan_jsx_open<'a>(
     attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<JsxOpen<'a>> {
+    scan_jsx_open_mode(source, start, offset, attributes, skip_brace, false)
+}
+
+#[cfg(feature = "jsx")]
+pub(super) fn scan_compatible_jsx_open<'a>(
+    source: &'a str,
+    start: usize,
+    offset: usize,
+    attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+) -> Option<JsxOpen<'a>> {
+    scan_jsx_open_mode(source, start, offset, attributes, skip_brace, true)
+}
+
+fn scan_jsx_open_mode<'a>(
+    source: &'a str,
+    start: usize,
+    offset: usize,
+    attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+    compatible: bool,
+) -> Option<JsxOpen<'a>> {
     let bytes = source.as_bytes();
-    if !looks_like_jsx_open(bytes, start) {
+    if !(if compatible {
+        looks_like_compatible_jsx_open(bytes, start)
+    } else {
+        looks_like_jsx_open(bytes, start)
+    }) {
         return None;
     }
     if bytes.get(start + 1) == Some(&b'>') {
@@ -84,14 +117,138 @@ pub(super) fn scan_jsx_open<'a>(
         });
     }
     let name_start = start + 1;
-    let name_end = scan_jsx_name(bytes, name_start)?;
+    let name_end = if compatible {
+        scan_compatible_name(source, name_start)?
+    } else {
+        scan_jsx_name(bytes, name_start)?
+    };
     let name = &source[name_start..name_end];
-    let (self_closing, end) = scan_attributes(source, name_end, offset, attributes, skip_brace)?;
+    let (self_closing, end) =
+        scan_attributes(source, name_end, offset, attributes, skip_brace, compatible)?;
     Some(JsxOpen {
         name: Some(name),
         self_closing,
         end,
     })
+}
+
+/// Strict JSX balancing considers every element name, so crossed closing
+/// tags cannot silently become HTML. Markdown code spans/fences and JS
+/// expressions hide tags that belong to their source instead of JSX.
+#[cfg(feature = "jsx")]
+pub(super) fn compatible_matching_close<'a>(
+    source: &'a str,
+    from: usize,
+    name: Option<&'a str>,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+) -> Result<Option<(usize, usize)>, usize> {
+    let bytes = source.as_bytes();
+    let mut names: SmallVec<[Option<&str>; 16]> = SmallVec::new();
+    names.push(name);
+    let mut cursor = from;
+    while cursor < bytes.len() {
+        match bytes[cursor] {
+            b'\\' => cursor = (cursor + 2).min(bytes.len()),
+            b'{' => cursor = skip_brace(cursor).ok_or(cursor)?,
+            b'`' | b'~' => {
+                cursor = compatible_fence_end(source, cursor)
+                    .or_else(|| {
+                        (bytes[cursor] == b'`')
+                            .then(|| skip_backticks(bytes, cursor))
+                            .flatten()
+                    })
+                    .unwrap_or(cursor + 1);
+            }
+            b'<' => {
+                if let Some(end) = super::super::inline::autolink_end(source, cursor) {
+                    cursor = end;
+                    continue;
+                }
+                let closing = bytes.get(cursor + 1) == Some(&b'/');
+                let start = cursor;
+                let name_start = cursor + 1 + usize::from(closing);
+                let (tag_name, name_end) = if bytes.get(name_start) == Some(&b'>') {
+                    (None, name_start)
+                } else if let Some(end) = scan_compatible_name(source, name_start) {
+                    (Some(&source[name_start..end]), end)
+                } else {
+                    cursor += 1;
+                    continue;
+                };
+                let mut end = name_end;
+                let self_closing = if closing {
+                    skip_ws(bytes, &mut end);
+                    if bytes.get(end) != Some(&b'>') {
+                        return Err(start);
+                    }
+                    end += 1;
+                    false
+                } else {
+                    skip_tag_rest(source, &mut end, skip_brace, true).ok_or(start)?
+                };
+                if closing {
+                    if names.pop() != Some(tag_name) {
+                        return Err(start);
+                    }
+                    if names.is_empty() {
+                        return Ok(Some((start, end)));
+                    }
+                } else if !self_closing {
+                    names.push(tag_name);
+                }
+                cursor = end;
+            }
+            _ => cursor += 1,
+        }
+    }
+    Ok(None)
+}
+
+#[cfg(feature = "jsx")]
+pub(super) fn compatible_fence_end(source: &str, at: usize) -> Option<usize> {
+    use super::super::line_scan::{line_end, next_line_start};
+    use super::super::reference::{fence_open, is_fence_close};
+    let bytes = source.as_bytes();
+    let start = bytes[..at]
+        .iter()
+        .rposition(|byte| matches!(byte, b'\n' | b'\r'))
+        .map_or(0, |position| position + 1);
+    if !bytes[start..at]
+        .iter()
+        .all(|byte| matches!(byte, b' ' | b'\t'))
+    {
+        return None;
+    }
+    let (character, length) = fence_open(&source[at..line_end(bytes, at)])?;
+    let mut cursor = next_line_start(bytes, at);
+    while cursor < bytes.len() {
+        let end = line_end(bytes, cursor);
+        let mut content = cursor;
+        while content < end && matches!(bytes[content], b' ' | b'\t') {
+            content += 1;
+        }
+        if is_fence_close(&source[content..end], character, length) {
+            return Some(next_line_start(bytes, cursor));
+        }
+        cursor = next_line_start(bytes, cursor);
+    }
+    Some(bytes.len())
+}
+
+fn scan_compatible_name(source: &str, start: usize) -> Option<usize> {
+    let mut chars = source.get(start..)?.char_indices();
+    let (_, first) = chars.next()?;
+    if !(first.is_alphabetic() || matches!(first, '_' | '$')) {
+        return None;
+    }
+    let mut end = start + first.len_utf8();
+    for (relative, character) in chars {
+        if !(character.is_alphanumeric() || matches!(character, '_' | '$' | '-' | ':' | '.')) {
+            break;
+        }
+        end = start + relative + character.len_utf8();
+    }
+    Some(end)
 }
 
 /// The closing tag that matches the opening tag ending at `from`, found by
@@ -260,6 +417,7 @@ fn scan_attributes<'a>(
     offset: usize,
     attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+    compatible: bool,
 ) -> Option<(bool, usize)> {
     let bytes = source.as_bytes();
     loop {
@@ -272,7 +430,9 @@ fn scan_attributes<'a>(
             }
             _ if !had_ws => return None,
             _ => {
-                cursor = push_named_attribute(source, cursor, offset, attributes, skip_brace)?;
+                cursor = push_named_attribute(
+                    source, cursor, offset, attributes, skip_brace, compatible,
+                )?;
             }
         }
     }
@@ -301,9 +461,14 @@ fn push_named_attribute<'a>(
     offset: usize,
     attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+    compatible: bool,
 ) -> Option<usize> {
     let bytes = source.as_bytes();
-    let name_end = scan_attr_name(bytes, start)?;
+    let name_end = if compatible {
+        scan_compatible_name(source, start)?
+    } else {
+        scan_attr_name(bytes, start)?
+    };
     let name = &source[start..name_end];
     let mut cursor = name_end;
     skip_ws(bytes, &mut cursor);
@@ -317,7 +482,7 @@ fn push_named_attribute<'a>(
     }
     cursor += 1;
     skip_ws(bytes, &mut cursor);
-    let (value, value_end) = scan_attr_value(source, cursor, offset, skip_brace)?;
+    let (value, value_end) = scan_attr_value(source, cursor, offset, skip_brace, compatible)?;
     attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
         name,
         value: Some(value),
@@ -331,11 +496,16 @@ fn scan_attr_value<'a>(
     start: usize,
     offset: usize,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+    compatible: bool,
 ) -> Option<(MdxJsxAttributeValue<'a>, usize)> {
     let bytes = source.as_bytes();
     match *bytes.get(start)? {
         b'"' | b'\'' => {
-            let end = skip_quoted(bytes, start)?;
+            let end = if compatible {
+                skip_jsx_quoted(bytes, start)?
+            } else {
+                skip_quoted(bytes, start)?
+            };
             Some((
                 MdxJsxAttributeValue::Literal(&source[start + 1..end - 1]),
                 end,
@@ -381,7 +551,7 @@ fn scan_tag_skip<'a>(
     let name_end = scan_member_name(bytes, cursor)?;
     let name = &source[cursor..name_end];
     cursor = name_end;
-    let self_closing = skip_tag_rest(bytes, &mut cursor, skip_brace)?;
+    let self_closing = skip_tag_rest(source, &mut cursor, skip_brace, false)?;
     if closing && self_closing {
         return None;
     }
@@ -395,10 +565,12 @@ fn scan_tag_skip<'a>(
 }
 
 fn skip_tag_rest(
-    bytes: &[u8],
+    source: &str,
     cursor: &mut usize,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+    compatible: bool,
 ) -> Option<bool> {
+    let bytes = source.as_bytes();
     loop {
         skip_ws(bytes, cursor);
         match bytes.get(*cursor)? {
@@ -411,15 +583,31 @@ fn skip_tag_rest(
                 return Some(false);
             }
             b'{' => *cursor = skip_brace(*cursor)?,
-            b'"' | b'\'' | b'`' => *cursor = skip_quoted(bytes, *cursor)?,
-            byte if is_attr_name_start(*byte) => {
-                *cursor = scan_attr_name(bytes, *cursor)?;
+            b'"' | b'\'' | b'`' => {
+                *cursor = if compatible {
+                    skip_jsx_quoted(bytes, *cursor)?
+                } else {
+                    skip_quoted(bytes, *cursor)?
+                }
+            }
+            byte if is_attr_name_start(*byte) || (compatible && *byte >= 0x80) => {
+                *cursor = if compatible {
+                    scan_compatible_name(source, *cursor)?
+                } else {
+                    scan_attr_name(bytes, *cursor)?
+                };
                 skip_ws(bytes, cursor);
                 if bytes.get(*cursor) == Some(&b'=') {
                     *cursor += 1;
                     skip_ws(bytes, cursor);
                     match bytes.get(*cursor)? {
-                        b'"' | b'\'' => *cursor = skip_quoted(bytes, *cursor)?,
+                        b'"' | b'\'' => {
+                            *cursor = if compatible {
+                                skip_jsx_quoted(bytes, *cursor)?
+                            } else {
+                                skip_quoted(bytes, *cursor)?
+                            }
+                        }
                         b'{' => *cursor = skip_brace(*cursor)?,
                         _ => skip_unquoted_value(bytes, cursor),
                     }
@@ -428,6 +616,11 @@ fn skip_tag_rest(
             _ => return None,
         }
     }
+}
+
+fn skip_jsx_quoted(bytes: &[u8], start: usize) -> Option<usize> {
+    let quote = *bytes.get(start)?;
+    memchr::memchr(quote, &bytes[start + 1..]).map(|relative| start + relative + 2)
 }
 
 fn scan_member_name(bytes: &[u8], start: usize) -> Option<usize> {

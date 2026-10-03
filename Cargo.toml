@@ -16,7 +16,7 @@ repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/ferromark"
 readme = "README.md"
-description = "Arena-allocated Markdown parser and HTML renderer"
+description = "Arena-allocated Markdown parser with HTML and JSX renderers"
 # The package sits at the repository root, so the published archive is an
 # explicit allow-list rather than "everything Cargo finds". Compare
 # `cargo package --list` after changing it: docs/, benchmarks/, homepage/,
@@ -47,6 +47,8 @@ workspace = true
 [features]
 default = []
 ferriki = ["dep:ferriki"]
+ferriki-remote = ["ferriki", "ferriki/remote"]
+jsx = ["dep:oxc_allocator", "dep:oxc_parser", "dep:oxc_span"]
 
 [dependencies]
 bumpalo = { workspace = true, features = ["collections", "boxed"] }
@@ -56,7 +58,10 @@ memchr.workspace = true
 rustc-hash.workspace = true
 thiserror.workspace = true
 serde_json.workspace = true
-ferriki = { version = "0.7.0", optional = true, default-features = false }
+ferriki = { version = "0.10.0", optional = true, default-features = false }
+oxc_allocator = { version = "0.146.0", optional = true }
+oxc_parser = { version = "0.146.0", optional = true }
+oxc_span = { version = "0.146.0", optional = true }
 
 [dev-dependencies]
 criterion.workspace = true

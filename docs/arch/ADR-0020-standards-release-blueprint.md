@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-16
+- Last updated: 2026-10-03
 - Supersedes the publication decisions in
   [ADR-0016](ADR-0016-coordinated-workspace-releases.md) and
   [ADR-0017](ADR-0017-verified-release-candidates.md)
@@ -24,9 +25,10 @@ a real root package with `release-type: rust`, Node versions as typed JSON
 `extra-files`, no `version.txt`, no Cargo version `extra-files`, no lockfile
 jsonpaths, a lockfile no-diff check, and one publish workflow whose jobs are all
 gated on one release signal. The blueprint's own migration table for this
-repository asks for two changes: replace the eight `pnpm-lock.yaml` jsonpaths
+repository, at adoption, asked for two changes: replace the eight `pnpm-lock.yaml` jsonpaths
 with workspace references plus the lockfile check, and adopt the shared
-`napi-matrix` action for the eight platforms.
+`napi-matrix` action. That action supplies eight organization-wide platform
+records; the Ferromark facade declares seven supported targets.
 
 The manual flow was not wrong; it was ours alone. Every repository that keeps
 its own publisher also keeps its own retry semantics, its own crates.io index
@@ -49,11 +51,11 @@ the whole repository to crates.io, so the manifest carries a narrow `include`;
 the published file set is the one the nested crate had, plus the MIT license
 text and `UPSTREAM.md` that the README's attribution section points at.
 
-**No second source of truth for a version.** `version.txt`, the eight Cargo
-`x-release-please-version` annotations and the two `Cargo.lock` jsonpaths are
-removed. The eight npm sidecars are referenced as `workspace:*`, so the pnpm
-lockfile holds no version at all and the eight lockfile jsonpaths are removed
-with them. What remains is nine typed `$.version` entries and three README
+**No second source of truth for a version.** `version.txt`, the Cargo
+`x-release-please-version` annotations and the `Cargo.lock` jsonpaths are
+removed. The seven npm sidecars are referenced as `workspace:*`, so the pnpm
+lockfile holds no version at all and the sidecar lockfile jsonpaths are removed
+with them. What remains is eight typed `$.version` entries and two README
 blocks. The consequence is that publishing goes through pack-resolved tarballs:
 only pnpm rewrites `workspace:*` to the sidecar's version while packing, so the
 archives `verify-pack.mjs` already produces are what reaches npm, and the
@@ -68,10 +70,13 @@ the release tag and exists only to retry a failed job against the sources the
 release was cut from.
 
 **Shared actions instead of local copies.** `publish-crates`, `napi-matrix` and
-`publish-npm` come from the standards repository, pinned by commit. The eight
-platform triples, the sidecar/artifact/binary naming and the crates.io index
-wait are defined once for the organization. The repository-local
-`check-workflow-pins` is replaced by the shared `check-action-pins`.
+`publish-npm` come from the standards repository, pinned by commit. The shared
+action defines eight organization-wide platform records and the
+sidecar/artifact/binary naming; Ferromark's workflow selects the seven targets
+declared by its facade. A contract test keeps that selection aligned with the
+published sidecars and CI targets. The crates.io index wait is also defined
+once for the organization. The repository-local `check-workflow-pins` is
+replaced by the shared `check-action-pins`.
 
 **Version selection is unchanged.** `versioning: prerelease` with
 `prerelease-type: rc` and `prerelease: true` keeps the candidate series
@@ -86,9 +91,10 @@ release amended this paragraph; see the amendment below.
 Merging the release pull request publishes. There is no longer a gate between
 the merge and the registries, so the release pull request itself is the review,
 and the pre-merge CI rehearsal carries the weight the dispatch-time preflight
-used to: `ci.yml` still builds all eight profile-guided addons, assembles the
-nine npm archives, runs a clean install and rehearses the Cargo archive on every
-pull request. `publish.yml` repeats the assembly checks on the release tag
+used to: `ci.yml` still builds all seven supported native addons, sets PGO for
+six of them, assembles the eight npm archives, runs a clean install and
+rehearses the Cargo archive on every pull request. `publish.yml` repeats the
+assembly checks on the release tag
 before the first registry call.
 
 Three guarantees change shape rather than disappearing. A publish retry no
@@ -98,7 +104,7 @@ verification checks names, versions, contents and the glibc baseline rather than
 hashes. An already-published crate version is skipped by the composite instead
 of being compared against its `.cargo_vcs_info.json`. The release candidate's
 channel is enforced by naming `next` explicitly, and confirmed afterwards by
-`verify-npm-publish.mjs` across all nine packages.
+`verify-npm-publish.mjs` across all eight packages.
 
 What we give up for the alignment: this repository's own preflight refused to
 publish a version whose CI had not passed at that exact commit. Branch
@@ -155,6 +161,14 @@ prerelease only when the version has a prerelease part or its major is 0, so
 series again is deliberate and is described in
 [releasing.md](../releasing.md).
 
+## Amendment (2026-10-03): select the published native targets
+
+The standards `napi-matrix` action offers eight platform records, while the
+Ferromark facade declares seven targets. `publish.yml` now passes those seven
+platform IDs explicitly instead of accepting the action's full default matrix.
+The workflow contract checks the selection against the facade's sidecars and
+the seven CI targets so unsupported targets cannot enter a release matrix.
+
 ## Sources
 
 - [One product release with Release Please](https://github.com/sebastian-software/standards/blob/main/reference/release-please/README.md)
@@ -162,3 +176,8 @@ series again is deliberate and is described in
 - [The shared composite actions](https://github.com/sebastian-software/standards/blob/main/.github/actions/README.md)
 - [Rust strategy](https://github.com/googleapis/release-please/blob/v17.6.0/src/strategies/rust.ts)
 - [Prerelease versioning strategy](https://github.com/googleapis/release-please/blob/v17.6.0/src/versioning-strategies/prerelease.ts)
+
+## History
+
+- 2026-10-03: Updated current package counts and recorded the explicit
+  seven-target selection in the release matrix contract.

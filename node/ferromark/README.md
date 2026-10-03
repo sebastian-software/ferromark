@@ -20,6 +20,64 @@ overhead. Syntax and API contracts differ.
 
 <!-- /native-benchmarks -->
 
+## Framework-neutral JSX
+
+`compileJsx` compiles authored Markdown or MDX into a JSX fragment and metadata.
+It preserves module statements and JavaScript expressions without importing a
+framework or evaluating source. Use a normal JSX compiler afterward; the caller
+owns module scaffolding, component providers, and layouts.
+
+```js
+import { compileJsx } from "ferromark";
+
+const result = compileJsx("# Hello\n\n<Badge>Native MDX</Badge>", {
+  format: "mdx",
+  componentPrefix: "_components",
+});
+// result.body, result.esm, result.headings, result.frontMatter, result.mappings
+```
+
+The source is a trusted authored program. The HTML API's untrusted render policy
+does not apply to JSX compilation. `format` defaults to `"md"`; `"mdx"` enables
+strict JavaScript/JSX syntax checks. Syntax failures and synchronous code-renderer
+exceptions propagate. A renderer can return a complete trusted JSX replacement
+or `undefined` to select native code output. Ordered native `passes` run before
+both output and metadata are produced.
+
+ESM ranges count original UTF-8 bytes. Source mappings use zero-based lines and
+UTF-16 columns. Generated Markdown tags appear in `elements`, including when
+prefixed; authored and configured JSX component roots appear in `components`. Headings and
+rendered IDs use the same planner, including visible text nested inside JSX.
+
+For native syntax highlighting, reuse a `JsxCompiler`:
+
+````js
+import { JsxCompiler } from "ferromark";
+
+const compiler = new JsxCompiler({
+  theme: { light: "github-light-default", dark: "github-dark-default" },
+  lineNumbers: true,
+});
+const result = compiler.compile('```ts title="Example" {1}\nconst ready = true;\n```', {
+  codeBlockComponent: "CodeBlock",
+});
+````
+
+Ferriki runs inside Ferromark's native addon. Themes load at construction;
+fence languages load on first compilation and remain cached in that compiler.
+The default theme is the GitHub light/dark pair. Standard assets use Ferriki's
+verified release CDN and cache; `assets` can select an offline cache, mirror,
+or local asset root. `FERRIKI_CACHE_DIR` and `FERRIKI_ASSETS_REMOTE=0` configure
+offline builds. A missing required cached asset fails compilation. Unknown
+languages render escaped plain text. Named JSON themes and custom TextMate
+grammar objects in `languages` can also be registered without downloads.
+
+`codeBlockComponent` receives the original `code`, `language`, `title`, label,
+line-number flag, and rendered `<pre><code>` children. Language-specific
+`codeComponents` and whole-fence callbacks take precedence. Dual-theme output
+provides `--shiki-light` / `--shiki-dark` color, background, and font variables;
+consumers choose the active theme with CSS.
+
 ## Install
 
 ```sh

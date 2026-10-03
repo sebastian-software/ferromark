@@ -1,6 +1,7 @@
 # ADR-0022: Add an optional native transform pipeline
 
 - Status: Accepted
+- Last updated: 2026-10-03
 - Date: 2026-09-25
 - Parent: #394; contract decisions confirmed in #399; foundation tracked by #401
 
@@ -118,9 +119,9 @@ while leaving formatting and protected-content traversal under each pass's
 control.
 
 The new package adds a second published Cargo archive to the product. The
-publish workflow lists `ferromark` before `ferromark-transforms`, and crates.io
-Trusted Publishing must be configured for the new package before its first
-release.
+publish workflow lists `ferromark` before `ferromark-transforms`, and
+the new package needs an initial credentialed publication before crates.io
+Trusted Publishing can be configured for subsequent releases.
 
 ## Validation
 
@@ -136,3 +137,8 @@ release.
 - No parser or renderer call site invokes URL range detection. Normal-path
   benchmark evidence remains a release gate if URL scanning is ever made
   automatic.
+
+## History
+
+- 2026-10-03: Clarified the credentialed first publication required before
+  enabling Trusted Publishing for the new transform crate.

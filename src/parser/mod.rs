@@ -68,6 +68,8 @@ mod line_scan;
 mod list;
 mod list_item;
 mod math;
+#[cfg(feature = "jsx")]
+mod mdx_compatible;
 mod mdx_esm;
 mod mdx_jsx;
 mod options;
@@ -578,6 +580,22 @@ impl<'a> Parser<'a> {
     /// Parses the source into a document AST.
     pub fn parse(mut self) -> ParseResult<Document<'a>> {
         use spans::SpanMap;
+
+        if self.options.mdx_compatible && !self.options.mdx {
+            return Err(error::ParseErrorKind::InvalidMdx {
+                span: Span::new(0, 0),
+                message: "mdx_compatible requires mdx: true".into(),
+            }
+            .into());
+        }
+        #[cfg(not(feature = "jsx"))]
+        if self.options.mdx_compatible {
+            return Err(error::ParseErrorKind::InvalidMdx {
+                span: Span::new(0, 0),
+                message: "mdx_compatible requires the jsx Cargo feature".into(),
+            }
+            .into());
+        }
 
         let mut result = self.parse_document();
         if let Some(map) = self.source_map {

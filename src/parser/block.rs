@@ -129,6 +129,13 @@ impl<'a> Parser<'a> {
                 }
             }
             b'<' => {
+                #[cfg(feature = "jsx")]
+                if self.options.mdx_compatible && self.source[trimmed_start..].starts_with("</") {
+                    return Err(super::mdx_compatible::invalid(
+                        Span::new(trimmed_start as u32, (trimmed_start + 2) as u32),
+                        "unexpected JSX closing tag; no matching opening tag in this content",
+                    ));
+                }
                 if self.options.mdx
                     && let Some(node) = self.try_parse_mdx_jsx_flow(start, trimmed_start)?
                 {
@@ -159,7 +166,7 @@ impl<'a> Parser<'a> {
             }
             b'i' | b'e' => {
                 if self.options.mdx
-                    && let Some(node) = self.try_parse_mdxjs_esm(start, trimmed_start)
+                    && let Some(node) = self.try_parse_mdxjs_esm(start, trimmed_start)?
                 {
                     return Ok(Some(node));
                 }
@@ -269,6 +276,10 @@ impl<'a> Parser<'a> {
             Some(end) => end,
             None => scan_next_line_start(bytes, start),
         };
+        #[cfg(feature = "jsx")]
+        {
+            content_end = self.mdx_paragraph_end(start, content_end)?;
+        }
         self.position = content_end;
         let mut first_line_comment = None;
         // Avoid reparsing an ever-growing prefix for every `:`. A later line
@@ -349,6 +360,10 @@ impl<'a> Parser<'a> {
                 Some(_) => self.source.len(),
                 None => scan_next_line_start(bytes, line_start),
             };
+            #[cfg(feature = "jsx")]
+            {
+                content_end = self.mdx_paragraph_end(line_start, content_end)?;
+            }
             self.position = content_end;
         }
 

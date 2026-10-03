@@ -2,6 +2,8 @@
 pub mod boundary;
 mod default_renderer;
 pub mod input;
+pub mod jsx;
+pub mod jsx_compiler;
 mod options;
 pub mod packed;
 

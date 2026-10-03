@@ -33,7 +33,7 @@ A Markdown engine earns its place when the documents get complicated.
 Nested lists. Reference links. Tables with real content. The page that looked
 fine until an author added one more footnote.
 
-- **Keep the core focused.** Parse Markdown and render HTML. Your application
+- **Keep the core focused.** Parse Markdown and emit HTML or JSX. Your application
   chooses translation, site assembly, and the highlighter connected through
   rendering hooks.
 - **Build correctness in.** The explicit CommonMark profile agrees with all
@@ -99,6 +99,17 @@ const html = toHtml('Hello, **world**!')
 Requires **Node.js 22.12 or newer**. Node defaults escape raw HTML and filter
 unsafe URL schemes. The [Node.js guide](https://ferromark.dev/node/getting-started)
 covers metadata, Buffers, reusable renderers, and highlighters.
+
+### JSX and MDX
+
+`compileJsx(source, { format: "mdx" })` returns a JSX body, authored ESM,
+component references, headings, code-block metadata, and source mappings.
+The application assembles its module and compiles JSX through its framework's
+normal toolchain. Ferromark adds no React runtime imports. The Rust `jsx`
+feature enables strict MDX grammar validation; existing HTML APIs keep their
+syntax behavior. `new JsxCompiler({ theme }).compile(source)` adds native
+Ferriki highlighting and reuses loaded assets across documents. See the [JSX renderer contract](docs/jsx-renderer.md) and
+the [Node API](node/ferromark/README.md#framework-neutral-jsx).
 
 ## Make it yours
 

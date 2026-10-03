@@ -91,8 +91,9 @@ jobs:
     permissions:
       contents: read
       # crates.io Trusted Publishing exchanges this OIDC token for a
-      # short-lived registry token. It is enabled for `ferromark`; configure it
-      # for `ferromark-transforms` before its first release. No long-lived
+      # short-lived registry token. It is enabled for `ferromark`. Bootstrap
+      # `ferromark-transforms` with an initial credentialed publish, then enable
+      # Trusted Publishing as documented in docs/releasing.md. No long-lived
       # registry secret is stored here.
       id-token: write
     steps:
@@ -130,6 +131,9 @@ jobs:
         uses: sebastian-software/standards/.github/actions/napi-matrix@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
         with:
           package: ferromark
+          platforms: >-
+            darwin-arm64 win32-arm64-msvc linux-arm64-gnu linux-arm64-musl
+            win32-x64-msvc linux-x64-gnu linux-x64-musl
 
   build-native:
     name: build ${{ matrix.id }}
@@ -196,9 +200,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Published addons are profile-guided. Windows ARM64 stays on the plain
-      # build: the toolchain's llvm-profdata rejects the counters its own
-      # instrumented binary writes there. See
+      # FERROMARK_PGO=1 is set for six published addons. Windows ARM64 stays on
+      # the plain build: the toolchain's llvm-profdata rejects the counters its
+      # own instrumented binary writes there. See
       # docs/arch/ADR-0019-profile-guided-native-addon.md.
       - run: pnpm build:native
         env:

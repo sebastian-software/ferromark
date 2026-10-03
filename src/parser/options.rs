@@ -161,6 +161,17 @@ pub struct ParserOptions {
     /// Default: `false`.
     pub mdx: bool,
 
+    /// Parse MDX for JSX output, with JavaScript grammar validation.
+    ///
+    /// Requires `mdx: true` and the `jsx` Cargo feature. Intrinsic JSX tags
+    /// become MDX nodes, and malformed expressions, tags and module blocks
+    /// report errors instead of falling back to Markdown or HTML. Module
+    /// blocks end at a blank line outside their JavaScript construct.
+    /// Existing HTML-oriented MDX parsing is unchanged when this is false.
+    ///
+    /// Default: `false`.
+    pub mdx_compatible: bool,
+
     /// Maximum nesting depth, for blocks and for inline content alike.
     ///
     /// Every construct that re-enters the parser counts one level: on a
@@ -222,6 +233,7 @@ impl Default for ParserOptions {
             guillemet_digraphs: false,
             cjk_emphasis: false,
             mdx: false,
+            mdx_compatible: false,
             // Not `0`: an unbounded parse of hostile input overflows the
             // stack, and a stack overflow aborts rather than unwinds, so
             // no caller can recover from it.
@@ -280,6 +292,7 @@ impl ParserOptions {
             // Not part of GFM: GitHub renders these runs per CommonMark too.
             cjk_emphasis: false,
             mdx: false,
+            mdx_compatible: false,
             max_nesting_depth: DEFAULT_MAX_NESTING_DEPTH,
         }
     }

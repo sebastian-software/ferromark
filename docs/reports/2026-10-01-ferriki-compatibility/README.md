@@ -9,8 +9,11 @@
   The processor model was unavailable in the sandbox.
 - [Source identities](source-identities.json) pin the lock, benchmark, public
   consumer, authored corpus, npm lock and both peer snapshots by SHA-256.
-- [Fixture protocol](../../../scripts/ferriki-compatibility/README.md) and
-  [raw peer snapshots](../../../scripts/ferriki-compatibility/snapshots.json).
+- Historical [fixture protocol](https://github.com/sebastian-software/ferromark/blob/7b3987420514095d2067843d8c68d0da8f96a55d/scripts/ferriki-compatibility/README.md),
+  [raw peer snapshots](https://github.com/sebastian-software/ferromark/blob/7b3987420514095d2067843d8c68d0da8f96a55d/scripts/ferriki-compatibility/snapshots.json)
+  and [npm lock](https://github.com/sebastian-software/ferromark/blob/7b3987420514095d2067843d8c68d0da8f96a55d/scripts/ferriki-compatibility/package-lock.json)
+  retain the 0.7.0 evidence. The current [fixture lane](../../../scripts/ferriki-compatibility/README.md)
+  uses Ferriki 0.10.0 and compares public Node HTML rather than removed Node token APIs.
 
 The local peer command is:
 
@@ -71,11 +74,11 @@ theme, with repository `bench` settings: optimized, fat LTO, one codegen unit.
 The document is parsed outside measurement. These numbers characterize that
 small adapter lifecycle and are not a standard-catalog or end-to-end benchmark.
 
-| Phase | Criterion's reported interval |
-| --- | ---: |
-| Build highlighter and register custom assets | 4.1599–4.1730 µs |
-| Build plus first highlighted render | 20.925–20.950 µs |
-| Repeated render with reusable highlighter and renderer | 7.6543–7.6811 µs |
+| Phase                                                  | Criterion's reported interval |
+| ------------------------------------------------------ | ----------------------------: |
+| Build highlighter and register custom assets           |              4.1599–4.1730 µs |
+| Build plus first highlighted render                    |              20.925–20.950 µs |
+| Repeated render with reusable highlighter and renderer |              7.6543–7.6811 µs |
 
 [Raw log](criterion.log) and per-phase [estimates and samples](criterion/) are
 retained. There is no performance pass/fail threshold in CI. The initial 0.4.1

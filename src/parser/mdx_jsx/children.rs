@@ -12,7 +12,15 @@ pub(super) fn normalize_indentation<'a>(
     allocator: &'a Allocator,
     source: &'a str,
 ) -> JsxChildSource<'a> {
-    let common_indent = common_line_indent(source);
+    normalize_indentation_with_protected(allocator, source, &[])
+}
+
+pub(super) fn normalize_indentation_with_protected<'a>(
+    allocator: &'a Allocator,
+    source: &'a str,
+    protected: &[(usize, usize)],
+) -> JsxChildSource<'a> {
+    let common_indent = common_line_indent(source, protected);
     if common_indent == 0 {
         return JsxChildSource {
             source,
@@ -27,7 +35,14 @@ pub(super) fn normalize_indentation<'a>(
 
     while line_start < bytes.len() {
         let (line_end, next_line) = line_bounds(bytes, line_start);
-        let content_start = strip_indent_columns(bytes, line_start, line_end, common_indent);
+        let content_start = if protected
+            .iter()
+            .any(|&(start, end)| start < line_start && line_start < end)
+        {
+            line_start
+        } else {
+            strip_indent_columns(bytes, line_start, line_end, common_indent)
+        };
         push_mapped_slice(
             source,
             content_start,
@@ -85,14 +100,18 @@ pub(super) fn remap_node_spans(node: &mut Node<'_>, source_offset: u32, offsets:
     );
 }
 
-fn common_line_indent(source: &str) -> usize {
+fn common_line_indent(source: &str, protected: &[(usize, usize)]) -> usize {
     let bytes = source.as_bytes();
     let mut line_start = 0usize;
     let mut common = None;
 
     while line_start < bytes.len() {
         let (line_end, next_line) = line_bounds(bytes, line_start);
-        if let Some(first_non_ws) = first_non_whitespace(bytes, line_start, line_end) {
+        if !protected
+            .iter()
+            .any(|&(start, end)| start < line_start && line_start < end)
+            && let Some(first_non_ws) = first_non_whitespace(bytes, line_start, line_end)
+        {
             let indent = indent_width(bytes, line_start, first_non_ws);
             common = Some(common.map_or(indent, |value: usize| value.min(indent)));
             if common == Some(0) {
