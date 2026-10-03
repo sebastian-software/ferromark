@@ -113,10 +113,17 @@ test("publication follows the standards release blueprint", () => {
     (step) => step.name === "Check out the Release Please branch",
   );
   assert.equal(releaseBranchCheckout.if, "${{ steps.release.outputs.prs_created == 'true' }}");
-  assert.match(releaseBranchCheckout.with.ref, /fromJSON\(steps\.release\.outputs\.pr\)/);
+  // Release Please leaves `pr` empty on a push with no release pull request.
+  // GitHub evaluates step inputs and env before `if`, so both accesses need a
+  // valid empty-object fallback even though their steps are skipped then.
+  const releaseBranchExpression =
+    "${{ fromJSON(steps.release.outputs.pr || '{}').headBranchName }}";
+  assert.equal(releaseBranchCheckout.with.ref, releaseBranchExpression);
   const pinStep = publisher.jobs["release-please"].steps.find(
     (step) => step.name === "Restore the exact transform dependency pin",
   );
+  assert.equal(pinStep.if, "${{ steps.release.outputs.prs_created == 'true' }}");
+  assert.equal(pinStep.env.RELEASE_BRANCH, releaseBranchExpression);
   assert.match(pinStep.run, /preserve-exact-transform-pin\.mjs/);
   assert.match(pinStep.run, /git push origin/);
 
