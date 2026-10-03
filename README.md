@@ -17,7 +17,7 @@ native Node.js bindings.
 <!-- x-release-please-start-version -->
 
 [Documentation](https://ferromark.dev/) ·
-[Rust API](https://docs.rs/ferromark/3.0.0/ferromark/) ·
+[Rust API](https://docs.rs/ferromark/3.1.0/ferromark/) ·
 [Node.js package](node/ferromark/README.md)
 
 <!-- x-release-please-end-version -->

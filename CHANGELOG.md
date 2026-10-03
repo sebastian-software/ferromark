@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.0](https://github.com/sebastian-software/ferromark/compare/v3.0.0...v3.1.0) (2026-10-03)
+
+
+### Features
+
+* add framework-neutral JSX and native Ferriki highlighting ([#502](https://github.com/sebastian-software/ferromark/issues/502)) ([f38aa31](https://github.com/sebastian-software/ferromark/commit/f38aa31069299aff0b1065824f04861db7161280))
+* **homepage:** showcase Afterburner and refresh family design ([3cf130b](https://github.com/sebastian-software/ferromark/commit/3cf130b83805ee095d50bea388fbe2a19c729aba))
+
 ## [3.0.0](https://github.com/sebastian-software/ferromark/compare/v2.4.0...v3.0.0) (2026-10-01)
 
 
