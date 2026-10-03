@@ -38,8 +38,10 @@ changing their output bodies. Validate the public modules from integration tests
 
 Remove the unused internal version updaters, new-crate bootstrap flow and
 cargo-deny path-dependency exception. Reuse Trusted Publishing for the existing
-`ferromark` crate. GitHub releases contain one Rust and nine npm archives.
-This supersedes the five-crate packaging decision in ADR-0017.
+`ferromark` crate. The release workflow validates the core archive and every
+npm facade/sidecar archive; later amendments define the optional transform
+archive and the supported native targets. This supersedes the five-crate
+packaging decision in ADR-0017.
 
 ## Validation
 
@@ -100,4 +102,5 @@ published crate or another release workflow entry.
 ## History
 
 - 2026-10-03: Clarified the credentialed first publication required before
-  enabling Trusted Publishing for the new transform crate.
+  enabling Trusted Publishing for the new transform crate, and clarified the
+  archive contract after the later package and platform amendments.

@@ -82,7 +82,7 @@ async function main() {
     throw new TypeError(`Invalid npm package manifest: ${packageJsonPath}`);
   }
 
-  // All nine packages, sidecars first: a facade that resolves while a sidecar
+  // Verify all declared packages, sidecars first: a facade that resolves while a sidecar
   // is missing installs for nobody, so a partial release has to fail here.
   for (const name of [...Object.keys(packageJson.optionalDependencies).sort(), packageJson.name]) {
     await verifyNpmPublication({

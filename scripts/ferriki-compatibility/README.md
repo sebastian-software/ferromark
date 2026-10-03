@@ -84,8 +84,12 @@ runtime performance, allocation, or live-CDN measurements.
 
 ## Updating the published peer
 
+Install the pinned formatting dependencies in `scripts/` before updating:
+
 ```sh
+(cd scripts && pnpm install --frozen-lockfile)
 python3 scripts/ferriki-compatibility/run.py /tmp/ferriki-reviewed-update --node --update-node-snapshot
+(cd scripts && pnpm exec oxfmt --write ferriki-compatibility/snapshots.json)
 ```
 
 The update command first checks the Rust output against its frozen snapshot and
