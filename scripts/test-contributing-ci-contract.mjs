@@ -128,16 +128,34 @@ test("publication follows the standards release blueprint", () => {
   assert.match(pinStep.run, /git push origin/);
 
   // The manual path is a retry for an existing release, so it needs the tag and
-  // every job checks that tag out rather than the branch head.
+  // every publishing job checks out that tag rather than the branch head. The
+  // npm retry helper is the only extra checkout, pinned to the workflow commit.
   assert.equal(publisher.on.workflow_dispatch.inputs.tag.required, true);
   const checkoutRef = "${{ inputs.tag || needs.release-please.outputs.tag_name }}";
+  const workflowRef = "${{ github.workflow_sha }}";
   for (const [name, job] of Object.entries(publisher.jobs)) {
     if (name === "release-please" || name === "native-matrix") continue;
     const checkouts = job.steps.filter((step) => step.uses?.startsWith("actions/checkout@"));
-    assert.ok(checkouts.length > 0, `${name}: checks out the release tag`);
     for (const step of checkouts) {
-      assert.equal(step.with.ref, checkoutRef, `${name}: checks out the release tag`);
+      if (step.with.path === "release-tools") {
+        assert.equal(name, "publish-npm", `${name}: only npm loads retry helper code`);
+        assert.equal(step.with.ref, workflowRef, "release-tools: uses the workflow's commit");
+        assert.equal(step.with["persist-credentials"], false, "release-tools: no credentials");
+      } else {
+        assert.equal(step.with.path, undefined, `${name}: release source stays at workspace root`);
+        assert.equal(step.with.ref, checkoutRef, `${name}: checks out the release tag`);
+      }
     }
+    assert.ok(
+      checkouts.some((step) => !step.with.path && step.with.ref === checkoutRef),
+      `${name}: checks out the release tag at the workspace root`,
+    );
+    const helperCheckouts = checkouts.filter((step) => step.with.path === "release-tools");
+    assert.equal(
+      helperCheckouts.length,
+      name === "publish-npm" ? 1 : 0,
+      `${name}: only publish-npm has one retry-helper checkout`,
+    );
   }
   for (const name of ["publish-crates", "native-matrix"]) {
     assert.match(publisher.jobs[name].if, /releases_created == 'true'/, name);

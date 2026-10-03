@@ -242,6 +242,15 @@ jobs:
         with:
           ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
 
+      # This workflow can be retried for an immutable tag, whose tree does not
+      # contain the retry-safety helper added later on main. Load only that
+      # helper from the exact commit that supplied this workflow definition.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: release-tools
+          persist-credentials: false
+
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           package_json_file: node/package.json
@@ -319,14 +328,24 @@ jobs:
             echo "PACKAGES_EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - id: npm-publish-plan
+        name: Skip npm tarballs already published at this exact version
+        env:
+          PACKAGES: ${{ steps.tarballs.outputs.packages }}
+          TAG_NODE_DIRECTORY: ${{ github.workspace }}/node
+        run: node ../release-tools/node/scripts/npm-publish-plan.mjs ./artifacts
+
       - uses: sebastian-software/standards/.github/actions/publish-npm@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
+        if: ${{ steps.npm-publish-plan.outputs.publish_required == 'true' }}
         with:
           working-directory: node
           # Pack-resolved tarballs rather than directories, so the published
           # facade carries resolved sidecar versions instead of `workspace:*`.
           # The action derives its dist-tag from a directory's package.json, so
-          # a tarball list has to name the channel explicitly.
-          packages: ${{ steps.tarballs.outputs.packages }}
+          # a tarball list has to name the channel explicitly. The retry plan
+          # preserves the validated sidecar-first order and passes only exact
+          # versions that returned HTTP 404 from the npm registry.
+          packages: ${{ steps.npm-publish-plan.outputs.packages }}
           dist-tag: ${{ steps.release.outputs.dist-tag }}
 
   verify-npm-publish:
