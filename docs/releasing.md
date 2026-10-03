@@ -284,19 +284,23 @@ configured.
 
 ## Retry a failed publish
 
-The release is already tagged, so a retry runs against that tag:
+Dispatch the current workflow from `main`, and pass the immutable release tag
+as its `tag` input. For example, retrying `v3.1.0`:
 
 ```sh
-gh workflow run publish.yml -f tag=v2.0.0
+gh workflow run publish.yml --repo sebastian-software/ferromark --ref main -f tag=v3.1.0
 ```
 
-Every job checks out that tag rather than `main`, so a delayed retry cannot
-publish newer sources under a version that already exists, and an unknown tag
-fails the checkout. The crate publisher skips a version that is already in the
-crates.io sparse index, and an index lookup that fails outright stops the job
-instead of guessing. npm versions are immutable: a version that was already
-published cannot be replaced, and a conflict requires a new candidate rather
-than a forced upload.
+The workflow definition comes from current `main`; publishing jobs check out the
+supplied tag, while the retry helper comes from the exact commit that defined
+the workflow. This keeps a delayed retry on its original release sources without
+losing retry fixes added later. An unknown tag fails checkout. The crate
+publisher skips a version that is already in the crates.io sparse index, and an
+index lookup that fails outright stops the job instead of guessing. The npm
+preflight skips only exact package versions confirmed by the registry and fails
+closed on other responses. npm versions are immutable: a version that was
+already published cannot be replaced, and a conflict requires a new candidate
+rather than a forced upload.
 
 ## Release notes and history
 
