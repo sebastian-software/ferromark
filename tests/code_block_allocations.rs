@@ -7,34 +7,47 @@
 //! owned language string, a joined class list, or an unreserved growth step
 //! would show up here as a non-zero count.
 //!
-//! The counting allocator is global, so this file deliberately holds a single
-//! test: nothing else in the binary runs while the counters are armed.
+//! The allocator is process-global, but its counter is scoped to the measuring
+//! thread so unrelated allocations from the test harness cannot affect a
+//! measurement.
 
 #![allow(unsafe_code)]
 
 use std::alloc::{GlobalAlloc, Layout, System};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::cell::Cell;
+use std::hint::black_box;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
 
 use ferromark::{Allocator, HtmlRenderer, Parser};
 
 struct CountingSystem;
 
-static COUNTING: AtomicBool = AtomicBool::new(false);
-static ALLOCATIONS: AtomicU64 = AtomicU64::new(0);
+thread_local! {
+    static COUNTING: Cell<bool> = const { Cell::new(false) };
+    static ALLOCATIONS: Cell<u64> = const { Cell::new(0) };
+}
 
+impl CountingSystem {
+    /// Records an allocation made by the thread whose work is being measured.
+    fn record() {
+        if COUNTING.try_with(Cell::get).unwrap_or(false) {
+            let _ = ALLOCATIONS.try_with(|count| count.set(count.get() + 1));
+        }
+    }
+}
+
+// SAFETY: every operation forwards its original pointer, layout and size to
+// the system allocator unchanged; the counter is the only added effect.
 unsafe impl GlobalAlloc for CountingSystem {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        if COUNTING.load(Ordering::Relaxed) {
-            ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
-        }
+        Self::record();
         // SAFETY: forwarding the caller's valid layout to the system allocator.
         unsafe { System.alloc(layout) }
     }
 
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
-        if COUNTING.load(Ordering::Relaxed) {
-            ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
-        }
+        Self::record();
         // SAFETY: forwarding the caller's valid layout to the system allocator.
         unsafe { System.alloc_zeroed(layout) }
     }
@@ -47,9 +60,7 @@ unsafe impl GlobalAlloc for CountingSystem {
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         // A `String` grow arrives here rather than at `alloc`, so buffer growth
         // has to count too.
-        if COUNTING.load(Ordering::Relaxed) {
-            ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
-        }
+        Self::record();
         // SAFETY: forwarding the allocation, original layout, and requested size unchanged.
         unsafe { System.realloc(ptr, layout, new_size) }
     }
@@ -57,6 +68,15 @@ unsafe impl GlobalAlloc for CountingSystem {
 
 #[global_allocator]
 static GLOBAL: CountingSystem = CountingSystem;
+
+/// Runs `work` and reports the allocations it made on this thread.
+fn allocations<T>(work: impl FnOnce() -> T) -> (T, u64) {
+    ALLOCATIONS.with(|count| count.set(0));
+    COUNTING.with(|flag| flag.set(true));
+    let value = work();
+    COUNTING.with(|flag| flag.set(false));
+    (value, ALLOCATIONS.with(Cell::get))
+}
 
 /// A document of nothing but bare-language fences, so every allocation the
 /// measurement sees belongs to the plain fenced-code path.
@@ -90,35 +110,56 @@ fn steady_state_allocations(source: &str) -> u64 {
     }
     assert!(warm > 0, "the fixture should render to something");
 
-    ALLOCATIONS.store(0, Ordering::SeqCst);
-    COUNTING.store(true, Ordering::SeqCst);
-    let rendered = renderer.render_borrowed(&document).len();
-    COUNTING.store(false, Ordering::SeqCst);
+    let (rendered, allocations) = allocations(|| renderer.render_borrowed(&document).len());
 
     assert_eq!(rendered, warm, "steady-state renders must agree");
-    ALLOCATIONS.load(Ordering::SeqCst)
+    allocations
 }
 
-/// Guards the harness itself: a zero count has to mean "did not allocate",
-/// not "the counter was never armed".
-fn assert_the_counter_observes_allocations() {
-    ALLOCATIONS.store(0, Ordering::SeqCst);
-    COUNTING.store(true, Ordering::SeqCst);
-    let mut probe: Vec<u8> = Vec::new();
-    probe.push(1);
-    probe.reserve(4096);
-    COUNTING.store(false, Ordering::SeqCst);
+/// Guards the harness itself: it must count a local allocation while ignoring
+/// an allocation made on a concurrent thread during the same measurement.
+fn assert_the_counter_is_thread_local() {
+    let ready = std::sync::Arc::new(AtomicBool::new(false));
+    let start = std::sync::Arc::new(AtomicBool::new(false));
+    let done = std::sync::Arc::new(AtomicBool::new(false));
+    let worker_ready = std::sync::Arc::clone(&ready);
+    let worker_start = std::sync::Arc::clone(&start);
+    let worker_done = std::sync::Arc::clone(&done);
 
-    assert_eq!(probe.len(), 1);
-    assert!(
-        ALLOCATIONS.load(Ordering::SeqCst) >= 2,
-        "the counting allocator is not observing allocations"
+    let worker = thread::spawn(move || {
+        worker_ready.store(true, Ordering::Release);
+        while !worker_start.load(Ordering::Acquire) {
+            thread::yield_now();
+        }
+        black_box(Vec::<u8>::with_capacity(4096));
+        worker_done.store(true, Ordering::Release);
+    });
+
+    while !ready.load(Ordering::Acquire) {
+        thread::yield_now();
+    }
+    let (probe, allocations) = allocations(|| {
+        start.store(true, Ordering::Release);
+        let local_probe = Vec::<u8>::with_capacity(4096);
+        while !done.load(Ordering::Acquire) {
+            thread::yield_now();
+        }
+        local_probe
+    });
+    worker
+        .join()
+        .expect("the allocator probe thread should finish");
+
+    assert!(probe.capacity() >= 4096);
+    assert_eq!(
+        allocations, 1,
+        "the counter should count the local allocation and ignore the foreign thread"
     );
 }
 
 #[test]
 fn a_warm_renderer_emits_bare_language_fences_without_allocating() {
-    assert_the_counter_observes_allocations();
+    assert_the_counter_is_thread_local();
 
     for count in [1, 32, 256] {
         let source = bare_language_fences(count);

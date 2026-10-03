@@ -19,7 +19,7 @@ export function releaseArchives(directory, facade, { readManifest = archiveManif
       .filter((name) => name.endsWith(".tgz"))
       .sort(),
     [...expected].sort(),
-    "the archive directory must hold exactly the nine release archives",
+    "the archive directory must hold exactly the declared release archives",
   );
 
   const archives = names.map((name, index) => {

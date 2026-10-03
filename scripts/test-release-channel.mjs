@@ -84,7 +84,7 @@ test("rejects a packed facade whose sidecar references were not resolved", (t) =
 test("rejects an archive set that is missing a platform", (t) => {
   const directory = archives(t);
   rmSync(join(directory, `ferromark-darwin-arm64-${facade.version}.tgz`));
-  assert.throws(() => releaseArchives(directory, facade), /exactly the nine release archives/);
+  assert.throws(() => releaseArchives(directory, facade), /exactly the declared release archives/);
 });
 
 test("hands npm publish local tarball paths, never a GitHub shorthand", (t) => {

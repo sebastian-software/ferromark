@@ -1,4 +1,4 @@
-# Releasing ferromark v2
+# Releasing ferromark
 
 The `ferromark` core crate publishes to crates.io. The optional
 `ferromark-transforms` crate shares its version and depends on that core. The
@@ -107,8 +107,9 @@ The dist-tag is derived from the version by `node/scripts/release-channel.mjs`
 and passed to the publishing action explicitly: `X.Y.Z-rc.N` publishes to
 `next`, a stable `X.Y.Z` to `latest`. No other version shape is publishable.
 
-Stable v2 is on `latest`, so `npm install ferromark` and `cargo add ferromark`
-select it. A future candidate publishes to `next` under an `X.Y.Z-rc.N` version,
+`npm install ferromark` selects the version behind `latest`; `cargo add
+ferromark` selects the latest stable core crate available on crates.io. A future
+candidate publishes to `next` under an `X.Y.Z-rc.N` version,
 and its GitHub release is a prerelease that does not become `latest`.
 
 ## Rehearse the version bump
