@@ -73,7 +73,7 @@ if (process.env.FERROMARK_NAPI_FEATURES) {
 args.push("--", "--locked");
 
 // Profile-guided optimization is opt-in: local builds stay fast by default and
-// CI sets FERROMARK_PGO=1 for the eight published addons. See
+// CI sets FERROMARK_PGO=1 for six of the seven published addons. See
 // docs/arch/ADR-0019-profile-guided-native-addon.md.
 const buildEnv = { ...process.env };
 if (process.env.FERROMARK_PGO === "1") {

@@ -1,6 +1,7 @@
 # ADR-0018: Publish one Rust crate
 
 - Status: Accepted
+- Last updated: 2026-10-03
 - Date: 2026-09-15
 - Amended 2026-09-16: the single crate is now the repository root package rather
   than a member under `crates/ferromark`, which is what Release Please's native
@@ -68,9 +69,9 @@ extension is enabled for publishing, publish `ferromark` first and then
 renderer into separately released core crates.
 
 The extension package and its archive rehearsal are part of the transform
-foundation. The publish workflow lists the core before the extension; crates.io
-Trusted Publishing still needs configuration for the new crate before its first
-release. See [ADR-0022](ADR-0022-native-transform-pipeline.md).
+foundation. The publish workflow lists the core before the extension.
+The new crate needs an initial credentialed publication before crates.io
+Trusted Publishing can be configured for subsequent releases. See [ADR-0022](ADR-0022-native-transform-pipeline.md).
 
 ## Amendment (2026-09-29): optional Ferriki integration
 
@@ -85,7 +86,7 @@ source. Ferromark borrows it for synchronous rendering, forwards only normalized
 code and language to Ferriki, and keeps code-block wrappers, metadata and
 annotations. Unknown languages and highlighter failures use the existing escaped
 plain-code fallback. Optional error observation stays with the application.
-Ferriki 0.7.0's optional CDN source is an asset-source choice outside Ferromark.
+Ferriki's optional CDN source is an asset-source choice outside Ferromark.
 The adapter does not select that source, but calls into a highlighter which can
 lazily load directory or remote assets on first use unless callers preload the
 required languages and themes. The feature does not enable Ferriki's remote-loading feature or change Ferromark's
@@ -95,3 +96,8 @@ Validate the feature with a compiled public-API example, a dedicated Rust-only
 CI lane and integration tests. Preserve the existing Node callback path and
 default HTML output. This amends the package boundary without adding a new
 published crate or another release workflow entry.
+
+## History
+
+- 2026-10-03: Clarified the credentialed first publication required before
+  enabling Trusted Publishing for the new transform crate.

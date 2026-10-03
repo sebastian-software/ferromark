@@ -2,10 +2,11 @@
 
 The `ferromark` core crate publishes to crates.io. The optional
 `ferromark-transforms` crate shares its version and depends on that core. The
-publish workflow sends the core first and then the extension. Before the
-extension's first release, crates.io Trusted Publishing must be configured for
-the new crate. The npm facade and seven native platform
-packages share the root product version. The Node development workspace and
+publish workflow sends the core first and then the extension. The extension's
+first version needs a one-time credentialed Cargo publication; configure
+crates.io Trusted Publishing for it before the next release. The npm facade and
+seven native platform packages share the root product version. The Node
+development workspace and
 `ferromark-node` binding crate remain private. Allocator, AST, parser and
 renderer are modules inside the core library; consumers can use them
 individually through `ferromark`. Since
@@ -62,7 +63,7 @@ component. The strategy updates natively, with no template to keep in step:
 - `CHANGELOG.md` and `.release-please-manifest.json`.
 
 Four `extra-files` entries cover the rest: a typed `$.version` for
-`node/ferromark/package.json`, one globbed `$.version` for the eight
+`node/ferromark/package.json`, one globbed `$.version` for the seven
 `node/ferromark/npm/*/package.json` manifests, and the two generic README blocks
 marked with `x-release-please-start-version` / `end-version` in `README.md.src`
 and the generated `README.md`. Those blocks hold the versioned docs.rs link and
@@ -223,9 +224,9 @@ else from outside the core archive.
 ## The pre-merge rehearsal
 
 Because merging publishes, `ci.yml` is where a release is proven. On every pull
-request it builds all seven native addons with profile-guided optimization,
-runs the runtime tests on the six same-architecture targets, inspects the two
-cross-compiled musl builds and loads the x64 one on Alpine, assembles the nine
+request it builds all seven native addons, setting `FERROMARK_PGO=1` for six,
+runs the runtime tests on the five same-architecture targets, inspects the two
+cross-compiled musl builds and loads the x64 one on Alpine, assembles the eight
 npm packages, checks their contents, performs a clean installation on Linux x64
 GNU and rehearses the Cargo archive. It publishes nothing and retains its
 verified archives for seven days.
@@ -251,31 +252,34 @@ and `pnpm test` verifies it on the same-architecture native jobs. The package
 test suite in the container still renders every V8 string representation
 through the musl addon.
 
-Seven native jobs set `FERROMARK_PGO=1`, so each published addon is built from a
-profile collected on its own runner. The Windows ARM64 job builds without PGO
+Six native jobs set `FERROMARK_PGO=1`. The Windows ARM64 job builds without PGO
 because the pinned toolchain's `llvm-profdata` rejects the counters written on
-that runner; the two cross-compiled musl targets do not receive the host
-profile, because a Cargo unit hash covers the target triple. The crates.io crate
-is unaffected. See [ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
+that runner; the two cross-compiled musl targets cannot use the host profile
+because a Cargo unit hash covers the target triple. The crates.io crate is
+unaffected. See [ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
 
 `publish.yml` repeats the assembly checks on the release tag —
 `verify-release.mjs`, `verify-pack.mjs --all-targets`, `pnpm smoke:clean`, the
 same Alpine musl runtime test through `docker run node:22-alpine` on the runner,
 and `release-archives.mjs` — before the first registry call, and
-`verify-npm-publish.mjs` confirms all nine versions on the registry afterwards.
+`verify-npm-publish.mjs` confirms all eight versions on the registry afterwards.
 
 ## Registry authorization
 
 Both registries authenticate through Trusted Publishing (OIDC): no crates.io or
 npm token exists in this repository. It is configured for the `ferromark` crate
-and for the nine npm packages, repository `sebastian-software/ferromark`,
+and for the eight npm packages, repository `sebastian-software/ferromark`,
 workflow `publish.yml`. The publishing jobs therefore need
 `permissions: id-token: write`, and npm publishing needs npm 11.5.1 or newer,
 which the workflow installs explicitly.
 
-Adding a new package name needs an initial credentialed publication before
-Trusted Publishing can be enabled for it; a first-ever publish cannot use it,
-because the package does not exist yet.
+A new package name cannot bootstrap itself through Trusted Publishing: an
+authorized first publication must create it before Trusted Publishing can be
+configured. For a new crate such as `ferromark-transforms`, an authorized person
+must publish its first version with a Cargo credential, then configure crates.io
+Trusted Publishing before the next release. A new npm package likewise needs an
+initial credentialed npm publication before its Trusted Publisher can be
+configured.
 
 ## Retry a failed publish
 

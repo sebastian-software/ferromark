@@ -145,8 +145,9 @@ test("publication follows the standards release blueprint", () => {
     "ferromark-transforms",
   ]);
 
-  // The three release-shaped steps are the org's shared composite actions, not
-  // hand-written copies, and the platform list lives in exactly one place.
+  // The release-shaped steps are the org's shared composite actions, not
+  // hand-written copies. The selected platforms are checked against manifests
+  // and CI below because this package supports fewer targets than the action.
   const uses = Object.values(publisher.jobs).flatMap((job) =>
     job.steps.map((step) => step.uses).filter(Boolean),
   );
@@ -167,6 +168,40 @@ test("publication follows the standards release blueprint", () => {
   assert.equal(
     publisher.jobs["build-native"].strategy.matrix,
     "${{ fromJSON(needs.native-matrix.outputs.matrix) }}",
+  );
+});
+
+test("the release native matrix matches supported packages and CI targets", () => {
+  const publisher = parse(read(".github/workflows/publish.yml"));
+  const packageJson = JSON.parse(read("node/ferromark/package.json"));
+  const matrixAction = publisher.jobs["native-matrix"].steps.find((step) =>
+    step.uses?.includes("/napi-matrix@"),
+  );
+  assert.equal(matrixAction.with.package, packageJson.napi.packageName);
+
+  const sidecars = Object.keys(packageJson.optionalDependencies)
+    .map((name) => name.replace(/^ferromark-/, ""))
+    .sort();
+  const publishedPlatforms = matrixAction.with.platforms
+    .trim()
+    .split(/[\s,]+/)
+    .sort();
+  assert.deepEqual(
+    publishedPlatforms,
+    sidecars,
+    "the release matrix must select exactly the facade's published sidecars",
+  );
+
+  const ciTargets = ci.jobs.native.strategy.matrix.include;
+  assert.deepEqual(
+    ciTargets.map(({ rust_target }) => rust_target).sort(),
+    [...packageJson.napi.targets].sort(),
+    "native CI targets must match the facade's supported N-API targets",
+  );
+  assert.deepEqual(
+    ciTargets.map(({ artifact }) => artifact).sort(),
+    sidecars,
+    "native CI artifacts must match the facade's published sidecars",
   );
 });
 

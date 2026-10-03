@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-16
+- Last updated: 2026-10-03
 
 ## Context
 
@@ -14,18 +15,19 @@ three code rounds delivered together. The same section records that training on
 synthetic diagnostics alone leaves render losses on reference pages, so the
 training set has to contain real documents of every category.
 
-The report also names the obstacle: the native matrix produces eight targets,
-several of them cross-compiled, and a profile only exists once an instrumented
-binary has run. The crates.io crate is a different case entirely: consumers
+The report also names the obstacle: at the time, the native matrix produced
+eight targets, several of them cross-compiled, and a profile only exists once an
+instrumented binary has run. The crates.io crate is a different case entirely: consumers
 compile `ferromark` themselves, so no build we control produces their binary.
 
 ## Decision
 
-Apply PGO to the eight native Node addons. The `native` job of
-`.github/workflows/ci.yml` builds them on every pull request, and the
-`build-native` job of `.github/workflows/publish.yml` builds its own set the
-same way from the release tag; no addon crosses from one workflow to the other.
-Leave the `ferromark` source crate and local development builds unchanged.
+Build the seven native Node addons supported by the current facade. Six builds
+set `FERROMARK_PGO=1`, subject to the coverage limits below. The `native` job of
+`.github/workflows/ci.yml` builds all seven on every pull request, and the
+`build-native` job of `.github/workflows/publish.yml` builds the same set from the
+release tag; no addon crosses from one workflow to the other. Leave the
+`ferromark` source crate and local development builds unchanged.
 
 Add `node/native/src/bin/pgo_train.rs`, a training driver in the private
 `ferromark-node` crate behind a `pgo-train` feature so `napi build` does not
@@ -71,17 +73,17 @@ build is a silent no-op.
 
 ## Coverage limits
 
-Five targets — both Darwin, both GNU Linux and x86-64 Windows — are built on
-runners of their own architecture, so the host-trained profile applies to them.
-The two musl targets are cross-compiled from `x86_64` GNU runners with
+Four PGO targets — Darwin ARM64, both GNU Linux targets and x86-64 Windows — are
+built on runners of their own architecture, so the host-trained profile applies
+to them. The two musl targets are cross-compiled from `x86_64` GNU runners with
 cargo-zigbuild, and `aarch64-unknown-linux-musl` is a different architecture
 from its runner. Their unit hash differs from the host's, so those builds carry
 the profile flag but receive no profile data; they are otherwise unchanged.
 The ARM64 Windows job is built without PGO (`pgo: false` in the CI matrix): on
 that runner the pinned toolchain's `llvm-profdata` rejects the counters its own
 instrumented binary writes (`malformed instrumentation profile data: symbol
-name is empty`), so the addon stays on the plain build until a toolchain
-update or a different instrumentation setting is verified there.
+name is empty`), so the addon stays on the plain build until a toolchain update
+or a different instrumentation setting is verified there.
 Collecting a profile per target would require running an instrumented binary on
 each target, which needs emulation or additional runners. That is a separate
 decision, not a v2.0 blocker.
@@ -98,7 +100,7 @@ published one, so a retry is free to rebuild
 ([ADR-0020](ADR-0020-standards-release-blueprint.md)).
 
 Training adds an instrumented build plus about twenty seconds of training to
-each of the eight native jobs.
+each of the six PGO-enabled native jobs.
 
 ## Alternatives
 
@@ -109,3 +111,17 @@ each of the eight native jobs.
 - **PGO for the Rust crate.** Not possible. crates.io ships source; the consumer
   compiles it with their own flags, and a profile in the package would neither
   match their unit hashes nor their workload.
+
+## Amendment (2026-10-03): align PGO builds with published targets
+
+The current facade declares seven N-API targets, omitting x86-64 Darwin. The CI
+and publish workflows now build exactly those seven targets. Six jobs set
+`FERROMARK_PGO=1`; Windows ARM64 remains a plain build, and the two cross-compiled
+musl addons receive no matching host profile data as described above. The
+eight-target count in the report context describes the earlier matrix and is
+historical.
+
+## History
+
+- 2026-10-03: Updated current target and PGO counts to match the seven published
+  native packages.
