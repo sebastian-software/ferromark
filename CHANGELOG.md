@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.1](https://github.com/sebastian-software/ferromark/compare/v3.1.0...v3.1.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **release:** skip exact npm versions on publication retries ([#508](https://github.com/sebastian-software/ferromark/issues/508)) ([f04aedb](https://github.com/sebastian-software/ferromark/commit/f04aedb86f3d6810145556b1861fecd5e90d9e50))
+* **release:** tolerate missing release-please PR output ([#506](https://github.com/sebastian-software/ferromark/issues/506)) ([83c5c21](https://github.com/sebastian-software/ferromark/commit/83c5c219cd363d5f8b1af60b1a17f2ffd587cc18))
+
 ## [3.1.0](https://github.com/sebastian-software/ferromark/compare/v3.0.0...v3.1.0) (2026-10-03)
 
 
