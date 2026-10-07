@@ -1,5 +1,9 @@
 # The public API frozen for 2.0.0
 
+> The release rule in this record — an API change costs a major version — is
+> superseded by the [API stability decision](2026-10-01-api-stability.md). The
+> decisions about the shape of the API still apply.
+
 ## Scope
 
 The API-freeze review of 2026-09-17 went through every public item of the
