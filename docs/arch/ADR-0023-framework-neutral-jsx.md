@@ -26,7 +26,8 @@ together, including visible Markdown text nested inside authored JSX.
 Ferromark emits syntax; it does not import React, evaluate JavaScript, or build
 executable modules. Consumers own provider bindings, layouts, framework page
 context, ESM analysis, and downstream JSX compilation. Ardo uses Vite's normal
-Oxc transform for this step.
+Oxc transform for this step. The amendment below moves module assembly and ESM
+analysis into Ferromark.
 
 A synchronous, trusted code-block callback can emit JSX. Callback exceptions
 propagate, and returning no replacement selects the native renderer. The
@@ -67,3 +68,39 @@ checking all targets. The native Node sidecars use platform trust stores and
 do not ship this data. Any future distribution that includes the certificate
 data must include the agreement text with it. Both exceptions require review
 when the dependency version changes.
+
+## Amendment (2026-10-01): MDX module output
+
+The first consumer showed what the body-only boundary costs. Ardo rebuilt the
+MDX module contract in about 940 lines: scope analysis, layout rewriting,
+component resolution, and source-map merging. None of it was specific to Ardo
+or React. It parsed each module block a second time, with a different Oxc
+version and a different grammar than Ferromark, and it compiled each document
+once more only to find free identifiers.
+
+The module contract is MDX semantics, not framework semantics. Ferromark
+therefore offers module output next to the body
+([#504](https://github.com/sebastian-software/ferromark/issues/504)). The
+module holds the authored ESM in document order, a content function, and
+`MDXContent`. An authored default export becomes the layout. A component
+reference uses a module binding when one exists and the components object
+otherwise, with an error that names an undefined component. Generated names
+are reserved, which removes the naming pass.
+
+The original limits stay. The module still contains JSX, imports no framework,
+and is never evaluated; only the provider import source is supplied by the
+caller. Consumers keep their page context, their own exports, and downstream
+JSX compilation. Authored JavaScript stays source text: Ferromark does not
+analyze scopes inside expressions or module blocks, so a component used only
+there must be imported. Module blocks stay JavaScript, and TypeScript syntax is
+reported as such.
+
+Module assembly is a layer over the JSX renderer behind the `jsx` feature. The
+parser and the AST are unchanged. The assembler parses each module block again
+with the same Oxc version and grammar as the parser, and it reads the syntax
+tree only inside one module that returns names and text edits. Ferromark now
+depends on the shape of Oxc's export declarations, so an Oxc upgrade can need
+changes there. `oxc_ast` and `oxc_ecmascript` become direct dependencies; both
+were already in the dependency graph.
+
+This amendment makes no performance claim.

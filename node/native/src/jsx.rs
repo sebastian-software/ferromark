@@ -5,8 +5,8 @@ use std::collections::{BTreeMap, HashMap};
 use ferromark::ast::{Node, Span, Visit};
 use ferromark::ferriki::Highlighter;
 use ferromark::{
-    Allocator, FerrikiJsxHooks, JsxCodeBlockInput, JsxHighlightedCodeBlock, JsxRenderHooks,
-    JsxRenderer, JsxRendererOptions, Parser,
+    Allocator, FerrikiJsxHooks, JsxCodeBlockInput, JsxHighlightedCodeBlock, JsxModuleOptions,
+    JsxRenderHooks, JsxRenderer, JsxRendererOptions, Parser,
 };
 use ferromark_transforms::TransformContext;
 use napi::bindgen_prelude::{Error, FnArgs, Result, Status};
@@ -22,6 +22,14 @@ pub struct JsxOptions {
     pub code_components: Option<HashMap<String, String>>,
     pub code_block_component: Option<String>,
     pub omit_title_heading: Option<String>,
+    /// Module output only: module that exports `useMDXComponents`.
+    pub provider_import_source: Option<String>,
+    /// Module output only: source file name for the source map.
+    pub filename: Option<String>,
+    /// Module output only: export `MDXContent` as the default export.
+    pub default_export: Option<bool>,
+    /// Module output only: names the caller declares in code it adds.
+    pub reserved_bindings: Option<Vec<String>>,
 }
 
 #[napi(object)]
@@ -74,6 +82,58 @@ pub struct JsxResult {
     pub front_matter_kind: Option<String>,
     pub omitted_title_heading_span: Option<SourceRange>,
     pub mappings: Vec<JsxSourceMapping>,
+}
+
+/// A version 3 source map for module code.
+#[napi(object)]
+pub struct JsxModuleMap {
+    pub version: u32,
+    pub sources: Vec<String>,
+    pub sources_content: Vec<String>,
+    pub names: Vec<String>,
+    pub mappings: String,
+}
+
+#[napi(object)]
+pub struct JsxModuleResult {
+    pub code: String,
+    pub map: JsxModuleMap,
+    pub exports: Vec<String>,
+    pub bindings: Vec<String>,
+    pub code_blocks: Vec<JsxCodeBlock>,
+    pub headings: Vec<JsxHeading>,
+    pub front_matter: Option<String>,
+    pub front_matter_span: Option<SourceRange>,
+    pub front_matter_kind: Option<String>,
+    pub omitted_title_heading_span: Option<SourceRange>,
+}
+
+/// What a compilation produces: the JSX body with its parts, or a module.
+pub(crate) enum Compiled {
+    Body(JsxResult),
+    Module(JsxModuleResult),
+}
+
+impl Compiled {
+    pub(crate) fn body(self) -> Result<JsxResult> {
+        match self {
+            Self::Body(result) => Ok(result),
+            Self::Module(_) => Err(Error::new(
+                Status::GenericFailure,
+                "JSX body compilation produced a module",
+            )),
+        }
+    }
+
+    pub(crate) fn module(self) -> Result<JsxModuleResult> {
+        match self {
+            Self::Module(result) => Ok(result),
+            Self::Body(_) => Err(Error::new(
+                Status::GenericFailure,
+                "JSX module compilation produced a body",
+            )),
+        }
+    }
 }
 
 struct CodeHook<'callback, 'highlight> {
@@ -195,7 +255,52 @@ pub fn compile_jsx(
     )]
     render_code: Option<CodeCallback<'_>>,
 ) -> Result<JsxResult> {
-    compile_jsx_with_highlighter(markdown, options, jsx_options, render_code, None)
+    compile_jsx_with_highlighter(markdown, options, jsx_options, render_code, None, false)?.body()
+}
+
+/// Internal entry for `output: "module"`; the public facade selects it.
+#[napi(catch_unwind)]
+pub fn compile_jsx_module(
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+    options: Option<Options>,
+    jsx_options: Option<JsxOptions>,
+    #[napi(
+        ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+    )]
+    render_code: Option<CodeCallback<'_>>,
+) -> Result<JsxModuleResult> {
+    compile_jsx_with_highlighter(markdown, options, jsx_options, render_code, None, true)?.module()
+}
+
+fn range(span: Span) -> SourceRange {
+    SourceRange {
+        start: span.start,
+        end: span.end,
+    }
+}
+
+fn code_blocks(blocks: Vec<ferromark::JsxCodeBlock>) -> Vec<JsxCodeBlock> {
+    blocks
+        .into_iter()
+        .map(|item| JsxCodeBlock {
+            code: item.value,
+            language: item.language,
+            meta: item.meta,
+        })
+        .collect()
+}
+
+fn headings(headings: Vec<ferromark::OutlineEntry>) -> Vec<JsxHeading> {
+    headings
+        .into_iter()
+        .map(|item| JsxHeading {
+            level: u32::from(item.level),
+            id: item.id,
+            text: item.text,
+            start: item.span.start,
+            end: item.span.end,
+        })
+        .collect()
 }
 
 pub(crate) fn compile_jsx_with_highlighter(
@@ -204,7 +309,8 @@ pub(crate) fn compile_jsx_with_highlighter(
     jsx_options: Option<JsxOptions>,
     render_code: Option<CodeCallback<'_>>,
     highlighting: Option<NativeHighlighting<'_>>,
-) -> Result<JsxResult> {
+    module: bool,
+) -> Result<Compiled> {
     let jsx = jsx_options.unwrap_or(JsxOptions {
         format: None,
         component_prefix: None,
@@ -212,6 +318,22 @@ pub(crate) fn compile_jsx_with_highlighter(
         code_components: None,
         code_block_component: None,
         omit_title_heading: None,
+        provider_import_source: None,
+        filename: None,
+        default_export: None,
+        reserved_bindings: None,
+    });
+    if module && jsx.provider_import_source.as_deref() == Some("") {
+        return Err(Error::new(
+            Status::InvalidArg,
+            "providerImportSource must be a nonempty string",
+        ));
+    }
+    let module = module.then(|| JsxModuleOptions {
+        provider_import_source: jsx.provider_import_source,
+        default_export: jsx.default_export.unwrap_or(true),
+        reserved_bindings: jsx.reserved_bindings.unwrap_or_default(),
+        filename: jsx.filename,
     });
     let mut resolved = core_options(options)?;
     resolved.parser.mdx = match jsx.format.as_deref() {
@@ -254,10 +376,10 @@ pub(crate) fn compile_jsx_with_highlighter(
         .front_matter
         .as_ref()
         .map(|front| front.value.to_owned());
-    let front_matter_span = document.front_matter.as_ref().map(|front| SourceRange {
-        start: front.span.start,
-        end: front.span.end,
-    });
+    let front_matter_span = document
+        .front_matter
+        .as_ref()
+        .map(|front| range(front.span));
     let front_matter_kind = document
         .front_matter
         .as_ref()
@@ -279,21 +401,41 @@ pub(crate) fn compile_jsx_with_highlighter(
             .as_ref()
             .is_some_and(|settings| settings.line_numbers),
     });
-    let output = if render_code.is_some() || highlighting.is_some() {
-        let mut hook = CodeHook {
-            callback: render_code,
-            highlighting,
-            error: None,
-        };
-        let result = renderer.render_with_hooks(&document, &markdown, &mut hook);
+    let mut hook = CodeHook {
+        callback: render_code,
+        highlighting,
+        error: None,
+    };
+    if let Some(module) = module {
+        let result = renderer.render_module_with_hooks(&document, &markdown, &module, &mut hook);
         if let Some(error) = hook.error {
             return Err(error);
         }
-        result
-    } else {
-        renderer.render(&document, &markdown)
-    };
-    Ok(JsxResult {
+        let output = result.map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+        return Ok(Compiled::Module(JsxModuleResult {
+            code: output.code,
+            map: JsxModuleMap {
+                version: 3,
+                sources: output.map.sources,
+                sources_content: output.map.sources_content,
+                names: Vec::new(),
+                mappings: output.map.mappings,
+            },
+            exports: output.exports,
+            bindings: output.bindings,
+            code_blocks: code_blocks(output.code_blocks),
+            headings: headings(output.headings),
+            front_matter,
+            front_matter_span,
+            front_matter_kind,
+            omitted_title_heading_span: output.omitted_title_heading.map(range),
+        }));
+    }
+    let output = renderer.render_with_hooks(&document, &markdown, &mut hook);
+    if let Some(error) = hook.error {
+        return Err(error);
+    }
+    Ok(Compiled::Body(JsxResult {
         body: output.body,
         esm: output
             .esm
@@ -306,33 +448,12 @@ pub(crate) fn compile_jsx_with_highlighter(
             .collect(),
         components: output.components,
         elements: output.elements,
-        code_blocks: output
-            .code_blocks
-            .into_iter()
-            .map(|item| JsxCodeBlock {
-                code: item.value,
-                language: item.language,
-                meta: item.meta,
-            })
-            .collect(),
-        headings: output
-            .headings
-            .into_iter()
-            .map(|item| JsxHeading {
-                level: u32::from(item.level),
-                id: item.id,
-                text: item.text,
-                start: item.span.start,
-                end: item.span.end,
-            })
-            .collect(),
+        code_blocks: code_blocks(output.code_blocks),
+        headings: headings(output.headings),
         front_matter,
         front_matter_span,
         front_matter_kind,
-        omitted_title_heading_span: output.omitted_title_heading.map(|span| SourceRange {
-            start: span.start,
-            end: span.end,
-        }),
+        omitted_title_heading_span: output.omitted_title_heading.map(range),
         mappings: output
             .mappings
             .into_iter()
@@ -343,5 +464,5 @@ pub(crate) fn compile_jsx_with_highlighter(
                 source_column: item.source_column,
             })
             .collect(),
-    })
+    }))
 }

@@ -5,6 +5,8 @@ export declare class JsxCompiler {
   constructor(settings: string)
   /** Compiles source and reuses the loaded native grammars and themes. */
   compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
+  /** Compiles source to an MDX module; the public facade selects this entry. */
+  compileModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
 }
 
 /** Reuses arena storage and HTML buffers; documents never outlive a call. */
@@ -18,6 +20,9 @@ export declare class Renderer {
 
 /** Internal entry: the public facade validates and separates its option keys. */
 export declare function compileJsx(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
+
+/** Internal entry for `output: "module"`; the public facade selects it. */
+export declare function compileJsxModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
 
 export interface Heading {
   level: number
@@ -39,6 +44,28 @@ export interface JsxHeading {
   end: number
 }
 
+/** A version 3 source map for module code. */
+export interface JsxModuleMap {
+  version: number
+  sources: Array<string>
+  sourcesContent: Array<string>
+  names: Array<string>
+  mappings: string
+}
+
+export interface JsxModuleResult {
+  code: string
+  map: JsxModuleMap
+  exports: Array<string>
+  bindings: Array<string>
+  codeBlocks: Array<JsxCodeBlock>
+  headings: Array<JsxHeading>
+  frontMatter?: string
+  frontMatterSpan?: SourceRange
+  frontMatterKind?: string
+  omittedTitleHeadingSpan?: SourceRange
+}
+
 export interface JsxModuleSource {
   value: string
   start: number
@@ -52,6 +79,14 @@ export interface JsxOptions {
   codeComponents?: Record<string, string>
   codeBlockComponent?: string
   omitTitleHeading?: string
+  /** Module output only: module that exports `useMDXComponents`. */
+  providerImportSource?: string
+  /** Module output only: source file name for the source map. */
+  filename?: string
+  /** Module output only: export `MDXContent` as the default export. */
+  defaultExport?: boolean
+  /** Module output only: names the caller declares in code it adds. */
+  reservedBindings?: Array<string>
 }
 
 export interface JsxResult {

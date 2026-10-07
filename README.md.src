@@ -98,8 +98,9 @@ covers metadata, Buffers, reusable renderers, and highlighters.
 
 `compileJsx(source, { format: "mdx" })` returns a JSX body, authored ESM,
 component references, headings, code-block metadata, and source mappings.
-The application assembles its module and compiles JSX through its framework's
-normal toolchain. Ferromark adds no React runtime imports. The Rust `jsx`
+With `output: "module"` it returns a complete MDX module and a source map
+instead. The application compiles the JSX through its framework's normal
+toolchain. Ferromark adds no React runtime imports. The Rust `jsx`
 feature enables strict MDX grammar validation; existing HTML APIs keep their
 syntax behavior. `new JsxCompiler({ theme }).compile(source)` adds native
 Ferriki highlighting and reuses loaded assets across documents. See the [JSX renderer contract](docs/jsx-renderer.md) and

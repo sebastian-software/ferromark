@@ -79,6 +79,28 @@ const highlightedJsx: string = jsxCompiler.compile("# Typed", {
   codeBlockComponent: "CodeBlock",
 }).body;
 compileJsx(highlightedJsx);
+const jsxModule = compileJsx("# Typed", {
+  format: "mdx",
+  output: "module",
+  providerImportSource: "docs/provider",
+  filename: "typed.mdx",
+  defaultExport: false,
+  reservedBindings: ["createRoute"],
+});
+const moduleCode: string = jsxModule.code;
+const moduleMappings: string = jsxModule.map.mappings;
+const moduleNames: string[] = [...jsxModule.exports, ...jsxModule.bindings];
+compileJsx(moduleCode + moduleMappings + moduleNames.join(""));
+const highlightedModule: string = jsxCompiler.compile("# Typed", { output: "module" }).code;
+const explicitBody: string = compileJsx(highlightedModule, { output: "body" }).body;
+compileJsx(explicitBody);
+// @ts-expect-error -- a module has no separate body
+const moduleKey: keyof typeof jsxModule = "body";
+compileJsx(moduleKey);
+// @ts-expect-error -- module output owns the component prefix
+compileJsx("# Typed", { output: "module", componentPrefix: "_components" });
+// @ts-expect-error -- module options need `output: "module"`
+compileJsx("# Typed", { providerImportSource: "docs/provider" });
 // @ts-expect-error -- JSX compilation does not promise HTML sanitization
 compileJsx("# Typed", { renderPolicy: "untrusted" });
 // @ts-expect-error -- callbacks are synchronous
