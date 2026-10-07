@@ -245,6 +245,8 @@ export type CompileJsxOptions = {
   codeBlockComponent?: string;
   /** Omit the first top-level H1 only when its trimmed visible text equals this title. */
   omitTitleHeading?: string;
+  /** `"body"` (the default) returns a JSX fragment with its parts; `"module"` returns a complete module. */
+  output?: "body";
 } & Omit<
   Options,
   | "mdx"
@@ -258,6 +260,25 @@ export type CompileJsxOptions = {
   | "abbreviations"
   | "preset"
 >;
+
+/**
+ * Options for a complete MDX module. Generated Markdown elements are members of `_components`,
+ * so `componentPrefix` is not available.
+ */
+export type CompileJsxModuleOptions = {
+  output: "module";
+  /** Module that exports `useMDXComponents`. Its components rank below `props.components`. */
+  providerImportSource?: string;
+  /** Source file name, recorded as the source of the source map. */
+  filename?: string;
+  /** Export `MDXContent` as the default export. Set `false` to append your own. Defaults to `true`. */
+  defaultExport?: boolean;
+  /**
+   * Names you declare in code you add to the module. A component reference to one of them uses
+   * that binding instead of the provider, and an authored declaration of the same name is an error.
+   */
+  reservedBindings?: string[];
+} & Omit<CompileJsxOptions, "output" | "componentPrefix">;
 
 /** A trusted hook may replace an entire code block with JSX. Exceptions propagate. */
 export type JsxCodeRenderer = (
@@ -297,6 +318,42 @@ export type JsxResult = {
   }>;
 };
 
+/** A version 3 source map from module code to the Markdown/MDX source. */
+export type JsxModuleMap = {
+  version: 3;
+  /** The `filename` option, or an empty name. */
+  sources: string[];
+  sourcesContent: string[];
+  names: string[];
+  /** Zero-based lines; columns count UTF-16 code units. */
+  mappings: string;
+};
+
+export type JsxModuleResult = {
+  /**
+   * A complete ES module that still contains JSX: authored ESM in document order, the content
+   * function, and `MDXContent`. It imports no framework; compile it with your JSX transform.
+   */
+  code: string;
+  map: JsxModuleMap;
+  /** Names the authored ESM exports. An authored default export becomes the layout and is not listed. */
+  exports: string[];
+  /** Names the authored ESM binds at the top level: imports, exported declarations, a named default export. */
+  bindings: string[];
+  codeBlocks: Array<{ code: string; language?: string; meta?: string }>;
+  headings: JsxHeading[];
+  frontMatter?: string;
+  frontMatterSpan?: { start: number; end: number };
+  frontMatterKind?: "yaml" | "toml";
+  /** Original UTF-8 range of the matching top-level H1 omitted from the module. */
+  omittedTitleHeadingSpan?: { start: number; end: number };
+};
+
+export declare function compileJsx(
+  markdown: string | Uint8Array,
+  options: CompileJsxModuleOptions,
+  renderCode?: JsxCodeRenderer,
+): JsxModuleResult;
 export declare function compileJsx(
   markdown: string | Uint8Array,
   options?: CompileJsxOptions,
@@ -344,6 +401,11 @@ export declare class JsxCompiler {
   /** Loads theme assets; first use can download missing, verified standard assets. */
   constructor(options?: JsxCompilerOptions);
   /** Compiles source, loading and caching the fence languages on first use. */
+  compile(
+    markdown: string | Uint8Array,
+    options: CompileJsxModuleOptions,
+    renderCode?: JsxCodeRenderer,
+  ): JsxModuleResult;
   compile(
     markdown: string | Uint8Array,
     options?: CompileJsxOptions,

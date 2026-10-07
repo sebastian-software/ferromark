@@ -15,6 +15,7 @@ use crate::renderer::{
 };
 
 use super::code_metadata::{CodeBlockMetadata, parse_code_block_metadata};
+use super::line_index::LineIndex;
 use super::{JsxCodeBlock, JsxCodeBlockInput, JsxModuleSource, JsxOutput, JsxRenderHooks};
 
 pub(super) fn render_document<H: JsxRenderHooks>(
@@ -23,6 +24,18 @@ pub(super) fn render_document<H: JsxRenderHooks>(
     options: &JsxRendererOptions,
     hooks: &mut H,
 ) -> JsxOutput {
+    render_document_with_references(document, source, options, hooks).0
+}
+
+/// Renders a document and also returns each component reference with its full
+/// member path, such as `ui.Badge`, in first-reference order. Module assembly
+/// needs the path; [`JsxOutput::components`] holds only the root identifiers.
+pub(super) fn render_document_with_references<H: JsxRenderHooks>(
+    document: &Document<'_>,
+    source: &str,
+    options: &JsxRendererOptions,
+    hooks: &mut H,
+) -> (JsxOutput, Vec<String>) {
     let mut renderer = Renderer::new(source, options, hooks);
     renderer.push("<>\n");
     let mut considered_first_h1 = false;
@@ -46,14 +59,16 @@ pub(super) fn render_document<H: JsxRenderHooks>(
         renderer.render_node(child);
     }
     renderer.push("</>");
-    renderer.output
+    (renderer.output, renderer.references)
 }
 
 struct Renderer<'a, 'options, 'hooks, H> {
     source: &'a str,
+    line_index: LineIndex<'a>,
     options: &'options JsxRendererOptions,
     hooks: &'hooks mut H,
     output: JsxOutput,
+    references: Vec<String>,
     generated_line: u32,
     generated_column: u32,
     generated_previous_cr: bool,
@@ -69,9 +84,11 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     fn new(source: &'a str, options: &'options JsxRendererOptions, hooks: &'hooks mut H) -> Self {
         Self {
             source,
+            line_index: LineIndex::new(source),
             options,
             hooks,
             output: JsxOutput::default(),
+            references: Vec::new(),
             generated_line: 0,
             generated_column: 0,
             generated_previous_cr: false,
@@ -166,7 +183,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn add_mapping_at(&mut self, source_offset: usize) {
-        let (source_line, source_column) = source_location(self.source, source_offset);
+        let (source_line, source_column) = self.line_index.position(source_offset);
         self.output.mappings.push(JsxSourceMapping {
             generated_line: self.generated_line,
             generated_column: self.generated_column,
@@ -307,15 +324,19 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         let member = name.contains('.');
         let intrinsic = root.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
             || name.contains(['-', ':']);
-        if !root.is_empty()
-            && (member || !intrinsic)
-            && !self
-                .output
-                .components
-                .iter()
-                .any(|component| component == root)
+        if root.is_empty() || (!member && intrinsic) {
+            return;
+        }
+        if !self
+            .output
+            .components
+            .iter()
+            .any(|component| component == root)
         {
             self.output.components.push(root.to_owned());
+        }
+        if !self.references.iter().any(|reference| reference == name) {
+            self.references.push(name.to_owned());
         }
     }
 
@@ -1440,35 +1461,6 @@ fn is_valid_highlighted_code(highlighted: &super::JsxHighlightedCodeBlock, code:
             .lines
             .iter()
             .all(|line| !line.contains(['\n', '\r']))
-}
-
-fn source_location(source: &str, offset: usize) -> (u32, u32) {
-    let mut line = 0u32;
-    let mut column = 0u32;
-    let mut previous_cr = false;
-    for (byte_offset, ch) in source.char_indices() {
-        if byte_offset >= offset {
-            break;
-        }
-        match ch {
-            '\r' => {
-                line = line.saturating_add(1);
-                column = 0;
-                previous_cr = true;
-            }
-            '\n' if previous_cr => previous_cr = false,
-            '\n' => {
-                line = line.saturating_add(1);
-                column = 0;
-                previous_cr = false;
-            }
-            _ => {
-                column = column.saturating_add(ch.len_utf16() as u32);
-                previous_cr = false;
-            }
-        }
-    }
-    (line, column)
 }
 
 fn callout_paragraph_has_body(paragraph: &Paragraph<'_>, consumed: usize) -> bool {

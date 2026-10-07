@@ -165,6 +165,34 @@ fn invalid_javascript_and_jsx_report_source_errors() {
 }
 
 #[test]
+fn typescript_in_module_blocks_is_named_as_the_cause() {
+    for source in [
+        "import type { Props } from './types'\n\n# Heading",
+        "export interface Props { label: string }\n\n# Heading",
+        "export const count: number = 1\n\n# Heading",
+        "export function id<T>(value: T): T {\n\n  return value\n}\n\n# Heading",
+    ] {
+        let allocator = Allocator::new();
+        let error = Parser::with_options(&allocator, source, options())
+            .parse()
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("TypeScript syntax is not supported in MDX module blocks"),
+            "{source}: {error}"
+        );
+    }
+
+    // Invalid JavaScript that is also invalid TypeScript keeps its diagnostic.
+    let allocator = Allocator::new();
+    let error = Parser::with_options(&allocator, "export const x = ;\n\n# Heading", options())
+        .parse()
+        .unwrap_err();
+    assert!(!error.to_string().contains("TypeScript"), "{error}");
+}
+
+#[test]
 fn code_fences_hide_jsx_closers_and_javascript_braces() {
     let source = "<div>\n  ~~~jsx\n  </div>\n  {invalid +}\n  ~~~\n\n  ```jsx\n  <span>\n  </div>\n  ```\n</div>\n";
     let allocator = Allocator::new();

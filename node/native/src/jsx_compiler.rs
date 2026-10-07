@@ -8,7 +8,10 @@ use napi::bindgen_prelude::{Error, Result, Status};
 use napi_derive::napi;
 use serde_json::{Map, Value};
 
-use crate::jsx::{JsxOptions, JsxResult, NativeHighlighting, compile_jsx_with_highlighter};
+use crate::jsx::{
+    Compiled, JsxModuleResult, JsxOptions, JsxResult, NativeHighlighting,
+    compile_jsx_with_highlighter,
+};
 use crate::{CodeCallback, Options, input::Utf8Input};
 
 /// Owns a Ferriki highlighter, asset catalogs, and theme registrations across documents.
@@ -73,6 +76,34 @@ impl JsxCompiler {
         )]
         render_code: Option<CodeCallback<'_>>,
     ) -> Result<JsxResult> {
+        self.compile_with(markdown, options, jsx_options, render_code, false)?
+            .body()
+    }
+
+    /// Compiles source to an MDX module; the public facade selects this entry.
+    #[napi(catch_unwind)]
+    pub fn compile_module(
+        &self,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+        options: Option<Options>,
+        jsx_options: Option<JsxOptions>,
+        #[napi(
+            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+        )]
+        render_code: Option<CodeCallback<'_>>,
+    ) -> Result<JsxModuleResult> {
+        self.compile_with(markdown, options, jsx_options, render_code, true)?
+            .module()
+    }
+
+    fn compile_with(
+        &self,
+        markdown: Utf8Input,
+        options: Option<Options>,
+        jsx_options: Option<JsxOptions>,
+        render_code: Option<CodeCallback<'_>>,
+        module: bool,
+    ) -> Result<Compiled> {
         let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {
             usage("A JSX compiler cannot be used recursively from its code callback")
         })?;
@@ -87,6 +118,7 @@ impl JsxCompiler {
                 dark_theme: self.dark_theme.as_deref(),
                 line_numbers: self.line_numbers,
             }),
+            module,
         )
     }
 }

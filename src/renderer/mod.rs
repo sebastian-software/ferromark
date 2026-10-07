@@ -47,6 +47,9 @@ pub use html::{
     slugify_heading,
 };
 
+#[cfg(feature = "jsx")]
+pub use jsx::{JsxModuleError, JsxModuleOptions, JsxModuleOutput, JsxSourceMap};
+
 pub use jsx::{
     JsxCodeBlock, JsxCodeBlockInput, JsxHighlightedCodeBlock, JsxModuleSource, JsxOutput,
     JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping, NoJsxRenderHooks,

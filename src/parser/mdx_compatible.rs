@@ -114,6 +114,13 @@ pub(super) fn validate_open(source: &str, self_closing: bool, span: Span) -> Par
     }
 }
 
+/// Whether text that is not valid JavaScript is a valid TypeScript module.
+fn is_typescript(value: &str) -> bool {
+    let allocator = oxc_allocator::Allocator::default();
+    let result = oxc_parser::Parser::new(&allocator, value, oxc_span::SourceType::tsx()).parse();
+    result.diagnostics.is_empty() && !result.panicked && !result.program.body.is_empty()
+}
+
 /// MDX module blocks end at a blank line outside their JavaScript syntax.
 /// Trying each blank-line boundary lets the JS parser distinguish a blank
 /// line inside a template/function/import from the end of a module block.
@@ -121,6 +128,7 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
     let mut cursor = start;
     let mut allocator = oxc_allocator::Allocator::default();
     let mut first_error = None;
+    let mut typescript = false;
     loop {
         let end = line_end(source.as_bytes(), cursor);
         let next = line_terminator_end(source.as_bytes(), end);
@@ -164,6 +172,15 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
                         .map_or("invalid import/export declaration", |error| {
                             error.message.as_ref()
                         }),
+                ));
+            }
+            // The JavaScript diagnostic for a type annotation names an
+            // unrelated construct, so say what the actual cause is.
+            if !typescript && is_typescript(&source[start..cursor]) {
+                typescript = true;
+                first_error = Some(invalid(
+                    Span::new(start as u32, cursor as u32),
+                    "TypeScript syntax is not supported in MDX module blocks; write JavaScript",
                 ));
             }
         }

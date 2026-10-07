@@ -49,6 +49,63 @@ UTF-16 columns. Generated Markdown tags appear in `elements`, including when
 prefixed; authored and configured JSX component roots appear in `components`. Headings and
 rendered IDs use the same planner, including visible text nested inside JSX.
 
+### MDX modules
+
+`output: "module"` returns a complete MDX module instead of a body. The module
+still contains JSX and imports no framework.
+
+```js
+const result = compileJsx(source, {
+  format: "mdx",
+  output: "module",
+  providerImportSource: "docs/provider",
+  filename: id,
+});
+// result.code, result.map, result.exports, result.bindings, result.headings
+```
+
+The module holds the authored ESM in document order, a content function, and
+`MDXContent` as the default export. `providerImportSource` names the module
+that exports `useMDXComponents`; `props.components` overrides its components.
+An authored default export becomes the layout and replaces the `wrapper`
+component. A component reference uses a binding from the document's ESM when
+one exists and the components object otherwise. An undefined component throws
+an error that names it.
+
+To add your own exports, set `defaultExport: false` and append code:
+
+```js
+const result = compiler.compile(source, {
+  format: "mdx",
+  output: "module",
+  providerImportSource: "docs/provider",
+  defaultExport: false,
+  reservedBindings: ["createRoute"],
+});
+const frontmatter = result.exports.includes("frontmatter")
+  ? ""
+  : `export const frontmatter = ${JSON.stringify(data)};\n`;
+const code =
+  result.code +
+  `import { createRoute } from "docs/runtime";\n` +
+  frontmatter +
+  `export default createRoute(MDXContent);\n`;
+```
+
+Import declarations are hoisted, so appended code keeps `result.map` valid.
+`reservedBindings` lists the names your code declares: an authored declaration
+of one of them is a compile error, and a component reference to one of them
+uses your binding. `exports` and `bindings` list what the authored ESM exports
+and binds, so you know which exports are still yours to add. The generated
+names `_components`, `_createMdxContent`, `_missingMdxReference`,
+`_provideComponents`, `MDXLayout`, and `MDXContent` are reserved in the same way.
+
+`result.map` is a version 3 source map with `filename` as its source. JSX inside
+authored JavaScript, in an expression or a module block, is not analyzed: a
+component used only there must be imported. Module blocks are JavaScript;
+TypeScript syntax is a compile error.
+See the [JSX renderer contract](https://github.com/sebastian-software/ferromark/blob/main/docs/jsx-renderer.md#mdx-module-output).
+
 For native syntax highlighting, reuse a `JsxCompiler`:
 
 ````js

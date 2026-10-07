@@ -498,7 +498,14 @@ const jsxOnlyKeys = new Set([
   "codeComponents",
   "codeBlockComponent",
   "omitTitleHeading",
+  "output",
+  "providerImportSource",
+  "filename",
+  "defaultExport",
+  "reservedBindings",
 ]);
+/** Options that only shape a module. With body output they are an error, not ignored. */
+const moduleOnlyKeys = ["providerImportSource", "filename", "defaultExport", "reservedBindings"];
 const htmlOnlyKeys = new Set([
   "mdx",
   "renderPolicy",
@@ -514,38 +521,65 @@ const htmlOnlyKeys = new Set([
 
 /**
  * Validate the syntax and JSX option names before loading the addon.
- * @param {import('./index.mjs').CompileJsxOptions} [options] Syntax and JSX options.
+ * @param {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} [options] Syntax and JSX options.
+ * @returns {boolean} Whether the options select module output.
  */
 function validateJsxOptions(options) {
-  if (options != null) {
-    if (typeof options !== "object" && typeof options !== "function") {
-      throw new TypeError("options must be an object");
-    }
-    for (const key of Reflect.ownKeys(options)) {
-      if (
-        typeof key !== "string" ||
-        htmlOnlyKeys.has(key) ||
-        (!optionKeys.has(key) && !jsxOnlyKeys.has(key))
-      ) {
-        throw new TypeError(`unknown JSX option "${String(key)}"`);
-      }
+  if (options == null) {
+    return false;
+  }
+  if (typeof options !== "object" && typeof options !== "function") {
+    throw new TypeError("options must be an object");
+  }
+  for (const key of Reflect.ownKeys(options)) {
+    if (
+      typeof key !== "string" ||
+      htmlOnlyKeys.has(key) ||
+      (!optionKeys.has(key) && !jsxOnlyKeys.has(key))
+    ) {
+      throw new TypeError(`unknown JSX option "${String(key)}"`);
     }
   }
+  return selectsModuleOutput(options);
+}
+
+/**
+ * Read the requested output and reject module options where they do not apply.
+ * @param {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} options Syntax and JSX options.
+ * @returns {boolean} Whether the options select module output.
+ */
+function selectsModuleOutput(options) {
+  const { output } = options;
+  if (output !== undefined && output !== "body" && output !== "module") {
+    throw new TypeError('output must be "body" or "module"');
+  }
+  if (output === "module") {
+    return true;
+  }
+  for (const key of moduleOnlyKeys) {
+    if (Reflect.get(options, key) !== undefined) {
+      throw new TypeError(`JSX option "${key}" requires output: "module"`);
+    }
+  }
+  return false;
 }
 
 /**
  * Compile trusted authored Markdown or MDX to framework-neutral JSX.
  * @param {string | Uint8Array} markdown Authored source.
- * @param {import('./index.mjs').CompileJsxOptions} [options] Syntax and JSX options.
+ * @param {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} [options] Syntax and JSX options.
  * @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous JSX hook.
- * @returns {import('./index.mjs').JsxResult} JSX and source metadata.
+ * @returns {import('./index.mjs').JsxResult | import('./index.mjs').JsxModuleResult} A JSX body with its parts, or a module with `output: "module"`.
  */
 export function compileJsx(markdown, options, renderCode) {
-  validateJsxOptions(options);
+  const module = validateJsxOptions(options);
   if (renderCode !== undefined && typeof renderCode !== "function") {
     throw new TypeError("renderCode must be a synchronous function");
   }
-  return loadNative().compileJsx(markdown, options, options, renderCode);
+  const addon = loadNative();
+  return module
+    ? addon.compileJsxModule(markdown, options, options, renderCode)
+    : addon.compileJsx(markdown, options, options, renderCode);
 }
 
 /** Reusable compiler whose Ferriki highlighter lives in the native addon. */
@@ -569,16 +603,18 @@ export class JsxCompiler {
 
   /**
    * @param {string | Uint8Array} markdown Trusted authored source.
-   * @param {import('./index.mjs').CompileJsxOptions} [options] Syntax and JSX options.
+   * @param {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} [options] Syntax and JSX options.
    * @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Optional whole-fence override.
-   * @returns {import('./index.mjs').JsxResult} Highlighted JSX and metadata.
+   * @returns {import('./index.mjs').JsxResult | import('./index.mjs').JsxModuleResult} Highlighted JSX and metadata, or a module with `output: "module"`.
    */
   compile(markdown, options, renderCode) {
-    validateJsxOptions(options);
+    const module = validateJsxOptions(options);
     if (renderCode !== undefined && typeof renderCode !== "function") {
       throw new TypeError("renderCode must be a synchronous function");
     }
-    return this.#native.compile(markdown, options, options, renderCode);
+    return module
+      ? this.#native.compileModule(markdown, options, options, renderCode)
+      : this.#native.compile(markdown, options, options, renderCode);
   }
 }
 
@@ -664,10 +700,14 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   toHtml(markdown: string | Uint8Array): string
  *   toHtmlBuffer(markdown: string | Uint8Array): import('node:buffer').Buffer
  * }} NativeRendererSession
+ * @typedef {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} NativeJsxOptions
  * @typedef {{
- *   compile(markdown: string | Uint8Array, options?: import('./index.mjs').CompileJsxOptions,
- *     jsxOptions?: import('./index.mjs').CompileJsxOptions,
+ *   compile(markdown: string | Uint8Array, options?: NativeJsxOptions,
+ *     jsxOptions?: NativeJsxOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
+ *   compileModule(markdown: string | Uint8Array, options?: NativeJsxOptions,
+ *     jsxOptions?: NativeJsxOptions,
+ *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxModuleResult
  * }} NativeJsxCompilerSession
  * @typedef {import('./index.mjs').Options | null | undefined} NativeOptions
  * @typedef {[
@@ -697,10 +737,16 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   JsxCompiler: { new (settings: string): NativeJsxCompilerSession }
  *   compileJsx(
  *     markdown: string | Uint8Array,
- *     options?: import('./index.mjs').CompileJsxOptions,
- *     jsxOptions?: import('./index.mjs').CompileJsxOptions,
+ *     options?: NativeJsxOptions,
+ *     jsxOptions?: NativeJsxOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer,
  *   ): import('./index.mjs').JsxResult
+ *   compileJsxModule(
+ *     markdown: string | Uint8Array,
+ *     options?: NativeJsxOptions,
+ *     jsxOptions?: NativeJsxOptions,
+ *     renderCode?: import('./index.mjs').JsxCodeRenderer,
+ *   ): import('./index.mjs').JsxModuleResult
  *   toHtml(markdown: string | Uint8Array, options?: NativeOptions): string
  *   toHtmlPacked(markdown: string | Uint8Array, ...options: NativePackedOptions): string
  *   toHtmlBuffer(markdown: string | Uint8Array, options?: NativeOptions): import('node:buffer').Buffer

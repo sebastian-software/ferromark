@@ -7,6 +7,7 @@ const artifacts = path.join(workspace, "artifacts");
 const packageTestNames = [
   "index.test.mjs",
   "jsx-highlighting.test.mjs",
+  "jsx-module.test.mjs",
   "jsx-title.test.mjs",
   "jsx.test.mjs",
 ];

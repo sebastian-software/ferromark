@@ -48,6 +48,9 @@ pub use renderer::{
     slugify_heading,
 };
 
+#[cfg(feature = "jsx")]
+pub use renderer::{JsxModuleError, JsxModuleOptions, JsxModuleOutput, JsxSourceMap};
+
 #[cfg(feature = "ferriki")]
 pub use renderer::FerrikiHighlightHooks;
 

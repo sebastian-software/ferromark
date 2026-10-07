@@ -1,8 +1,9 @@
 # Native JSX renderer
 
 `JsxRenderer` converts Ferromark's Markdown/MDX AST directly into a JSX body
-expression. It does not emit HTML first, add a React import, compile JSX, or
-wrap the result in a page or module function. The caller owns those steps.
+expression. It does not emit HTML first, add a React import, or compile JSX.
+`render` returns the body and its parts. With the `jsx` feature,
+[`render_module`](#mdx-module-output) wraps the body in a complete MDX module.
 
 ```rust
 use ferromark::allocator::Allocator;
@@ -60,6 +61,85 @@ precedence over a language mapping. Set `callouts` to `false` to render a
 callout marker as ordinary block-quote text. Heading level offsets, ID
 prefixes, and exact title-heading omission are configured on
 `JsxRendererOptions`.
+
+## MDX module output
+
+`JsxRenderer::render_module` needs the `jsx` feature. It returns a complete ES
+module that still contains JSX, with a source map. The module imports no
+framework and nothing evaluates it; the caller's JSX transform compiles it.
+Parse the document with `mdx_compatible` so module blocks have exact source
+ranges.
+
+```rust
+use ferromark::{Allocator, JsxModuleOptions, JsxRenderer, Parser, ParserOptions};
+
+let source = "import { Chart } from './chart.js'\n\n# Sales\n\n<Chart />\n\n<Note />\n";
+let allocator = Allocator::new();
+let options = ParserOptions { mdx: true, mdx_compatible: true, ..ParserOptions::default() };
+let document = Parser::with_options(&allocator, source, options).parse().unwrap();
+let module = JsxRenderer::new()
+    .render_module(&document, source, &JsxModuleOptions {
+        provider_import_source: Some("docs/provider".to_owned()),
+        filename: Some("sales.mdx".to_owned()),
+        ..JsxModuleOptions::default()
+    })
+    .unwrap();
+assert!(module.code.contains("export default function MDXContent(props = {})"));
+assert_eq!(module.bindings, ["Chart"]);
+```
+
+The module follows the MDX module contract:
+
+- **Authored ESM** comes first, in document order, as written.
+- **`_createMdxContent(props)`** returns the body. Generated Markdown elements
+  are members of `_components`. That object merges the intrinsic defaults, the
+  provider's `useMDXComponents()`, and `props.components`; a later entry wins.
+  `provider_import_source` names the module that exports `useMDXComponents`.
+  Without it the module imports nothing.
+- **`MDXContent(props)`** is the default export and renders the content inside
+  the layout. Set `default_export` to `false` to keep it a local binding and
+  append your own default export.
+- **The layout** is an authored default export. It replaces the `wrapper`
+  component from the provider or `props.components`. A declaration
+  (`export default function Layout() {}`), an expression (`export default
+  Layout`), a specifier (`export { Layout as default }`), and a re-export
+  (`export { default } from './layout.js'`) are all accepted. A second default
+  export is an error.
+- **A component reference** whose root identifier the document's ESM binds
+  uses that binding. Every other reference comes from `_components`. When it is
+  undefined, the module throws an error that names the component instead of
+  the framework's generic element-type error. A member reference such as
+  `<kit.Input />` checks `kit` as an object and `kit.Input` as a component.
+  `props` refers to the function parameter.
+
+The generated names `_components`, `_createMdxContent`, `_missingMdxReference`,
+`_provideComponents`, `MDXLayout`, and `MDXContent` are reserved. An authored
+declaration of one of them is an error, so no pass over the document is needed
+to find free names. `reserved_bindings` extends that set with names the caller
+declares in code it adds: a component reference to such a name uses the
+caller's binding, and an authored declaration of it is an error.
+
+`exports` lists the names the authored ESM exports, and `bindings` lists every
+name it binds at the top level, including imports. A caller reads them to
+decide which exports it still has to add. Import declarations are hoisted, so
+a caller can append its own imports and exports after the module code without
+changing the source map.
+
+The source map is a version 3 map with zero-based lines and UTF-16 columns.
+Authored ESM maps per word, so a position inside a module block resolves to
+its own column. A generated node maps to the start of its Markdown source, and
+a rewritten default export maps to its statement.
+
+Module output differs from `@mdx-js/mdx` in three places:
+
+- JSX inside authored JavaScript, in an expression or a module block, is
+  source text and not part of the tree. In `{items.map((item) => <Card />)}`,
+  `Card` is a plain identifier: import it or declare it. The provider does not
+  supply it.
+- Module blocks are JavaScript. TypeScript syntax is a parse error that says
+  so.
+- The module carries no JSX runtime comment; the caller's JSX transform
+  decides the runtime.
 
 ## Native Ferriki highlighting
 

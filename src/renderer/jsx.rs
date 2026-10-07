@@ -1,14 +1,20 @@
 //! Native Markdown/MDX output as JSX source.
 //!
-//! Ferromark writes the JSX tree and leaves module wrappers and compilation to
-//! its caller. Text is represented as JavaScript string children, MDX
-//! expressions and ESM are preserved as source, and no framework runtime is
-//! imported or invoked here.
+//! Ferromark writes the JSX tree and leaves compilation to its caller. Text is
+//! represented as JavaScript string children, MDX expressions and ESM are
+//! preserved as source, and no framework runtime is imported or invoked here.
+//! With the `jsx` feature, the tree can also be wrapped in an MDX module.
 
 mod code_metadata;
 #[cfg(feature = "ferriki")]
 mod ferriki_integration;
+mod line_index;
+#[cfg(feature = "jsx")]
+mod module;
 mod render;
+
+#[cfg(feature = "jsx")]
+pub use module::{JsxModuleError, JsxModuleOptions, JsxModuleOutput, JsxSourceMap};
 
 #[cfg(feature = "ferriki")]
 pub use ferriki_integration::FerrikiJsxHooks;
@@ -350,5 +356,68 @@ impl JsxRenderer {
         hooks: &mut H,
     ) -> JsxOutput {
         render::render_document(document, source, &self.options, hooks)
+    }
+
+    /// Renders a document as a complete MDX module that still contains JSX.
+    ///
+    /// The module holds the authored ESM, a content function, and `MDXContent`.
+    /// It imports no framework; the caller's JSX transform compiles it. Parse
+    /// the document with [`ParserOptions::mdx_compatible`] so that module
+    /// blocks have exact source ranges.
+    ///
+    /// ```
+    /// use ferromark::{Allocator, JsxModuleOptions, JsxRenderer, Parser, ParserOptions};
+    ///
+    /// let source = "import { Chart } from './chart.js'\n\n# Sales\n\n<Chart />\n\n<Note />\n";
+    /// let allocator = Allocator::new();
+    /// let options = ParserOptions { mdx: true, mdx_compatible: true, ..ParserOptions::default() };
+    /// let document = Parser::with_options(&allocator, source, options).parse().unwrap();
+    /// let module = JsxRenderer::new()
+    ///     .render_module(&document, source, &JsxModuleOptions {
+    ///         provider_import_source: Some("docs/provider".to_owned()),
+    ///         filename: Some("sales.mdx".to_owned()),
+    ///         ..JsxModuleOptions::default()
+    ///     })
+    ///     .unwrap();
+    /// assert!(module.code.contains("export default function MDXContent(props = {})"));
+    /// // `Chart` is imported; `Note` comes from the provider.
+    /// assert_eq!(module.bindings, ["Chart"]);
+    /// assert!(module.code.contains("const {Note} = _components;"));
+    /// ```
+    ///
+    /// [`ParserOptions::mdx_compatible`]: crate::parser::ParserOptions::mdx_compatible
+    #[cfg(feature = "jsx")]
+    pub fn render_module(
+        &self,
+        document: &Document<'_>,
+        source: &str,
+        module: &JsxModuleOptions,
+    ) -> Result<JsxModuleOutput, JsxModuleError> {
+        self.render_module_with_hooks(document, source, module, &mut NoJsxRenderHooks)
+    }
+
+    /// Renders an MDX module with a synchronous code block hook.
+    ///
+    /// Generated Markdown elements are members of `_components`, so
+    /// [`JsxRendererOptions::component_prefix`] must be unset or `_components`.
+    #[cfg(feature = "jsx")]
+    pub fn render_module_with_hooks<H: JsxRenderHooks>(
+        &self,
+        document: &Document<'_>,
+        source: &str,
+        module: &JsxModuleOptions,
+        hooks: &mut H,
+    ) -> Result<JsxModuleOutput, JsxModuleError> {
+        let prefix = self.options.component_prefix.as_deref();
+        if prefix.is_some_and(|prefix| prefix != module::COMPONENTS) {
+            return Err(JsxModuleError::ComponentPrefix);
+        }
+        let options = JsxRendererOptions {
+            component_prefix: Some(module::COMPONENTS.to_owned()),
+            ..self.options.clone()
+        };
+        let (output, references) =
+            render::render_document_with_references(document, source, &options, hooks);
+        module::assemble(output, &references, source, module)
     }
 }
