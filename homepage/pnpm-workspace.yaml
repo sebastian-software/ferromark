@@ -17,6 +17,8 @@ overrides:
   picomatch@>=4.0.0 <4.0.4: 4.0.5
   postcss@<8.5.18: 8.5.18
   rollup@>=4.0.0 <4.59.0: 4.59.0
+  # GHSA-68fv-2mgg-jv7q: event-loop denial of service through section offsets.
+  source-map-js@>=1.0.0 <1.2.2: 1.2.2
   toml@<4.2.0: 4.2.0
   vite@>=7.0.0 <7.3.5: 7.3.5
   yaml@>=2.0.0 <2.8.3: 2.8.3
