@@ -277,8 +277,8 @@ fragments are concatenated by the caller.
 `Allocator` wraps and dereferences to `bumpalo::Bump`, which it also re-exports,
 and `allocator::Box`, `allocator::Vec` and `allocator::String` are bumpalo
 collections or thin wrappers around them. bumpalo is therefore part of this
-crate's public API: a bumpalo major release is a ferromark major release. No
-other dependency leaks into the public surface.
+crate's public API: a bumpalo major release is a breaking change for ferromark.
+No other dependency leaks into the public surface.
 
 `Document` and `Node` are `!Send` and `!Sync`, and `Allocator` is `!Sync`. An
 arena and the AST that lives in it stay on the thread that created them; parse
@@ -286,17 +286,23 @@ and render per thread, and move the rendered `String` — which owns nothing in
 the arena — across threads instead. See the
 [decision record](decisions/2026-09-17-bumpalo-public-api.md).
 
-## What the 2.0.0 API freeze covers
+## API stability
 
-From 2.0.0 the public Rust API follows semver, under the rules recorded in the
+The public Rust API can change in a minor release: a new option field, a new
+AST node kind, or a changed result type does not wait for a major version. Patch
+releases keep the API as it is. The changelog names every such change. Depend on
+a tilde requirement such as `ferromark = "~3.1"` if a build must not pick up a
+new minor on its own. The
+[API stability decision](decisions/2026-10-01-api-stability.md) records why.
+
+The shape of the API still follows the
 [API surface decision](decisions/2026-09-17-api-surface.md):
 
-- `ParseErrorKind` is `#[non_exhaustive]`. Match it with a wildcard arm; new
-  error categories arrive in minor releases.
+- `ParseErrorKind` is `#[non_exhaustive]`. Match it with a wildcard arm.
 - `Node` and its companion enums stay exhaustive, so a `match` over the AST is
-  checked by the compiler. A new AST node kind is a major release.
+  checked by the compiler and reports a new node kind.
 - `ParserOptions` and `HtmlRendererOptions` stay exhaustive structs, so
-  `..Default::default()` keeps working. A new option field is a major release.
+  `..Default::default()` keeps working.
 - Build options with struct-update syntax rather than listing every field:
 
   ```rust
