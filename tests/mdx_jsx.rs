@@ -9,7 +9,7 @@
 
 use ferromark::allocator::Allocator;
 use ferromark::parser::{Parser, ParserOptions};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 #[path = "support/pretty.rs"]
 mod pretty;
@@ -46,8 +46,17 @@ fn repeated_unclosed_jsx_openers_scale_linearly() {
         started.elapsed()
     };
 
-    let small_time = elapsed(&small);
-    let large_time = elapsed(&large);
+    // One wall-clock sample per size is at the mercy of a shared CI runner:
+    // a load spike during the large parse alone reported ratios of 9 and 24
+    // for this linear code. Interleaved samples spread such spikes over both
+    // sizes, and the fastest sample of each is a stable estimate of the real
+    // cost. A quadratic regression still shows as a ratio near 16.
+    let mut small_time = Duration::MAX;
+    let mut large_time = Duration::MAX;
+    for _ in 0..7 {
+        small_time = small_time.min(elapsed(&small));
+        large_time = large_time.min(elapsed(&large));
+    }
     let ratio = large_time.as_secs_f64() / small_time.as_secs_f64().max(1e-9);
     assert!(
         ratio < 8.0,
