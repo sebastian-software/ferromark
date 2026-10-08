@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.2.0](https://github.com/sebastian-software/ferromark/compare/v3.1.1...v3.2.0) (2026-10-08)
+
+
+### Features
+
+* emit MDX modules from JsxCompiler ([#510](https://github.com/sebastian-software/ferromark/issues/510)) ([72339e4](https://github.com/sebastian-software/ferromark/commit/72339e4bbeeec2b9e119fa8c75505cd524079a9c))
+
+
+### Bug Fixes
+
+* **deps:** override vulnerable tinypool and source-map-js ([#511](https://github.com/sebastian-software/ferromark/issues/511)) ([88429ee](https://github.com/sebastian-software/ferromark/commit/88429ee291a1565242051a096fa2a08da00dfb5b))
+
 ## [3.1.1](https://github.com/sebastian-software/ferromark/compare/v3.1.0...v3.1.1) (2026-10-03)
 
 
