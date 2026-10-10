@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.4.0](https://github.com/sebastian-software/ferromark/compare/v3.3.0...v3.4.0) (2026-10-10)
+
+
+### Features
+
+* **comparison:** measure spec agreement independently of timing ([0c70253](https://github.com/sebastian-software/ferromark/commit/0c70253ba25d1af7e0f0e8d1709a01700cd50850))
+
+
+### Bug Fixes
+
+* **comparison:** preserve addon CPU defaults and narrow table layout ([0181f1d](https://github.com/sebastian-software/ferromark/commit/0181f1da8e9a45a149831195b03dbee856be0244))
+
 ## [3.3.0](https://github.com/sebastian-software/ferromark/compare/v3.2.0...v3.3.0) (2026-10-10)
 
 
