@@ -9,6 +9,8 @@ export declare class JsxCompiler {
   compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
   /** Compiles source to an MDX module; the public facade selects this entry. */
   compileModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
+  /** Renders one standalone code block with the compiler's native highlighter. */
+  renderCodeBlock(input: RenderCodeBlockInput): RenderCodeBlockResult
 }
 
 /** Immutable, source-owning prepared JSX document with repeatable render methods. */
@@ -191,6 +193,20 @@ export interface Options {
   autoAbbreviations?: boolean
   abbreviations?: Record<string, string | undefined | null>
   preset?: string
+}
+
+export interface RenderCodeBlockInput {
+  code: string
+  language?: string
+  meta?: string
+}
+
+export interface RenderCodeBlockResult {
+  jsx: string
+  language?: string
+  title?: string
+  label?: string
+  lineNumbers: boolean
 }
 
 export interface SourceRange {

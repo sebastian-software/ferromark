@@ -52,6 +52,10 @@ function failingPreparedCode() {
   throw new Error("prepared callback failure");
 }
 
+function renderPreparedFixtureStandalone(session) {
+  return session.renderCodeBlock({ code: "const nested = 2;\n", language: "prepared-fixture" });
+}
+
 test("prepared body and module output match the one-shot JSX APIs", () => {
   const source =
     '---\ntitle: Guide\n---\n\nimport { Badge } from "./badge.js"\n\n# Guide\n\n## Usage\n\n<Badge />\n';
@@ -196,4 +200,19 @@ test("prepared callback failures and recursive compiler use are safe", () => {
   const recursiveRender = () => prepared.render();
   assert.throws(() => prepared.render({}, recursiveRender), /recursively/);
   assert.match(prepared.render().body, /#bb1100/i);
+});
+
+test("prepared renders and standalone code blocks share reentrancy and error recovery", () => {
+  const session = compiler();
+  const source = "```prepared-fixture\nconst value = 1;\n```\n";
+  const prepared = session.prepare(source);
+  const standaloneInput = { code: "const value = 1;\n", language: "prepared-fixture" };
+  const standalone = session.renderCodeBlock(standaloneInput);
+  const reenterStandalone = renderPreparedFixtureStandalone.bind(undefined, session);
+
+  assert.equal(prepared.render().body, `<>\n${standalone.jsx}</>`);
+  assert.throws(() => prepared.render({}, reenterStandalone), /recursively/);
+
+  assert.deepEqual(session.renderCodeBlock(standaloneInput), standalone);
+  assert.equal(prepared.render().body, `<>\n${standalone.jsx}</>`);
 });

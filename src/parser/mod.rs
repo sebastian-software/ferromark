@@ -52,6 +52,7 @@ mod cursor;
 mod definition_list;
 mod delimiters;
 mod fenced_code;
+pub(crate) use fenced_code::normalize_code_block_content;
 mod footnote;
 mod front_matter;
 mod html;

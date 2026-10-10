@@ -361,8 +361,7 @@ export declare function compileJsx(
 ): JsxResult;
 
 /** Parser and native transform settings fixed when a document is prepared. */
-export type JsxPreparationOptions = Omit<
-  CompileJsxOptions,
+type JsxRenderOptionKey =
   | "componentPrefix"
   | "calloutComponents"
   | "codeComponents"
@@ -371,23 +370,11 @@ export type JsxPreparationOptions = Omit<
   | "headingIds"
   | "headingOffset"
   | "headingIdPrefix"
-  | "callouts"
-  | "output"
->;
+  | "callouts";
+export type JsxPreparationOptions = Omit<CompileJsxOptions, JsxRenderOptionKey | "output">;
 
 /** Render-time choices for a prepared JSX body. */
-export type JsxRenderOptions = Pick<
-  CompileJsxOptions,
-  | "componentPrefix"
-  | "calloutComponents"
-  | "codeComponents"
-  | "codeBlockComponent"
-  | "omitTitleHeading"
-  | "headingIds"
-  | "headingOffset"
-  | "headingIdPrefix"
-  | "callouts"
->;
+export type JsxRenderOptions = Pick<CompileJsxOptions, JsxRenderOptionKey>;
 
 /** Render-time choices for a prepared MDX module. */
 export type JsxRenderModuleOptions = JsxRenderOptions &
@@ -455,6 +442,24 @@ export type JsxCompilerOptions = {
   };
 };
 
+/** Input to `JsxCompiler.renderCodeBlock`; `language` and `meta` use fence syntax. */
+export type JsxCodeBlockRenderInput = {
+  code: string;
+  language?: string | null;
+  meta?: string | null;
+};
+
+/** Standalone intrinsic JSX and metadata parsed with the native fence parser. */
+export type JsxCodeBlockRenderResult = {
+  /** Intrinsic `<pre><code>` JSX, including the document fence's trailing newline. */
+  jsx: string;
+  language?: string;
+  title?: string;
+  label?: string;
+  /** Effective setting after the compiler default and fence metadata are applied. */
+  lineNumbers: boolean;
+};
+
 /** Reusable native JSX compiler with Ferriki highlighting. No JavaScript highlighting callbacks are needed. */
 export declare class JsxCompiler {
   /** Loads theme assets; first use can download missing, verified standard assets. */
@@ -464,6 +469,8 @@ export declare class JsxCompiler {
     markdown: string | Uint8Array,
     preparationOptions?: JsxPreparationOptions,
   ): PreparedJsxDocument;
+  /** Renders a standalone code block with this compiler's native metadata parser and highlighter. */
+  renderCodeBlock(input: JsxCodeBlockRenderInput): JsxCodeBlockRenderResult;
   /** Compiles source, loading and caching the fence languages on first use. */
   compile(
     markdown: string | Uint8Array,

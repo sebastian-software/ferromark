@@ -5,8 +5,9 @@ use std::collections::{BTreeMap, HashMap};
 use ferromark::ast::{CodeBlock, Document, Node, Span, Visit};
 use ferromark::ferriki::Highlighter;
 use ferromark::{
-    Allocator, FerrikiJsxHooks, HtmlRenderer, JsxCodeBlockInput, JsxHighlightedCodeBlock,
-    JsxModuleOptions, JsxRenderHooks, JsxRenderer, JsxRendererOptions, OutlineOptions, Parser,
+    Allocator, FerrikiJsxHooks, HtmlRenderer, JsxCodeBlockInput, JsxCodeBlockRenderOutput,
+    JsxHighlightedCodeBlock, JsxModuleOptions, JsxRenderHooks, JsxRenderer, JsxRendererOptions,
+    OutlineOptions, Parser,
 };
 use ferromark_transforms::TransformContext;
 use napi::bindgen_prelude::{Error, FnArgs, Result, Status};
@@ -58,6 +59,22 @@ pub struct JsxCodeBlock {
     pub code: String,
     pub language: Option<String>,
     pub meta: Option<String>,
+}
+
+#[napi(object)]
+pub struct RenderCodeBlockInput {
+    pub code: String,
+    pub language: Option<String>,
+    pub meta: Option<String>,
+}
+
+#[napi(object)]
+pub struct RenderCodeBlockResult {
+    pub jsx: String,
+    pub language: Option<String>,
+    pub title: Option<String>,
+    pub label: Option<String>,
+    pub line_numbers: bool,
 }
 
 #[napi(object)]
@@ -380,6 +397,54 @@ fn prepare_tree(
                 .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
         }
         Ok(document)
+    })
+}
+
+pub(crate) fn render_code_block_with_highlighter(
+    input: RenderCodeBlockInput,
+    highlighting: NativeHighlighting<'_>,
+) -> Result<RenderCodeBlockResult> {
+    let NativeHighlighting {
+        highlighter,
+        light_theme,
+        dark_theme,
+        line_numbers,
+    } = highlighting;
+    let renderer = JsxRenderer::with_options(JsxRendererOptions {
+        show_line_numbers: line_numbers,
+        ..JsxRendererOptions::default()
+    });
+    let mut hook = CodeHook {
+        callback: None,
+        highlighting: Some(NativeHighlighting {
+            highlighter,
+            light_theme,
+            dark_theme,
+            line_numbers,
+        }),
+        error: None,
+    };
+    let JsxCodeBlockRenderOutput {
+        jsx,
+        language,
+        title,
+        label,
+        line_numbers,
+    } = renderer.render_code_block_with_hooks(
+        &input.code,
+        input.language.as_deref(),
+        input.meta.as_deref(),
+        &mut hook,
+    );
+    if let Some(error) = hook.error {
+        return Err(error);
+    }
+    Ok(RenderCodeBlockResult {
+        jsx,
+        language,
+        title,
+        label,
+        line_numbers,
     })
 }
 

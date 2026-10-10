@@ -83,6 +83,23 @@ const jsxCompiler = new JsxCompiler({
 const highlightedJsx: string = jsxCompiler.compile("# Typed", {
   codeBlockComponent: "CodeBlock",
 }).body;
+const standaloneCode = jsxCompiler.renderCodeBlock({
+  code: 'const value = "typed";\n',
+  language: "ts",
+  meta: 'title="typed.ts" :line-numbers=4',
+});
+const standaloneMarkup: string = standaloneCode.jsx;
+const standaloneLanguage: string | undefined = standaloneCode.language;
+const standaloneTitle: string | undefined = standaloneCode.title;
+const standaloneLabel: string | undefined = standaloneCode.label;
+const standaloneLineNumbers: boolean = standaloneCode.lineNumbers;
+compileJsx(
+  `${standaloneMarkup}${standaloneLanguage ?? ""}${standaloneTitle ?? ""}${standaloneLabel ?? ""}${standaloneLineNumbers}`,
+);
+// @ts-expect-error -- standalone code input requires its code string
+jsxCompiler.renderCodeBlock({ language: "ts" });
+// @ts-expect-error -- standalone code input does not accept renderer options
+jsxCompiler.renderCodeBlock({ code: "value", codeBlockComponent: "CodeBlock" });
 compileJsx(highlightedJsx);
 const preparedJsx: PreparedJsxDocument = jsxCompiler.prepare("# Typed", {
   format: "mdx",
