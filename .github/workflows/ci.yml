@@ -206,6 +206,10 @@ jobs:
               python3 -m unittest discover -s "$directory" -p 'test_*.py'
             fi
           done
+      - name: Check conformance Node profiles
+        run: |
+          npm ci --prefix benchmarks/markdown-ecosystem --ignore-scripts --no-audit --no-fund
+          node --test benchmarks/markdown-ecosystem/test-conformance-adapters.mjs
 
   rustsec:
     runs-on: ubuntu-latest

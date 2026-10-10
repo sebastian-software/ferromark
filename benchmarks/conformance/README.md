@@ -73,7 +73,8 @@ The ordinary CI benchmark-harness step validates the runner tests and
 reclassifies every retained output. It checks fixture and adapter hashes,
 profiles, exact counts and percentages, every example's identity, evidence
 hashes, and the generated homepage data. It needs no competitor builds or
-network access. A full remeasurement is required when measurement inputs change.
+network access. Node spec-profile smoke tests also run in ordinary CI. A full
+remeasurement is required when measurement inputs change.
 
 ## Specification provenance and license
 
