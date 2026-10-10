@@ -109,13 +109,18 @@ def prepare(root, inputs):
         run([*command, '-o', binary])
         binaries[engine] = binary
     run(['npm', 'ci', '--ignore-scripts', '--prefix', ECO])
-    run(['cargo', 'build', '-p', 'ferromark-node', '--profile', 'release-node', '--locked'])
+    # Darwin ARM crypto dependencies require the target's default CPU features.
+    # The addon uses its ordinary build recipe; generic flags apply only to
+    # the external native/Rust comparison workers. No timing is performed.
+    addon_env = dict(env)
+    addon_env.pop('RUSTFLAGS', None)
+    run(['cargo', 'build', '-p', 'ferromark-node', '--profile', 'release-node', '--locked'], override=addon_env)
     target = subprocess.check_output(['node', '--input-type=module', '-e', 'import {benchmarkTarget} from "./benchmarks/markdown-ecosystem/benchmark-target.mjs"; console.log(benchmarkTarget(process.platform,process.arch));'], cwd=REPO, text=True).strip()
     lib = 'libferromark_node.dylib' if sys.platform == 'darwin' else ('ferromark_node.dll' if sys.platform == 'win32' else 'libferromark_node.so')
     addon = REPO / 'node/ferromark' / ('ferromark.' + target + '.node')
     shutil.copyfile(REPO / 'target/release-node' / lib, addon)
     metadata = {'ferromark_version': tomllib.loads((REPO / 'Cargo.toml').read_text())['package']['version'], 'inputs': inputs, 'revision': revision, 'binaries': {key: {'path': str(path), 'sha256': pins.sha(path)} for key, path in binaries.items()},
-                'addon': {'path': str(addon), 'sha256': pins.sha(addon)}, 'native': native_info,
+                'addon': {'path': str(addon), 'sha256': pins.sha(addon), 'rustflags': 'target defaults; no PGO'}, 'native': native_info,
                 'ecosystem_registry': sorted(registry(rust / 'Cargo.lock')), 'go': go_version,
                 'commands': commands, 'node': subprocess.check_output(['node', '--version'], text=True).strip()}
     (root / 'build.json').write_text(json.dumps(metadata, indent=2) + '\n')
