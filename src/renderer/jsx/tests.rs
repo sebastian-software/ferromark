@@ -41,6 +41,10 @@ fn standalone_markup_matches_fences_for_code_shapes_and_line_endings() {
 
     let source = "```rust\r\nfirst\r\nsecond\r\n";
     assert_fence_matches(source, Some("first\r\nsecond\r\n"));
+
+    assert_fence_matches("```\na\0b\n", Some("a\0b\n"));
+    assert_fence_matches("```\r\na\0b\r\n", Some("a\0b\r\n"));
+    assert_fence_matches("```\r\na\0b\rnext\r\n", Some("a\0b\rnext\r\n"));
 }
 
 #[test]

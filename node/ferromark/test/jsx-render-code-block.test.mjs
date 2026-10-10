@@ -74,6 +74,27 @@ const matchingCases = [
     newline: "\r\n",
   },
   {
+    code: "a\0b\n",
+    language: undefined,
+    meta: undefined,
+    expected: { language: undefined, title: undefined, label: undefined, lineNumbers: true },
+    newline: "\n",
+  },
+  {
+    code: "a\0b\r\n",
+    language: undefined,
+    meta: undefined,
+    expected: { language: undefined, title: undefined, label: undefined, lineNumbers: true },
+    newline: "\r\n",
+  },
+  {
+    code: "a\0b\rnext\r\n",
+    language: undefined,
+    meta: undefined,
+    expected: { language: undefined, title: undefined, label: undefined, lineNumbers: true },
+    newline: "\r\n",
+  },
+  {
     code: "const noTrailingNewline = true;",
     language: "native-fixture",
     meta: "title='No trailing newline'",

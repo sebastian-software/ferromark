@@ -174,7 +174,7 @@ impl<'a> Parser<'a> {
             span = Span::new(start as u32, self.position as u32);
             let body = &self.source[body_start..body_end];
             if body.as_bytes().contains(&b'\r') {
-                normalize_code_block_line_endings(self.allocator, body)
+                normalize_code_block_content(self.allocator, body)
             } else {
                 body
             }
@@ -255,29 +255,35 @@ impl<'a> Parser<'a> {
     }
 }
 
-/// Normalizes fenced-code line endings using an arena only when needed.
+/// Normalizes fenced-code content using an arena only when needed.
 ///
-/// Standalone JSX code rendering uses this same normalization as parsed
-/// fences, so CRLF input produces the same code children as a Markdown fence.
-pub fn normalize_code_block_line_endings<'a>(allocator: &'a Allocator, source: &'a str) -> &'a str {
+/// Standalone JSX code rendering uses the same source normalization as parsed
+/// fences: NUL becomes U+FFFD and CR or CRLF becomes LF.
+pub fn normalize_code_block_content<'a>(allocator: &'a Allocator, source: &'a str) -> &'a str {
     let mut value = crate::allocator::String::with_capacity_in(source.len(), allocator.bump());
     let bytes = source.as_bytes();
     let mut chunk_start = 0;
     let mut cursor = 0;
 
     while cursor < bytes.len() {
-        if bytes[cursor] != b'\r' {
+        let byte = bytes[cursor];
+        if !matches!(byte, b'\r' | 0) {
             cursor += 1;
             continue;
         }
 
         value.push_str(&source[chunk_start..cursor]);
-        value.push('\n');
-        cursor += if bytes.get(cursor + 1) == Some(&b'\n') {
-            2
+        if byte == b'\r' {
+            value.push('\n');
+            cursor += if bytes.get(cursor + 1) == Some(&b'\n') {
+                2
+            } else {
+                1
+            };
         } else {
-            1
-        };
+            value.push('\u{fffd}');
+            cursor += 1;
+        }
         chunk_start = cursor;
     }
 

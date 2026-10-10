@@ -365,8 +365,8 @@ impl JsxRenderer {
     /// default as a fenced block in a document. It always emits plain
     /// `<pre>`, `<code>`, and `<span>` elements: component prefixes,
     /// language component mappings, whole-fence hooks, and the global code
-    /// block component do not apply. CR and CRLF line endings are normalized
-    /// to LF, matching the Markdown parser's fenced-code behavior.
+    /// block component do not apply. NUL becomes U+FFFD and CR or CRLF line
+    /// endings become LF, matching the Markdown parser's fenced-code behavior.
     #[must_use]
     pub fn render_code_block(
         &self,
@@ -391,8 +391,9 @@ impl JsxRenderer {
         hooks: &mut H,
     ) -> JsxCodeBlockRenderOutput {
         let allocator = Allocator::new();
-        let normalized_code = if code.as_bytes().contains(&b'\r') {
-            crate::parser::normalize_code_block_line_endings(&allocator, code)
+        let code_bytes = code.as_bytes();
+        let normalized_code = if code_bytes.iter().any(|&byte| matches!(byte, b'\r' | 0)) {
+            crate::parser::normalize_code_block_content(&allocator, code)
         } else {
             code
         };

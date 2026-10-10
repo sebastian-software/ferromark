@@ -196,9 +196,9 @@ language, and metadata when `componentPrefix`, `codeComponents`, and
 intrinsic `<pre>`, `<code>`, and `<span>` tags, has no document fragment, and
 ends with the newline used after a fence in a document. The method shares the
 compiler's highlighter, single or light/dark themes, and line-number default.
-Unknown languages use escaped plain code. CR and CRLF code input is normalized
-to LF, like code read from a fence. Empty code, trailing empty lines, and a
-missing final newline are preserved.
+Unknown languages use escaped plain code. NUL characters become U+FFFD, and CR
+and CRLF code input is normalized to LF, like code read from a fence. Empty
+code, trailing empty lines, and a missing final newline are preserved.
 
 The `language` value is trimmed and returned without a recognized metadata
 suffix; its case is preserved. A blank or missing language is omitted. Metadata is split on
