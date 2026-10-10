@@ -1,9 +1,9 @@
 {
   "report": "docs/reports/2026-10-10-comparison-conformance",
-  "buildSha256": "743d6fa862a98c81b4ed8ea7871717467f6f1fb27867ade423f19320c47c7e8e",
+  "buildSha256": "bc60fad6e93c193afc95af6b1a09ddcefad64976deeebedf45302565829aac4a",
   "schema": 1,
-  "measured": "2026-10-10T14:28:36.296339+00:00",
-  "revision": "facc6ba007b03a15a490dec10db6fc3c96c0dcc2",
+  "measured": "2026-10-10T14:37:09.251442+00:00",
+  "revision": "ad50470e88601f1674c97b033c45a346d45c6919",
   "machine": "macOS-27.0.1-arm64-arm-64bit",
   "suiteLabels": {
     "commonmark": "CommonMark 0.31.2",
@@ -13,17 +13,16 @@
     "benchmarks/compatibility-audit/fixtures/gfm-0.29-2026-09-14.html": "b153d814fdfc8624bb6da7449162c1cd707a637f7d1c1b636eb44b9cf63fa220",
     "benchmarks/compatibility-audit/run.py": "cde1175414c99ca28311f48aebf2234b219d290d59520e4d56d6d6f98ba81131",
     "benchmarks/conformance/build.py": "d0dfdf9db94f6011502b7c87e5f0c4d9090847453cadf4c2be1c604479424935",
-    "benchmarks/conformance/cli.py": "4e6787562801884776ecb841cc93d99887c1bad4bdd31e87f79808eb4c35ca4f",
+    "benchmarks/conformance/cli.py": "0e7ab5746043f06f43c66c4ccc1e7b09ed429ae2e913ddadb4ceb13ca193d5ad",
     "benchmarks/conformance/cmark-worker.c": "7ac79d6c3715e15df0b39b5422b0534dc37d24cb7cfc230eb89ad9c7cf6d1c6c",
     "benchmarks/conformance/ecosystem-worker.rs": "f7c250a523c9b2ab4c1eb2b8d43ccabb62c5fa4bd5aeae3d3b5985f4297c1769",
     "benchmarks/conformance/goldmark-worker.go": "2787ea4a8710b1706b97b8c6c2ff776c4f5259e7f52d3213a1a13bc76aea0123",
     "benchmarks/conformance/native-worker.rs": "a33f87ba87b2c731f57715f9e42eb9fb1ce89055bc59da7da41ece26c3b47da4",
     "benchmarks/conformance/node-worker.mjs": "50058463665b62949abb31b4aea79a5cb429de7f8150407aaf4cfbdf18eb924c",
-    "benchmarks/conformance/profiles.json": "e04b3288dd1f6799bcb7062687466c55ac1561beebf6e75c42c2f48942ff1784",
-    "benchmarks/conformance/test_conformance.py": "806ab35e60e05096920830779d10b968da3d383128545e359b9f49c21bff8716",
+    "benchmarks/conformance/profiles.json": "d30ed882955f8fecc4902554a984031ca7af8f00932ffde9c0bcf754c4b0a4ac",
     "benchmarks/markdown-ecosystem/benchmark-facade.mjs": "680e8add3100caa0dd94de5f53bd5c0c3a733a4946467c9a27717423f62cb309",
     "benchmarks/markdown-ecosystem/benchmark-target.mjs": "06d71dba3fb6408f64ceb63773db906e3067c65ea0963d85ce164f291e66983d",
-    "benchmarks/markdown-ecosystem/conformance-adapters.mjs": "624bdbe51c555cb4ce9ac268e9e26817d98af8b5499c3170c557c3f3666e44f2",
+    "benchmarks/markdown-ecosystem/conformance-adapters.mjs": "76c2b4af93af9288b5d144f4d7568422dc267439b5e1a653a546d8970446ece6",
     "benchmarks/markdown-ecosystem/goldmark/go.mod": "1720802741b88338685b47d0a9822115b6443c089f1818828f628f0fdf97396a",
     "benchmarks/markdown-ecosystem/goldmark/go.sum": "34343f6dfeaf391daf733f1add8b9d461df9da5c523b0bbe7e8748cbb2508c67",
     "benchmarks/markdown-ecosystem/native/Cargo.lock": "e4c7dd07c38523f646820d4cdb2d1fda8996da881f329b2bf747cf052702bfe7",
@@ -516,8 +515,8 @@
       "github": "https://github.com/markdown-it/markdown-it",
       "version": "15.0.2",
       "commonmark": "commonmark preset; html=true, linkify=false, typographer=false, validateLink accepts all protocols",
-      "gfm": "Same; linkify=true, enable table/strikethrough/linkify, markdown-it-task-lists defaults",
-      "notes": "Task plugin adds CSS classes. Linkify is the public URL recognizer; no tagfilter option. Adds linkify to timing profile.",
+      "gfm": "Same; linkify=true, enable table/strikethrough/linkify, markdown-it-task-lists defaults; linkify.set({fuzzyLink:true})",
+      "notes": "Task plugin adds CSS classes. Linkify recognizes bare domains beyond formal GFM; fuzzyLink=true enables its public www recognizer, which linkify-it 6 disables by default. No tagfilter option. Adds linkify to timing profile.",
       "suites": {
         "commonmark": {
           "status": "measured",
@@ -533,20 +532,20 @@
         },
         "gfm": {
           "status": "measured",
-          "passed": 12,
+          "passed": 17,
           "total": 28,
-          "failed": 16,
+          "failed": 11,
           "errors": 0,
-          "percent": 42.86,
+          "percent": 60.71,
           "classifications": {
-            "exact": 11,
-            "other": 16,
+            "exact": 16,
+            "other": 11,
             "serialization-equivalent": 1
           }
         }
       },
       "evidence": "markdown-it.json",
-      "sha256": "225394950a7200076f19d468218b2edf93d72b6f31415b2eeb4812d53a3671cd"
+      "sha256": "a11f8f74f8015f240edd1b417f238108a7533676020f3952edefe48226390773"
     },
     {
       "id": "remark",
