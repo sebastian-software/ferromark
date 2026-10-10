@@ -74,8 +74,8 @@
   "markdown-it": {
     "version": "15.0.2",
     "commonmark": "commonmark preset; html=true, linkify=false, typographer=false, validateLink accepts all protocols",
-    "gfm": "Same; linkify=true, enable table/strikethrough/linkify, markdown-it-task-lists defaults",
-    "notes": "Task plugin adds CSS classes. Linkify is the public URL recognizer; no tagfilter option. Adds linkify to timing profile."
+    "gfm": "Same; linkify=true, enable table/strikethrough/linkify, markdown-it-task-lists defaults; linkify.set({fuzzyLink:true})",
+    "notes": "Task plugin adds CSS classes. Linkify recognizes bare domains beyond formal GFM; fuzzyLink=true enables its public www recognizer, which linkify-it 6 disables by default. No tagfilter option. Adds linkify to timing profile."
   },
   "remark": {
     "version": "15.0.1",

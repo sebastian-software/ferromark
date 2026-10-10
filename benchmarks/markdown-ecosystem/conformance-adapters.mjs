@@ -30,6 +30,8 @@ export async function createConformanceRender(engine, gfm) {
     if (gfm) {
       const { default: tasks } = await import("markdown-it-task-lists");
       parser.enable(["table", "strikethrough", "linkify"]).use(tasks);
+      // linkify-it 6 disables scheme-less URLs by default. GFM includes www links.
+      parser.linkify.set({ fuzzyLink: true });
     }
     return (source) => parser.render(source);
   }

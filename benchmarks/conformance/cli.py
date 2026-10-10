@@ -46,7 +46,7 @@ def sha(path):
 
 
 def tracked_inputs():
-    paths = [*HERE.glob('*.py'), *HERE.glob('*worker*'), HERE / 'profiles.json',
+    paths = [*(p for p in HERE.glob('*.py') if not p.name.startswith('test_')), *HERE.glob('*worker*'), HERE / 'profiles.json',
              HERE.parent / 'markdown-ecosystem/conformance-adapters.mjs',
              HERE.parent / 'markdown-ecosystem/node-adapters.mjs',
              HERE.parent / 'markdown-ecosystem/benchmark-facade.mjs',
