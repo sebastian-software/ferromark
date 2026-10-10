@@ -404,9 +404,9 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "ferriki"
-version = "0.10.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a19b8538d99fc0ac6c2abbc072cccba63fa1a2adb0d681989984dd505072289"
+checksum = "146d9dcb75cda74b1eab72a245ee15e9cfaa2d401b0433fafc54e5444dc54690"
 dependencies = [
  "ferriki-asset-gen",
  "ferriki-textmate",
@@ -419,9 +419,9 @@ dependencies = [
 
 [[package]]
 name = "ferriki-asset-gen"
-version = "0.10.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bdab3d281e7891e0297e628934fdf8c81379ef5c71f12a3bbff5ed177920bbf"
+checksum = "b69dee522d994a3c1c9f1d33e6e94fd10f98aab4fc62d707a8e8448423e8d2e8"
 dependencies = [
  "postcard",
  "serde",
@@ -431,9 +431,9 @@ dependencies = [
 
 [[package]]
 name = "ferriki-textmate"
-version = "0.10.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc841b7a89abe8336a795275e066329d8e8b705593e24d948b432fe4433d7441"
+checksum = "4963933a355b199c2b28ec1a8cbed2274a16f76115b37c2095945947ff4650ea"
 dependencies = [
  "ferroni",
  "serde",
@@ -484,13 +484,15 @@ dependencies = [
 
 [[package]]
 name = "ferroni"
-version = "1.8.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e4faf5f28f70bab2e92a8a60ec72d1a84e35c46ea984414ecf780f3884e8c4f"
+checksum = "d185cd9581342e21798b75cdad2dd09bd5476adfc94fe430b480811bc574e2ff"
 dependencies = [
  "aho-corasick",
  "bitflags",
  "memchr",
+ "regex-automata",
+ "regex-syntax",
  "smallvec",
 ]
 

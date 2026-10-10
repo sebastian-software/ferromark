@@ -44,7 +44,7 @@ def prepare_assets(output):
         raise ValueError('pinned npm archive integrity mismatch')
     assets = output / 'assets'
     assets.mkdir()
-    # Ferriki 0.10 publishes the catalog and release manifest in npm, while
+    # Ferriki publishes the catalog and release manifest in npm, while
     # grammar/theme payloads live on the release CDN. Only regular archive
     # files enter this fresh output; archive paths cannot escape it.
     with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:

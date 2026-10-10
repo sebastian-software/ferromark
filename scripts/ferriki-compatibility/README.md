@@ -1,7 +1,7 @@
 # Ferriki public Rust/Node fixture contract
 
 This lane exercises the shared authored fixtures from Ferromark [#462] and
-[#393] against the published Ferriki 0.10.0 crates and Node package, providing
+[#393] against the published Ferriki 0.13.0 crates and Node package, providing
 the executable consumer evidence requested in Ferriki [#123]. The cases pin
 that release and cover Rust/aliases, TypeScript, TSX, Markdown embeddings,
 custom language/theme registrations, Unicode, CRLF and lone CR, empty lines and
@@ -9,7 +9,7 @@ blocks, plain text, unknown and missing languages, missing themes, fence
 metadata, VitePress annotations, and multiple blocks/documents.
 
 The Rust peer retains its public token, UTF-8 offset, scope, token-type, asset,
-and lifecycle contract. Ferriki 0.10.0's Node API exposes HTML highlighting;
+and lifecycle contract. Ferriki 0.13.0's Node API exposes HTML highlighting;
 this lane does not call removed tokenization APIs or synthesize Node tokens or
 HAST. The Node peer uses the same published release's public HTML and Markdown
 adapter APIs. Its package archive pins the catalogs and release manifest; the
@@ -70,7 +70,9 @@ independent raw Rust/Node HTML output, errors, and reuse results.
   had unstyled spans. The other 13 Markdown HTML/error cases and all 14
   standalone HTML/error cases remain identical.
 - The Node-only dual-theme HTML check verifies the public dark CSS variables;
-  Rust's public API accepts one theme at a time, so this is not a parity claim.
+  the shared standalone fixture path uses one Rust theme, so this is not a
+  dual-theme parity claim. The JSX adapter separately checks the public Rust
+  multi-theme API against exact output captured with the 0.10 manual adapter.
 
 The Rust lane asserts lazy catalog construction, no extra asset reads on a
 second pass, and equal output after allocator resets with the same renderer and

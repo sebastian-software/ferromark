@@ -7,7 +7,7 @@ the highlighter. This integration implements [issue #393].
 
 [issue #393]: https://github.com/sebastian-software/ferromark/issues/393
 [`ferriki` crate]: https://crates.io/crates/ferriki
-[Ferriki asset documentation]: https://github.com/sebastian-software/ferriki/blob/v0.10.0/docs/rust-api.md#assets-and-lifecycle
+[Ferriki asset documentation]: https://github.com/sebastian-software/ferriki/blob/v0.13.0/docs/rust-api.md#assets-and-lifecycle
 
 ## JSX output
 
@@ -27,17 +27,17 @@ dependency graph remains free of Ferriki, remote-loading code, and Oxc.
 Build a Ferriki `Highlighter` once, then borrow it for each render. Ferromark
 does not choose an asset source. The following compiled
 [`ferriki` example](../examples/ferriki.rs) loads Ferriki's current filesystem
-catalog from a matching Ferriki 0.10.0 release checkout. Published Ferriki crates
+catalog from a matching Ferriki 0.13.0 release checkout. Published Ferriki crates
 contain catalog manifests, not grammar or theme payloads. See the [Ferriki asset
 documentation] for directory, embedded, and verified CDN sources.
 
-This feature is not released yet. To try this branch, use a local checkout:
+The adapter is available in published Ferromark releases. The Ferriki 0.13.0
+upgrade described here is in this source checkout and is intended for the next
+Ferromark release. To use that integration now, use a local checkout:
 
 ```toml
 ferromark = { path = "../ferromark", features = ["ferriki"] }
 ```
-
-After the feature ships, use a published Ferromark 2.x version that includes it.
 
 ````rust
 use std::path::Path;
@@ -71,12 +71,12 @@ including its optional CDN source; Ferromark does not select or fetch assets.
 
 ## Use release-pinned CDN assets
 
-Ferriki 0.10.0 provides the `remote` feature. Enable it in the application alongside
+Ferriki 0.13.0 provides the `remote` feature. Enable it in the application alongside
 Ferromark's adapter; the `ferriki` feature alone keeps network code disabled:
 
 ```toml
 ferromark = { path = "../ferromark", features = ["ferriki"] }
-ferriki = { version = "0.10.0", features = ["remote"] }
+ferriki = { version = "0.13.0", features = ["remote"] }
 ```
 
 Construct the highlighter before rendering and load the required assets eagerly:
@@ -98,7 +98,7 @@ construction; handle that error before rendering. If an application leaves an
 asset lazy, loading can still occur synchronously on first use during rendering.
 Preload every language and theme needed to keep network/file I/O out of render
 timing. Ferriki's environment settings support a mirror or pre-populated cache;
-see its [remote asset documentation](https://github.com/sebastian-software/ferriki/blob/v0.10.0/docs/rust-api.md#remote-assets).
+see its [remote asset documentation](https://github.com/sebastian-software/ferriki/blob/v0.13.0/docs/rust-api.md#remote-assets).
 
 ## Contract
 
@@ -144,7 +144,7 @@ The self-contained [lifecycle benchmark](../benches/ferriki.rs) measures
 highlighter construction, construction plus first render, and repeated render
 with custom in-memory assets. Its [initial report](reports/2026-09-29-ferriki-integration/README.md)
 records Ferriki 0.4.1 and does not cover standard catalog or CDN I/O. Those
-historical timings are not measurements of the current Ferriki 0.10.0 adapter.
+historical timings are not measurements of the current Ferriki 0.13.0 adapter.
 The [Ferriki 0.7.0 report](reports/2026-10-01-ferriki-compatibility/README.md)
 records the historical local lifecycle diagnostic and 0.7.0 shared-consumer evidence.
 
@@ -153,7 +153,7 @@ records the historical local lifecycle diagnostic and 0.7.0 shared-consumer evid
 The [public-consumer contract](../scripts/ferriki-compatibility/README.md) runs
 the same pinned Rust, TypeScript/TSX, Markdown embedding, fallback and metadata
 fixtures through a clean packaged Rust consumer and the published Node
-highlighter at Ferriki 0.10.0. The Rust consumer retains frozen token, UTF-8
+highlighter at Ferriki 0.13.0. The Rust consumer retains frozen token, UTF-8
 offset, scope and token-type checks. The public Node peer records HTML only;
 it does not call removed Node tokenization APIs. Both peers check source text,
 public errors, reuse and separately frozen HTML output. Separate raw Markdown

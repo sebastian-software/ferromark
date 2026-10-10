@@ -1,7 +1,8 @@
 //! Optional Ferriki adapter for JSX code-block highlighting.
 
 use ferriki::{
-    Error, ErrorKind, FontStyle, HighlightToken, HighlightTokensResult, Highlighter, RenderOptions,
+    Error, ErrorKind, FontStyle, HighlightThemeToken, HighlightThemeTokenStyle,
+    HighlightTokensWithThemesResult, Highlighter, RenderOptions,
 };
 
 use super::{JsxCodeBlockInput, JsxHighlightedCodeBlock, JsxRenderHooks};
@@ -50,8 +51,8 @@ impl<'a> FerrikiJsxHooks<'a> {
     /// Sets Ferriki's options for rendering highlighted line fragments.
     ///
     /// For single-theme output, Ferriki's whitespace and adjacent-token merge
-    /// settings are applied. Dual-theme output combines the two token
-    /// boundaries directly so both themes remain aligned.
+    /// settings are applied. Dual-theme output uses Ferriki's aligned token API;
+    /// these render settings remain limited to single-theme output.
     #[must_use]
     pub fn with_render_options(mut self, options: RenderOptions) -> Self {
         self.render_options = options;
@@ -101,39 +102,39 @@ impl JsxRenderHooks for FerrikiJsxHooks<'_> {
             };
         };
 
-        let light = match self
-            .highlighter
-            .highlight(input.code, &language, self.light_theme)
-        {
+        let highlighted = match self.highlighter.highlight_with_themes(
+            input.code,
+            &language,
+            &[("light", self.light_theme), ("dark", dark_theme)],
+        ) {
             Ok(tokens) => tokens,
             Err(error) => {
                 self.report_error(&error);
                 return None;
             }
         };
-        let dark = match self
-            .highlighter
-            .highlight(input.code, &language, dark_theme)
-        {
-            Ok(tokens) => tokens,
-            Err(error) => {
-                self.report_error(&error);
-                return None;
-            }
-        };
-        let Some(lines) = render_dual_theme_lines(&light, &dark) else {
+        let Some(lines) = render_dual_theme_lines(&highlighted) else {
             let error = Error::new(
                 ErrorKind::Internal,
-                "Light and dark Ferriki themes produced different code lines.",
+                "Ferriki did not return the requested light and dark token styles.",
+            );
+            self.report_error(&error);
+            return None;
+        };
+        // Ferriki returns metadata in request order, including repeated themes.
+        let [light, dark] = highlighted.themes.as_slice() else {
+            let error = Error::new(
+                ErrorKind::Internal,
+                "Ferriki did not return the requested light and dark theme metadata.",
             );
             self.report_error(&error);
             return None;
         };
         Some(JsxHighlightedCodeBlock::new(lines).with_light_dark_colors(
-            light.foreground,
-            light.background,
-            dark.foreground,
-            dark.background,
+            light.foreground.clone(),
+            light.background.clone(),
+            dark.foreground.clone(),
+            dark.background.clone(),
         ))
     }
 }
@@ -161,99 +162,35 @@ fn starts_metadata_suffix(value: &str) -> bool {
         .any(|suffix| value.starts_with(suffix))
 }
 
-fn render_dual_theme_lines(
-    light: &HighlightTokensResult,
-    dark: &HighlightTokensResult,
-) -> Option<Vec<String>> {
-    if light.tokens.len() != dark.tokens.len() {
-        return None;
-    }
-    light
+fn render_dual_theme_lines(highlighted: &HighlightTokensWithThemesResult) -> Option<Vec<String>> {
+    highlighted
         .tokens
         .iter()
-        .zip(&dark.tokens)
-        .map(|(light_tokens, dark_tokens)| render_dual_theme_line(light_tokens, dark_tokens))
+        .map(|tokens| render_dual_theme_line(tokens))
         .collect()
 }
 
-fn render_dual_theme_line(
-    light_tokens: &[HighlightToken],
-    dark_tokens: &[HighlightToken],
-) -> Option<String> {
-    let light_source = tokens_source(light_tokens);
-    let dark_source = tokens_source(dark_tokens);
-    if light_source != dark_source {
-        return None;
-    }
-    if light_source.is_empty() {
-        return Some(String::new());
-    }
-
+fn render_dual_theme_line(tokens: &[HighlightThemeToken]) -> Option<String> {
     let mut output = String::new();
-    let mut cursor = 0;
-    let mut light_index = 0;
-    let mut dark_index = 0;
-    let mut light_end = next_token_end(light_tokens, &mut light_index, 0)?;
-    let mut dark_end = next_token_end(dark_tokens, &mut dark_index, 0)?;
-    while cursor < light_source.len() {
-        let light_token = light_tokens.get(light_index)?;
-        let dark_token = dark_tokens.get(dark_index)?;
-        let end = light_end.min(dark_end).min(light_source.len());
-        if end <= cursor {
-            return None;
+    for token in tokens {
+        if token.content.is_empty() {
+            continue;
         }
-        let style = dual_token_style(light_token, dark_token);
+        let style = dual_token_style(token.variants.get("light")?, token.variants.get("dark")?);
         if style.is_empty() {
-            output.push_str(&escape_html(&light_source[cursor..end]));
+            output.push_str(&escape_html(&token.content));
         } else {
             output.push_str("<span style=\"");
             output.push_str(&escape_attribute(&style));
             output.push_str("\">");
-            output.push_str(&escape_html(&light_source[cursor..end]));
+            output.push_str(&escape_html(&token.content));
             output.push_str("</span>");
-        }
-        cursor = end;
-        if cursor == light_end {
-            light_index += 1;
-            if cursor < light_source.len() {
-                light_end = next_token_end(light_tokens, &mut light_index, cursor)?;
-            }
-        }
-        if cursor == dark_end {
-            dark_index += 1;
-            if cursor < light_source.len() {
-                dark_end = next_token_end(dark_tokens, &mut dark_index, cursor)?;
-            }
         }
     }
     Some(output)
 }
 
-fn next_token_end(tokens: &[HighlightToken], index: &mut usize, cursor: usize) -> Option<usize> {
-    while tokens
-        .get(*index)
-        .is_some_and(|token| token.content.is_empty())
-    {
-        *index += 1;
-    }
-    tokens
-        .get(*index)
-        .map(|token| cursor.saturating_add(token.content.len()))
-}
-
-fn tokens_source(tokens: &[HighlightToken]) -> String {
-    let length = tokens
-        .iter()
-        .map(|token| token.content.len())
-        .sum::<usize>();
-    let mut source = String::with_capacity(length);
-    for token in tokens {
-        source.push_str(&token.content);
-    }
-    source
-}
-
-fn dual_token_style(light: &HighlightToken, dark: &HighlightToken) -> String {
+fn dual_token_style(light: &HighlightThemeTokenStyle, dark: &HighlightThemeTokenStyle) -> String {
     let mut declarations = Vec::new();
     let light_color = light.color.as_deref().filter(|value| !value.is_empty());
     let dark_color = dark.color.as_deref().filter(|value| !value.is_empty());
@@ -400,34 +337,46 @@ fn escape_attribute(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{HighlightToken, render_dual_theme_line};
+    use super::{HighlightThemeToken, render_dual_theme_line};
 
     #[test]
-    fn dual_theme_alignment_handles_different_token_boundaries_and_unicode() {
-        let light: Vec<HighlightToken> = serde_json::from_str(
+    fn dual_theme_fragments_keep_aligned_unicode_and_escape_styles() {
+        let tokens: Vec<HighlightThemeToken> = serde_json::from_str(
             r##"[
-              {"content":"a😀","offset":0,"color":"#111111"},
-              {"content":"b","offset":5,"color":"#222222"}
+              {"content":"a","offset":0,"variants":{"light":{"color":"#111111"},"dark":{"color":"#aaaaaa"}}},
+              {"content":"😀","offset":1,"variants":{"light":{"color":"#111111"},"dark":{"color":"#bbbbbb"}}},
+              {"content":"b","offset":5,"variants":{"light":{"color":"#222222"},"dark":{"color":"#bbbbbb"}}}
             ]"##,
+        ).expect("aligned tokens should deserialize");
+        assert_eq!(
+            render_dual_theme_line(&tokens).unwrap(),
+            concat!(
+                "<span style=\"color:#111111;--shiki-light:#111111;--shiki-dark:#aaaaaa\">a</span>",
+                "<span style=\"color:#111111;--shiki-light:#111111;--shiki-dark:#bbbbbb\">😀</span>",
+                "<span style=\"color:#222222;--shiki-light:#222222;--shiki-dark:#bbbbbb\">b</span>",
+            )
+        );
+        let tokens: Vec<HighlightThemeToken> = serde_json::from_str(
+            r#"[{"content":"<&>","offset":0,"variants":{"light":{"color":"a&\"'<>"},"dark":{}}}]"#,
         )
-        .expect("light tokens should deserialize");
-        let dark: Vec<HighlightToken> = serde_json::from_str(
-            r##"[
-              {"content":"a","offset":0,"color":"#aaaaaa"},
-              {"content":"😀b","offset":1,"color":"#bbbbbb"}
-            ]"##,
+        .unwrap();
+        assert_eq!(
+            render_dual_theme_line(&tokens).unwrap(),
+            "<span style=\"color:a&amp;&quot;&#39;&lt;&gt;;--shiki-light:a&amp;&quot;&#39;&lt;&gt;\">&lt;&amp;&gt;</span>"
+        );
+        assert_eq!(render_dual_theme_line(&[]).unwrap(), "");
+        let tokens: Vec<HighlightThemeToken> = serde_json::from_str(
+            r#"[{"content":"<&>","offset":0,"variants":{"light":{},"dark":{}}}]"#,
         )
-        .expect("dark tokens should deserialize");
+        .unwrap();
+        assert_eq!(render_dual_theme_line(&tokens).unwrap(), "&lt;&amp;&gt;");
+    }
 
-        let rendered = render_dual_theme_line(&light, &dark).expect("themes should align");
-        assert!(rendered.contains(
-            "style=\"color:#111111;--shiki-light:#111111;--shiki-dark:#aaaaaa\">a</span>"
-        ));
-        assert!(rendered.contains(
-            "style=\"color:#111111;--shiki-light:#111111;--shiki-dark:#bbbbbb\">😀</span>"
-        ));
-        assert!(rendered.contains(
-            "style=\"color:#222222;--shiki-light:#222222;--shiki-dark:#bbbbbb\">b</span>"
-        ));
+    #[test]
+    fn missing_theme_styles_reject_the_fragment() {
+        let tokens: Vec<HighlightThemeToken> =
+            serde_json::from_str(r#"[{"content":"a","offset":0,"variants":{"light":{}}}]"#)
+                .unwrap();
+        assert!(render_dual_theme_line(&tokens).is_none());
     }
 }
