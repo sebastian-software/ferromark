@@ -9,8 +9,8 @@ use napi_derive::napi;
 use serde_json::{Map, Value};
 
 use crate::jsx::{
-    Compiled, JsxModuleResult, JsxOptions, JsxResult, NativeHighlighting,
-    compile_jsx_with_highlighter,
+    Compiled, JsxModuleResult, JsxOptions, JsxResult, NativeHighlighting, RenderCodeBlockInput,
+    RenderCodeBlockResult, compile_jsx_with_highlighter, render_code_block_with_highlighter,
 };
 use crate::{CodeCallback, Options, input::Utf8Input};
 
@@ -94,6 +94,23 @@ impl JsxCompiler {
     ) -> Result<JsxModuleResult> {
         self.compile_with(markdown, options, jsx_options, render_code, true)?
             .module()
+    }
+
+    /// Renders one standalone code block with the compiler's native highlighter.
+    #[napi(catch_unwind)]
+    pub fn render_code_block(&self, input: RenderCodeBlockInput) -> Result<RenderCodeBlockResult> {
+        let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {
+            usage("A JSX compiler cannot be used recursively from its code callback")
+        })?;
+        render_code_block_with_highlighter(
+            input,
+            NativeHighlighting {
+                highlighter: &mut highlighter,
+                light_theme: &self.light_theme,
+                dark_theme: self.dark_theme.as_deref(),
+                line_numbers: self.line_numbers,
+            },
+        )
     }
 
     fn compile_with(

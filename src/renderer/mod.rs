@@ -51,6 +51,7 @@ pub use html::{
 pub use jsx::{JsxModuleError, JsxModuleOptions, JsxModuleOutput, JsxSourceMap};
 
 pub use jsx::{
-    JsxCodeBlock, JsxCodeBlockInput, JsxHighlightedCodeBlock, JsxModuleSource, JsxOutput,
-    JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping, NoJsxRenderHooks,
+    JsxCodeBlock, JsxCodeBlockInput, JsxCodeBlockRenderOutput, JsxHighlightedCodeBlock,
+    JsxModuleSource, JsxOutput, JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping,
+    NoJsxRenderHooks,
 };

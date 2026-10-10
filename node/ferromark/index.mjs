@@ -504,6 +504,7 @@ const jsxOnlyKeys = new Set([
   "defaultExport",
   "reservedBindings",
 ]);
+const jsxCodeBlockInputKeys = new Set(["code", "language", "meta"]);
 /** Options that only shape a module. With body output they are an error, not ignored. */
 const moduleOnlyKeys = ["providerImportSource", "filename", "defaultExport", "reservedBindings"];
 const htmlOnlyKeys = new Set([
@@ -541,6 +542,48 @@ function validateJsxOptions(options) {
     }
   }
   return selectsModuleOutput(options);
+}
+
+/**
+ * Validate standalone code-block input before calling the native compiler.
+ * @param {import('./index.mjs').JsxCodeBlockRenderInput} input Code, language, and optional fence metadata.
+ * @returns {import('./index.mjs').JsxCodeBlockRenderInput} Validated input.
+ */
+function validateJsxCodeBlockInput(input) {
+  if (input == null || typeof input !== "object" || Array.isArray(input)) {
+    throw new TypeError("code block input must be an object");
+  }
+  assertJsxCodeBlockInputKeys(input);
+  if (typeof input.code !== "string") {
+    throw new TypeError("code block input.code must be a string");
+  }
+  assertOptionalCodeBlockString("language", input.language);
+  assertOptionalCodeBlockString("meta", input.meta);
+  return {
+    code: input.code,
+    ...(input.language === undefined ? {} : { language: input.language }),
+    ...(input.meta === undefined ? {} : { meta: input.meta }),
+  };
+}
+
+/**
+ * @param {import('./index.mjs').JsxCodeBlockRenderInput} input Input to validate.
+ */
+function assertJsxCodeBlockInputKeys(input) {
+  const unknown = Reflect.ownKeys(input).find(
+    (key) => typeof key !== "string" || !jsxCodeBlockInputKeys.has(key),
+  );
+  if (unknown !== undefined) {
+    throw new TypeError(`unknown code block input "${String(unknown)}"`);
+  }
+}
+
+/** @param {"language" | "meta"} name Property name. @param {string | null | undefined} value Property value. */
+function assertOptionalCodeBlockString(name, value) {
+  if (value == null || typeof value === "string") {
+    return;
+  }
+  throw new TypeError(`code block input.${name} must be a string or null`);
 }
 
 /**
@@ -599,6 +642,14 @@ export class JsxCompiler {
     }
     const NativeCompiler = loadNative().JsxCompiler;
     this.#native = new NativeCompiler(JSON.stringify(options));
+  }
+
+  /**
+   * @param {import('./index.mjs').JsxCodeBlockRenderInput} input Standalone code and optional fence language and metadata.
+   * @returns {import('./index.mjs').JsxCodeBlockRenderResult} Intrinsic JSX and metadata parsed by the native fence parser.
+   */
+  renderCodeBlock(input) {
+    return this.#native.renderCodeBlock(validateJsxCodeBlockInput(input));
   }
 
   /**
@@ -708,6 +759,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   compileModule(markdown: string | Uint8Array, options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxModuleResult
+ *   renderCodeBlock(input: import('./index.mjs').JsxCodeBlockRenderInput): import('./index.mjs').JsxCodeBlockRenderResult
  * }} NativeJsxCompilerSession
  * @typedef {import('./index.mjs').Options | null | undefined} NativeOptions
  * @typedef {[

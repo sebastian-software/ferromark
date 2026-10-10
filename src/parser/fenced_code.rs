@@ -1,3 +1,4 @@
+use crate::allocator::Allocator;
 use crate::ast::{Node, Span};
 
 use super::Parser;
@@ -173,7 +174,7 @@ impl<'a> Parser<'a> {
             span = Span::new(start as u32, self.position as u32);
             let body = &self.source[body_start..body_end];
             if body.as_bytes().contains(&b'\r') {
-                self.normalize_code_block_line_endings(body)
+                normalize_code_block_content(self.allocator, body)
             } else {
                 body
             }
@@ -252,33 +253,42 @@ impl<'a> Parser<'a> {
             },
         ))))
     }
+}
 
-    fn normalize_code_block_line_endings(&self, source: &str) -> &'a str {
-        let mut value =
-            crate::allocator::String::with_capacity_in(source.len(), self.allocator.bump());
-        let bytes = source.as_bytes();
-        let mut chunk_start = 0;
-        let mut cursor = 0;
+/// Normalizes fenced-code content using an arena only when needed.
+///
+/// Standalone JSX code rendering uses the same source normalization as parsed
+/// fences: NUL becomes U+FFFD and CR or CRLF becomes LF.
+pub fn normalize_code_block_content<'a>(allocator: &'a Allocator, source: &'a str) -> &'a str {
+    let mut value = crate::allocator::String::with_capacity_in(source.len(), allocator.bump());
+    let bytes = source.as_bytes();
+    let mut chunk_start = 0;
+    let mut cursor = 0;
 
-        while cursor < bytes.len() {
-            if bytes[cursor] != b'\r' {
-                cursor += 1;
-                continue;
-            }
+    while cursor < bytes.len() {
+        let byte = bytes[cursor];
+        if !matches!(byte, b'\r' | 0) {
+            cursor += 1;
+            continue;
+        }
 
-            value.push_str(&source[chunk_start..cursor]);
+        value.push_str(&source[chunk_start..cursor]);
+        if byte == b'\r' {
             value.push('\n');
             cursor += if bytes.get(cursor + 1) == Some(&b'\n') {
                 2
             } else {
                 1
             };
-            chunk_start = cursor;
+        } else {
+            value.push('\u{fffd}');
+            cursor += 1;
         }
-
-        value.push_str(&source[chunk_start..]);
-        value.into_bump_str()
+        chunk_start = cursor;
     }
+
+    value.push_str(&source[chunk_start..]);
+    value.into_bump_str()
 }
 
 #[cfg(test)]

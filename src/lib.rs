@@ -42,10 +42,10 @@ pub use renderer::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlRenderContext,
     HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
-    JsxCodeBlock, JsxCodeBlockInput, JsxHighlightedCodeBlock, JsxModuleSource, JsxOutput,
-    JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping, NoHtmlRenderHooks,
-    NoJsxRenderHooks, collect_heading_text, find_autolink_ranges, map_heading_level,
-    slugify_heading,
+    JsxCodeBlock, JsxCodeBlockInput, JsxCodeBlockRenderOutput, JsxHighlightedCodeBlock,
+    JsxModuleSource, JsxOutput, JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping,
+    NoHtmlRenderHooks, NoJsxRenderHooks, collect_heading_text, find_autolink_ranges,
+    map_heading_level, slugify_heading,
 };
 
 #[cfg(feature = "jsx")]

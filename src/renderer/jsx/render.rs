@@ -16,7 +16,34 @@ use crate::renderer::{
 
 use super::code_metadata::{CodeBlockMetadata, parse_code_block_metadata};
 use super::line_index::LineIndex;
-use super::{JsxCodeBlock, JsxCodeBlockInput, JsxModuleSource, JsxOutput, JsxRenderHooks};
+use super::{
+    JsxCodeBlock, JsxCodeBlockInput, JsxCodeBlockRenderOutput, JsxModuleSource, JsxOutput,
+    JsxRenderHooks,
+};
+
+pub(super) fn render_code_block<H: JsxRenderHooks>(
+    code: &str,
+    language: Option<&str>,
+    meta: Option<&str>,
+    options: &JsxRendererOptions,
+    hooks: &mut H,
+) -> JsxCodeBlockRenderOutput {
+    let code_block = CodeBlock {
+        lang: language,
+        meta,
+        value: code,
+        span: Span::new(0, 0),
+    };
+    let mut renderer = Renderer::new("", options, hooks);
+    let metadata = renderer.render_code_block_inner(&code_block, true);
+    JsxCodeBlockRenderOutput {
+        jsx: renderer.output.body,
+        language: metadata.language,
+        title: metadata.title,
+        label: metadata.label,
+        line_numbers: metadata.line_number_start.is_some(),
+    }
+}
 
 pub(super) fn render_document<H: JsxRenderHooks>(
     document: &Document<'_>,
@@ -544,20 +571,32 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn render_code_block(&mut self, code: &CodeBlock<'_>) {
+        self.render_code_block_inner(code, false);
+    }
+
+    fn render_code_block_inner(
+        &mut self,
+        code: &CodeBlock<'_>,
+        standalone: bool,
+    ) -> CodeBlockMetadata {
         let input = JsxCodeBlockInput {
             code: code.value,
             language: code.lang,
             meta: code.meta,
             span: code.span,
         };
-        let hooked = self.hooks.render_code_block(input);
+        let hooked = if standalone {
+            None
+        } else {
+            self.hooks.render_code_block(input)
+        };
         let metadata = parse_code_block_metadata(
             code.lang,
             code.meta,
             code.value,
             self.options.show_line_numbers,
         );
-        let language_component = if hooked.is_none() {
+        let language_component = if !standalone && hooked.is_none() {
             metadata
                 .language
                 .as_deref()
@@ -565,14 +604,14 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         } else {
             None
         };
-        let component = if hooked.is_none() {
+        let component = if !standalone && hooked.is_none() {
             language_component
                 .clone()
                 .or_else(|| self.options.code_block_component.clone())
         } else {
             None
         };
-        let highlighted = if hooked.is_none() && language_component.is_none() {
+        let highlighted = if hooked.is_none() && (standalone || language_component.is_none()) {
             self.hooks.highlight_code_block(JsxCodeBlockInput {
                 language: metadata.language.as_deref(),
                 ..input
@@ -641,6 +680,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         if !self.output.body.ends_with('\n') {
             self.push("\n");
         }
+        metadata
     }
 
     fn code_component_for(&self, language: &str) -> Option<String> {
