@@ -387,3 +387,32 @@
     line-height: 44px;
   }
 }
+
+@media (max-width: 22rem) {
+  .ferromark-comparison {
+    --comparison-padding-x: 0.25rem;
+
+    table-layout: fixed;
+  }
+
+  .ferromark-comparison th:first-child,
+  .ferromark-comparison thead th:last-child {
+    width: 32%;
+  }
+
+  .ferromark-comparison .ferromark-project-link {
+    overflow-wrap: anywhere;
+  }
+
+  .ferromark-comparison thead th {
+    font-size: 0.6875rem;
+  }
+
+  .ferromark-comparison td:not(.ferromark-conformance) a {
+    font-size: 0.8125rem;
+  }
+
+  .ferromark-comparison .ferromark-conformance {
+    min-width: 0;
+  }
+}
