@@ -1,4 +1,9 @@
-import type { CodeHighlighter, Options } from "../index.mjs";
+import type {
+  CodeHighlighter,
+  JsxPreparedMetadata,
+  Options,
+  PreparedJsxDocument,
+} from "../index.mjs";
 
 import {
   compileJsx,
@@ -96,6 +101,22 @@ jsxCompiler.renderCodeBlock({ language: "ts" });
 // @ts-expect-error -- standalone code input does not accept renderer options
 jsxCompiler.renderCodeBlock({ code: "value", codeBlockComponent: "CodeBlock" });
 compileJsx(highlightedJsx);
+const preparedJsx: PreparedJsxDocument = jsxCompiler.prepare("# Typed", {
+  format: "mdx",
+  frontMatter: true,
+  passes: [{ kind: "emojiShortcodes" }],
+});
+const preparedMetadata: JsxPreparedMetadata = preparedJsx.metadata;
+const preparedBody = preparedJsx.render({ componentPrefix: "_components", headingIds: false });
+const preparedModule = preparedJsx.renderModule({
+  providerImportSource: "docs/provider",
+  filename: "typed.mdx",
+});
+compileJsx(`${preparedBody.body}${preparedModule.code}${preparedMetadata.outline.length}`);
+// @ts-expect-error -- heading settings are render-time choices
+jsxCompiler.prepare("# Typed", { headingOffset: 1 });
+// @ts-expect-error -- native passes are fixed during preparation
+preparedJsx.render({ passes: [] });
 const jsxModule = compileJsx("# Typed", {
   format: "mdx",
   output: "module",

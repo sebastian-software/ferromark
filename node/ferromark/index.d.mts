@@ -360,6 +360,52 @@ export declare function compileJsx(
   renderCode?: JsxCodeRenderer,
 ): JsxResult;
 
+/** Parser and native transform settings fixed when a document is prepared. */
+type JsxRenderOptionKey =
+  | "componentPrefix"
+  | "calloutComponents"
+  | "codeComponents"
+  | "codeBlockComponent"
+  | "omitTitleHeading"
+  | "headingIds"
+  | "headingOffset"
+  | "headingIdPrefix"
+  | "callouts";
+export type JsxPreparationOptions = Omit<CompileJsxOptions, JsxRenderOptionKey | "output">;
+
+/** Render-time choices for a prepared JSX body. */
+export type JsxRenderOptions = Pick<CompileJsxOptions, JsxRenderOptionKey>;
+
+/** Render-time choices for a prepared MDX module. */
+export type JsxRenderModuleOptions = JsxRenderOptions &
+  Pick<
+    CompileJsxModuleOptions,
+    "providerImportSource" | "filename" | "defaultExport" | "reservedBindings"
+  >;
+
+/** Snapshot metadata computed during preparation without JSX body rendering. */
+export type JsxPreparedMetadata = Readonly<{
+  /** Top-level authored module statements and their original UTF-8 ranges. */
+  esm: ReadonlyArray<Readonly<{ value: string; start: number; end: number }>>;
+  /** Fenced code descriptors in source order. */
+  codeBlocks: ReadonlyArray<Readonly<{ code: string; language?: string; meta?: string }>>;
+  /** Preparation-time outline, before render-time title omission and final ID planning. */
+  outline: ReadonlyArray<Readonly<JsxHeading>>;
+  frontMatter?: string;
+  frontMatterSpan?: Readonly<{ start: number; end: number }>;
+  frontMatterKind?: "yaml" | "toml";
+}>;
+
+/** Immutable native document handle returned by `JsxCompiler.prepare`. */
+export type PreparedJsxDocument = Readonly<{
+  /** Metadata snapshot computed from the prepared AST without rendering JSX. */
+  metadata: JsxPreparedMetadata;
+  /** Render a body. Repeated calls do not mutate the prepared tree or rerun passes. */
+  render(options?: JsxRenderOptions, renderCode?: JsxCodeRenderer): JsxResult;
+  /** Render a complete module. Module and body choices can be varied per call. */
+  renderModule(options?: JsxRenderModuleOptions, renderCode?: JsxCodeRenderer): JsxModuleResult;
+}>;
+
 /** A standard theme name or a JSON theme registration accepted by Ferriki. */
 export type JsxTheme =
   | string
@@ -418,6 +464,11 @@ export type JsxCodeBlockRenderResult = {
 export declare class JsxCompiler {
   /** Loads theme assets; first use can download missing, verified standard assets. */
   constructor(options?: JsxCompilerOptions);
+  /** Parse and run native passes once; later renders reuse the owned source and AST. */
+  prepare(
+    markdown: string | Uint8Array,
+    preparationOptions?: JsxPreparationOptions,
+  ): PreparedJsxDocument;
   /** Renders a standalone code block with this compiler's native metadata parser and highlighter. */
   renderCodeBlock(input: JsxCodeBlockRenderInput): JsxCodeBlockRenderResult;
   /** Compiles source, loading and caching the fence languages on first use. */

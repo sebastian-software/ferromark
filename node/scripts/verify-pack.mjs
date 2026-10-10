@@ -40,7 +40,7 @@ if (mainFiles.some((file) => file.endsWith(".node"))) {
 if (mainFiles.some((file) => !allowedMain.has(file))) {
   throw new Error(`Main package contains unexpected files:\n${mainFiles.join("\n")}`);
 }
-if (main.unpackedSize >= 100_000) {
+if (main.unpackedSize >= 107_500) {
   throw new Error(`Main package is unexpectedly large: ${main.unpackedSize} bytes unpacked`);
 }
 

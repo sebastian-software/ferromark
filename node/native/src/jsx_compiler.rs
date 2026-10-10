@@ -1,7 +1,7 @@
 //! Reusable Ferriki ownership for the native JSX compiler.
 
-use std::cell::RefCell;
 use std::path::Path;
+use std::{cell::RefCell, rc::Rc};
 
 use ferromark::ferriki::{Highlighter, RemoteAssets, StandardAssetCatalogs};
 use napi::bindgen_prelude::{Error, Result, Status};
@@ -9,15 +9,16 @@ use napi_derive::napi;
 use serde_json::{Map, Value};
 
 use crate::jsx::{
-    Compiled, JsxModuleResult, JsxOptions, JsxResult, NativeHighlighting, RenderCodeBlockInput,
-    RenderCodeBlockResult, compile_jsx_with_highlighter, render_code_block_with_highlighter,
+    Compiled, JsxModuleResult, JsxOptions, JsxPreparedMetadata, JsxResult, NativeHighlighting,
+    ParsedJsxDocument, RenderCodeBlockInput, RenderCodeBlockResult, compile_jsx_with_highlighter,
+    prepare_jsx_document, render_code_block_with_highlighter,
 };
 use crate::{CodeCallback, Options, input::Utf8Input};
 
 /// Owns a Ferriki highlighter, asset catalogs, and theme registrations across documents.
 #[napi]
 pub struct JsxCompiler {
-    highlighter: RefCell<Highlighter>,
+    highlighter: Rc<RefCell<Highlighter>>,
     light_theme: String,
     dark_theme: Option<String>,
     line_numbers: bool,
@@ -57,10 +58,50 @@ impl JsxCompiler {
             .map(|theme| register_theme(&mut highlighter, theme))
             .transpose()?;
         Ok(Self {
-            highlighter: RefCell::new(highlighter),
+            highlighter: Rc::new(RefCell::new(highlighter)),
             light_theme,
             dark_theme,
             line_numbers,
+        })
+    }
+
+    /// Parses source and runs native transforms once, returning an owned document handle.
+    #[napi(catch_unwind)]
+    pub fn prepare(
+        &self,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+        options: Option<Options>,
+        jsx_options: Option<JsxOptions>,
+    ) -> Result<PreparedJsxDocument> {
+        validate_preparation_options(options.as_ref())?;
+        let jsx = jsx_options.unwrap_or_default();
+        if jsx.component_prefix.is_some()
+            || jsx.callout_components.is_some()
+            || jsx.code_components.is_some()
+            || jsx.code_block_component.is_some()
+            || jsx.omit_title_heading.is_some()
+            || jsx.heading_ids.is_some()
+            || jsx.heading_offset.is_some()
+            || jsx.heading_id_prefix.is_some()
+            || jsx.callouts.is_some()
+            || jsx.provider_import_source.is_some()
+            || jsx.filename.is_some()
+            || jsx.default_export.is_some()
+            || jsx.reserved_bindings.is_some()
+        {
+            return Err(usage(
+                "prepare accepts only the JSX format; pass render choices to render or renderModule",
+            ));
+        }
+        let parsed = prepare_jsx_document(markdown, options, jsx.format.as_deref())?;
+        let metadata = parsed.metadata()?;
+        Ok(PreparedJsxDocument {
+            parsed,
+            highlighter: Rc::clone(&self.highlighter),
+            light_theme: self.light_theme.clone(),
+            dark_theme: self.dark_theme.clone(),
+            line_numbers: self.line_numbers,
+            metadata,
         })
     }
 
@@ -136,6 +177,76 @@ impl JsxCompiler {
                 line_numbers: self.line_numbers,
             }),
             module,
+        )
+    }
+}
+
+/// Immutable, source-owning prepared JSX document with repeatable render methods.
+#[napi]
+pub struct PreparedJsxDocument {
+    parsed: ParsedJsxDocument,
+    highlighter: Rc<RefCell<Highlighter>>,
+    light_theme: String,
+    dark_theme: Option<String>,
+    line_numbers: bool,
+    metadata: JsxPreparedMetadata,
+}
+
+#[napi]
+impl PreparedJsxDocument {
+    /// Metadata computed from the prepared tree without rendering its body.
+    #[napi(getter)]
+    pub fn metadata(&self) -> JsxPreparedMetadata {
+        self.metadata.clone()
+    }
+
+    /// Renders the prepared document as a JSX body.
+    #[napi(catch_unwind)]
+    pub fn render(
+        &self,
+        options: Option<JsxOptions>,
+        #[napi(
+            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+        )]
+        render_code: Option<CodeCallback<'_>>,
+    ) -> Result<JsxResult> {
+        let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {
+            usage("A JSX compiler cannot be used recursively from its code callback")
+        })?;
+        self.parsed.render_body(
+            options,
+            render_code,
+            Some(NativeHighlighting {
+                highlighter: &mut highlighter,
+                light_theme: &self.light_theme,
+                dark_theme: self.dark_theme.as_deref(),
+                line_numbers: self.line_numbers,
+            }),
+        )
+    }
+
+    /// Renders the prepared document as a complete MDX module.
+    #[napi(catch_unwind)]
+    pub fn render_module(
+        &self,
+        options: Option<JsxOptions>,
+        #[napi(
+            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+        )]
+        render_code: Option<CodeCallback<'_>>,
+    ) -> Result<JsxModuleResult> {
+        let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {
+            usage("A JSX compiler cannot be used recursively from its code callback")
+        })?;
+        self.parsed.render_module(
+            options,
+            render_code,
+            Some(NativeHighlighting {
+                highlighter: &mut highlighter,
+                light_theme: &self.light_theme,
+                dark_theme: self.dark_theme.as_deref(),
+                line_numbers: self.line_numbers,
+            }),
         )
     }
 }
@@ -251,6 +362,37 @@ fn string<'a>(value: &'a Map<String, Value>, key: &str) -> Result<Option<&'a str
 
 fn usage(message: impl ToString) -> Error {
     Error::new(Status::InvalidArg, message.to_string())
+}
+
+fn validate_preparation_options(options: Option<&Options>) -> Result<()> {
+    let Some(options) = options else {
+        return Ok(());
+    };
+    macro_rules! reject {
+        ($field:ident, $name:literal) => {
+            if options.$field.is_some() {
+                return Err(usage(format!(
+                    "{0} cannot be used during JSX preparation; use a supported parser option or pass render choices to render",
+                    $name
+                )));
+            }
+        };
+    }
+    reject!(render_policy, "renderPolicy");
+    reject!(allow_html, "allowHtml");
+    reject!(table_colgroup, "tableColgroup");
+    reject!(table_column_names, "tableColumnNames");
+    reject!(disallowed_raw_html, "disallowedRawHtml");
+    reject!(heading_ids, "headingIds");
+    reject!(heading_offset, "headingOffset");
+    reject!(heading_id_prefix, "headingIdPrefix");
+    reject!(callouts, "callouts");
+    reject!(link_base_path, "linkBasePath");
+    reject!(auto_abbreviations, "autoAbbreviations");
+    reject!(abbreviations, "abbreviations");
+    reject!(preset, "preset");
+    reject!(mdx, "mdx");
+    Ok(())
 }
 
 pub(crate) fn engine_error(error: ferromark::ferriki::Error) -> Error {

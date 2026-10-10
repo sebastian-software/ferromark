@@ -3,12 +3,24 @@
 /** Owns a Ferriki highlighter, asset catalogs, and theme registrations across documents. */
 export declare class JsxCompiler {
   constructor(settings: string)
+  /** Parses source and runs native transforms once, returning an owned document handle. */
+  prepare(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null): PreparedJsxDocument
   /** Compiles source and reuses the loaded native grammars and themes. */
   compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
   /** Compiles source to an MDX module; the public facade selects this entry. */
   compileModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
   /** Renders one standalone code block with the compiler's native highlighter. */
   renderCodeBlock(input: RenderCodeBlockInput): RenderCodeBlockResult
+}
+
+/** Immutable, source-owning prepared JSX document with repeatable render methods. */
+export declare class PreparedJsxDocument {
+  /** Metadata computed from the prepared tree without rendering its body. */
+  get metadata(): JsxPreparedMetadata
+  /** Renders the prepared document as a JSX body. */
+  render(options?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
+  /** Renders the prepared document as a complete MDX module. */
+  renderModule(options?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
 }
 
 /** Reuses arena storage and HTML buffers; documents never outlive a call. */
@@ -81,6 +93,14 @@ export interface JsxOptions {
   codeComponents?: Record<string, string>
   codeBlockComponent?: string
   omitTitleHeading?: string
+  /** Render-time heading ID setting. Preparation metadata uses its defaults. */
+  headingIds?: boolean
+  /** Render-time signed 32-bit heading level offset. */
+  headingOffset?: number
+  /** Render-time prefix for generated and authored heading IDs. */
+  headingIdPrefix?: string
+  /** Render-time callout rendering setting. */
+  callouts?: boolean
   /** Module output only: module that exports `useMDXComponents`. */
   providerImportSource?: string
   /** Module output only: source file name for the source map. */
@@ -89,6 +109,17 @@ export interface JsxOptions {
   defaultExport?: boolean
   /** Module output only: names the caller declares in code it adds. */
   reservedBindings?: Array<string>
+}
+
+/** Metadata available after preparation without rendering the JSX body. */
+export interface JsxPreparedMetadata {
+  esm: Array<JsxModuleSource>
+  codeBlocks: Array<JsxCodeBlock>
+  /** Outline at preparation time, before render-time omission and ID choices. */
+  outline: Array<JsxHeading>
+  frontMatter?: string
+  frontMatterSpan?: SourceRange
+  frontMatterKind?: string
 }
 
 export interface JsxResult {

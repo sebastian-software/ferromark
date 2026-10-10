@@ -2,20 +2,24 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use ferromark::ast::{Node, Span, Visit};
+use ferromark::ast::{CodeBlock, Document, Node, Span, Visit};
 use ferromark::ferriki::Highlighter;
 use ferromark::{
-    Allocator, FerrikiJsxHooks, JsxCodeBlockInput, JsxCodeBlockRenderOutput,
+    Allocator, FerrikiJsxHooks, HtmlRenderer, JsxCodeBlockInput, JsxCodeBlockRenderOutput,
     JsxHighlightedCodeBlock, JsxModuleOptions, JsxRenderHooks, JsxRenderer, JsxRendererOptions,
-    Parser,
+    OutlineOptions, Parser,
 };
 use ferromark_transforms::TransformContext;
 use napi::bindgen_prelude::{Error, FnArgs, Result, Status};
 use napi_derive::napi;
+use self_cell::self_cell;
 
-use crate::{CodeCallback, Options, core_options, input::Utf8Input, parse_error};
+use crate::{
+    CodeCallback, Options, core_options, input::Utf8Input, options::CoreOptions, parse_error,
+};
 
 #[napi(object)]
+#[derive(Default)]
 pub struct JsxOptions {
     pub format: Option<String>,
     pub component_prefix: Option<String>,
@@ -23,6 +27,14 @@ pub struct JsxOptions {
     pub code_components: Option<HashMap<String, String>>,
     pub code_block_component: Option<String>,
     pub omit_title_heading: Option<String>,
+    /// Render-time heading ID setting. Preparation metadata uses its defaults.
+    pub heading_ids: Option<bool>,
+    /// Render-time signed 32-bit heading level offset.
+    pub heading_offset: Option<f64>,
+    /// Render-time prefix for generated and authored heading IDs.
+    pub heading_id_prefix: Option<String>,
+    /// Render-time callout rendering setting.
+    pub callouts: Option<bool>,
     /// Module output only: module that exports `useMDXComponents`.
     pub provider_import_source: Option<String>,
     /// Module output only: source file name for the source map.
@@ -34,6 +46,7 @@ pub struct JsxOptions {
 }
 
 #[napi(object)]
+#[derive(Clone)]
 pub struct JsxModuleSource {
     pub value: String,
     pub start: u32,
@@ -41,6 +54,7 @@ pub struct JsxModuleSource {
 }
 
 #[napi(object)]
+#[derive(Clone)]
 pub struct JsxCodeBlock {
     pub code: String,
     pub language: Option<String>,
@@ -72,6 +86,7 @@ pub struct JsxSourceMapping {
 }
 
 #[napi(object)]
+#[derive(Clone)]
 pub struct JsxHeading {
     pub level: u32,
     pub id: Option<String>,
@@ -81,6 +96,7 @@ pub struct JsxHeading {
 }
 
 #[napi(object)]
+#[derive(Clone)]
 pub struct SourceRange {
     pub start: u32,
     pub end: u32,
@@ -99,6 +115,19 @@ pub struct JsxResult {
     pub front_matter_kind: Option<String>,
     pub omitted_title_heading_span: Option<SourceRange>,
     pub mappings: Vec<JsxSourceMapping>,
+}
+
+/// Metadata available after preparation without rendering the JSX body.
+#[napi(object)]
+#[derive(Clone)]
+pub struct JsxPreparedMetadata {
+    pub esm: Vec<JsxModuleSource>,
+    pub code_blocks: Vec<JsxCodeBlock>,
+    /// Outline at preparation time, before render-time omission and ID choices.
+    pub outline: Vec<JsxHeading>,
+    pub front_matter: Option<String>,
+    pub front_matter_span: Option<SourceRange>,
+    pub front_matter_kind: Option<String>,
 }
 
 /// A version 3 source map for module code.
@@ -213,6 +242,162 @@ pub(crate) struct NativeHighlighting<'a> {
     pub light_theme: &'a str,
     pub dark_theme: Option<&'a str>,
     pub line_numbers: bool,
+}
+
+/// Render settings inherited from the old one-shot options object.
+#[derive(Clone)]
+pub(crate) struct JsxRenderDefaults {
+    pub heading_ids: bool,
+    pub heading_level_offset: i32,
+    pub heading_id_prefix: String,
+    pub callouts: bool,
+}
+
+struct JsxDocumentOwner {
+    source: String,
+    allocator: Allocator,
+}
+
+self_cell!(
+    struct PreparedJsxTree {
+        owner: JsxDocumentOwner,
+
+        #[not_covariant]
+        dependent: Document,
+    }
+);
+
+pub(crate) struct ParsedJsxDocument {
+    tree: PreparedJsxTree,
+    defaults: JsxRenderDefaults,
+}
+
+impl ParsedJsxDocument {
+    pub(crate) fn with_document<R>(&self, render: impl FnOnce(&str, &Document<'_>) -> R) -> R {
+        self.tree
+            .with_dependent(|owner, document| render(&owner.source, document))
+    }
+
+    pub(crate) fn metadata(&self) -> Result<JsxPreparedMetadata> {
+        self.with_document(|_, document| prepared_metadata(document, &self.defaults))
+    }
+
+    pub(crate) fn render_body(
+        &self,
+        jsx: Option<JsxOptions>,
+        render_code: Option<CodeCallback<'_>>,
+        highlighting: Option<NativeHighlighting<'_>>,
+    ) -> Result<JsxResult> {
+        let jsx = jsx.unwrap_or_default();
+        match self.with_document(|source, document| {
+            render_parsed(
+                document,
+                source,
+                &self.defaults,
+                jsx,
+                render_code,
+                highlighting,
+                false,
+            )
+        })? {
+            Compiled::Body(result) => Ok(result),
+            Compiled::Module(_) => Err(Error::new(
+                Status::GenericFailure,
+                "JSX body compilation produced a module",
+            )),
+        }
+    }
+
+    pub(crate) fn render_module(
+        &self,
+        jsx: Option<JsxOptions>,
+        render_code: Option<CodeCallback<'_>>,
+        highlighting: Option<NativeHighlighting<'_>>,
+    ) -> Result<JsxModuleResult> {
+        let jsx = jsx.unwrap_or_default();
+        match self.with_document(|source, document| {
+            render_parsed(
+                document,
+                source,
+                &self.defaults,
+                jsx,
+                render_code,
+                highlighting,
+                true,
+            )
+        })? {
+            Compiled::Module(result) => Ok(result),
+            Compiled::Body(_) => Err(Error::new(
+                Status::GenericFailure,
+                "JSX module compilation produced a body",
+            )),
+        }
+    }
+}
+
+pub(crate) fn prepare_jsx_document(
+    markdown: Utf8Input,
+    options: Option<Options>,
+    format: Option<&str>,
+) -> Result<ParsedJsxDocument> {
+    let resolved = core_options(options)?;
+    let defaults = render_defaults(&resolved);
+    let tree = prepare_tree(markdown.to_string(), resolved, format)?;
+    Ok(ParsedJsxDocument { tree, defaults })
+}
+
+fn render_defaults(options: &CoreOptions) -> JsxRenderDefaults {
+    JsxRenderDefaults {
+        heading_ids: options.html.heading_ids,
+        heading_level_offset: options.heading_level_offset,
+        heading_id_prefix: options.heading_id_prefix.clone(),
+        callouts: options.html.callouts,
+    }
+}
+
+fn prepare_tree(
+    source: String,
+    mut options: CoreOptions,
+    format: Option<&str>,
+) -> Result<PreparedJsxTree> {
+    options.parser.mdx = match format {
+        None | Some("md") => false,
+        Some("mdx") => true,
+        _ => {
+            return Err(Error::new(
+                Status::InvalidArg,
+                "format must be 'md' or 'mdx'",
+            ));
+        }
+    };
+    options.parser.mdx_compatible = options.parser.mdx;
+    let parser_options = options.parser;
+    let html_options = options.html;
+    let mut pipeline = options.pipeline;
+    let owner = JsxDocumentOwner {
+        allocator: Allocator::for_source_len(source.len()),
+        source,
+    };
+    PreparedJsxTree::try_new(owner, move |owner| {
+        let mut document = Parser::with_options(&owner.allocator, &owner.source, parser_options)
+            .parse()
+            .map_err(parse_error)?;
+        let mut scope = ModuleScope::default();
+        scope.visit_document(&document);
+        if let Some(span) = scope.nested {
+            return Err(Error::new(
+                Status::InvalidArg,
+                format!("MDX module declarations must appear at document top level (at {span:?})"),
+            ));
+        }
+        if !pipeline.is_empty() {
+            let context = TransformContext::new(&owner.allocator, &owner.source, &html_options);
+            pipeline
+                .run(&mut document, &context)
+                .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
+        }
+        Ok(document)
+    })
 }
 
 pub(crate) fn render_code_block_with_highlighter(
@@ -368,6 +553,58 @@ fn headings(headings: Vec<ferromark::OutlineEntry>) -> Vec<JsxHeading> {
         .collect()
 }
 
+#[derive(Default)]
+struct CodeBlocksCollector {
+    blocks: Vec<JsxCodeBlock>,
+}
+
+impl Visit<'_> for CodeBlocksCollector {
+    fn visit_code_block(&mut self, code: &CodeBlock<'_>) {
+        self.blocks.push(JsxCodeBlock {
+            code: code.value.to_owned(),
+            language: code.lang.map(str::to_owned),
+            meta: code.meta.map(str::to_owned),
+        });
+    }
+}
+
+fn prepared_metadata(
+    document: &Document<'_>,
+    defaults: &JsxRenderDefaults,
+) -> Result<JsxPreparedMetadata> {
+    let mut code_blocks = CodeBlocksCollector::default();
+    code_blocks.visit_document(document);
+    let esm = document
+        .children
+        .iter()
+        .filter_map(|node| match node {
+            Node::MdxjsEsm(item) => Some(JsxModuleSource {
+                value: item.value.to_owned(),
+                start: item.span.start,
+                end: item.span.end,
+            }),
+            _ => None,
+        })
+        .collect();
+    let outline_options = OutlineOptions::default()
+        .with_heading_ids(defaults.heading_ids)
+        .with_heading_level_offset(defaults.heading_level_offset)
+        .try_with_heading_id_prefix(defaults.heading_id_prefix.clone())
+        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+    let front = document.front_matter.as_ref();
+    Ok(JsxPreparedMetadata {
+        esm,
+        code_blocks: code_blocks.blocks,
+        outline: headings(document.outline(&outline_options)),
+        front_matter: front.map(|front| front.value.to_owned()),
+        front_matter_span: front.map(|front| range(front.span)),
+        front_matter_kind: front.map(|front| match front.kind {
+            ferromark::ast::FrontMatterKind::Yaml => "yaml".to_owned(),
+            ferromark::ast::FrontMatterKind::Toml => "toml".to_owned(),
+        }),
+    })
+}
+
 pub(crate) fn compile_jsx_with_highlighter(
     markdown: Utf8Input,
     options: Option<Options>,
@@ -376,67 +613,105 @@ pub(crate) fn compile_jsx_with_highlighter(
     highlighting: Option<NativeHighlighting<'_>>,
     module: bool,
 ) -> Result<Compiled> {
-    let jsx = jsx_options.unwrap_or(JsxOptions {
-        format: None,
-        component_prefix: None,
-        callout_components: None,
-        code_components: None,
-        code_block_component: None,
-        omit_title_heading: None,
-        provider_import_source: None,
-        filename: None,
-        default_export: None,
-        reserved_bindings: None,
-    });
-    if module && jsx.provider_import_source.as_deref() == Some("") {
+    let jsx = jsx_options.unwrap_or_default();
+    let parsed = prepare_jsx_document(markdown, options, jsx.format.as_deref())?;
+    if module {
+        Ok(Compiled::Module(parsed.render_module(
+            Some(jsx),
+            render_code,
+            highlighting,
+        )?))
+    } else {
+        Ok(Compiled::Body(parsed.render_body(
+            Some(jsx),
+            render_code,
+            highlighting,
+        )?))
+    }
+}
+
+fn heading_offset(value: f64) -> Result<i32> {
+    if !value.is_finite()
+        || value.fract() != 0.0
+        || value < f64::from(i32::MIN)
+        || value > f64::from(i32::MAX)
+    {
         return Err(Error::new(
             Status::InvalidArg,
-            "providerImportSource must be a nonempty string",
+            "headingOffset must be an integer in the signed 32-bit range",
         ));
     }
-    let module = module.then(|| JsxModuleOptions {
-        provider_import_source: jsx.provider_import_source,
-        default_export: jsx.default_export.unwrap_or(true),
-        reserved_bindings: jsx.reserved_bindings.unwrap_or_default(),
-        filename: jsx.filename,
-    });
-    let mut resolved = core_options(options)?;
-    resolved.parser.mdx = match jsx.format.as_deref() {
-        None | Some("md") => false,
-        Some("mdx") => true,
-        _ => {
-            return Err(Error::new(
-                Status::InvalidArg,
-                "format must be 'md' or 'mdx'",
-            ));
-        }
-    };
-    resolved.parser.mdx_compatible = resolved.parser.mdx;
+    Ok(value as i32)
+}
+
+fn render_parsed(
+    document: &Document<'_>,
+    source: &str,
+    defaults: &JsxRenderDefaults,
+    jsx: JsxOptions,
+    render_code: Option<CodeCallback<'_>>,
+    highlighting: Option<NativeHighlighting<'_>>,
+    module: bool,
+) -> Result<Compiled> {
     if let Some(prefix) = &jsx.component_prefix {
         component_name(prefix)?;
     }
     if let Some(component) = &jsx.code_block_component {
         component_name(component)?;
     }
-    let allocator = Allocator::for_source_len(markdown.len());
-    let mut document = Parser::with_options(&allocator, &markdown, resolved.parser)
-        .parse()
-        .map_err(parse_error)?;
-    let mut scope = ModuleScope::default();
-    scope.visit_document(&document);
-    if let Some(span) = scope.nested {
-        return Err(Error::new(
-            Status::InvalidArg,
-            format!("MDX module declarations must appear at document top level (at {span:?})"),
-        ));
-    }
-    if !resolved.pipeline.is_empty() {
-        let context = TransformContext::new(&allocator, &markdown, &resolved.html);
-        resolved
-            .pipeline
-            .run(&mut document, &context)
-            .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
-    }
+    let heading_id_prefix = match jsx.heading_id_prefix {
+        Some(prefix) => {
+            HtmlRenderer::validate_heading_id_prefix(&prefix)
+                .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+            prefix
+        }
+        None => defaults.heading_id_prefix.clone(),
+    };
+    let heading_level_offset = jsx
+        .heading_offset
+        .map(heading_offset)
+        .transpose()?
+        .unwrap_or(defaults.heading_level_offset);
+    let module_options = if module {
+        if jsx.provider_import_source.as_deref() == Some("") {
+            return Err(Error::new(
+                Status::InvalidArg,
+                "providerImportSource must be a nonempty string",
+            ));
+        }
+        Some(JsxModuleOptions {
+            provider_import_source: jsx.provider_import_source,
+            default_export: jsx.default_export.unwrap_or(true),
+            reserved_bindings: jsx.reserved_bindings.unwrap_or_default(),
+            filename: jsx.filename,
+        })
+    } else {
+        if jsx.provider_import_source.is_some()
+            || jsx.filename.is_some()
+            || jsx.default_export.is_some()
+            || jsx.reserved_bindings.is_some()
+        {
+            return Err(Error::new(
+                Status::InvalidArg,
+                "MDX module options require output: 'module'",
+            ));
+        }
+        None
+    };
+    let renderer = JsxRenderer::with_options(JsxRendererOptions {
+        component_prefix: jsx.component_prefix,
+        heading_ids: jsx.heading_ids.unwrap_or(defaults.heading_ids),
+        heading_level_offset,
+        heading_id_prefix,
+        callouts: jsx.callouts.unwrap_or(defaults.callouts),
+        omit_title_heading: jsx.omit_title_heading,
+        callout_components: component_map(jsx.callout_components)?,
+        code_block_components: component_map(jsx.code_components)?,
+        code_block_component: jsx.code_block_component,
+        show_line_numbers: highlighting
+            .as_ref()
+            .is_some_and(|settings| settings.line_numbers),
+    });
     let front_matter = document
         .front_matter
         .as_ref()
@@ -452,27 +727,14 @@ pub(crate) fn compile_jsx_with_highlighter(
             ferromark::ast::FrontMatterKind::Yaml => "yaml".to_owned(),
             ferromark::ast::FrontMatterKind::Toml => "toml".to_owned(),
         });
-    let renderer = JsxRenderer::with_options(JsxRendererOptions {
-        component_prefix: jsx.component_prefix,
-        heading_ids: resolved.html.heading_ids,
-        heading_level_offset: resolved.heading_level_offset,
-        heading_id_prefix: resolved.heading_id_prefix,
-        callouts: resolved.html.callouts,
-        omit_title_heading: jsx.omit_title_heading,
-        callout_components: component_map(jsx.callout_components)?,
-        code_block_components: component_map(jsx.code_components)?,
-        code_block_component: jsx.code_block_component,
-        show_line_numbers: highlighting
-            .as_ref()
-            .is_some_and(|settings| settings.line_numbers),
-    });
     let mut hook = CodeHook {
         callback: render_code,
         highlighting,
         error: None,
     };
-    if let Some(module) = module {
-        let result = renderer.render_module_with_hooks(&document, &markdown, &module, &mut hook);
+    if let Some(module_options) = module_options {
+        let result =
+            renderer.render_module_with_hooks(document, source, &module_options, &mut hook);
         if let Some(error) = hook.error {
             return Err(error);
         }
@@ -496,7 +758,7 @@ pub(crate) fn compile_jsx_with_highlighter(
             omitted_title_heading_span: output.omitted_title_heading.map(range),
         }));
     }
-    let output = renderer.render_with_hooks(&document, &markdown, &mut hook);
+    let output = renderer.render_with_hooks(document, source, &mut hook);
     if let Some(error) = hook.error {
         return Err(error);
     }

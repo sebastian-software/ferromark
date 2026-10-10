@@ -49,6 +49,45 @@ UTF-16 columns. Generated Markdown tags appear in `elements`, including when
 prefixed; authored and configured JSX component roots appear in `components`. Headings and
 rendered IDs use the same planner, including visible text nested inside JSX.
 
+### Prepare once, render more than once
+
+`JsxCompiler.prepare` separates parsing and native passes from render choices.
+The returned handle owns its source and parsed tree. Its frozen `metadata`
+snapshot is available without highlighting or rendering the JSX body.
+
+```js
+const prepared = compiler.prepare(source, {
+  format: "mdx",
+  frontMatter: true,
+  passes: [{ kind: "emojiShortcodes" }],
+});
+
+const { frontMatter, esm, codeBlocks, outline } = prepared.metadata;
+const body = prepared.render({
+  componentPrefix: "_components",
+  omitTitleHeading: "Guide",
+});
+const module = prepared.renderModule({
+  providerImportSource: "docs/provider",
+  filename: "guide.mdx",
+  omitTitleHeading: "Guide",
+});
+```
+
+Preparation options set the grammar, parser features, and ordered native
+passes. Each `render` or `renderModule` call can choose components, title
+omission, heading settings, callouts, and (for modules) provider/export
+settings. The facade rejects render-only options during preparation and parser
+or pass options during rendering.
+
+`metadata.outline` reflects the default preparation-time heading settings. It
+does not include render-time title omission. Read `headings` from the final
+render result when the outline must match emitted IDs, footnotes, and heading
+settings. The prepared handle retains the native highlighter and remains valid
+if the `JsxCompiler` object is dropped. Repeated renders do not mutate the tree
+or rerun passes. `compileJsx` and `JsxCompiler.compile` keep their one-shot
+combined-options APIs.
+
 ### MDX modules
 
 `output: "module"` returns a complete MDX module instead of a body. The module
