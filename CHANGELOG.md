@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.3.0](https://github.com/sebastian-software/ferromark/compare/v3.2.0...v3.3.0) (2026-10-10)
+
+
+### Features
+
+* **jsx:** render standalone code blocks ([#515](https://github.com/sebastian-software/ferromark/issues/515)) ([aee1dad](https://github.com/sebastian-software/ferromark/commit/aee1dadee035aa27c79a1484194db3b04d0dabeb))
+* **node:** add prepared JSX document API ([#514](https://github.com/sebastian-software/ferromark/issues/514)) ([f10e5e6](https://github.com/sebastian-software/ferromark/commit/f10e5e675df90e038f9bddb94d18250efc6d4384))
+
 ## [3.2.0](https://github.com/sebastian-software/ferromark/compare/v3.1.1...v3.2.0) (2026-10-08)
 
 
