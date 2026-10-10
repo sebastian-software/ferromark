@@ -2,7 +2,7 @@
 
 Finite output agreement with 652 CommonMark 0.31.2 examples and 28 **GFM extension** examples. This is not a full GFM conformance score or a performance eligibility filter.
 
-Measured 2026-10-10T14:28:36.296339+00:00 on macOS-27.0.1-arm64-arm-64bit; Ferromark source `facc6ba007b03a15a490dec10db6fc3c96c0dcc2`.
+Measured 2026-10-10T14:37:09.251442+00:00 on macOS-27.0.1-arm64-arm-64bit; Ferromark source `ad50470e88601f1674c97b033c45a346d45c6919`.
 
 [Method, reproduction command, and comparison rules](../../../benchmarks/conformance/README.md). [Build provenance](build.json). [Machine-readable summary](summary.json). Each library link below retains every input, expected/actual HTML, error, and classification.
 
@@ -20,7 +20,7 @@ Measured 2026-10-10T14:28:36.296339+00:00 on macOS-27.0.1-arm64-arm-64bit; Ferro
 | [cmark-gfm (Native)](cmark-gfm.json) | 0.29.0.gfm.13 | 641/652 (98.31%) | 26/28 (92.86%) |
 | [Goldmark (Native)](goldmark.json) | 2.1.6 | 652/652 (100.00%) | 24/28 (85.71%) |
 | [marked (Node.js)](marked.json) | 18.0.14 | 640/652 (98.16%) | 27/28 (96.43%) |
-| [markdown-it (Node.js)](markdown-it.json) | 15.0.2 | 652/652 (100.00%) | 12/28 (42.86%) |
+| [markdown-it (Node.js)](markdown-it.json) | 15.0.2 | 652/652 (100.00%) | 17/28 (60.71%) |
 | [remark / unified (Node.js)](remark.json) | 15.0.1 | 651/652 (99.85%) | 22/28 (78.57%) |
 | [micromark (Node.js)](micromark.json) | 4.0.3 | 652/652 (100.00%) | 25/28 (89.29%) |
 | [Showdown (Node.js)](showdown.json) | 2.1.0 | 357/652 (54.75%) | 11/28 (39.29%) |
@@ -133,9 +133,9 @@ Uses stock GFM URL tokenizer, unlike timing. Raw HTML passes through; no tagfilt
 
 CommonMark: `commonmark preset; html=true, linkify=false, typographer=false, validateLink accepts all protocols`.
 
-GFM extensions: `Same; linkify=true, enable table/strikethrough/linkify, markdown-it-task-lists defaults`.
+GFM extensions: `Same; linkify=true, enable table/strikethrough/linkify, markdown-it-task-lists defaults; linkify.set({fuzzyLink:true})`.
 
-Task plugin adds CSS classes. Linkify is the public URL recognizer; no tagfilter option. Adds linkify to timing profile.
+Task plugin adds CSS classes. Linkify recognizes bare domains beyond formal GFM; fuzzyLink=true enables its public www recognizer, which linkify-it 6 disables by default. No tagfilter option. Adds linkify to timing profile.
 
 ### remark / unified (Node.js)
 
