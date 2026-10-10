@@ -29,6 +29,73 @@ fn highlighter() -> Highlighter {
     highlighter
 }
 
+fn boundary_highlighter() -> Highlighter {
+    let mut highlighter = Highlighter::builder().build().unwrap();
+    highlighter
+        .register_language_json(
+            r#"{
+      "name": "boundary", "scopeName": "source.boundary",
+      "patterns": [
+        {"match": "a", "name": "first"},
+        {"match": "😀", "name": "middle"},
+        {"match": "b", "name": "last"}
+      ]
+    }"#,
+        )
+        .unwrap();
+    highlighter
+        .register_theme_json(
+            r##"{
+      "name": "boundary-light", "type": "light",
+      "colors": {"editor.foreground": "#111111", "editor.background": "#ffffff"},
+      "tokenColors": [
+        {"scope": "last", "settings": {"foreground": "#222222", "fontStyle": "italic underline"}}
+      ]
+    }"##,
+        )
+        .unwrap();
+    highlighter
+        .register_theme_json(
+            r##"{
+      "name": "boundary-dark", "type": "dark",
+      "colors": {"editor.foreground": "#bbbbbb", "editor.background": "#000000"},
+      "tokenColors": [
+        {"scope": "first", "settings": {"foreground": "#aaaaaa", "fontStyle": "bold strikethrough"}}
+      ]
+    }"##,
+        )
+        .unwrap();
+    highlighter
+}
+
+#[test]
+fn dual_theme_output_matches_the_legacy_adapter() {
+    let mut highlighter = boundary_highlighter();
+    let mut output = String::new();
+    for code in [
+        "a😀b <é東京>&\"'",
+        "a😀b\n\nb\n",
+        "a😀b\r\n\r\nb\r\n",
+        "",
+        "\n\n",
+    ] {
+        for dark in ["boundary-dark", "boundary-light"] {
+            let mut hooks =
+                FerrikiJsxHooks::with_light_dark_themes(&mut highlighter, "boundary-light", dark);
+            let block = JsxRenderer::new().render_code_block_with_hooks(
+                code,
+                Some("boundary"),
+                Some("[a&b] title=\"safe.rs\" {1,3} :line-numbers=7"),
+                &mut hooks,
+            );
+            output.push_str(&block.jsx);
+        }
+    }
+    // Captured with Ferriki 0.10 and the manual two-theme adapter before the
+    // upgrade. Keep this exact output as the compatibility oracle.
+    insta::assert_snapshot!("dual_theme_legacy_output", output);
+}
+
 fn parse<'a>(allocator: &'a Allocator, source: &'a str) -> ferromark::ast::Document<'a> {
     Parser::new(allocator, source).parse().unwrap()
 }
@@ -279,4 +346,92 @@ fn render_code_override_runs_before_highlighter_and_language_component() {
     assert!(output.body.contains("<CodePreview />"), "{}", output.body);
     assert!(!hooks.highlighted);
     assert!(output.components.is_empty());
+}
+
+#[test]
+fn public_multi_theme_tokens_align_different_boundaries_with_utf8_offsets() {
+    let mut highlighter = boundary_highlighter();
+    let code = "a😀b\r\na😀b\n";
+    let light = highlighter
+        .highlight(code, "boundary", "boundary-light")
+        .unwrap();
+    let dark = highlighter
+        .highlight(code, "boundary", "boundary-dark")
+        .unwrap();
+    assert_eq!(
+        light.tokens[0]
+            .iter()
+            .map(|token| token.content.as_str())
+            .collect::<Vec<_>>(),
+        ["a😀", "b"]
+    );
+    assert_eq!(
+        dark.tokens[0]
+            .iter()
+            .map(|token| token.content.as_str())
+            .collect::<Vec<_>>(),
+        ["a", "😀b"]
+    );
+    let highlighted = highlighter
+        .highlight_with_themes(
+            code,
+            "boundary",
+            &[("light", "boundary-light"), ("dark", "boundary-dark")],
+        )
+        .unwrap();
+    assert_eq!(highlighted.tokens.len(), 3);
+    assert!(highlighted.tokens[2].is_empty());
+    assert_eq!(highlighted.themes[0].color, "light");
+    assert_eq!(highlighted.themes[1].color, "dark");
+    assert_eq!(
+        highlighted
+            .tokens
+            .iter()
+            .flatten()
+            .map(|token| token.offset)
+            .collect::<Vec<_>>(),
+        [0, 1, 5, 8, 9, 13]
+    );
+    for token in highlighted.tokens.iter().flatten() {
+        assert_eq!(
+            &code[token.offset..token.offset + token.content.len()],
+            token.content
+        );
+        assert!(token.variants.contains_key("light"));
+        assert!(token.variants.contains_key("dark"));
+    }
+}
+
+#[test]
+fn dual_theme_errors_keep_plain_fallback_and_observer_categories() {
+    for (language, light, dark, expected) in [
+        ("missing", "test-light", "test-dark", None),
+        (
+            "rust",
+            "missing",
+            "test-dark",
+            Some(ErrorKind::UnknownTheme),
+        ),
+        (
+            "rust",
+            "test-light",
+            "missing",
+            Some(ErrorKind::UnknownTheme),
+        ),
+    ] {
+        let mut highlighter = highlighter();
+        let mut errors = Vec::new();
+        let mut record = |error: &ferromark::ferriki::Error| errors.push(error.kind());
+        let mut hooks = FerrikiJsxHooks::with_light_dark_themes(&mut highlighter, light, dark)
+            .with_error_handler(&mut record);
+        let block = JsxRenderer::new().render_code_block_with_hooks(
+            "<é😀> & code\n",
+            Some(language),
+            None,
+            &mut hooks,
+        );
+        assert!(block.jsx.contains("{\"<é😀> & code\\n\"}"), "{}", block.jsx);
+        assert!(!block.jsx.contains("shiki"), "{}", block.jsx);
+        assert_eq!(errors, expected.into_iter().collect::<Vec<_>>());
+    }
 }

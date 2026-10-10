@@ -156,6 +156,18 @@ title/label attributes, highlighted lines, and line numbers. Dual-theme tokens
 carry light/dark CSS color and font variables; the light styles work without
 theme-switching CSS. No framework runtime or HTML injection prop is emitted.
 
+The updated adapter uses Ferriki 0.13.0's public
+`Highlighter::highlight_with_themes` API with named `light` and `dark` variants.
+Ferriki aligns theme-dependent token boundaries and returns UTF-8 byte offsets;
+Ferromark formats each aligned segment with the existing CSS variables and
+keeps fence metadata and line wrappers. Single-theme output continues to use
+`highlight_html_lines`. This upgrade is intended for the next Ferromark release.
+
+One multi-theme API call still tokenizes each theme in Ferriki 0.13.0. It
+preserves compiled grammars across theme changes, but this integration has no
+measured performance claim. Render options for whitespace and adjacent-token
+merging continue to apply only to single-theme fragments.
+
 `code_block_component` wraps that output in a caller-owned component with
 original code and metadata props. A whole-fence callback has priority, followed
 by language-specific component mappings, native highlighting, and plain
