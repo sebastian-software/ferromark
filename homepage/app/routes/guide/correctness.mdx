@@ -39,3 +39,23 @@ The [repeatable spec audit](https://github.com/sebastian-software/ferromark/blob
 [106-case live oracle](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/compatibility-audit/CMARK.md) pass their failure
 gates. The [native comparison](/guide/benchmarks) reruns the corrected core with explicit
 syntax and renderer settings across all six engines.
+
+## Library comparison scores
+
+The [homepage comparison](/#markdown-ecosystem) also reports measured output
+agreement for all 20 displayed library variants and separate Ferromark native
+and Node references. CommonMark covers 652 examples from version 0.31.2.
+**GFM extensions** covers 28 extension examples from the frozen official website;
+it is not a full GFM conformance score.
+
+These checks use each library's closest available public specification settings.
+They run separately from the reduced profiles used for performance measurements.
+A mismatch may come from parsing or from renderer policy, such as extra task-list
+classes. Unsupported suites have no percentage. Unmeasured suites retain the
+setup failure. Neither result changes which of the 57 documents contributes to
+the performance factor.
+
+The [retained report](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-10-10-comparison-conformance)
+links every input and expected/actual HTML, including failures, exact versions,
+and configuration differences. The [local runner](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/conformance/README.md)
+rebuilds the pinned adapters and validates the generated homepage values.
