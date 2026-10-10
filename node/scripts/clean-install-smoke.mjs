@@ -8,6 +8,8 @@ const packageTestNames = [
   "index.test.mjs",
   "jsx-highlighting.test.mjs",
   "jsx-module.test.mjs",
+  "jsx-prepared.test.mjs",
+  "jsx-render-code-block.test.mjs",
   "jsx-title.test.mjs",
   "jsx.test.mjs",
 ];

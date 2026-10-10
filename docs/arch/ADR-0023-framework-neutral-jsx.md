@@ -136,3 +136,32 @@ options contain parser and native-pass settings; render methods accept only
 render-time settings, and the facade rejects options used in the wrong phase.
 This amendment changes the earlier call-local arena decision only for callers
 that explicitly request a prepared document. It makes no performance claim.
+
+## Amendment (2026-10-10): public multi-theme highlighting
+
+Upgrade the optional native dependency from Ferriki 0.10.0 to 0.13.0, including
+its matching asset catalogs and shared Rust/Node consumer fixture pins.
+Ferriki's coupled asset generator and TextMate crates use 0.13.0; its regex
+engine moves from Ferroni 1.8.1 to 2.1.0. Other dependencies stay locked.
+
+Replace the JSX adapter's two `highlight` calls and manual boundary union with
+`Highlighter::highlight_with_themes`, a public API introduced in Ferriki 0.9.
+Ferriki owns alignment and UTF-8 offsets; Ferromark owns escaped fragments,
+light/dark CSS color and font variables, block colors, and fence metadata.
+The single-theme JSX and HTML adapters retain `highlight_html_lines`.
+No private Ferriki interfaces are used. The optional feature and remote asset
+boundaries, prepared-document ownership, and standalone-block contracts stay
+unchanged.
+
+Preserve exact output captured before the upgrade, including differing theme
+boundaries around astral Unicode, all font flags, repeated themes, CRLF, empty
+and trailing lines, and fence annotations. Keep the existing shared consumer
+snapshots as the independent HTML and token contract, and rebuild the Node
+addon before its tests and packed offline-consumer checks.
+
+Ferriki 0.13 still tokenizes once per requested theme. Its compiled grammar
+cache survives theme changes, but a single API call does not establish a single
+tokenizer pass or a speedup. Keep the regex prefilter default. This amendment
+makes no timing claim; Ferriki's Shiki comparison factors do not measure this
+upgrade or downstream Ardo builds. Ardo [#324](https://github.com/sebastian-software/ardo/issues/324)
+motivates this integration without changing its downstream API or release plan.
