@@ -506,6 +506,47 @@ const jsxOnlyKeys = new Set([
 ]);
 /** Options that only shape a module. With body output they are an error, not ignored. */
 const moduleOnlyKeys = ["providerImportSource", "filename", "defaultExport", "reservedBindings"];
+const jsxPreparationKeys = new Set([
+  "format",
+  "tables",
+  "mergedTableCells",
+  "tableAttributes",
+  "strikethrough",
+  "superscript",
+  "subscript",
+  "taskLists",
+  "autolinkLiterals",
+  "footnotes",
+  "highlight",
+  "inlineFootnotes",
+  "allowLinkRefs",
+  "frontMatter",
+  "headingAttributes",
+  "math",
+  "definitionLists",
+  "lineComments",
+  "cjkEmphasis",
+  "imageAttributes",
+  "imageCaptions",
+  "extendedAttributes",
+  "bracketedSpans",
+  "blockquoteAttributions",
+  "insertions",
+  "guillemetDigraphs",
+  "typography",
+  "passes",
+]);
+const jsxRenderKeys = new Set([
+  "componentPrefix",
+  "calloutComponents",
+  "codeComponents",
+  "codeBlockComponent",
+  "omitTitleHeading",
+  "headingIds",
+  "headingOffset",
+  "headingIdPrefix",
+  "callouts",
+]);
 const htmlOnlyKeys = new Set([
   "mdx",
   "renderPolicy",
@@ -564,6 +605,110 @@ function selectsModuleOutput(options) {
   return false;
 }
 
+/** @param {import('./index.mjs').JsxPreparationOptions | undefined} [options] Preparation settings. */
+function validateJsxPreparationOptions(options) {
+  if (options == null) {
+    return;
+  }
+  if (typeof options !== "object" || Array.isArray(options)) {
+    throw new TypeError("preparationOptions must be an object");
+  }
+  for (const key of Reflect.ownKeys(options)) {
+    if (typeof key !== "string" || !jsxPreparationKeys.has(key)) {
+      const category = preparationOptionCategory(key);
+      throw new TypeError(`${category} "${String(key)}" cannot be used in preparationOptions`);
+    }
+  }
+  if (options.format !== undefined && options.format !== "md" && options.format !== "mdx") {
+    throw new TypeError('format must be "md" or "mdx"');
+  }
+}
+
+/** @param {string | symbol} key An option key. @returns {string} Its rejected category. */
+function preparationOptionCategory(key) {
+  if (typeof key !== "string") {
+    return "unknown preparation option";
+  }
+  if (jsxRenderKeys.has(key)) {
+    return "render option";
+  }
+  if (moduleOnlyKeys.includes(key)) {
+    return "module option";
+  }
+  return "unknown preparation option";
+}
+
+/** @param {string | symbol} key An option key. @param {boolean} module Whether module output is selected. */
+function isPreparedRenderOption(key, module) {
+  if (typeof key !== "string") {
+    return false;
+  }
+  return jsxRenderKeys.has(key) || (module && moduleOnlyKeys.includes(key));
+}
+
+/** @param {import('./index.mjs').JsxRenderOptions | import('./index.mjs').JsxRenderModuleOptions | undefined} options Render settings. @param {boolean} module Whether this selects module output. */
+function validatePreparedRenderOptions(options, module) {
+  if (options == null) {
+    return;
+  }
+  if (typeof options !== "object" || Array.isArray(options)) {
+    throw new TypeError("renderOptions must be an object");
+  }
+  for (const key of Reflect.ownKeys(options)) {
+    if (!isPreparedRenderOption(key, module)) {
+      throw new TypeError(`unknown JSX render option "${String(key)}"`);
+    }
+  }
+  if (
+    options.componentPrefix !== undefined &&
+    module &&
+    options.componentPrefix !== "_components"
+  ) {
+    throw new TypeError('module output sets the component prefix to "_components"');
+  }
+}
+
+/** @param {import('./index.mjs').JsxPreparedMetadata} metadata Native prepared metadata copy. */
+function freezePreparedMetadata(metadata) {
+  for (const key of ["esm", "codeBlocks", "outline"]) {
+    const values = Reflect.get(metadata, key);
+    if (Array.isArray(values)) {
+      for (const item of values) {
+        Object.freeze(item);
+      }
+      Object.freeze(values);
+    }
+  }
+  if (metadata.frontMatterSpan != null) {
+    Object.freeze(metadata.frontMatterSpan);
+  }
+  return Object.freeze(metadata);
+}
+
+/** @param {NativePreparedJsxDocument} nativePrepared Native prepared document. */
+function preparedFacade(nativePrepared) {
+  const metadata = freezePreparedMetadata(nativePrepared.metadata);
+  return Object.freeze({
+    metadata,
+    /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
+    render(options, renderCode) {
+      validatePreparedRenderOptions(options, false);
+      if (renderCode !== undefined && typeof renderCode !== "function") {
+        throw new TypeError("renderCode must be a synchronous function");
+      }
+      return nativePrepared.render(options, renderCode);
+    },
+    /** @param {import('./index.mjs').JsxRenderModuleOptions} [options] Module and render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
+    renderModule(options, renderCode) {
+      validatePreparedRenderOptions(options, true);
+      if (renderCode !== undefined && typeof renderCode !== "function") {
+        throw new TypeError("renderCode must be a synchronous function");
+      }
+      return nativePrepared.renderModule(options, renderCode);
+    },
+  });
+}
+
 /**
  * Compile trusted authored Markdown or MDX to framework-neutral JSX.
  * @param {string | Uint8Array} markdown Authored source.
@@ -599,6 +744,19 @@ export class JsxCompiler {
     }
     const NativeCompiler = loadNative().JsxCompiler;
     this.#native = new NativeCompiler(JSON.stringify(options));
+  }
+
+  /**
+   * Parses source and runs the configured native passes once.
+   * @param {string | Uint8Array} markdown Authored source.
+   * @param {import('./index.mjs').JsxPreparationOptions} [preparationOptions] Parser and transform settings.
+   * @returns {import('./index.mjs').PreparedJsxDocument} An immutable handle with metadata and repeatable render methods.
+   */
+  prepare(markdown, preparationOptions) {
+    validateJsxPreparationOptions(preparationOptions);
+    const format = preparationOptions?.format;
+    const nativePrepared = this.#native.prepare(markdown, preparationOptions, { format });
+    return preparedFacade(nativePrepared);
   }
 
   /**
@@ -702,6 +860,15 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  * }} NativeRendererSession
  * @typedef {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} NativeJsxOptions
  * @typedef {{
+ *   readonly metadata: import('./index.mjs').JsxPreparedMetadata
+ *   render(options?: import('./index.mjs').JsxRenderOptions,
+ *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
+ *   renderModule(options?: import('./index.mjs').JsxRenderModuleOptions,
+ *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxModuleResult
+ * }} NativePreparedJsxDocument
+ * @typedef {{
+ *   prepare(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,
+ *     jsxOptions?: Pick<NativeJsxOptions, 'format'>): NativePreparedJsxDocument
  *   compile(markdown: string | Uint8Array, options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult

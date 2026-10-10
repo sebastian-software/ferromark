@@ -30,9 +30,10 @@ Oxc transform for this step. The amendment below moves module assembly and ESM
 analysis into Ferromark.
 
 A synchronous, trusted code-block callback can emit JSX. Callback exceptions
-propagate, and returning no replacement selects the native renderer. The
-document and its arena remain local to one call; no self-referential AST handle
-or asynchronous native callback is exposed.
+propagate, and returning no replacement selects the native renderer. One-shot
+compilation keeps the document and its arena local to one call and exposes no
+AST references or asynchronous native callbacks. The later prepared-document
+amendment below adds a source-owning handle for repeated rendering.
 
 The reusable Node `JsxCompiler` owns a native Ferriki highlighter and loads
 verified standard theme and grammar assets on first use. Rust consumers can
@@ -104,3 +105,34 @@ changes there. `oxc_ast` and `oxc_ecmascript` become direct dependencies; both
 were already in the dependency graph.
 
 This amendment makes no performance claim.
+
+## Amendment (2026-10-10): reusable prepared Node documents
+
+Issue [#499](https://github.com/sebastian-software/ferromark/issues/499)
+adds `JsxCompiler.prepare(source, preparationOptions)` and an immutable native
+document handle. Preparation owns a copy of the source and the arena, parses
+strict MDX when requested, and runs the configured native pass pipeline once.
+Metadata access returns an owned snapshot of front matter, top-level ESM, code
+blocks, and a preparation-time outline without highlighting or rendering the
+JSX body. Each later body or module render accepts its own component,
+title-omission, heading, and module choices. Final `headings` come from the
+actual render so they reflect omitted titles, final ID planning, and footnotes;
+the metadata outline is explicitly not that final outline.
+
+The Node binding stores the owned `String` and `Allocator` as the owner of the
+parsed `Document`. `self_cell` lends this invariant AST only through scoped
+closures, so the tree is destroyed before its source and arena. The binding
+does not transmute lifetimes or assert `Send`/`Sync`, and JavaScript receives no
+mutable AST. Rendering takes an immutable tree borrow and constructs a fresh
+renderer and ID planner for each call. The handle keeps a reference-counted
+compiler highlighter alive; its `RefCell` rejects recursive use during a
+synchronous code callback, while callback failures release the borrow and do
+not invalidate later renders.
+
+The existing `compileJsx` and `JsxCompiler.compile` entries keep their
+one-shot combined-options shape and use the same parse/transform and render
+internals. Their temporary owned handle drops before returning. Preparation
+options contain parser and native-pass settings; render methods accept only
+render-time settings, and the facade rejects options used in the wrong phase.
+This amendment changes the earlier call-local arena decision only for callers
+that explicitly request a prepared document. It makes no performance claim.
