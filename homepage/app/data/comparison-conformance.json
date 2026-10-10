@@ -1,0 +1,894 @@
+{
+  "report": "docs/reports/2026-10-10-comparison-conformance",
+  "schema": 1,
+  "measured": "2026-10-10T14:14:37.776298+00:00",
+  "revision": "f7aa100bf576f0a5da2fdb4d605b035ac30f1193",
+  "machine": "macOS-27.0.1-arm64-arm-64bit",
+  "suiteLabels": {
+    "commonmark": "CommonMark 0.31.2",
+    "gfm": "GFM extensions"
+  },
+  "inputs": {
+    "benchmarks/compatibility-audit/fixtures/gfm-0.29-2026-09-14.html": "b153d814fdfc8624bb6da7449162c1cd707a637f7d1c1b636eb44b9cf63fa220",
+    "benchmarks/compatibility-audit/run.py": "cde1175414c99ca28311f48aebf2234b219d290d59520e4d56d6d6f98ba81131",
+    "benchmarks/conformance/build.py": "b4012d7f354bfe49dd7a879445fada9c75a9e194e55e70c6eef58ef30aa4f162",
+    "benchmarks/conformance/cli.py": "68751417dd27db823c958f8060234509873dbbe3dfdae59f6944d1dbfd089293",
+    "benchmarks/conformance/cmark-worker.c": "7ac79d6c3715e15df0b39b5422b0534dc37d24cb7cfc230eb89ad9c7cf6d1c6c",
+    "benchmarks/conformance/ecosystem-worker.rs": "f7c250a523c9b2ab4c1eb2b8d43ccabb62c5fa4bd5aeae3d3b5985f4297c1769",
+    "benchmarks/conformance/goldmark-worker.go": "2787ea4a8710b1706b97b8c6c2ff776c4f5259e7f52d3213a1a13bc76aea0123",
+    "benchmarks/conformance/native-worker.rs": "0813b89cf550b537bd53bdd293280505c20593cd73b6d9906a157d951905bb27",
+    "benchmarks/conformance/node-worker.mjs": "50058463665b62949abb31b4aea79a5cb429de7f8150407aaf4cfbdf18eb924c",
+    "benchmarks/conformance/profiles.json": "6d128cf0b8cf895e53498a633edf2943d1baa2421cea5ac5015e2a25489bad29",
+    "benchmarks/conformance/test_conformance.py": "d7dc3f5f9f7d4a930fce6a6dfbd31ac7bcedf55799eea07cba69c338b969de79",
+    "benchmarks/markdown-ecosystem/benchmark-facade.mjs": "680e8add3100caa0dd94de5f53bd5c0c3a733a4946467c9a27717423f62cb309",
+    "benchmarks/markdown-ecosystem/benchmark-target.mjs": "06d71dba3fb6408f64ceb63773db906e3067c65ea0963d85ce164f291e66983d",
+    "benchmarks/markdown-ecosystem/conformance-adapters.mjs": "3b38a5f957592ffd3508cfc81e120b59e3ce8741f4da884aee6457a9d1796306",
+    "benchmarks/markdown-ecosystem/goldmark/go.mod": "1720802741b88338685b47d0a9822115b6443c089f1818828f628f0fdf97396a",
+    "benchmarks/markdown-ecosystem/goldmark/go.sum": "34343f6dfeaf391daf733f1add8b9d461df9da5c523b0bbe7e8748cbb2508c67",
+    "benchmarks/markdown-ecosystem/native/Cargo.lock": "e4c7dd07c38523f646820d4cdb2d1fda8996da881f329b2bf747cf052702bfe7",
+    "benchmarks/markdown-ecosystem/native/Cargo.toml": "bd78739cfae2dcdb801bbb3277291937c4de956ad319c2979aeebe1d18bf881a",
+    "benchmarks/markdown-ecosystem/node-adapters.mjs": "7c044c42ae5affca31bac89f9b27f7889599689fc9839a5957f32e7bbb395cdb",
+    "benchmarks/markdown-ecosystem/package-lock.json": "4e3e5366d32c4aff37af69082a8801afd275a9728770e67a83eaff757da32f58",
+    "benchmarks/markdown-ecosystem/package.json": "c376008477c6769b22e153ba3e7e4749f7661c33b47c8aaaf60eb8ee8b9c7711",
+    "benchmarks/markdown-ecosystem/prepare-native.py": "7eddf60975158a065d8a529add2fd560015fd79bc89717012504d755c4e191d0",
+    "benchmarks/native-comparison/Cargo.lock": "898791409d1b2093f44e4a024ce14cde43143f721876e3116d5378f2faa5fb39",
+    "benchmarks/native-comparison/md4c_alloc.h": "1580c5f124387ac54207c2315deb68f0d897df407c8ae76d07c64d2852a642ea",
+    "benchmarks/native-comparison/native.h": "9f78841a9bccc1cafebaffab0941bbc72757d8842c09a4e6c5e7dedd027ced77",
+    "benchmarks/native-comparison/prepare.py": "6203a6c910bc7a2c6a430f1849503765e906aa884ffe8e28b5d5100323dc31e5",
+    "benchmarks/native-comparison/restore.py": "b8efad2d1bd4a7850f97be10f65f4a5b30589b6000f6cc137099427c7555a59c",
+    "benchmarks/native-comparison/stack.c": "865b6f8d6e1636eba5346c617b20a183e5f9ea8cecac901a448816c8f8b25957",
+    "benchmarks/native-comparison/verify.py": "35148e312670d05343ecce74b53b2a486cc95dfb25c61b9a6af052c9d0357018",
+    "homepage/app/data/benchmark-projects.json": "02c3ba1dd50efd16f604f13454d1c4cc39631bdb2d09577e4abed79c524466e2",
+    "tests/spec_fixtures/commonmark-0.31.2-spec.txt": "257c41ad946f7a1414a499aca402a1aa8fdac3678532266611348c1cf54f4b80"
+  },
+  "rows": [
+    {
+      "id": "ferromark-native",
+      "label": "Ferromark",
+      "runtime": "Native",
+      "version": "3.3.0",
+      "commonmark": "ParserOptions::commonmark + HtmlRendererOptions::commonmark",
+      "gfm": "ParserOptions::gfm_spec + HtmlRendererOptions::gfm",
+      "notes": "Full spec profiles; GFM adds autolink literals and tagfilter to the timed shared profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 556,
+            "serialization-equivalent": 96
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 20,
+          "total": 28,
+          "failed": 8,
+          "errors": 0,
+          "percent": 71.43,
+          "classifications": {
+            "exact": 17,
+            "other": 8,
+            "serialization-equivalent": 3
+          }
+        }
+      },
+      "evidence": "ferromark-native.json",
+      "sha256": "3ae6ad35dc74b025222b003d0e90a81166599ea385d4e696b3dcebcfb14abcd5"
+    },
+    {
+      "id": "ferromark-node",
+      "label": "Ferromark",
+      "runtime": "Node.js",
+      "version": "3.3.0",
+      "commonmark": "toHtml: trusted, allowHtml, headingIds=false, callouts=false; tables/strike/tasks/autolinkLiterals/disallowedRawHtml=false",
+      "gfm": "Same; tables/strike/tasks/autolinkLiterals/disallowedRawHtml=true",
+      "notes": "The public Node HTML API retains fence metadata handling; other optional syntax uses addon defaults. GFM adds autolinks and tagfilter.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 556,
+            "serialization-equivalent": 96
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 28,
+          "total": 28,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 25,
+            "serialization-equivalent": 3
+          }
+        }
+      },
+      "evidence": "ferromark-node.json",
+      "sha256": "3b002f616b95641eb7f311fbc01323d776f46ec17d26117b37f6bdfb990332cb"
+    },
+    {
+      "id": "pulldown-cmark",
+      "label": "pulldown-cmark",
+      "runtime": "Native",
+      "backend": "Rust",
+      "github": "https://github.com/pulldown-cmark/pulldown-cmark",
+      "version": "0.13.4",
+      "commonmark": "Parser::new_ext: Options::empty; html::push_html",
+      "gfm": "ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_TASKLISTS",
+      "notes": "No public literal-autolink or tagfilter switch in 0.13.4. ENABLE_GFM only enables blockquote alerts and is intentionally off.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 630,
+            "serialization-equivalent": 22
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 12,
+          "total": 28,
+          "failed": 16,
+          "errors": 0,
+          "percent": 42.86,
+          "classifications": {
+            "exact": 4,
+            "other": 16,
+            "serialization-equivalent": 8
+          }
+        }
+      },
+      "evidence": "pulldown-cmark.json",
+      "sha256": "4dc2143e85adeee7169bc6f35ad3c467026efb5b6662a404944ef08364c530c9"
+    },
+    {
+      "id": "md4c",
+      "label": "md4c",
+      "runtime": "Native",
+      "backend": "C",
+      "github": "https://github.com/mity/md4c",
+      "version": "0.6.0",
+      "commonmark": "md_html: parser_flags=0; renderer_flags=0",
+      "gfm": "parser_flags=0x100|0x200|0x800|0x4|0x8|0x400; renderer_flags=0",
+      "notes": "Adds all permissive autolinks. No public tagfilter option; the broader GITHUB preset also enables footnotes and admonitions.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 541,
+            "serialization-equivalent": 111
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 16,
+          "total": 28,
+          "failed": 12,
+          "errors": 0,
+          "percent": 57.14,
+          "classifications": {
+            "exact": 15,
+            "other": 12,
+            "serialization-equivalent": 1
+          }
+        }
+      },
+      "evidence": "md4c.json",
+      "sha256": "886364224b6b1c2b41754f9e3c0d1cfa1ed848936b955783dd89140e57c145b1"
+    },
+    {
+      "id": "bun",
+      "label": "Bun MD",
+      "runtime": "Native",
+      "backend": "Rust",
+      "github": "https://github.com/oven-sh/bun",
+      "version": "1.4.2",
+      "commonmark": "render_to_html_with_options: all BOOL_FIELD_SETTERS false",
+      "gfm": "Only tables, strikethrough, tasklists, permissive_autolinks, tag_filter true",
+      "notes": "Direct native Bun MD implementation, not the JavaScript Bun.markdown boundary. Adds autolinks and tagfilter.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 649,
+            "serialization-equivalent": 3
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 22,
+          "total": 28,
+          "failed": 6,
+          "errors": 0,
+          "percent": 78.57,
+          "classifications": {
+            "exact": 15,
+            "other": 6,
+            "serialization-equivalent": 7
+          }
+        }
+      },
+      "evidence": "bun.json",
+      "sha256": "1faa3e278e19ceb2de050f9ea2d10005f329226ef1e42c3f727b40796c4169eb"
+    },
+    {
+      "id": "ox-content",
+      "label": "OX-Content",
+      "runtime": "Native",
+      "backend": "Rust",
+      "github": "https://github.com/ubugeeei-prod/ox-content",
+      "version": "3.2.13",
+      "commonmark": "ParserOptions::default; HtmlRendererOptions::new with autolink_urls/autolink_target_blank/link_target_blank=false",
+      "gfm": "Same; parser tables/strikethrough/task_lists/autolinks=true; renderer disallow_raw_html=true",
+      "notes": "Renderer retains built-in IDs, TOC, callouts, and fence handling: the public renderer has no disable switches. Adds parser autolinks and tagfilter.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 605,
+          "total": 652,
+          "failed": 47,
+          "errors": 0,
+          "percent": 92.79,
+          "classifications": {
+            "exact": 507,
+            "heading-id-only": 40,
+            "other": 7,
+            "serialization-equivalent": 98
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 23,
+          "total": 28,
+          "failed": 5,
+          "errors": 0,
+          "percent": 82.14,
+          "classifications": {
+            "exact": 20,
+            "other": 5,
+            "serialization-equivalent": 3
+          }
+        }
+      },
+      "evidence": "ox-content.json",
+      "sha256": "df92fd5de8f2d2a33ab62e54fffe832926c12af3abca212327240958fc1d4167"
+    },
+    {
+      "id": "markdown-rs",
+      "label": "markdown-rs",
+      "runtime": "Native",
+      "backend": "Rust",
+      "github": "https://github.com/wooorm/markdown-rs",
+      "version": "1.0.0",
+      "commonmark": "Options::default; allow_dangerous_html/allow_dangerous_protocol=true",
+      "gfm": "Options::gfm; footnote constructs=false; dangerous HTML/protocol=true",
+      "notes": "Full formal GFM features including tagfilter; enables literal autolinks beyond timed profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 652
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 26,
+          "total": 28,
+          "failed": 2,
+          "errors": 0,
+          "percent": 92.86,
+          "classifications": {
+            "exact": 24,
+            "other": 2,
+            "serialization-equivalent": 2
+          }
+        }
+      },
+      "evidence": "markdown-rs.json",
+      "sha256": "b56c84b8a7555ebc8c51e35bab2069c97d7187547fd761089163d865a86fe1a2"
+    },
+    {
+      "id": "comrak",
+      "label": "Comrak",
+      "runtime": "Native",
+      "backend": "Rust",
+      "github": "https://github.com/kivikakk/comrak",
+      "version": "0.55.0",
+      "commonmark": "Options::default; render.unsafe=true",
+      "gfm": "Same; extension table/strikethrough/tasklist/autolink/tagfilter=true",
+      "notes": "Uses the released 0.55.0 tagfilter option despite its upstream deprecation. Adds literal autolinks and tagfilter.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 652
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 26,
+          "total": 28,
+          "failed": 2,
+          "errors": 0,
+          "percent": 92.86,
+          "classifications": {
+            "exact": 24,
+            "other": 2,
+            "serialization-equivalent": 2
+          }
+        }
+      },
+      "evidence": "comrak.json",
+      "sha256": "71086cca16c46b8d5994f2e1f8ab8b51354d1254389ea4f8543f86ef073051ed"
+    },
+    {
+      "id": "cmark",
+      "label": "cmark",
+      "runtime": "Native",
+      "backend": "C",
+      "github": "https://github.com/commonmark/cmark",
+      "version": "0.31.2",
+      "commonmark": "cmark_markdown_to_html: CMARK_OPT_UNSAFE",
+      "gfm": null,
+      "notes": "No GFM extension API.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 652
+          }
+        },
+        "gfm": {
+          "status": "unsupported",
+          "reason": "No GFM extension API."
+        }
+      },
+      "evidence": "cmark.json",
+      "sha256": "a6c76758ab198def14a24d77e281038c58d68d98a7cd3af6f806828f2f9407ba"
+    },
+    {
+      "id": "cmark-gfm",
+      "label": "cmark-gfm",
+      "runtime": "Native",
+      "backend": "C",
+      "github": "https://github.com/github/cmark-gfm",
+      "version": "0.29.0.gfm.13",
+      "commonmark": "Parser: CMARK_OPT_UNSAFE, no extensions",
+      "gfm": "Same; attach table, strikethrough, tasklist, autolink, tagfilter",
+      "notes": "Enables full formal extensions. CommonMark implementation targets an older spec; measured against 0.31.2.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 641,
+          "total": 652,
+          "failed": 11,
+          "errors": 0,
+          "percent": 98.31,
+          "classifications": {
+            "exact": 641,
+            "other": 11
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 26,
+          "total": 28,
+          "failed": 2,
+          "errors": 0,
+          "percent": 92.86,
+          "classifications": {
+            "exact": 24,
+            "other": 2,
+            "serialization-equivalent": 2
+          }
+        }
+      },
+      "evidence": "cmark-gfm.json",
+      "sha256": "2dd9a42551e94b48f9e853013e062d22321884dba7665e92d1477ea4d22e7b51"
+    },
+    {
+      "id": "goldmark",
+      "label": "Goldmark",
+      "runtime": "Native",
+      "backend": "Go",
+      "github": "https://github.com/yuin/goldmark",
+      "version": "2.1.6",
+      "commonmark": "parser.New; html.New(html.WithUnsafe())",
+      "gfm": "Add NewTableParser/NewStrikethroughParser/NewTaskListItemParser/NewLinkifyParser and corresponding HTML renderers",
+      "notes": "No tagfilter option in pinned public v2 API. Adds linkify to the timed profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 594,
+            "serialization-equivalent": 58
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 24,
+          "total": 28,
+          "failed": 4,
+          "errors": 0,
+          "percent": 85.71,
+          "classifications": {
+            "exact": 23,
+            "other": 4,
+            "serialization-equivalent": 1
+          }
+        }
+      },
+      "evidence": "goldmark.json",
+      "sha256": "b216be213ffd42d23da6d1b15e8b3e933a482e10a597771277795313a4e22333"
+    },
+    {
+      "id": "marked",
+      "label": "marked",
+      "runtime": "Node.js",
+      "backend": "JavaScript",
+      "github": "https://github.com/markedjs/marked",
+      "version": "18.0.14",
+      "commonmark": "new Marked({gfm:false,breaks:false,pedantic:false,async:false})",
+      "gfm": "Same with gfm=true",
+      "notes": "Uses stock GFM URL tokenizer, unlike timing. Raw HTML passes through; no tagfilter option.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 640,
+          "total": 652,
+          "failed": 12,
+          "errors": 0,
+          "percent": 98.16,
+          "classifications": {
+            "exact": 502,
+            "other": 12,
+            "serialization-equivalent": 138
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 27,
+          "total": 28,
+          "failed": 1,
+          "errors": 0,
+          "percent": 96.43,
+          "classifications": {
+            "exact": 18,
+            "other": 1,
+            "serialization-equivalent": 9
+          }
+        }
+      },
+      "evidence": "marked.json",
+      "sha256": "354aacc2ed7d2a89d61a6c760e41569bded4194adc5bca7982c480fc3f3af03a"
+    },
+    {
+      "id": "markdown-it",
+      "label": "markdown-it",
+      "runtime": "Node.js",
+      "backend": "JavaScript",
+      "github": "https://github.com/markdown-it/markdown-it",
+      "version": "15.0.2",
+      "commonmark": "commonmark preset; html=true, linkify=false, typographer=false, validateLink accepts all protocols",
+      "gfm": "Same; linkify=true, enable table/strikethrough/linkify, markdown-it-task-lists defaults",
+      "notes": "Task plugin adds CSS classes. Linkify is the public URL recognizer; no tagfilter option. Adds linkify to timing profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 649,
+            "serialization-equivalent": 3
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 12,
+          "total": 28,
+          "failed": 16,
+          "errors": 0,
+          "percent": 42.86,
+          "classifications": {
+            "exact": 11,
+            "other": 16,
+            "serialization-equivalent": 1
+          }
+        }
+      },
+      "evidence": "markdown-it.json",
+      "sha256": "225394950a7200076f19d468218b2edf93d72b6f31415b2eeb4812d53a3671cd"
+    },
+    {
+      "id": "remark",
+      "label": "remark / unified",
+      "runtime": "Node.js",
+      "backend": "JavaScript",
+      "github": "https://github.com/remarkjs/remark",
+      "version": "15.0.1",
+      "commonmark": "remark + remark-rehype + rehype-stringify; allowDangerousHtml=true",
+      "gfm": "Same; micromark table/strike/tasks/autolink extensions and corresponding mdast extensions",
+      "notes": "Raw HAST passes through; no tagfilter option in this pipeline. Adds literal autolink extension to timing profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 651,
+          "total": 652,
+          "failed": 1,
+          "errors": 0,
+          "percent": 99.85,
+          "classifications": {
+            "exact": 2,
+            "other": 1,
+            "serialization-equivalent": 649
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 22,
+          "total": 28,
+          "failed": 6,
+          "errors": 0,
+          "percent": 78.57,
+          "classifications": {
+            "other": 6,
+            "serialization-equivalent": 22
+          }
+        }
+      },
+      "evidence": "remark.json",
+      "sha256": "b2741d308c51aaa2e084c2906aad032779a570329a297b050f13f92817bff1f7"
+    },
+    {
+      "id": "micromark",
+      "label": "micromark",
+      "runtime": "Node.js",
+      "backend": "JavaScript",
+      "github": "https://github.com/micromark/micromark",
+      "version": "4.0.3",
+      "commonmark": "micromark: allowDangerousHtml/allowDangerousProtocol=true",
+      "gfm": "Same; table/strike/tasks/autolink syntax and HTML extensions plus tagfilter HTML extension",
+      "notes": "Enables the five formal GFM extensions without footnotes. Adds autolinks and tagfilter to timing profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 652
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 25,
+          "total": 28,
+          "failed": 3,
+          "errors": 0,
+          "percent": 89.29,
+          "classifications": {
+            "exact": 23,
+            "other": 3,
+            "serialization-equivalent": 2
+          }
+        }
+      },
+      "evidence": "micromark.json",
+      "sha256": "122a4a699d0be48c420bb6687738fbfaf1eb715481b1cfbdb085068b85ceb608"
+    },
+    {
+      "id": "showdown",
+      "label": "Showdown",
+      "runtime": "Node.js",
+      "backend": "JavaScript",
+      "github": "https://github.com/showdownjs/showdown",
+      "version": "2.1.0",
+      "commonmark": "Converter: noHeaderId, ghCodeBlocks, literalMidWordUnderscores; ellipsis/tables/strikethrough/tasklists/simplifiedAutoLink/simpleLineBreaks/parseImgDimensions/encodeEmails/openLinksInNewWindow/metadata/completeHTMLDocument=false; headerLevelStart=1",
+      "gfm": "Same; tables/strikethrough/tasklists/simplifiedAutoLink=true",
+      "notes": "Closest public rendering options; no CommonMark preset or GFM tagfilter. Literal underscores enabled beyond timing profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 357,
+          "total": 652,
+          "failed": 295,
+          "errors": 0,
+          "percent": 54.75,
+          "classifications": {
+            "other": 295,
+            "serialization-equivalent": 357
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 11,
+          "total": 28,
+          "failed": 17,
+          "errors": 0,
+          "percent": 39.29,
+          "classifications": {
+            "other": 17,
+            "serialization-equivalent": 11
+          }
+        }
+      },
+      "evidence": "showdown.json",
+      "sha256": "db41086178e9805d6cec6dfaf4ba12320462a08353fbc9716afa0b2e9f6914ab"
+    },
+    {
+      "id": "commonmark",
+      "label": "commonmark.js",
+      "runtime": "Node.js",
+      "backend": "JavaScript",
+      "github": "https://github.com/commonmark/commonmark.js",
+      "version": "0.31.2",
+      "commonmark": "Parser({smart:false}); HtmlRenderer({safe:false,softbreak:\"\\n\"})",
+      "gfm": null,
+      "notes": "CommonMark-only public API; same options as timing.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 652
+          }
+        },
+        "gfm": {
+          "status": "unsupported",
+          "reason": "CommonMark-only public API; same options as timing."
+        }
+      },
+      "evidence": "commonmark.json",
+      "sha256": "01349c5b46a4e237ac2b899bf81247b893c0f03c16fd0f7a5b829566a674ae95"
+    },
+    {
+      "id": "remarkable",
+      "label": "Remarkable",
+      "runtime": "Node.js",
+      "backend": "JavaScript",
+      "github": "https://github.com/jonschlinkert/remarkable",
+      "version": "2.0.1",
+      "commonmark": "Remarkable(commonmark,{html:true,breaks:false,typographer:false})",
+      "gfm": null,
+      "notes": "Supports partial extensions but no task-list API/plugin in this pinned workspace; full GFM suite unsupported.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 531,
+          "total": 652,
+          "failed": 121,
+          "errors": 0,
+          "percent": 81.44,
+          "classifications": {
+            "exact": 485,
+            "other": 121,
+            "serialization-equivalent": 46
+          }
+        },
+        "gfm": {
+          "status": "unsupported",
+          "reason": "Supports partial extensions but no task-list API/plugin in this pinned workspace; full GFM suite unsupported."
+        }
+      },
+      "evidence": "remarkable.json",
+      "sha256": "57f0dadb4b2ae5c9bb8cc78fa030ffe3159757534eac8ab184691035bf43ade8"
+    },
+    {
+      "id": "satteri",
+      "label": "S\u00e4tteri",
+      "runtime": "Node.js",
+      "backend": "Native addon",
+      "github": "https://github.com/bruits/satteri",
+      "version": "0.10.5",
+      "commonmark": "markdownToHtml: all features=false",
+      "gfm": "features.gfm={footnotes:false}; all other features=false",
+      "notes": "rawHtml=false preserves opaque raw nodes verbatim; true reparses HTML. Uses the public native addon, not a substituted Rust crate. Same as timing profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 652,
+          "total": 652,
+          "failed": 0,
+          "errors": 0,
+          "percent": 100.0,
+          "classifications": {
+            "exact": 573,
+            "serialization-equivalent": 79
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 22,
+          "total": 28,
+          "failed": 6,
+          "errors": 0,
+          "percent": 78.57,
+          "classifications": {
+            "exact": 21,
+            "other": 6,
+            "serialization-equivalent": 1
+          }
+        }
+      },
+      "evidence": "satteri.json",
+      "sha256": "67f5f6f5611709dd446d6eaeb99e12167f0b6a062990da4b482842e019506600"
+    },
+    {
+      "id": "md4x-napi",
+      "label": "MD4X",
+      "runtime": "Node.js",
+      "backend": "Native addon",
+      "github": "https://github.com/unjs/md4x",
+      "version": "0.0.30",
+      "commonmark": "md4x/napi init; renderToHtml({headingIds:false,full:false,heal:false})",
+      "gfm": "Same fixed parser configuration",
+      "notes": "Public native addon cannot disable its parser extensions or select a formal spec profile. Both suites measured, not relabeled as CommonMark-only.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 649,
+          "total": 652,
+          "failed": 3,
+          "errors": 0,
+          "percent": 99.54,
+          "classifications": {
+            "exact": 591,
+            "other": 3,
+            "serialization-equivalent": 58
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 17,
+          "total": 28,
+          "failed": 11,
+          "errors": 0,
+          "percent": 60.71,
+          "classifications": {
+            "exact": 17,
+            "other": 11
+          }
+        }
+      },
+      "evidence": "md4x-napi.json",
+      "sha256": "e29b9ff7c01702f62d061be295f9d27396dc035dc61ffa5677c1f47c8bfbfb69"
+    },
+    {
+      "id": "ox-content-napi",
+      "label": "OX-Content",
+      "runtime": "Node.js",
+      "backend": "Native addon",
+      "github": "https://github.com/ubugeeei-prod/ox-content",
+      "version": "3.2.13",
+      "commonmark": "parseAndRender: gfm/mdx/footnotes/tables/strikethrough/taskLists/autolinks/superscript/subscript/smartPunctuation/math/definitionLists/headingAttributes/wikiLinks=false",
+      "gfm": "Same; tables/strikethrough/taskLists/autolinks=true",
+      "notes": "Native binding retains renderer builtins and lacks renderer tagfilter options. Adds parser autolinks to timing profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 596,
+          "total": 652,
+          "failed": 56,
+          "errors": 0,
+          "percent": 91.41,
+          "classifications": {
+            "exact": 498,
+            "heading-id-only": 40,
+            "other": 16,
+            "serialization-equivalent": 98
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 14,
+          "total": 28,
+          "failed": 14,
+          "errors": 0,
+          "percent": 50.0,
+          "classifications": {
+            "exact": 11,
+            "other": 14,
+            "serialization-equivalent": 3
+          }
+        }
+      },
+      "evidence": "ox-content-napi.json",
+      "sha256": "86858726820308d406a619a5d551c4b1b84ecc060f511e761a450ed94b190484"
+    },
+    {
+      "id": "tanstack-markdown",
+      "label": "TanStack Markdown",
+      "runtime": "Node.js",
+      "backend": "JavaScript (syntax subset)",
+      "github": "https://github.com/TanStack/markdown",
+      "version": "1.0.0",
+      "commonmark": "renderHtml: allowHtml=true, headingIds/headingAnchors/frontmatter/codeLineNumbers=false, extensions=[], urlTransform identity",
+      "gfm": "Same fixed syntax subset",
+      "notes": "Cannot disable built-in tables/strike/tasks/footnotes. Both suites measured. Same options as timing profile.",
+      "suites": {
+        "commonmark": {
+          "status": "measured",
+          "passed": 378,
+          "total": 652,
+          "failed": 274,
+          "errors": 0,
+          "percent": 57.98,
+          "classifications": {
+            "exact": 1,
+            "other": 274,
+            "serialization-equivalent": 377
+          }
+        },
+        "gfm": {
+          "status": "measured",
+          "passed": 13,
+          "total": 28,
+          "failed": 15,
+          "errors": 0,
+          "percent": 46.43,
+          "classifications": {
+            "other": 15,
+            "serialization-equivalent": 13
+          }
+        }
+      },
+      "evidence": "tanstack-markdown.json",
+      "sha256": "4bd9ac92740aaf1c6a7d980d0185d7983ee182c72f8633c072a2c85c96a6a02e"
+    }
+  ]
+}

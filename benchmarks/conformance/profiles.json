@@ -1,0 +1,134 @@
+{
+  "ferromark-native": {
+    "version": "3.3.0",
+    "commonmark": "ParserOptions::commonmark + HtmlRendererOptions::commonmark",
+    "gfm": "ParserOptions::gfm_spec + HtmlRendererOptions::gfm_spec",
+    "notes": "Full spec profiles; GFM adds autolink literals and tagfilter to the timed shared profile."
+  },
+  "ferromark-node": {
+    "version": "3.3.0",
+    "commonmark": "toHtml: trusted, allowHtml, headingIds=false, callouts=false; tables/strike/tasks/autolinkLiterals/disallowedRawHtml=false",
+    "gfm": "Same; tables/strike/tasks/autolinkLiterals/disallowedRawHtml=true",
+    "notes": "The public Node HTML API retains fence metadata handling; other optional syntax uses addon defaults. GFM adds autolinks and tagfilter."
+  },
+  "pulldown-cmark": {
+    "version": "0.13.4",
+    "commonmark": "Parser::new_ext: Options::empty; html::push_html",
+    "gfm": "ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_TASKLISTS",
+    "notes": "No public literal-autolink or tagfilter switch in 0.13.4. ENABLE_GFM only enables blockquote alerts and is intentionally off."
+  },
+  "md4c": {
+    "version": "0.6.0",
+    "commonmark": "md_html: parser_flags=0; renderer_flags=0",
+    "gfm": "parser_flags=0x100|0x200|0x800|0x4|0x8|0x400; renderer_flags=0",
+    "notes": "Adds all permissive autolinks. No public tagfilter option; the broader GITHUB preset also enables footnotes and admonitions."
+  },
+  "bun": {
+    "version": "1.4.2",
+    "commonmark": "render_to_html_with_options: all BOOL_FIELD_SETTERS false",
+    "gfm": "Only tables, strikethrough, tasklists, permissive_autolinks, tag_filter true",
+    "notes": "Direct native Bun MD implementation, not the JavaScript Bun.markdown boundary. Adds autolinks and tagfilter."
+  },
+  "ox-content": {
+    "version": "3.2.13",
+    "commonmark": "ParserOptions::default; HtmlRendererOptions::new with autolink_urls/autolink_target_blank/link_target_blank=false",
+    "gfm": "Same; parser tables/strikethrough/task_lists/autolinks=true; renderer disallow_raw_html=true",
+    "notes": "Renderer retains built-in IDs, TOC, callouts, and fence handling: the public renderer has no disable switches. Adds parser autolinks and tagfilter."
+  },
+  "markdown-rs": {
+    "version": "1.0.0",
+    "commonmark": "Options::default; allow_dangerous_html/allow_dangerous_protocol=true",
+    "gfm": "Options::gfm; footnote constructs=false; dangerous HTML/protocol=true",
+    "notes": "Full formal GFM features including tagfilter; enables literal autolinks beyond timed profile."
+  },
+  "comrak": {
+    "version": "0.55.0",
+    "commonmark": "Options::default; render.unsafe=true",
+    "gfm": "Same; extension table/strikethrough/tasklist/autolink/tagfilter=true",
+    "notes": "Uses the released 0.55.0 tagfilter option despite its upstream deprecation. Adds literal autolinks and tagfilter."
+  },
+  "cmark": {
+    "version": "0.31.2",
+    "commonmark": "cmark_markdown_to_html: CMARK_OPT_UNSAFE",
+    "gfm": null,
+    "notes": "No GFM extension API."
+  },
+  "cmark-gfm": {
+    "version": "0.29.0.gfm.13",
+    "commonmark": "Parser: CMARK_OPT_UNSAFE, no extensions",
+    "gfm": "Same; attach table, strikethrough, tasklist, autolink, tagfilter",
+    "notes": "Enables full formal extensions. CommonMark implementation targets an older spec; measured against 0.31.2."
+  },
+  "goldmark": {
+    "version": "2.1.6",
+    "commonmark": "parser.New; html.New(html.WithUnsafe())",
+    "gfm": "Add NewTableParser/NewStrikethroughParser/NewTaskListItemParser/NewLinkifyParser and corresponding HTML renderers",
+    "notes": "No tagfilter option in pinned public v2 API. Adds linkify to the timed profile."
+  },
+  "marked": {
+    "version": "18.0.14",
+    "commonmark": "new Marked({gfm:false,breaks:false,pedantic:false,async:false})",
+    "gfm": "Same with gfm=true",
+    "notes": "Uses stock GFM URL tokenizer, unlike timing. Raw HTML passes through; no tagfilter option."
+  },
+  "markdown-it": {
+    "version": "15.0.2",
+    "commonmark": "commonmark preset; html=true, linkify=false, typographer=false, validateLink accepts all protocols",
+    "gfm": "Same; linkify=true, enable table/strikethrough/linkify, markdown-it-task-lists defaults",
+    "notes": "Task plugin adds CSS classes. Linkify is the public URL recognizer; no tagfilter option. Adds linkify to timing profile."
+  },
+  "remark": {
+    "version": "15.0.1",
+    "commonmark": "remark + remark-rehype + rehype-stringify; allowDangerousHtml=true",
+    "gfm": "Same; micromark table/strike/tasks/autolink extensions and corresponding mdast extensions",
+    "notes": "Raw HAST passes through; no tagfilter option in this pipeline. Adds literal autolink extension to timing profile."
+  },
+  "micromark": {
+    "version": "4.0.3",
+    "commonmark": "micromark: allowDangerousHtml/allowDangerousProtocol=true",
+    "gfm": "Same; table/strike/tasks/autolink syntax and HTML extensions plus tagfilter HTML extension",
+    "notes": "Enables the five formal GFM extensions without footnotes. Adds autolinks and tagfilter to timing profile."
+  },
+  "showdown": {
+    "version": "2.1.0",
+    "commonmark": "Converter: noHeaderId, ghCodeBlocks, literalMidWordUnderscores; ellipsis/tables/strikethrough/tasklists/simplifiedAutoLink/simpleLineBreaks/parseImgDimensions/encodeEmails/openLinksInNewWindow/metadata/completeHTMLDocument=false; headerLevelStart=1",
+    "gfm": "Same; tables/strikethrough/tasklists/simplifiedAutoLink=true",
+    "notes": "Closest public rendering options; no CommonMark preset or GFM tagfilter. Literal underscores enabled beyond timing profile."
+  },
+  "commonmark": {
+    "version": "0.31.2",
+    "commonmark": "Parser({smart:false}); HtmlRenderer({safe:false,softbreak:\"\\n\"})",
+    "gfm": null,
+    "notes": "CommonMark-only public API; same options as timing."
+  },
+  "remarkable": {
+    "version": "2.0.1",
+    "commonmark": "Remarkable(commonmark,{html:true,breaks:false,typographer:false})",
+    "gfm": null,
+    "notes": "Supports partial extensions but no task-list API/plugin in this pinned workspace; full GFM suite unsupported."
+  },
+  "satteri": {
+    "version": "0.10.5",
+    "commonmark": "markdownToHtml: all features=false",
+    "gfm": "features.gfm={footnotes:false}; all other features=false",
+    "notes": "rawHtml=false preserves opaque raw nodes verbatim; true reparses HTML. Uses the public native addon, not a substituted Rust crate. Same as timing profile."
+  },
+  "md4x-napi": {
+    "version": "0.0.30",
+    "commonmark": "md4x/napi init; renderToHtml({headingIds:false,full:false,heal:false})",
+    "gfm": "Same fixed parser configuration",
+    "notes": "Public native addon cannot disable its parser extensions or select a formal spec profile. Both suites measured, not relabeled as CommonMark-only."
+  },
+  "ox-content-napi": {
+    "version": "3.2.13",
+    "commonmark": "parseAndRender: gfm/mdx/footnotes/tables/strikethrough/taskLists/autolinks/superscript/subscript/smartPunctuation/math/definitionLists/headingAttributes/wikiLinks=false",
+    "gfm": "Same; tables/strikethrough/taskLists/autolinks=true",
+    "notes": "Native binding retains renderer builtins and lacks renderer tagfilter options. Adds parser autolinks to timing profile."
+  },
+  "tanstack-markdown": {
+    "version": "1.0.0",
+    "commonmark": "renderHtml: allowHtml=true, headingIds/headingAnchors/frontmatter/codeLineNumbers=false, extensions=[], urlTransform identity",
+    "gfm": "Same fixed syntax subset",
+    "notes": "Cannot disable built-in tables/strike/tasks/footnotes. Both suites measured. Same options as timing profile."
+  }
+}

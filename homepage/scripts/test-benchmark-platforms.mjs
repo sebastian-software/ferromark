@@ -179,7 +179,7 @@ test("one differing platform annotates the library name once and preserves other
     html,
     /href="https:\/\/github.com\/sebastian-software\/ferromark\/tree\/main\/docs\/reports\/test-overview"/,
   );
-  assert.ok(!baseline.includes("<tfoot>"));
+  assert.ok(!baseline.includes("* Output differs"));
   assertOnlyOneChangedCell(baseline, html);
 });
 
@@ -206,5 +206,31 @@ test("full-corpus factors with equivalent outputs do not need an asterisk", asyn
   }));
   const html = await renderComparison(figures);
   assert.ok(!html.includes("<sup "));
-  assert.ok(!html.includes("<tfoot>"));
+  assert.ok(!html.includes("* Output differs"));
+});
+
+test("spec agreement covers every variant with separate references and evidence links", async () => {
+  const html = await renderComparison(completed.figures);
+  const conformance = JSON.parse(
+    await readFile(new URL("../app/data/comparison-conformance.json", import.meta.url), "utf8"),
+  );
+  assert.equal(conformance.rows.length, projects.length + 2);
+  assert.equal([...html.matchAll(/class="ferromark-conformance"/g)].length, projects.length + 2);
+  assert.equal([...html.matchAll(/class="ferromark-reference-row"/g)].length, 2);
+  assert.match(html, /28 extension examples, not full GFM/);
+  assert.match(html, /GFM Unsupported/);
+  assert.ok(!html.includes("GFM 0.0%"));
+  for (const row of conformance.rows) {
+    assert.ok(html.includes(`${conformance.report}/${row.evidence}`));
+    for (const suite of ["commonmark", "gfm"]) {
+      const result = row.suites[suite];
+      if (result.status === "measured") {
+        assert.ok(
+          html.includes(
+            `${result.passed}/${result.total} examples (${result.percent.toFixed(2)}%)`,
+          ),
+        );
+      }
+    }
+  }
 });

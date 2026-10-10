@@ -1,5 +1,6 @@
 import completedBenchmarks from "../data/benchmark-platform-values.json";
 import projects from "../data/benchmark-projects.json";
+import conformance from "../data/comparison-conformance.json";
 import ecosystemBenchmarks from "../data/markdown-ecosystem-benchmarks.json";
 import { formatSpeed, nativeBenchmarks } from "./native-benchmarks";
 
@@ -123,6 +124,79 @@ const groups = [
   { id: "node", label: "Node.js", rows: rows.filter((row) => row.runtime === "Node.js") },
 ];
 
+const conformanceRows = new Map(conformance.rows.map((row) => [row.id, row]));
+
+type SuiteResult = {
+  status: string;
+  passed?: number;
+  total?: number;
+  percent?: number;
+  reason?: string;
+};
+
+function ConformanceResult({
+  value,
+  name,
+  label,
+  evidence,
+}: {
+  value?: SuiteResult;
+  name: "CM" | "GFM";
+  label: string;
+  evidence?: string;
+}) {
+  if (value?.status !== "measured" || typeof value.percent !== "number") {
+    const status = value?.status === "unsupported" ? "Unsupported" : "Unmeasured";
+    return (
+      <span title={value?.reason ?? status}>
+        {name} {status}
+      </span>
+    );
+  }
+  const fullName = name === "CM" ? "CommonMark 0.31.2" : "GFM extensions";
+  const detail = `${label}: ${fullName}, ${value.passed}/${value.total} examples (${value.percent.toFixed(2)}%). View raw evidence and configuration.`;
+  return (
+    <a href={reportUrl(`${conformance.report}/${evidence}`)} title={detail} aria-label={detail}>
+      {name} {value.percent.toFixed(1)}%
+    </a>
+  );
+}
+
+function ConformanceCell({ id, label }: { id: string; label: string }) {
+  const row = conformanceRows.get(id);
+  return (
+    <td className="ferromark-conformance">
+      <ConformanceResult
+        value={row?.suites.commonmark}
+        name="CM"
+        label={label}
+        evidence={row?.evidence}
+      />
+      <ConformanceResult
+        value={row?.suites.gfm}
+        name="GFM"
+        label={label}
+        evidence={row?.evidence}
+      />
+    </td>
+  );
+}
+
+function ReferenceRow({ runtime }: { runtime: string }) {
+  const id = runtime === "Native" ? "ferromark-native" : "ferromark-node";
+  return (
+    <tr className="ferromark-reference-row">
+      <th scope="row">
+        Ferromark <span className="ferromark-project-backend">Spec reference</span>
+      </th>
+      <td className="ferromark-reference-note" colSpan={platforms.length}>
+        Spec configuration
+      </td>
+      <ConformanceCell id={id} label={`Ferromark (${runtime})`} />
+    </tr>
+  );
+}
+
 function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
   const backend = row.backend.replace(" (syntax subset)", "");
   return (
@@ -157,6 +231,7 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
           )}
         </td>
       ))}
+      <ConformanceCell id={row.id} label={`${row.label} (${row.runtime})`} />
     </tr>
   );
 }
@@ -173,31 +248,40 @@ export function BenchmarkComparison() {
               {platform.label}
             </th>
           ))}
+          <th scope="col">CM / GFM ext.</th>
         </tr>
       </thead>
       {groups.map((group) => (
         <tbody key={group.id} aria-labelledby={`comparison-${group.id}`}>
           <tr className="ferromark-comparison-group">
-            <th scope="rowgroup" colSpan={platforms.length + 1} id={`comparison-${group.id}`}>
+            <th scope="rowgroup" colSpan={platforms.length + 2} id={`comparison-${group.id}`}>
               {group.label}
             </th>
           </tr>
+          <ReferenceRow runtime={group.label} />
           {group.rows.map((row) => (
             <ComparisonRow key={row.id} row={row} />
           ))}
         </tbody>
       ))}
-      {rows.some((row) => row.results.some((result) => result?.outputDifferences)) && (
-        <tfoot>
+      <tfoot>
+        <tr>
+          <td colSpan={platforms.length + 2}>
+            CM: 652 CommonMark 0.31.2 examples. GFM ext.: 28 extension examples, not full GFM. Spec
+            settings and output agreement are separate from timing.{" "}
+            <a href={reportUrl(conformance.report)}>Method and raw results</a>.
+          </td>
+        </tr>
+        {rows.some((row) => row.results.some((result) => result?.outputDifferences)) && (
           <tr>
-            <td colSpan={platforms.length + 1}>
+            <td colSpan={platforms.length + 2}>
               * Output differs for some of the 57 inputs on at least one shown platform. All inputs
               contribute to the performance factor. See the linked reports for syntax and API
               differences.
             </td>
           </tr>
-        </tfoot>
-      )}
+        )}
+      </tfoot>
     </table>
   );
 }

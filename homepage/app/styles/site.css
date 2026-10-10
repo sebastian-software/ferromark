@@ -342,3 +342,48 @@
     min-height: 44px;
   }
 }
+
+.ferromark-comparison .ferromark-conformance {
+  min-width: 6.25rem;
+}
+
+.ferromark-comparison .ferromark-conformance a,
+.ferromark-comparison .ferromark-conformance span {
+  display: block;
+  min-height: 28px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 28px;
+}
+
+.ferromark-comparison .ferromark-reference-note {
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 40rem) {
+  .ferromark-comparison th:first-child {
+    width: auto;
+  }
+
+  .ferromark-comparison .ferromark-project-name {
+    white-space: normal;
+  }
+
+  .ferromark-comparison .ferromark-project-backend {
+    display: block;
+    margin-left: 0;
+    white-space: normal;
+  }
+
+  .ferromark-comparison .ferromark-conformance {
+    min-width: 5rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .ferromark-comparison .ferromark-conformance a {
+    min-height: 44px;
+    line-height: 44px;
+  }
+}

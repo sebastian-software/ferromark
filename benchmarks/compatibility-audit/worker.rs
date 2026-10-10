@@ -11,7 +11,7 @@ fn render(source: &str, profile: &str) -> Result<String, String> {
     let (mut parser, mut html) = match profile {
         "default" => (ParserOptions::default(), HtmlRendererOptions::new()),
         "gfm-preset" => (ParserOptions::gfm(), HtmlRendererOptions::new()),
-        "gfm" | "gfm-no-tagfilter" => (ParserOptions::gfm_spec(), HtmlRendererOptions::gfm()),
+        "gfm" | "gfm-no-tagfilter" => (ParserOptions::gfm_spec(), HtmlRendererOptions::gfm_spec()),
         _ => (ParserOptions::commonmark(), HtmlRendererOptions::commonmark()),
     };
     if profile == "gfm-no-tagfilter" {
