@@ -169,3 +169,59 @@ registrations support custom-only offline use. `assets` or Ferriki's environment
 variables configure verified remote/cache loading. The simpler `compileJsx`
 function leaves code unhighlighted and remains suitable for metadata and scope
 analysis.
+
+### Rendering a standalone code block
+
+`JsxCompiler.renderCodeBlock` accepts the code and the same language and
+metadata values used by a Markdown fence. It returns intrinsic JSX and the
+parsed `language`, `title`, `label`, and effective `lineNumbers` value:
+
+```ts
+const block = compiler.renderCodeBlock({
+  code: 'const answer = "日本語";\n',
+  language: "typescript",
+  meta: '[example] title="answer.ts" {1} :line-numbers=4',
+});
+
+block.jsx; // <pre><code>…</code></pre> JSX with the compiler's native highlighting
+block.language; // "typescript"
+block.title; // "answer.ts"
+block.label; // "example"
+block.lineNumbers; // true
+```
+
+The JSX markup is the same markup a fence produces with matching code,
+language, and metadata when `componentPrefix`, `codeComponents`, and
+`codeBlockComponent` are unset. The standalone result always uses plain
+intrinsic `<pre>`, `<code>`, and `<span>` tags, has no document fragment, and
+ends with the newline used after a fence in a document. The method shares the
+compiler's highlighter, single or light/dark themes, and line-number default.
+Unknown languages use escaped plain code. CR and CRLF code input is normalized
+to LF, like code read from a fence. Empty code, trailing empty lines, and a
+missing final newline are preserved.
+
+The `language` value is trimmed and returned without a recognized metadata
+suffix; its case is preserved. A blank or missing language is omitted. Metadata is split on
+whitespace, except inside quoted values and `[...]` or `{...}` groups. The
+supported tokens are:
+
+- `title="..."` or `title='...'` sets the title; later title tokens replace
+  earlier ones. Empty titles are ignored.
+- `[label]` sets the first nonempty label. It also supplies the title when no
+  title has been set; an explicit title token takes precedence.
+- `{1,3-5}` selects one-based lines for the existing highlighted-line markup.
+  Invalid and reversed ranges are ignored. A range that starts within the code
+  and ends past its last line is clipped; individual line selections outside
+  the code and ranges that start past it are ignored.
+- `:line-numbers`, `showLineNumbers`, and `:line-numbers=N` enable line
+  numbers. `N` must be a positive integer and sets the first displayed number.
+  `:no-line-numbers` and `noLineNumbers` disable them. Tokens are applied from
+  left to right, starting with the compiler's `lineNumbers` default.
+
+Other metadata tokens are ignored. Recognized tokens may be appended directly
+to the language, for example `typescript:line-numbers=4`.
+`renderCodeBlock` does not invoke whole-fence callbacks or component mappings;
+it always returns the reusable intrinsic markup. Rust callers can use
+`JsxRenderer::render_code_block` for escaped plain code or
+`render_code_block_with_hooks` to apply the same metadata and markup path with
+a `highlight_code_block` hook.

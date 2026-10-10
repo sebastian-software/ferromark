@@ -13,6 +13,9 @@ mod line_index;
 mod module;
 mod render;
 
+#[cfg(test)]
+mod tests;
+
 #[cfg(feature = "jsx")]
 pub use module::{JsxModuleError, JsxModuleOptions, JsxModuleOutput, JsxSourceMap};
 
@@ -21,6 +24,7 @@ pub use ferriki_integration::FerrikiJsxHooks;
 
 use std::collections::BTreeMap;
 
+use crate::allocator::Allocator;
 use crate::ast::{Document, Span};
 use crate::outline::OutlineEntry;
 
@@ -274,6 +278,21 @@ pub struct JsxCodeBlock {
     pub component: Option<String>,
 }
 
+/// Standalone JSX markup and parsed fence metadata for one code block.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JsxCodeBlockRenderOutput {
+    /// Intrinsic `<pre><code>` JSX, including the trailing newline used in a document body.
+    pub jsx: String,
+    /// Trimmed language identifier without a recognized metadata suffix; case is preserved.
+    pub language: Option<String>,
+    /// Parsed title metadata, if present.
+    pub title: Option<String>,
+    /// Parsed bracket label, if present.
+    pub label: Option<String>,
+    /// Whether line numbers are enabled after applying fence metadata.
+    pub line_numbers: bool,
+}
+
 /// A source location in generated JSX and its Markdown/MDX source.
 ///
 /// Lines and columns are zero-based. Columns count UTF-16 code units, matching
@@ -338,6 +357,52 @@ impl JsxRenderer {
     #[must_use]
     pub fn options(&self) -> &JsxRendererOptions {
         &self.options
+    }
+
+    /// Renders one standalone code block as intrinsic JSX and returns its parsed metadata.
+    ///
+    /// The output uses the same metadata parser, code markup, and line-number
+    /// default as a fenced block in a document. It always emits plain
+    /// `<pre>`, `<code>`, and `<span>` elements: component prefixes,
+    /// language component mappings, whole-fence hooks, and the global code
+    /// block component do not apply. CR and CRLF line endings are normalized
+    /// to LF, matching the Markdown parser's fenced-code behavior.
+    #[must_use]
+    pub fn render_code_block(
+        &self,
+        code: &str,
+        language: Option<&str>,
+        meta: Option<&str>,
+    ) -> JsxCodeBlockRenderOutput {
+        self.render_code_block_with_hooks(code, language, meta, &mut NoJsxRenderHooks)
+    }
+
+    /// Renders one standalone code block with the configured highlight hook.
+    ///
+    /// This method uses `highlight_code_block` when provided. The whole-block
+    /// `render_code_block` override is intentionally not invoked, because its
+    /// replacement need not be the intrinsic markup returned by this method.
+    #[must_use]
+    pub fn render_code_block_with_hooks<H: JsxRenderHooks>(
+        &self,
+        code: &str,
+        language: Option<&str>,
+        meta: Option<&str>,
+        hooks: &mut H,
+    ) -> JsxCodeBlockRenderOutput {
+        let allocator = Allocator::new();
+        let normalized_code = if code.as_bytes().contains(&b'\r') {
+            crate::parser::normalize_code_block_line_endings(&allocator, code)
+        } else {
+            code
+        };
+        let options = JsxRendererOptions {
+            component_prefix: None,
+            code_block_components: BTreeMap::new(),
+            code_block_component: None,
+            ..self.options.clone()
+        };
+        render::render_code_block(normalized_code, language, meta, &options, hooks)
     }
 
     /// Renders a document, converting AST byte spans to source coordinates

@@ -396,10 +396,30 @@ export type JsxCompilerOptions = {
   };
 };
 
+/** Input to `JsxCompiler.renderCodeBlock`; `language` and `meta` use fence syntax. */
+export type JsxCodeBlockRenderInput = {
+  code: string;
+  language?: string | null;
+  meta?: string | null;
+};
+
+/** Standalone intrinsic JSX and metadata parsed with the native fence parser. */
+export type JsxCodeBlockRenderResult = {
+  /** Intrinsic `<pre><code>` JSX, including the document fence's trailing newline. */
+  jsx: string;
+  language?: string;
+  title?: string;
+  label?: string;
+  /** Effective setting after the compiler default and fence metadata are applied. */
+  lineNumbers: boolean;
+};
+
 /** Reusable native JSX compiler with Ferriki highlighting. No JavaScript highlighting callbacks are needed. */
 export declare class JsxCompiler {
   /** Loads theme assets; first use can download missing, verified standard assets. */
   constructor(options?: JsxCompilerOptions);
+  /** Renders a standalone code block with this compiler's native metadata parser and highlighter. */
+  renderCodeBlock(input: JsxCodeBlockRenderInput): JsxCodeBlockRenderResult;
   /** Compiles source, loading and caching the fence languages on first use. */
   compile(
     markdown: string | Uint8Array,
