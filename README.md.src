@@ -96,15 +96,18 @@ covers metadata, Buffers, reusable renderers, and highlighters.
 
 ### JSX and MDX
 
-`compileJsx(source, { format: "mdx" })` returns a JSX body, authored ESM,
-component references, headings, code-block metadata, and source mappings.
-With `output: "module"` it returns a complete MDX module and a source map
-instead. The application compiles the JSX through its framework's normal
-toolchain. Ferromark adds no React runtime imports. The Rust `jsx`
-feature enables strict MDX grammar validation; existing HTML APIs keep their
-syntax behavior. `new JsxCompiler({ theme }).compile(source)` adds native
-Ferriki highlighting and reuses loaded assets across documents. See the [JSX renderer contract](docs/jsx-renderer.md) and
-the [Node API](node/ferromark/README.md#framework-neutral-jsx).
+`compileJsx(source, { format: "mdx" })` returns a JSX body and metadata.
+With `output: "module"` it returns a complete MDX module and source map instead.
+Your application compiles the JSX through its normal toolchain and supplies
+components. Ferromark adds no React runtime imports; JSX source is a trusted
+program, while existing HTML APIs keep their own trust and syntax policies.
+
+Reuse `JsxCompiler` for native Ferriki highlighting. Its `prepare` method parses
+and runs native passes once, exposes metadata, and lets you render the same
+document with different options. `renderCodeBlock` renders standalone code with
+the same native fence metadata and highlighting. Start with the
+[Node JSX guide](docs/jsx-node.md) for API choices and runnable examples, or the
+[Rust renderer contract](docs/jsx-renderer.md) for core output.
 
 ## Make it yours
 
@@ -113,7 +116,7 @@ the [Node API](node/ferromark/README.md#framework-neutral-jsx).
 - [Rendering and trust](https://ferromark.dev/guide/rendering) — defaults and input boundaries.
 - [Native code highlighting](https://github.com/sebastian-software/ferromark/blob/main/docs/native-code-highlighting.md) — Rust hook contract and Ferriki integration status.
 - [Architecture](https://ferromark.dev/guide/architecture) — arena AST, modules, and integration points.
-- [MDX boundaries](https://ferromark.dev/guide/mdx) — syntax capture and static output.
+- [MDX boundaries](https://ferromark.dev/guide/mdx) — HTML syntax capture and JSX compilation.
 
 ## Contributing and license
 

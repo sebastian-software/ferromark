@@ -60,6 +60,17 @@ or its UTF-8 bytes in a `Uint8Array` such as a `Buffer` from `fs.readFile(path)`
 These calls are synchronous. For sustained CPU work in a server, use a worker
 thread so rendering does not occupy the request-handling event loop.
 
+## Compile JSX for a build pipeline
+
+For trusted authored content, `compileJsx` produces a JSX body or a complete MDX
+module. `JsxCompiler` adds native highlighting, prepared documents for metadata
+and repeated rendering, and standalone code-block rendering. Your application's
+JSX transform compiles the output. See the
+[Node JSX guide](https://github.com/sebastian-software/ferromark/blob/main/docs/jsx-node.md)
+for API selection and complete examples, including how to try additions on
+`main` before their release. [MDX boundaries](/guide/mdx) explains the difference
+between HTML syntax capture and JSX compilation.
+
 ## Next: configure your content
 
 [Set rendering options](/node/configuration), then

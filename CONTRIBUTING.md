@@ -70,6 +70,23 @@ comment. The CI `fmt` job enforces that with the organization's shared
 action rather than a repository-local copy. Use US English and Conventional
 Commits; breaking changes use `!` or a `BREAKING CHANGE:` footer.
 
+## Documentation changes
+
+Start with the reader's task and verify API claims against the public types,
+implementation, and existing tests. Update the guide that owns the contract,
+link to it from the relevant README and website entry point, and retain
+architectural rationale in `docs/arch/`. For JSX, the [Node guide](docs/jsx-node.md)
+owns Node workflows and the [renderer contract](docs/jsx-renderer.md) owns core output.
+Avoid duplicating full option lists that the typed reference already owns.
+
+Make examples complete: include imports, source, compiler setup, and observable
+results. Execute changed examples against the local build; test offline claims
+with downloads disabled. Distinguish source on `main` from published versions
+and preserve the API's trust, ownership, and error contracts. Run the affected
+workspace's formatting and documentation checks; website content also needs
+the website checks above. Edit generated README content through its source as
+described below.
+
 ## The Ferramenta family block
 
 Edit `README.md.src`, then run `mise run readme:write` and `mise run readme:check`.

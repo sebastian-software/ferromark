@@ -6,13 +6,42 @@ order: 8
 # MDX Boundaries
 
 MDX mixes Markdown with component tags, expressions, and imports/exports.
-Ferromark v2 recognizes this syntax in its AST and can emit static island
-payloads. It stores expression and module source; it does not execute JavaScript.
+Ferromark has separate HTML and JSX output paths. Neither executes the authored
+JavaScript during compilation.
 
-Component resolution, framework compilation, and hydration remain application
-responsibilities. Lowercase HTML stays HTML. Do not treat successful parsing as
-proof that arbitrary JavaScript or TypeScript is valid.
+## Capture MDX syntax for HTML output
+
+The HTML path recognizes MDX in the AST and can emit static island payloads.
+It stores expression and module source. Component resolution, framework
+compilation, and hydration remain application responsibilities. Lowercase HTML
+stays HTML. Successful parsing through this path does not validate arbitrary
+JavaScript or TypeScript.
 
 Enable `ParserOptions::mdx` in [Rust](/rust/mdx) or `mdx: true` in
 [Node.js configuration](/node/configuration). The v1 segmenter and component
 compiler APIs are absent in v2. See [migration](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md).
+
+## Compile authored documents to JSX
+
+The Node `compileJsx` API returns a JSX fragment and metadata. Set
+`format: "mdx"` for strict JavaScript/JSX grammar validation and
+`output: "module"` for a complete MDX module with a source map. The module
+still contains JSX: your application's JSX transform compiles it and your
+application supplies components. Module blocks accept JavaScript, not TypeScript.
+
+Reuse `JsxCompiler` for native highlighting across documents. Its `prepare`
+method separates parsing and native passes from later rendering decisions.
+The immutable handle exposes metadata without highlighting and can render a
+body or module repeatedly. Its preparation-time outline can differ from the
+final output after title omission or heading changes; use final result
+`headings` for navigation. `renderCodeBlock` uses the same compiler to render
+code outside a Markdown document.
+
+JSX compilation treats authored content as a program. The HTML API's untrusted
+render policy does not apply to that output. Choose HTML when you need raw HTML
+escaping and URL filtering for untrusted Markdown.
+
+The [Node JSX guide](https://github.com/sebastian-software/ferromark/blob/main/docs/jsx-node.md)
+has API choices, complete examples, offline setup, and error recovery. It also
+covers additions on `main` before their release. Rust integrations use the
+[native JSX renderer](https://github.com/sebastian-software/ferromark/blob/main/docs/jsx-renderer.md).

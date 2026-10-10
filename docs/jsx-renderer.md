@@ -101,8 +101,8 @@ The module follows the MDX module contract:
   append your own default export.
 - **The layout** is an authored default export. It replaces the `wrapper`
   component from the provider or `props.components`. A declaration
-  (`export default function Layout() {}`), an expression (`export default
-  Layout`), a specifier (`export { Layout as default }`), and a re-export
+  (`export default function Layout() {}`), an expression (`export default Layout`),
+  a specifier (`export { Layout as default }`), and a re-export
   (`export { default } from './layout.js'`) are all accepted. A second default
   export is an error.
 - **A component reference** whose root identifier the document's ESM binds
@@ -162,120 +162,46 @@ by language-specific component mappings, native highlighting, and plain
 rendering. Fence metadata accepts `title="..."`, `[label]`, `{1,3-5}`,
 `showLineNumbers`, `:line-numbers`, and `:no-line-numbers`.
 
-## Prepared documents in Node.js
+## Standalone code blocks in Rust
 
-`JsxCompiler.prepare(source, preparationOptions)` parses once, runs the selected
-native passes once, and returns an immutable document handle. Its
-`metadata` snapshot contains front matter, top-level ESM, code-block
-descriptors, and a preparation-time `outline`. Reading metadata does not load
-grammars, highlight code, or render the JSX body.
+Render code outside a document with the same fence metadata and intrinsic
+markup. This path does not need a parser or AST:
 
-Preparation options select the Markdown or strict MDX grammar and configure
-parser features and ordered native passes. Render options are supplied to each
-`render` or `renderModule` call: component mappings and prefixes, title
-omission, heading IDs/levels/prefixes, and callout handling. Module output also
-accepts the existing provider, filename, export, and reserved-binding options.
-Passes and parser settings cannot be changed after preparation; the facade
-rejects render and module options in `preparationOptions` and parser/pass
-options in render calls.
+```rust
+use ferromark::JsxRenderer;
 
-```js
-import { JsxCompiler } from "ferromark";
-
-const compiler = new JsxCompiler();
-const prepared = compiler.prepare(source, {
-  format: "mdx",
-  frontMatter: true,
-  passes: [{ kind: "emojiShortcodes" }],
-});
-
-const { frontMatter, esm, codeBlocks, outline } = prepared.metadata;
-const body = prepared.render({ omitTitleHeading: "Guide", componentPrefix: "_components" });
-const module = prepared.renderModule({
-  providerImportSource: "docs/provider",
-  filename: "guide.mdx",
-  omitTitleHeading: "Guide",
-});
+let block = JsxRenderer::new().render_code_block(
+    "let ready = true;\n",
+    Some("rust"),
+    Some("title=\"example.rs\" {1} :line-numbers=4"),
+);
+assert_eq!(block.title.as_deref(), Some("example.rs"));
+assert!(block.line_numbers);
+assert!(block.jsx.starts_with("<pre"));
 ```
 
-`metadata.outline` is a preparation-time outline using the default heading
-settings. It does not account for a later title omission or render-time heading
-settings. Use `headings` on the final body or module result when the outline
-must match emitted JSX. Those headings include only emitted headings and use
-the final heading and footnote ID planner.
+`render_code_block` uses escaped plain output. Use
+`render_code_block_with_hooks` with `FerrikiJsxHooks` for highlighting. The
+standalone method calls `highlight_code_block` but does not invoke the
+whole-fence override or apply component mappings, prefixes, or wrappers.
+It returns intrinsic `<pre>`, `<code>`, and `<span>` tags with a trailing
+newline. NUL becomes U+FFFD, and CR/CRLF becomes LF, matching fence parsing.
 
-The native handle owns a copy of the input source and its arena-backed tree,
-and keeps the compiler's highlighter available even if the `JsxCompiler`
-object is dropped. The binding uses a safe owner/dependent cell and lends the
-tree only during metadata extraction or a render call; callbacks cannot retain
-AST references. Each render uses a fresh renderer and does not mutate the
-prepared tree. Callback errors propagate, and recursive use of the same
-compiler while its synchronous callback is running returns an error.
+## Prepared documents in Node.js
 
-`compileJsx` and `JsxCompiler.compile` remain one-shot conveniences with their
-existing combined options shape. They use the same preparation and rendering
-internals but drop the owned document when the call returns.
-
-The Node `JsxCompiler` owns the native highlighter and loads standard assets
-itself. Reuse the compiler across documents. Themes load at construction;
-grammars load only for fences that reach highlighting. JSON theme/grammar
-registrations support custom-only offline use. `assets` or Ferriki's environment
-variables configure verified remote/cache loading. The simpler `compileJsx`
-function leaves code unhighlighted and remains suitable for metadata and scope
-analysis.
+`JsxCompiler.prepare` fixes parser options and native passes for a document,
+exposes frozen metadata, and supports repeated body or module rendering.
+The [Node JSX guide](jsx-node.md) covers API selection, preparation and repeated
+rendering, standalone code blocks, module output, highlighting, and recovery.
+The Node binding uses this renderer but owns its source, arena, and highlighter
+behind the JavaScript facade. The
+[public TypeScript declarations](../node/ferromark/index.d.mts) define its API.
+The [architecture decision](arch/ADR-0023-framework-neutral-jsx.md) records the
+binding's source and arena ownership contract.
 
 ### Rendering a standalone code block
 
-`JsxCompiler.renderCodeBlock` accepts the code and the same language and
-metadata values used by a Markdown fence. It returns intrinsic JSX and the
-parsed `language`, `title`, `label`, and effective `lineNumbers` value:
-
-```ts
-const block = compiler.renderCodeBlock({
-  code: 'const answer = "日本語";\n',
-  language: "typescript",
-  meta: '[example] title="answer.ts" {1} :line-numbers=4',
-});
-
-block.jsx; // <pre><code>…</code></pre> JSX with the compiler's native highlighting
-block.language; // "typescript"
-block.title; // "answer.ts"
-block.label; // "example"
-block.lineNumbers; // true
-```
-
-The JSX markup is the same markup a fence produces with matching code,
-language, and metadata when `componentPrefix`, `codeComponents`, and
-`codeBlockComponent` are unset. The standalone result always uses plain
-intrinsic `<pre>`, `<code>`, and `<span>` tags, has no document fragment, and
-ends with the newline used after a fence in a document. The method shares the
-compiler's highlighter, single or light/dark themes, and line-number default.
-Unknown languages use escaped plain code. NUL characters become U+FFFD, and CR
-and CRLF code input is normalized to LF, like code read from a fence. Empty
-code, trailing empty lines, and a missing final newline are preserved.
-
-The `language` value is trimmed and returned without a recognized metadata
-suffix; its case is preserved. A blank or missing language is omitted. Metadata is split on
-whitespace, except inside quoted values and `[...]` or `{...}` groups. The
-supported tokens are:
-
-- `title="..."` or `title='...'` sets the title; later title tokens replace
-  earlier ones. Empty titles are ignored.
-- `[label]` sets the first nonempty label. It also supplies the title when no
-  title has been set; an explicit title token takes precedence.
-- `{1,3-5}` selects one-based lines for the existing highlighted-line markup.
-  Invalid and reversed ranges are ignored. A range that starts within the code
-  and ends past its last line is clipped; individual line selections outside
-  the code and ranges that start past it are ignored.
-- `:line-numbers`, `showLineNumbers`, and `:line-numbers=N` enable line
-  numbers. `N` must be a positive integer and sets the first displayed number.
-  `:no-line-numbers` and `noLineNumbers` disable them. Tokens are applied from
-  left to right, starting with the compiler's `lineNumbers` default.
-
-Other metadata tokens are ignored. Recognized tokens may be appended directly
-to the language, for example `typescript:line-numbers=4`.
-`renderCodeBlock` does not invoke whole-fence callbacks or component mappings;
-it always returns the reusable intrinsic markup. Rust callers can use
-`JsxRenderer::render_code_block` for escaped plain code or
-`render_code_block_with_hooks` to apply the same metadata and markup path with
-a `highlight_code_block` hook.
+Use `JsxCompiler.renderCodeBlock` to share a compiler's native highlighting
+with code outside a Markdown document. See the
+[standalone example and fence metadata](jsx-node.md#highlight-fences-and-standalone-code)
+in the Node guide.
