@@ -30,15 +30,18 @@ API offers individual flags and keeps its own defaults.
 The explicit CommonMark profile agrees with all 652 examples in the recorded
 audit. [Correctness and compatibility](/guide/correctness) retains corpus scope,
 oracle exceptions, and known GFM differences. These finite suites do not prove
-correctness on every possible document. MDX support is bounded syntax capture.
+correctness on every possible document. The HTML path captures MDX syntax;
+the separate JSX path compiles authored documents with optional strict grammar
+validation. See [MDX boundaries](/guide/mdx) for the contracts of each path.
 
 ## Input limits and migration
 
 Block nesting defaults to 100 levels. Exceeding that limit returns a parse error.
 Rust callers can configure it; avoid unlimited recursion on untrusted source.
 Source positions are compact `u32` offsets, so the parser addresses just under
-4 GB of Markdown; Node.js strings stop far below that, so no JavaScript input
-can reach the limit and the binding does not check for it. Applications should
+4 GB of Markdown. Node.js strings stop far below that; a `Uint8Array` can reach
+the limit, and the binding rejects more than 4,294,967,295 bytes with
+`ERR_OUT_OF_RANGE` before reading the input. Applications should
 also bound request sizes and concurrency for their deployment.
 
 V2 is a breaking release. Heading slugs, extension output, site

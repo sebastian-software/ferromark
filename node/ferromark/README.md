@@ -22,157 +22,83 @@ overhead. Syntax and API contracts differ.
 
 ## Framework-neutral JSX
 
-`compileJsx` compiles authored Markdown or MDX into a JSX fragment and metadata.
-It preserves module statements and JavaScript expressions without importing a
-framework or evaluating source. Use a normal JSX compiler afterward; the caller
-owns module scaffolding, component providers, and layouts.
+Compile trusted authored Markdown or MDX into JSX for your application's build
+pipeline. Ferromark preserves expressions and module statements; your JSX
+transform compiles the result and your application supplies components.
+The HTML API's untrusted render policy does not apply to JSX compilation.
+
+| Your task                                                             | API                                                    |
+| --------------------------------------------------------------------- | ------------------------------------------------------ |
+| Compile one document without highlighting                             | `compileJsx(source, options?)`                         |
+| Emit a complete MDX module and source map                             | `compileJsx(source, { output: "module", ...options })` |
+| Reuse native highlighting across documents                            | `new JsxCompiler(options?).compile(source, options?)`  |
+| Read metadata before choosing output, or render a document repeatedly | `compiler.prepare(source, preparationOptions?)`        |
+| Render code outside a Markdown document                               | `compiler.renderCodeBlock({ code, language?, meta? })` |
 
 ```js
 import { compileJsx } from "ferromark";
 
-const result = compileJsx("# Hello\n\n<Badge>Native MDX</Badge>", {
-  format: "mdx",
-  componentPrefix: "_components",
-});
-// result.body, result.esm, result.headings, result.frontMatter, result.mappings
+const result = compileJsx("# Hello\n\n<Badge>Native MDX</Badge>", { format: "mdx" });
+console.log(result.headings.map(({ id }) => id)); // ["hello"]
+// result.body is a JSX fragment; result.esm contains authored module statements.
 ```
 
-The source is a trusted authored program. The HTML API's untrusted render policy
-does not apply to JSX compilation. `format` defaults to `"md"`; `"mdx"` enables
-strict JavaScript/JSX syntax checks. Syntax failures and synchronous code-renderer
-exceptions propagate. A renderer can return a complete trusted JSX replacement
-or `undefined` to select native code output. Ordered native `passes` run before
-both output and metadata are produced.
-
-ESM ranges count original UTF-8 bytes. Source mappings use zero-based lines and
-UTF-16 columns. Generated Markdown tags appear in `elements`, including when
-prefixed; authored and configured JSX component roots appear in `components`. Headings and
-rendered IDs use the same planner, including visible text nested inside JSX.
+`format` defaults to `"md"`; `"mdx"` enables strict JavaScript/JSX validation.
+Module output supplies the content function and default export and still needs
+your JSX transform. Body output leaves module composition to your application.
 
 ### Prepare once, render more than once
 
-`JsxCompiler.prepare` separates parsing and native passes from render choices.
-The returned handle owns its source and parsed tree. Its frozen `metadata`
-snapshot is available without highlighting or rendering the JSX body.
-
 ```js
-const prepared = compiler.prepare(source, {
-  format: "mdx",
-  frontMatter: true,
-  passes: [{ kind: "emojiShortcodes" }],
-});
-
-const { frontMatter, esm, codeBlocks, outline } = prepared.metadata;
-const body = prepared.render({
-  componentPrefix: "_components",
-  omitTitleHeading: "Guide",
-});
-const module = prepared.renderModule({
-  providerImportSource: "docs/provider",
-  filename: "guide.mdx",
-  omitTitleHeading: "Guide",
-});
-```
-
-Preparation options set the grammar, parser features, and ordered native
-passes. Each `render` or `renderModule` call can choose components, title
-omission, heading settings, callouts, and (for modules) provider/export
-settings. The facade rejects render-only options during preparation and parser
-or pass options during rendering.
-
-`metadata.outline` reflects the default preparation-time heading settings. It
-does not include render-time title omission. Read `headings` from the final
-render result when the outline must match emitted IDs, footnotes, and heading
-settings. The prepared handle retains the native highlighter and remains valid
-if the `JsxCompiler` object is dropped. Repeated renders do not mutate the tree
-or rerun passes. `compileJsx` and `JsxCompiler.compile` keep their one-shot
-combined-options APIs.
-
-### MDX modules
-
-`output: "module"` returns a complete MDX module instead of a body. The module
-still contains JSX and imports no framework.
-
-```js
-const result = compileJsx(source, {
-  format: "mdx",
-  output: "module",
-  providerImportSource: "docs/provider",
-  filename: id,
-});
-// result.code, result.map, result.exports, result.bindings, result.headings
-```
-
-The module holds the authored ESM in document order, a content function, and
-`MDXContent` as the default export. `providerImportSource` names the module
-that exports `useMDXComponents`; `props.components` overrides its components.
-An authored default export becomes the layout and replaces the `wrapper`
-component. A component reference uses a binding from the document's ESM when
-one exists and the components object otherwise. An undefined component throws
-an error that names it.
-
-To add your own exports, set `defaultExport: false` and append code:
-
-```js
-const result = compiler.compile(source, {
-  format: "mdx",
-  output: "module",
-  providerImportSource: "docs/provider",
-  defaultExport: false,
-  reservedBindings: ["createRoute"],
-});
-const frontmatter = result.exports.includes("frontmatter")
-  ? ""
-  : `export const frontmatter = ${JSON.stringify(data)};\n`;
-const code =
-  result.code +
-  `import { createRoute } from "docs/runtime";\n` +
-  frontmatter +
-  `export default createRoute(MDXContent);\n`;
-```
-
-Import declarations are hoisted, so appended code keeps `result.map` valid.
-`reservedBindings` lists the names your code declares: an authored declaration
-of one of them is a compile error, and a component reference to one of them
-uses your binding. `exports` and `bindings` list what the authored ESM exports
-and binds, so you know which exports are still yours to add. The generated
-names `_components`, `_createMdxContent`, `_missingMdxReference`,
-`_provideComponents`, `MDXLayout`, and `MDXContent` are reserved in the same way.
-
-`result.map` is a version 3 source map with `filename` as its source. JSX inside
-authored JavaScript, in an expression or a module block, is not analyzed: a
-component used only there must be imported. Module blocks are JavaScript;
-TypeScript syntax is a compile error.
-See the [JSX renderer contract](https://github.com/sebastian-software/ferromark/blob/main/docs/jsx-renderer.md#mdx-module-output).
-
-For native syntax highlighting, reuse a `JsxCompiler`:
-
-````js
 import { JsxCompiler } from "ferromark";
 
-const compiler = new JsxCompiler({
-  theme: { light: "github-light-default", dark: "github-dark-default" },
-  lineNumbers: true,
-});
-const result = compiler.compile('```ts title="Example" {1}\nconst ready = true;\n```', {
-  codeBlockComponent: "CodeBlock",
-});
-````
+const compiler = new JsxCompiler();
+const prepared = compiler.prepare("# Guide\n\n## Usage\n", { format: "mdx" });
+console.log(prepared.metadata.outline.map(({ id }) => id)); // ["guide", "usage"]
 
-Ferriki runs inside Ferromark's native addon. Themes load at construction;
-fence languages load on first compilation and remain cached in that compiler.
-The default theme is the GitHub light/dark pair. Standard assets use Ferriki's
-verified release CDN and cache; `assets` can select an offline cache, mirror,
-or local asset root. `FERRIKI_CACHE_DIR` and `FERRIKI_ASSETS_REMOTE=0` configure
-offline builds. A missing required cached asset fails compilation. Unknown
-languages render escaped plain text. Named JSON themes and custom TextMate
-grammar objects in `languages` can also be registered without downloads.
+const body = prepared.render({ omitTitleHeading: "Guide", headingIdPrefix: "docs-" });
+console.log(body.headings.map(({ id }) => id)); // ["docs-usage"]
+const module = prepared.renderModule({ filename: "guide.mdx", omitTitleHeading: "Guide" });
+// module.code is a complete module containing JSX; module.map maps to guide.mdx.
+```
 
-`codeBlockComponent` receives the original `code`, `language`, `title`, label,
-line-number flag, and rendered `<pre><code>` children. Language-specific
-`codeComponents` and whole-fence callbacks take precedence. Dual-theme output
-provides `--shiki-light` / `--shiki-dark` color, background, and font variables;
-consumers choose the active theme with CSS.
+Preparation copies the source, parses and runs native passes once, and returns
+an immutable handle with frozen metadata. Reading it does not highlight code.
+Use final result `headings` for navigation: the preparation-time `outline`
+does not account for later title omission or heading settings. Parser and pass
+options belong to `prepare`; component, title, heading, and callout choices
+belong to each render. Modules use `_components` for generated Markdown tags.
+
+Repeated renders leave the tree unchanged and rerun highlighting and callbacks.
+The handle retains the native highlighter even after the compiler object is
+collected. One-shot `compileJsx` and `compiler.compile` keep their combined-options
+APIs. Their source spans count UTF-8 bytes; source-map columns count UTF-16 units.
+
+### Render a standalone code block
+
+Using the same compiler:
+
+```js
+const block = compiler.renderCodeBlock({
+  code: "const ready = true;\n",
+  language: "typescript",
+  meta: '[example] title="ready.ts" {1} :line-numbers=4',
+});
+console.log(block.title); // "ready.ts"
+// block.jsx contains intrinsic <pre><code> JSX without a document fragment.
+```
+
+Standalone rendering shares fence metadata, markup, and native highlighting.
+It uses intrinsic tags without component mappings or whole-fence callbacks.
+Unknown languages use escaped plain code. The compiler's default GitHub
+light/dark themes load at construction; recognized code languages load when
+first highlighted. Standard assets use Ferriki's verified CDN and cache.
+Offline use needs cached/local assets or custom JSON theme and grammar registrations.
+
+The [Node JSX guide](https://github.com/sebastian-software/ferromark/blob/main/docs/jsx-node.md)
+provides complete offline examples, stage-specific options, module/provider
+behavior, fence metadata, asset configuration, ownership, and error recovery.
+See the [public types](./index.d.mts) for the complete API.
 
 ## Install
 
