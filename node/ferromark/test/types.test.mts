@@ -1,5 +1,6 @@
 import type {
   CodeHighlighter,
+  DocumentReference,
   JsxPreparedMetadata,
   Options,
   PreparedJsxDocument,
@@ -8,6 +9,7 @@ import type {
 import {
   compileJsx,
   JsxCompiler,
+  prepareDocument,
   Renderer,
   toHtml,
   toHtmlBuffer,
@@ -146,3 +148,17 @@ compileJsx("```js\nvalue\n```", {}, async () => {
   await Promise.resolve();
   return "<Code />";
 });
+
+const analysisDocument: PreparedJsxDocument = prepareDocument(Buffer.from("[typed](/target)"), {
+  format: "mdx",
+  passes: [{ kind: "emojiShortcodes" }],
+});
+const references: readonly DocumentReference[] = analysisDocument.collectReferences();
+const destination: string = references[0].destination;
+compileJsx(destination);
+// @ts-expect-error -- extraction returns immutable occurrence arrays
+references[0] = references[0];
+// @ts-expect-error -- extraction returns immutable occurrences
+references[0].destination = "/changed";
+// @ts-expect-error -- preparation rejects render-time settings
+prepareDocument("text", { headingOffset: 1 });

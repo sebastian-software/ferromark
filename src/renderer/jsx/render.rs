@@ -1828,7 +1828,7 @@ fn css_property_to_js(property: &str) -> String {
     }
 }
 
-fn decode_html_entities(value: &str) -> String {
+pub fn decode_html_entities(value: &str) -> String {
     let mut output = String::with_capacity(value.len());
     let mut cursor = 0usize;
     while cursor < value.len() {

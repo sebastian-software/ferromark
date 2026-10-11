@@ -487,3 +487,5 @@ impl JsxRenderer {
         module::assemble(output, &references, source, module)
     }
 }
+
+pub use render::decode_html_entities;

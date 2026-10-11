@@ -22,6 +22,7 @@ pub mod allocator;
 pub mod ast;
 pub mod outline;
 pub mod parser;
+pub mod references;
 pub mod renderer;
 
 /// Ferriki's Rust API, available with the `ferriki` feature.
@@ -38,6 +39,7 @@ pub use convenience::{
 };
 pub use outline::{OutlineEntry, OutlineOptions};
 pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
+pub use references::{DocumentReference, ReferenceKind, ReferenceProvenance, ReferenceSnapshot};
 pub use renderer::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlRenderContext,

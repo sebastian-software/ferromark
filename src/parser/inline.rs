@@ -92,7 +92,7 @@ impl<'a> Parser<'a> {
             self.parse_inline(content, offset)?
         };
         if let Some(scan) = scan {
-            self.apply_gfm_autolinks(&mut children, scan);
+            self.apply_gfm_autolinks(&mut children, scan, content, offset);
         }
         Ok(children)
     }

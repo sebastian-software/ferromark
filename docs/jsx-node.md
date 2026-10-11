@@ -286,3 +286,10 @@ Return replacement JSX directly from the callback. Calling `renderCodeBlock`,
 is running is recursive use and throws. Prepare or render additional work
 outside the callback. Native-loading failures are covered in the
 [Node installation troubleshooting](../node/ferromark/README.md#troubleshooting-native-loading).
+
+## Link and asset inventories
+
+Use `prepareDocument(source, preparationOptions)` for asset-free analysis, or
+call `collectReferences()` on an existing compiler-prepared handle. See
+[reference extraction](references.md) for the occurrence, UTF-8 range,
+transform provenance, and static MDX scope contracts.

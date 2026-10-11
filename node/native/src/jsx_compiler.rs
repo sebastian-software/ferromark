@@ -74,33 +74,17 @@ impl JsxCompiler {
         jsx_options: Option<JsxOptions>,
     ) -> Result<PreparedJsxDocument> {
         validate_preparation_options(options.as_ref())?;
-        let jsx = jsx_options.unwrap_or_default();
-        if jsx.component_prefix.is_some()
-            || jsx.callout_components.is_some()
-            || jsx.code_components.is_some()
-            || jsx.code_block_component.is_some()
-            || jsx.omit_title_heading.is_some()
-            || jsx.heading_ids.is_some()
-            || jsx.heading_offset.is_some()
-            || jsx.heading_id_prefix.is_some()
-            || jsx.callouts.is_some()
-            || jsx.provider_import_source.is_some()
-            || jsx.filename.is_some()
-            || jsx.default_export.is_some()
-            || jsx.reserved_bindings.is_some()
-        {
-            return Err(usage(
-                "prepare accepts only the JSX format; pass render choices to render or renderModule",
-            ));
-        }
-        let parsed = prepare_jsx_document(markdown, options, jsx.format.as_deref())?;
+        let format = preparation_format(jsx_options)?;
+        let parsed = prepare_jsx_document(markdown, options, format.as_deref(), true)?;
         let metadata = parsed.metadata()?;
         Ok(PreparedJsxDocument {
             parsed,
-            highlighter: Rc::clone(&self.highlighter),
-            light_theme: self.light_theme.clone(),
-            dark_theme: self.dark_theme.clone(),
-            line_numbers: self.line_numbers,
+            highlighting: Some(PreparedHighlighting {
+                highlighter: Rc::clone(&self.highlighter),
+                light_theme: self.light_theme.clone(),
+                dark_theme: self.dark_theme.clone(),
+                line_numbers: self.line_numbers,
+            }),
             metadata,
         })
     }
@@ -184,12 +168,27 @@ impl JsxCompiler {
 /// Immutable, source-owning prepared JSX document with repeatable render methods.
 #[napi]
 pub struct PreparedJsxDocument {
-    parsed: ParsedJsxDocument,
+    pub(crate) parsed: ParsedJsxDocument,
+    highlighting: Option<PreparedHighlighting>,
+    metadata: JsxPreparedMetadata,
+}
+
+struct PreparedHighlighting {
     highlighter: Rc<RefCell<Highlighter>>,
     light_theme: String,
     dark_theme: Option<String>,
     line_numbers: bool,
-    metadata: JsxPreparedMetadata,
+}
+
+impl PreparedJsxDocument {
+    pub(crate) fn without_highlighting(parsed: ParsedJsxDocument) -> Result<Self> {
+        let metadata = parsed.metadata()?;
+        Ok(Self {
+            parsed,
+            metadata,
+            highlighting: None,
+        })
+    }
 }
 
 #[napi]
@@ -210,7 +209,10 @@ impl PreparedJsxDocument {
         )]
         render_code: Option<CodeCallback<'_>>,
     ) -> Result<JsxResult> {
-        let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {
+        let Some(settings) = &self.highlighting else {
+            return self.parsed.render_body(options, render_code, None);
+        };
+        let mut highlighter = settings.highlighter.try_borrow_mut().map_err(|_| {
             usage("A JSX compiler cannot be used recursively from its code callback")
         })?;
         self.parsed.render_body(
@@ -218,9 +220,9 @@ impl PreparedJsxDocument {
             render_code,
             Some(NativeHighlighting {
                 highlighter: &mut highlighter,
-                light_theme: &self.light_theme,
-                dark_theme: self.dark_theme.as_deref(),
-                line_numbers: self.line_numbers,
+                light_theme: &settings.light_theme,
+                dark_theme: settings.dark_theme.as_deref(),
+                line_numbers: settings.line_numbers,
             }),
         )
     }
@@ -235,7 +237,10 @@ impl PreparedJsxDocument {
         )]
         render_code: Option<CodeCallback<'_>>,
     ) -> Result<JsxModuleResult> {
-        let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {
+        let Some(settings) = &self.highlighting else {
+            return self.parsed.render_module(options, render_code, None);
+        };
+        let mut highlighter = settings.highlighter.try_borrow_mut().map_err(|_| {
             usage("A JSX compiler cannot be used recursively from its code callback")
         })?;
         self.parsed.render_module(
@@ -243,9 +248,9 @@ impl PreparedJsxDocument {
             render_code,
             Some(NativeHighlighting {
                 highlighter: &mut highlighter,
-                light_theme: &self.light_theme,
-                dark_theme: self.dark_theme.as_deref(),
-                line_numbers: self.line_numbers,
+                light_theme: &settings.light_theme,
+                dark_theme: settings.dark_theme.as_deref(),
+                line_numbers: settings.line_numbers,
             }),
         )
     }
@@ -364,7 +369,7 @@ fn usage(message: impl ToString) -> Error {
     Error::new(Status::InvalidArg, message.to_string())
 }
 
-fn validate_preparation_options(options: Option<&Options>) -> Result<()> {
+pub(crate) fn validate_preparation_options(options: Option<&Options>) -> Result<()> {
     let Some(options) = options else {
         return Ok(());
     };
@@ -400,4 +405,27 @@ pub(crate) fn engine_error(error: ferromark::ferriki::Error) -> Error {
         Status::GenericFailure,
         format!("Ferriki JSX highlighting: {error}"),
     )
+}
+
+pub(crate) fn preparation_format(jsx_options: Option<JsxOptions>) -> Result<Option<String>> {
+    let jsx = jsx_options.unwrap_or_default();
+    if jsx.component_prefix.is_some()
+        || jsx.callout_components.is_some()
+        || jsx.code_components.is_some()
+        || jsx.code_block_component.is_some()
+        || jsx.omit_title_heading.is_some()
+        || jsx.heading_ids.is_some()
+        || jsx.heading_offset.is_some()
+        || jsx.heading_id_prefix.is_some()
+        || jsx.callouts.is_some()
+        || jsx.provider_import_source.is_some()
+        || jsx.filename.is_some()
+        || jsx.default_export.is_some()
+        || jsx.reserved_bindings.is_some()
+    {
+        return Err(usage(
+            "prepare accepts only the JSX format; pass render choices to render or renderModule",
+        ));
+    }
+    Ok(jsx.format)
 }

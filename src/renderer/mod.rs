@@ -55,3 +55,5 @@ pub use jsx::{
     JsxModuleSource, JsxOutput, JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping,
     NoJsxRenderHooks,
 };
+
+pub(crate) use jsx::decode_html_entities;

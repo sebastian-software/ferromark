@@ -258,12 +258,17 @@ struct JsxDocumentOwner {
     allocator: Allocator,
 }
 
+struct PreparedDocument<'a> {
+    document: Document<'a>,
+    references: Option<ferromark::ReferenceSnapshot<'a>>,
+}
+
 self_cell!(
     struct PreparedJsxTree {
         owner: JsxDocumentOwner,
 
         #[not_covariant]
-        dependent: Document,
+        dependent: PreparedDocument,
     }
 );
 
@@ -275,7 +280,16 @@ pub(crate) struct ParsedJsxDocument {
 impl ParsedJsxDocument {
     pub(crate) fn with_document<R>(&self, render: impl FnOnce(&str, &Document<'_>) -> R) -> R {
         self.tree
-            .with_dependent(|owner, document| render(&owner.source, document))
+            .with_dependent(|owner, document| render(&owner.source, &document.document))
+    }
+
+    pub(crate) fn collect_references(&self) -> Vec<ferromark::DocumentReference> {
+        self.tree.with_dependent(|owner, document| {
+            document.references.as_ref().map_or_else(
+                || document.document.collect_references(&owner.source),
+                |snapshot| snapshot.collect(&document.document, &owner.source),
+            )
+        })
     }
 
     pub(crate) fn metadata(&self) -> Result<JsxPreparedMetadata> {
@@ -339,10 +353,11 @@ pub(crate) fn prepare_jsx_document(
     markdown: Utf8Input,
     options: Option<Options>,
     format: Option<&str>,
+    track_references: bool,
 ) -> Result<ParsedJsxDocument> {
     let resolved = core_options(options)?;
     let defaults = render_defaults(&resolved);
-    let tree = prepare_tree(markdown.to_string(), resolved, format)?;
+    let tree = prepare_tree(markdown.to_string(), resolved, format, track_references)?;
     Ok(ParsedJsxDocument { tree, defaults })
 }
 
@@ -359,6 +374,7 @@ fn prepare_tree(
     source: String,
     mut options: CoreOptions,
     format: Option<&str>,
+    track_references: bool,
 ) -> Result<PreparedJsxTree> {
     options.parser.mdx = match format {
         None | Some("md") => false,
@@ -390,13 +406,18 @@ fn prepare_tree(
                 format!("MDX module declarations must appear at document top level (at {span:?})"),
             ));
         }
+        let references = (track_references && !pipeline.is_empty())
+            .then(|| ferromark::ReferenceSnapshot::capture(&document, &owner.source));
         if !pipeline.is_empty() {
             let context = TransformContext::new(&owner.allocator, &owner.source, &html_options);
             pipeline
                 .run(&mut document, &context)
                 .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
         }
-        Ok(document)
+        Ok(PreparedDocument {
+            document,
+            references,
+        })
     })
 }
 
@@ -614,7 +635,7 @@ pub(crate) fn compile_jsx_with_highlighter(
     module: bool,
 ) -> Result<Compiled> {
     let jsx = jsx_options.unwrap_or_default();
-    let parsed = prepare_jsx_document(markdown, options, jsx.format.as_deref())?;
+    let parsed = prepare_jsx_document(markdown, options, jsx.format.as_deref(), false)?;
     if module {
         Ok(Compiled::Module(parsed.render_module(
             Some(jsx),

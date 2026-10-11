@@ -15,6 +15,8 @@ export declare class JsxCompiler {
 
 /** Immutable, source-owning prepared JSX document with repeatable render methods. */
 export declare class PreparedJsxDocument {
+  /** Collects Markdown references and literal MDX href/src attributes on demand. */
+  collectReferences(): Array<DocumentReference>
   /** Metadata computed from the prepared tree without rendering its body. */
   get metadata(): JsxPreparedMetadata
   /** Renders the prepared document as a JSX body. */
@@ -37,6 +39,19 @@ export declare function compileJsx(markdown: string | Uint8Array, options?: Opti
 
 /** Internal entry for `output: "module"`; the public facade selects it. */
 export declare function compileJsxModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
+
+/** One reference occurrence from the prepared tree. */
+export interface DocumentReference {
+  kind: string
+  destination: string
+  text?: string
+  title?: string
+  element?: string
+  attribute?: string
+  span?: SourceRange
+  provenance: string
+  originalSpan?: SourceRange
+}
 
 export interface Heading {
   level: number
@@ -194,6 +209,9 @@ export interface Options {
   abbreviations?: Record<string, string | undefined | null>
   preset?: string
 }
+
+/** Parses and runs native passes without loading highlighting assets. */
+export declare function prepareDocument(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null): PreparedJsxDocument
 
 export interface RenderCodeBlockInput {
   code: string

@@ -733,6 +733,15 @@ function preparedFacade(nativePrepared) {
   const metadata = freezePreparedMetadata(nativePrepared.metadata);
   return Object.freeze({
     metadata,
+    collectReferences() {
+      return Object.freeze(
+        nativePrepared.collectReferences().map((reference) => {
+          if (reference.span != null) Object.freeze(reference.span);
+          if (reference.originalSpan != null) Object.freeze(reference.originalSpan);
+          return Object.freeze(reference);
+        }),
+      );
+    },
     /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
     render(options, renderCode) {
       validatePreparedRenderOptions(options, false);
@@ -750,6 +759,18 @@ function preparedFacade(nativePrepared) {
       return nativePrepared.renderModule(options, renderCode);
     },
   });
+}
+
+/**
+ * Prepare a document without loading highlighting themes or grammars.
+ * @param {string | Uint8Array} markdown Authored Markdown or MDX source.
+ * @param {import('./index.mjs').JsxPreparationOptions} [preparationOptions] Parser and native pass settings.
+ * @returns {import('./index.mjs').PreparedJsxDocument} An immutable handle for extraction and rendering.
+ */
+export function prepareDocument(markdown, preparationOptions) {
+  validateJsxPreparationOptions(preparationOptions);
+  const format = preparationOptions?.format;
+  return preparedFacade(loadNative().prepareDocument(markdown, preparationOptions, { format }));
 }
 
 /**
@@ -912,6 +933,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  * @typedef {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} NativeJsxOptions
  * @typedef {{
  *   readonly metadata: import('./index.mjs').JsxPreparedMetadata
+ *   collectReferences(): import('./index.mjs').DocumentReference[]
  *   render(options?: import('./index.mjs').JsxRenderOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
  *   renderModule(options?: import('./index.mjs').JsxRenderModuleOptions,
@@ -954,6 +976,8 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     withPackedOptions(...options: NativePackedOptions): NativeRendererSession
  *   }
  *   JsxCompiler: { new (settings: string): NativeJsxCompilerSession }
+ *   prepareDocument(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,
+ *     jsxOptions?: Pick<NativeJsxOptions, 'format'>): NativePreparedJsxDocument
  *   compileJsx(
  *     markdown: string | Uint8Array,
  *     options?: NativeJsxOptions,
