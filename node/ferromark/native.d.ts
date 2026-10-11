@@ -17,6 +17,8 @@ export declare class JsxCompiler {
 export declare class PreparedJsxDocument {
   /** Collects Markdown references and literal MDX href/src attributes on demand. */
   collectReferences(): Array<DocumentReference>
+  /** Projects original static Markdown without rendering or highlighting. */
+  projectMarkdown(options?: ProjectMarkdownOptions | undefined | null): MarkdownProjectionResult
   /** Metadata computed from the prepared tree without rendering its body. */
   get metadata(): JsxPreparedMetadata
   /** Extracts static text and final heading sections without highlighting or rendering. */
@@ -160,6 +162,21 @@ export interface JsxSourceMapping {
   sourceColumn: number
 }
 
+export interface MarkdownProjectionDiagnostic {
+  code: string
+  message: string
+  /** Inclusive original UTF-8 byte offset. */
+  start: number
+  /** Exclusive original UTF-8 byte offset. */
+  end: number
+}
+
+export interface MarkdownProjectionResult {
+  markdown: string
+  diagnostics: Array<MarkdownProjectionDiagnostic>
+  omittedTitleHeadingSpan?: SourceRange
+}
+
 export interface NativePassConfig {
   kind?: string
   language?: string
@@ -221,6 +238,13 @@ export interface PreparationOptions {
 
 /** Parses and runs native passes without loading highlighting assets. */
 export declare function prepareDocument(markdown: string | Uint8Array, options?: Options | undefined | null, preparationOptions?: PreparationOptions | undefined | null): PreparedJsxDocument
+
+export interface ProjectMarkdownOptions {
+  /** Preserve recognized metadata by default, or omit its complete block. */
+  frontMatter?: string
+  /** Omit only the first top-level H1 if its display text matches this title. */
+  omitTitleHeading?: string
+}
 
 export interface RenderCodeBlockInput {
   code: string

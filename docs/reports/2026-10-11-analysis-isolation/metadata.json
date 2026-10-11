@@ -1,0 +1,31 @@
+{
+  "baseline_revision": "2df7d3689d4c3324342e690674f69239bf66f02b",
+  "candidate_source_revision": "e283bae2b6c1b465ea6c97dea17af77aa2665179",
+  "initial_candidate_revision": "450a5d6f4330fd9a698b3010f1b1085152a828da",
+  "optimized_parser_revision": "2e048a56",
+  "cpu": "Apple M1 Ultra",
+  "memory_bytes": 68719476736,
+  "os": "macOS 27.0.1 (26A434)",
+  "rust": "1.95.0 (59807616e 2026-04-14)",
+  "llvm": "22.1.2",
+  "node": "v24.21.0",
+  "target": "aarch64-apple-darwin",
+  "pgo": false,
+  "rust_profile": {
+    "lto": "fat",
+    "codegen_units": 1,
+    "criterion": "0.8.2"
+  },
+  "node_profile": "release-node",
+  "gfm_parser_source_identical": true,
+  "harness_sha256": {
+    "harness/Cargo.lock": "8227bde2dadc5fa67f36247139f840021d6256606c653b1f9dcea4782c75e5c3",
+    "harness/summarize.py": "f43d003ecd3dc848b9c718e03d6fa14a82967045d9fd4b0f52aa7de39eaba092",
+    "harness/node-paths.mjs": "85221124912be6e1345d53d8f98ac19e1577af8783ba3d82933aed69f7b4647c",
+    "harness/prepare.py": "309beec70f45c0029bdba99bd2004978644e40d00407e4a62687c02d27b4e854",
+    "harness/benches/ordinary_paths.rs": "4a79c3c78b3af557227011a46fbb7ed86bae370ccb8dd435318a12985a1df207",
+    "harness/fixtures/text-extraction.mdx": "66431105deb5cdbc5f6afe5e565a1fdebdb78eb4e0f2511d09efbc65b207cfb7"
+  },
+  "facade_unpacked_bytes": 119163,
+  "platform_unpacked_bytes": 5983699
+}

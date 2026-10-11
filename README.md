@@ -115,6 +115,9 @@ the same native fence metadata and highlighting. Start with the
 [Node JSX guide](docs/jsx-node.md) for API choices and runnable examples, or the
 [Rust renderer contract](docs/jsx-renderer.md) for core output.
 
+Export [static Markdown from MDX](docs/markdown-projection.md) with a prepared
+document's `projectMarkdown` method.
+
 ## Make it yours
 
 - [Configuration](https://ferromark.dev/guide/configuration) — syntax and output policies.

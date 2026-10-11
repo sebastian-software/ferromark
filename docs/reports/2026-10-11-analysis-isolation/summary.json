@@ -1,0 +1,324 @@
+{
+  "rust": [
+    {
+      "fixture": "gfm_bare",
+      "operation": "compile_html",
+      "before_nanoseconds": 21133.56847659918,
+      "after_nanoseconds": 21020.262279762854,
+      "change_percent": -0.5361432309067271,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 20849.779716641355,
+        "upper_bound": 21642.28629788787
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 20878.575930461488,
+        "upper_bound": 21123.953791231204
+      }
+    },
+    {
+      "fixture": "gfm_bare",
+      "operation": "parse",
+      "before_nanoseconds": 15327.237948198623,
+      "after_nanoseconds": 15098.303595686499,
+      "change_percent": -1.4936438860403412,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 15233.986408790104,
+        "upper_bound": 15449.871393494352
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 15077.71185806668,
+        "upper_bound": 15128.206788420895
+      }
+    },
+    {
+      "fixture": "gfm_bare",
+      "operation": "render_html",
+      "before_nanoseconds": 5554.376121509315,
+      "after_nanoseconds": 5557.62145927857,
+      "change_percent": 0.05842848410440027,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 5550.605419909843,
+        "upper_bound": 5559.694940767981
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 5551.099229589215,
+        "upper_bound": 5567.0117380107695
+      }
+    },
+    {
+      "fixture": "gfm_decoded",
+      "operation": "compile_html",
+      "before_nanoseconds": 138749.73688835025,
+      "after_nanoseconds": 137953.7505642519,
+      "change_percent": -0.5736849250668197,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 138305.41795582106,
+        "upper_bound": 139407.3262059097
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 137727.62539561326,
+        "upper_bound": 138277.78201993235
+      }
+    },
+    {
+      "fixture": "gfm_decoded",
+      "operation": "parse",
+      "before_nanoseconds": 108333.94891510929,
+      "after_nanoseconds": 108195.69447598168,
+      "change_percent": -0.1276187571044196,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 108052.28179223124,
+        "upper_bound": 108674.15844302293
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 107961.8199994489,
+        "upper_bound": 108475.14611848671
+      }
+    },
+    {
+      "fixture": "gfm_decoded",
+      "operation": "render_html",
+      "before_nanoseconds": 30477.730249433105,
+      "after_nanoseconds": 30102.5395293962,
+      "change_percent": -1.2310323536769419,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 30419.546643187656,
+        "upper_bound": 30563.927856751896
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 30029.04650181272,
+        "upper_bound": 30231.455908593067
+      }
+    },
+    {
+      "fixture": "gfm_dense",
+      "operation": "compile_html",
+      "before_nanoseconds": 160783.69206155633,
+      "after_nanoseconds": 161422.54971544715,
+      "change_percent": 0.3973398332252742,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 160007.21322463767,
+        "upper_bound": 161942.01940265828
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 160427.93913959907,
+        "upper_bound": 162530.6298509196
+      }
+    },
+    {
+      "fixture": "gfm_dense",
+      "operation": "parse",
+      "before_nanoseconds": 130593.0241265656,
+      "after_nanoseconds": 130688.05229821966,
+      "change_percent": 0.07276665219266842,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 130290.9715664966,
+        "upper_bound": 131073.58322513354
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 130540.78767595373,
+        "upper_bound": 130841.08481592908
+      }
+    },
+    {
+      "fixture": "gfm_dense",
+      "operation": "render_html",
+      "before_nanoseconds": 29490.597840160917,
+      "after_nanoseconds": 30230.63280757098,
+      "change_percent": 2.5093928967498513,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 29442.832544163575,
+        "upper_bound": 29567.2662741337
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 30192.746761928593,
+        "upper_bound": 30283.4570738959
+      }
+    },
+    {
+      "fixture": "mdx",
+      "operation": "compile_jsx",
+      "before_nanoseconds": 993263.2557839721,
+      "after_nanoseconds": 981446.9945993031,
+      "change_percent": -1.1896404216969136,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 989657.8613996775,
+        "upper_bound": 997299.5407278846
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 979416.6351142457,
+        "upper_bound": 984126.0839279956
+      }
+    },
+    {
+      "fixture": "mdx",
+      "operation": "render_jsx",
+      "before_nanoseconds": 589378.8525927444,
+      "after_nanoseconds": 588369.337630662,
+      "change_percent": -0.1712845579106559,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 588548.49494609,
+        "upper_bound": 590303.0273184815
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 584485.3305608443,
+        "upper_bound": 591524.4553965322
+      }
+    },
+    {
+      "fixture": "prose",
+      "operation": "compile_html",
+      "before_nanoseconds": 122665.7238899312,
+      "after_nanoseconds": 123889.11584919145,
+      "change_percent": 0.9973380667919862,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 122592.28350506104,
+        "upper_bound": 122770.52722826578
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 123001.91628791587,
+        "upper_bound": 124610.3563954079
+      }
+    },
+    {
+      "fixture": "prose",
+      "operation": "parse",
+      "before_nanoseconds": 63214.84489358697,
+      "after_nanoseconds": 63338.84374091423,
+      "change_percent": 0.1961546335136788,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 63161.00447716624,
+        "upper_bound": 63299.433417230684
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 63266.427534982555,
+        "upper_bound": 63468.35934478111
+      }
+    },
+    {
+      "fixture": "prose",
+      "operation": "render_html",
+      "before_nanoseconds": 59467.85830574913,
+      "after_nanoseconds": 62001.75020101849,
+      "change_percent": 4.260943587780752,
+      "before_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 59384.54246532717,
+        "upper_bound": 59572.644253080085
+      },
+      "after_confidence_interval": {
+        "confidence_level": 0.95,
+        "lower_bound": 61373.661458209135,
+        "upper_bound": 62751.25282917095
+      }
+    }
+  ],
+  "node": [
+    {
+      "operation": "compile_html",
+      "before_nanoseconds": 107355.84334763946,
+      "after_nanoseconds": 107827.07004310325,
+      "paired_change_percent": 0.5908835692830516,
+      "paired_bootstrap_95_percent_interval": [
+        0.3851580547913791,
+        1.2079216304406115
+      ]
+    },
+    {
+      "operation": "compile_jsx",
+      "before_nanoseconds": 964698.9182692297,
+      "after_nanoseconds": 968140.2259615416,
+      "paired_change_percent": 0.3328362619189118,
+      "paired_bootstrap_95_percent_interval": [
+        0.2093387642182254,
+        0.5189855560833401
+      ]
+    },
+    {
+      "operation": "prepare_default",
+      "before_nanoseconds": 91052.83257506863,
+      "after_nanoseconds": 90258.9053530678,
+      "paired_change_percent": -1.3092035495887444,
+      "paired_bootstrap_95_percent_interval": [
+        -1.8486409419606997,
+        -0.476461798878125
+      ]
+    },
+    {
+      "operation": "prepare_with_passes",
+      "before_nanoseconds": 299855.2904191592,
+      "after_nanoseconds": 298267.422619049,
+      "paired_change_percent": -0.3761988350609702,
+      "paired_bootstrap_95_percent_interval": [
+        -0.6133331780964646,
+        -0.22441919414234457
+      ]
+    },
+    {
+      "operation": "prepare_small",
+      "before_nanoseconds": 5508.773959328017,
+      "after_nanoseconds": 4132.338949373231,
+      "paired_change_percent": -23.490586384069132,
+      "paired_bootstrap_95_percent_interval": [
+        -25.351222313279177,
+        -21.9459215380313
+      ]
+    },
+    {
+      "operation": "render_default",
+      "before_nanoseconds": 900177.6383928636,
+      "after_nanoseconds": 903054.8018018217,
+      "paired_change_percent": 0.4146975354776927,
+      "paired_bootstrap_95_percent_interval": [
+        0.0213045730593997,
+        0.5835296363801978
+      ]
+    },
+    {
+      "operation": "render_with_passes",
+      "before_nanoseconds": 1528452.0227272823,
+      "after_nanoseconds": 1544329.48461539,
+      "paired_change_percent": 0.9237049073542725,
+      "paired_bootstrap_95_percent_interval": [
+        -1.1293447237293863,
+        2.102042286945993
+      ]
+    },
+    {
+      "operation": "render_small",
+      "before_nanoseconds": 7021.0106259219265,
+      "after_nanoseconds": 7031.766416598911,
+      "paired_change_percent": -0.3941358740076284,
+      "paired_bootstrap_95_percent_interval": [
+        -0.5548067452316952,
+        0.1094778756797421
+      ]
+    }
+  ]
+}

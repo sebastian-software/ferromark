@@ -7,6 +7,7 @@ pub mod jsx;
 pub mod jsx_compiler;
 mod options;
 pub mod packed;
+pub mod projection;
 pub mod text;
 
 use std::collections::HashMap;

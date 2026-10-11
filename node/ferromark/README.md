@@ -74,6 +74,11 @@ The handle retains the native highlighter even after the compiler object is
 collected. One-shot `compileJsx` and `compiler.compile` keep their combined-options
 APIs. Their source spans count UTF-8 bytes; source-map columns count UTF-16 units.
 
+`prepared.projectMarkdown()` exports original static Markdown and code with
+omission diagnostics, without rendering or highlighting. See the
+[static Markdown projection guide](../../docs/markdown-projection.md) for its
+component, expression, front matter, and title policies.
+
 ### Render a standalone code block
 
 Using the same compiler:

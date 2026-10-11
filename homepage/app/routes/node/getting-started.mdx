@@ -71,6 +71,17 @@ for API selection and complete examples, including how to try additions on
 `main` before their release. [MDX boundaries](/guide/mdx) explains the difference
 between HTML syntax capture and JSX compilation.
 
+## Analyze a prepared document
+
+The source on `main` also provides `prepareDocument` for reusable analysis
+without loading highlighting assets. A prepared handle can collect
+[link and image references](https://github.com/sebastian-software/ferromark/blob/main/docs/references.md),
+extract [plain text and search sections](https://github.com/sebastian-software/ferromark/blob/main/docs/text-extraction.md),
+and project [static Markdown from MDX](https://github.com/sebastian-software/ferromark/blob/main/docs/markdown-projection.md).
+These methods preserve the handle for later rendering. The guides include
+offline examples and explain source ranges and omitted dynamic content.
+Build the package from source until these APIs are released.
+
 ## Next: configure your content
 
 [Set rendering options](/node/configuration), then

@@ -1,0 +1,251 @@
+Gnuplot not found, using plotters backend
+Benchmarking prose/before/parse
+Benchmarking prose/before/parse: Warming up for 500.00 ms
+Benchmarking prose/before/parse: Collecting 20 samples in estimated 2.0009 s (30k iterations)
+Benchmarking prose/before/parse: Analyzing
+prose/before/parse      time:   [64.722 µs 64.893 µs 65.147 µs]
+                        thrpt:  [427.22 MiB/s 428.89 MiB/s 430.02 MiB/s]
+Benchmarking prose/before/compile_html
+Benchmarking prose/before/compile_html: Warming up for 500.00 ms
+Benchmarking prose/before/compile_html: Collecting 20 samples in estimated 2.0159 s (16k iterations)
+Benchmarking prose/before/compile_html: Analyzing
+prose/before/compile_html
+                        time:   [125.80 µs 126.66 µs 127.80 µs]
+                        thrpt:  [217.78 MiB/s 219.73 MiB/s 221.25 MiB/s]
+Benchmarking prose/before/render_html
+Benchmarking prose/before/render_html: Warming up for 500.00 ms
+Benchmarking prose/before/render_html: Collecting 20 samples in estimated 2.0026 s (33k iterations)
+Benchmarking prose/before/render_html: Analyzing
+prose/before/render_html
+                        time:   [60.832 µs 60.913 µs 60.995 µs]
+                        thrpt:  [456.30 MiB/s 456.92 MiB/s 457.52 MiB/s]
+Found 3 outliers among 20 measurements (15.00%)
+  2 (10.00%) low mild
+  1 (5.00%) high mild
+Benchmarking prose/after/parse
+Benchmarking prose/after/parse: Warming up for 500.00 ms
+Benchmarking prose/after/parse: Collecting 20 samples in estimated 2.0123 s (31k iterations)
+Benchmarking prose/after/parse: Analyzing
+prose/after/parse       time:   [64.546 µs 64.617 µs 64.706 µs]
+                        thrpt:  [430.13 MiB/s 430.72 MiB/s 431.20 MiB/s]
+Found 2 outliers among 20 measurements (10.00%)
+  2 (10.00%) high mild
+Benchmarking prose/after/compile_html
+Benchmarking prose/after/compile_html: Warming up for 500.00 ms
+Benchmarking prose/after/compile_html: Collecting 20 samples in estimated 2.0252 s (16k iterations)
+Benchmarking prose/after/compile_html: Analyzing
+prose/after/compile_html
+                        time:   [126.06 µs 127.19 µs 128.27 µs]
+                        thrpt:  [216.98 MiB/s 218.81 MiB/s 220.78 MiB/s]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high mild
+Benchmarking prose/after/render_html
+Benchmarking prose/after/render_html: Warming up for 500.00 ms
+Benchmarking prose/after/render_html: Collecting 20 samples in estimated 2.0116 s (33k iterations)
+Benchmarking prose/after/render_html: Analyzing
+prose/after/render_html time:   [61.100 µs 61.176 µs 61.270 µs]
+                        thrpt:  [454.25 MiB/s 454.95 MiB/s 455.52 MiB/s]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high mild
+
+Benchmarking gfm_bare/before/parse
+Benchmarking gfm_bare/before/parse: Warming up for 500.00 ms
+Benchmarking gfm_bare/before/parse: Collecting 20 samples in estimated 2.0014 s (129k iterations)
+Benchmarking gfm_bare/before/parse: Analyzing
+gfm_bare/before/parse   time:   [15.422 µs 15.448 µs 15.471 µs]
+                        thrpt:  [1.6490 GiB/s 1.6514 GiB/s 1.6542 GiB/s]
+                 change:
+                        time:   [−1.9159% −1.4994% −1.0541%] (p = 0.00 < 0.05)
+                        thrpt:  [+1.0653% +1.5222% +1.9533%]
+                        Performance has improved.
+Benchmarking gfm_bare/before/compile_html
+Benchmarking gfm_bare/before/compile_html: Warming up for 500.00 ms
+Benchmarking gfm_bare/before/compile_html: Collecting 20 samples in estimated 2.0023 s (93k iterations)
+Benchmarking gfm_bare/before/compile_html: Analyzing
+gfm_bare/before/compile_html
+                        time:   [21.227 µs 21.246 µs 21.271 µs]
+                        thrpt:  [1.1993 GiB/s 1.2007 GiB/s 1.2018 GiB/s]
+Found 4 outliers among 20 measurements (20.00%)
+  2 (10.00%) high mild
+  2 (10.00%) high severe
+Benchmarking gfm_bare/before/render_html
+Benchmarking gfm_bare/before/render_html: Warming up for 500.00 ms
+Benchmarking gfm_bare/before/render_html: Collecting 20 samples in estimated 2.0005 s (350k iterations)
+Benchmarking gfm_bare/before/render_html: Analyzing
+gfm_bare/before/render_html
+                        time:   [5.6794 µs 5.6841 µs 5.6894 µs]
+                        thrpt:  [4.4839 GiB/s 4.4881 GiB/s 4.4918 GiB/s]
+Benchmarking gfm_bare/after/parse
+Benchmarking gfm_bare/after/parse: Warming up for 500.00 ms
+Benchmarking gfm_bare/after/parse: Collecting 20 samples in estimated 2.0014 s (129k iterations)
+Benchmarking gfm_bare/after/parse: Analyzing
+gfm_bare/after/parse    time:   [15.507 µs 15.523 µs 15.545 µs]
+                        thrpt:  [1.6411 GiB/s 1.6434 GiB/s 1.6452 GiB/s]
+                 change:
+                        time:   [−81.427% −81.358% −81.283%] (p = 0.00 < 0.05)
+                        thrpt:  [+434.27% +436.42% +438.41%]
+                        Performance has improved.
+Found 3 outliers among 20 measurements (15.00%)
+  1 (5.00%) low mild
+  2 (10.00%) high mild
+Benchmarking gfm_bare/after/compile_html
+Benchmarking gfm_bare/after/compile_html: Warming up for 500.00 ms
+Benchmarking gfm_bare/after/compile_html: Collecting 20 samples in estimated 2.0014 s (93k iterations)
+Benchmarking gfm_bare/after/compile_html: Analyzing
+gfm_bare/after/compile_html
+                        time:   [21.445 µs 21.578 µs 21.743 µs]
+                        thrpt:  [1.1733 GiB/s 1.1823 GiB/s 1.1896 GiB/s]
+Benchmarking gfm_bare/after/render_html
+Benchmarking gfm_bare/after/render_html: Warming up for 500.00 ms
+Benchmarking gfm_bare/after/render_html: Collecting 20 samples in estimated 2.0006 s (351k iterations)
+Benchmarking gfm_bare/after/render_html: Analyzing
+gfm_bare/after/render_html
+                        time:   [5.6797 µs 5.6900 µs 5.7012 µs]
+                        thrpt:  [4.4746 GiB/s 4.4834 GiB/s 4.4916 GiB/s]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high mild
+
+Benchmarking gfm_dense/before/parse
+Benchmarking gfm_dense/before/parse: Warming up for 500.00 ms
+Benchmarking gfm_dense/before/parse: Collecting 20 samples in estimated 2.0215 s (15k iterations)
+Benchmarking gfm_dense/before/parse: Analyzing
+gfm_dense/before/parse  time:   [133.63 µs 133.81 µs 133.98 µs]
+                        thrpt:  [129.38 MiB/s 129.54 MiB/s 129.72 MiB/s]
+                 change:
+                        time:   [−1.0392% −0.5291% −0.0573%] (p = 0.05 < 0.05)
+                        thrpt:  [+0.0573% +0.5319% +1.0501%]
+                        Change within noise threshold.
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high mild
+Benchmarking gfm_dense/before/compile_html
+Benchmarking gfm_dense/before/compile_html: Warming up for 500.00 ms
+Benchmarking gfm_dense/before/compile_html: Collecting 20 samples in estimated 2.0320 s (12k iterations)
+Benchmarking gfm_dense/before/compile_html: Analyzing
+gfm_dense/before/compile_html
+                        time:   [163.84 µs 164.37 µs 164.97 µs]
+                        thrpt:  [105.07 MiB/s 105.46 MiB/s 105.80 MiB/s]
+Benchmarking gfm_dense/before/render_html
+Benchmarking gfm_dense/before/render_html: Warming up for 500.00 ms
+Benchmarking gfm_dense/before/render_html: Collecting 20 samples in estimated 2.0007 s (65k iterations)
+Benchmarking gfm_dense/before/render_html: Analyzing
+gfm_dense/before/render_html
+                        time:   [30.621 µs 31.088 µs 31.645 µs]
+                        thrpt:  [547.77 MiB/s 557.58 MiB/s 566.08 MiB/s]
+Found 3 outliers among 20 measurements (15.00%)
+  1 (5.00%) low mild
+  2 (10.00%) high severe
+Benchmarking gfm_dense/after/parse
+Benchmarking gfm_dense/after/parse: Warming up for 500.00 ms
+Benchmarking gfm_dense/after/parse: Collecting 20 samples in estimated 2.0142 s (15k iterations)
+Benchmarking gfm_dense/after/parse: Analyzing
+gfm_dense/after/parse   time:   [134.92 µs 135.89 µs 137.43 µs]
+                        thrpt:  [126.13 MiB/s 127.56 MiB/s 128.48 MiB/s]
+                 change:
+                        time:   [−15.306% −14.560% −13.660%] (p = 0.00 < 0.05)
+                        thrpt:  [+15.821% +17.042% +18.071%]
+                        Performance has improved.
+Found 2 outliers among 20 measurements (10.00%)
+  2 (10.00%) high severe
+Benchmarking gfm_dense/after/compile_html
+Benchmarking gfm_dense/after/compile_html: Warming up for 500.00 ms
+Benchmarking gfm_dense/after/compile_html: Collecting 20 samples in estimated 2.0175 s (12k iterations)
+Benchmarking gfm_dense/after/compile_html: Analyzing
+gfm_dense/after/compile_html
+                        time:   [165.44 µs 165.99 µs 166.53 µs]
+                        thrpt:  [104.09 MiB/s 104.42 MiB/s 104.77 MiB/s]
+Found 2 outliers among 20 measurements (10.00%)
+  1 (5.00%) high mild
+  1 (5.00%) high severe
+Benchmarking gfm_dense/after/render_html
+Benchmarking gfm_dense/after/render_html: Warming up for 500.00 ms
+Benchmarking gfm_dense/after/render_html: Collecting 20 samples in estimated 2.0028 s (66k iterations)
+Benchmarking gfm_dense/after/render_html: Analyzing
+gfm_dense/after/render_html
+                        time:   [30.541 µs 30.892 µs 31.167 µs]
+                        thrpt:  [556.17 MiB/s 561.12 MiB/s 567.57 MiB/s]
+
+Benchmarking gfm_decoded/before/parse
+Benchmarking gfm_decoded/before/parse: Warming up for 500.00 ms
+Benchmarking gfm_decoded/before/parse: Collecting 20 samples in estimated 2.0152 s (18k iterations)
+Benchmarking gfm_decoded/before/parse: Analyzing
+gfm_decoded/before/parse
+                        time:   [109.67 µs 110.36 µs 110.89 µs]
+                        thrpt:  [180.53 MiB/s 181.40 MiB/s 182.55 MiB/s]
+                 change:
+                        time:   [−0.5268% +0.6625% +1.7018%] (p = 0.27 > 0.05)
+                        thrpt:  [−1.6733% −0.6581% +0.5295%]
+                        No change in performance detected.
+Benchmarking gfm_decoded/before/compile_html
+Benchmarking gfm_decoded/before/compile_html: Warming up for 500.00 ms
+Benchmarking gfm_decoded/before/compile_html: Collecting 20 samples in estimated 2.0161 s (14k iterations)
+Benchmarking gfm_decoded/before/compile_html: Analyzing
+gfm_decoded/before/compile_html
+                        time:   [137.61 µs 138.55 µs 140.05 µs]
+                        thrpt:  [142.95 MiB/s 144.50 MiB/s 145.48 MiB/s]
+Benchmarking gfm_decoded/before/render_html
+Benchmarking gfm_decoded/before/render_html: Warming up for 500.00 ms
+Benchmarking gfm_decoded/before/render_html: Collecting 20 samples in estimated 2.0027 s (66k iterations)
+Benchmarking gfm_decoded/before/render_html: Analyzing
+gfm_decoded/before/render_html
+                        time:   [30.333 µs 30.402 µs 30.485 µs]
+                        thrpt:  [656.71 MiB/s 658.49 MiB/s 659.99 MiB/s]
+Found 3 outliers among 20 measurements (15.00%)
+  2 (10.00%) low mild
+  1 (5.00%) high mild
+Benchmarking gfm_decoded/after/parse
+Benchmarking gfm_decoded/after/parse: Warming up for 500.00 ms
+Benchmarking gfm_decoded/after/parse: Collecting 20 samples in estimated 2.0088 s (16k iterations)
+Benchmarking gfm_decoded/after/parse: Analyzing
+gfm_decoded/after/parse time:   [126.56 µs 127.75 µs 128.70 µs]
+                        thrpt:  [155.55 MiB/s 156.71 MiB/s 158.18 MiB/s]
+                 change:
+                        time:   [−16.546% −15.829% −15.076%] (p = 0.00 < 0.05)
+                        thrpt:  [+17.752% +18.806% +19.827%]
+                        Performance has improved.
+Benchmarking gfm_decoded/after/compile_html
+Benchmarking gfm_decoded/after/compile_html: Warming up for 500.00 ms
+Benchmarking gfm_decoded/after/compile_html: Collecting 20 samples in estimated 2.0186 s (13k iterations)
+Benchmarking gfm_decoded/after/compile_html: Analyzing
+gfm_decoded/after/compile_html
+                        time:   [159.63 µs 160.52 µs 161.46 µs]
+                        thrpt:  [123.99 MiB/s 124.72 MiB/s 125.41 MiB/s]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high severe
+Benchmarking gfm_decoded/after/render_html
+Benchmarking gfm_decoded/after/render_html: Warming up for 500.00 ms
+Benchmarking gfm_decoded/after/render_html: Collecting 20 samples in estimated 2.0036 s (64k iterations)
+Benchmarking gfm_decoded/after/render_html: Analyzing
+gfm_decoded/after/render_html
+                        time:   [31.112 µs 31.171 µs 31.241 µs]
+                        thrpt:  [640.81 MiB/s 642.25 MiB/s 643.46 MiB/s]
+Found 2 outliers among 20 measurements (10.00%)
+  2 (10.00%) high mild
+
+Benchmarking mdx/before/compile_jsx
+Benchmarking mdx/before/compile_jsx: Warming up for 500.00 ms
+Benchmarking mdx/before/compile_jsx: Collecting 20 samples in estimated 2.1253 s (2100 iterations)
+Benchmarking mdx/before/compile_jsx: Analyzing
+mdx/before/compile_jsx  time:   [1.0078 ms 1.0131 ms 1.0203 ms]
+                        thrpt:  [28.116 MiB/s 28.316 MiB/s 28.465 MiB/s]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high severe
+Benchmarking mdx/after/compile_jsx
+Benchmarking mdx/after/compile_jsx: Warming up for 500.00 ms
+Benchmarking mdx/after/compile_jsx: Collecting 20 samples in estimated 2.1335 s (2100 iterations)
+Benchmarking mdx/after/compile_jsx: Analyzing
+mdx/after/compile_jsx   time:   [1.0072 ms 1.0118 ms 1.0166 ms]
+                        thrpt:  [28.218 MiB/s 28.351 MiB/s 28.480 MiB/s]
+Benchmarking mdx/before/render_jsx
+Benchmarking mdx/before/render_jsx: Warming up for 500.00 ms
+Benchmarking mdx/before/render_jsx: Collecting 20 samples in estimated 2.1174 s (3570 iterations)
+Benchmarking mdx/before/render_jsx: Analyzing
+mdx/before/render_jsx   time:   [594.63 µs 600.01 µs 606.43 µs]
+                        thrpt:  [47.304 MiB/s 47.810 MiB/s 48.242 MiB/s]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high mild
+Benchmarking mdx/after/render_jsx
+Benchmarking mdx/after/render_jsx: Warming up for 500.00 ms
+Benchmarking mdx/after/render_jsx: Collecting 20 samples in estimated 2.0021 s (3360 iterations)
+Benchmarking mdx/after/render_jsx: Analyzing
+mdx/after/render_jsx    time:   [592.02 µs 593.48 µs 595.54 µs]
+                        thrpt:  [48.169 MiB/s 48.336 MiB/s 48.455 MiB/s]
