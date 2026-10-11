@@ -90,6 +90,25 @@ function assertProjectionContent(result) {
   assert.ok(!result.markdown.includes("{dynamic}"));
 }
 
+test("raw HTML context follows original spans across lowered inline footnotes", () => {
+  const fixtures = [
+    ["before ^[note<script>hidden] outside</script>visible\n", "visible\n"],
+    ["before<script>hidden ^[note</script>visible] after\n", "visible] after\n"],
+  ];
+  for (const [source, ending] of fixtures) {
+    const result = prepare(source, { format: "md", inlineFootnotes: true }).projectMarkdown();
+    assert.ok(result.markdown.endsWith(ending));
+    assert.ok(!result.markdown.includes("hidden"));
+    const omission = result.diagnostics.find(({ code }) => code === "raw-text-element-omitted");
+    assert.equal(omission.start, source.indexOf("<script>"));
+    assert.equal(omission.end, source.indexOf("</script>") + "</script>".length);
+  }
+  const source = "before ^[note `<script>` text] after\n";
+  const result = prepare(source, { format: "md", inlineFootnotes: true }).projectMarkdown();
+  assert.equal(result.markdown, source);
+  assert.deepEqual(result.diagnostics, []);
+});
+
 test("prepared Markdown projection retains original Markdown and code without rendering", () => {
   const prepared = prepare(projectionSource);
   const before = prepared.render({}, () => "<pre>example</pre>");

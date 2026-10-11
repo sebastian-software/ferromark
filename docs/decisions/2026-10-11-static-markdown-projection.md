@@ -20,6 +20,12 @@ boundaries inside already parsed JSX nodes are verified, using attribute spans
 to skip quotes, expressions, and spreads; uncertain bounds omit the complete
 element. Existing public AST struct literals remain compatible.
 
+Raw HTML body omissions are planned from parsed HTML spans sorted by original
+source position. This keeps closing tags aligned with authored text when table
+captions or lowered inline footnotes have a different AST display order. The
+existing tag scanner reads only these original HTML slices; source gaps and
+code are never scanned for tags.
+
 Every diagnostic uses an original half-open UTF-8 byte span. Removal preserves
 line endings and container prefixes and separates adjacent content where
 necessary. Authored indentation is retained, including code; this can differ

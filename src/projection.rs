@@ -4,7 +4,7 @@
 //! not evaluate JavaScript, render components, serialize transforms, or reparse
 //! Markdown. Code and ordinary Markdown are copied from the source verbatim.
 
-use crate::ast::{Document, MdxJsxAttributeEntry, Node, Span, Table, Visit, walk_node};
+use crate::ast::{Document, Html, MdxJsxAttributeEntry, Node, Span, Visit, walk_node};
 use crate::renderer::{collect_jsx_heading_text, update_raw_text_context};
 
 /// Choices for projecting original source as static Markdown.
@@ -95,6 +95,7 @@ impl Document<'_> {
         options: &MarkdownProjectionOptions,
     ) -> Result<MarkdownProjection, MarkdownProjectionError> {
         let lines = SourceLines::new(source);
+        let raw_text_ranges = raw_text_omissions(self, source)?;
         let mut collector = Collector {
             source,
             lines: &lines,
@@ -102,10 +103,15 @@ impl Document<'_> {
             diagnostics: Vec::new(),
             invalid: None,
             inline_context: 0,
-            raw_text: None,
-            raw_text_start: None,
+            raw_text_ranges: &raw_text_ranges,
         };
         collector.validate(self.span);
+        for span in &raw_text_ranges {
+            collector.omit(
+                *span,
+                MarkdownProjectionDiagnosticKind::RawTextElementOmitted,
+            );
+        }
         if options.omit_front_matter
             && let Some(front_matter) = &self.front_matter
         {
@@ -136,12 +142,6 @@ impl Document<'_> {
             }
             collector.visit_node(child);
         }
-        if let Some(start) = collector.raw_text_start {
-            collector.omit(
-                Span::new(start, source.len() as u32),
-                MarkdownProjectionDiagnosticKind::RawTextElementOmitted,
-            );
-        }
         if let Some(span) = collector.invalid {
             return Err(MarkdownProjectionError { span });
         }
@@ -164,8 +164,7 @@ struct Collector<'source> {
     diagnostics: Vec<MarkdownProjectionDiagnostic>,
     invalid: Option<Span>,
     inline_context: usize,
-    raw_text: Option<String>,
-    raw_text_start: Option<u32>,
+    raw_text_ranges: &'source [Span],
 }
 
 struct Removal {
@@ -174,6 +173,16 @@ struct Removal {
 }
 
 impl Collector<'_> {
+    fn inside_raw_text(&self, span: Span) -> bool {
+        let end = self
+            .raw_text_ranges
+            .partition_point(|range| range.start <= span.start);
+        end.checked_sub(1).is_some_and(|index| {
+            let range = self.raw_text_ranges[index];
+            span.end <= range.end
+        })
+    }
+
     fn validate(&mut self, span: Span) -> bool {
         let valid = span.start <= span.end
             && self
@@ -249,24 +258,11 @@ impl Collector<'_> {
 }
 
 impl Visit<'_> for Collector<'_> {
-    fn visit_table(&mut self, table: &Table<'_>) {
-        // Raw HTML context follows authored source order. A caption is written
-        // after the rows even though the default display walker visits it first.
-        for row in &table.children {
-            self.visit_table_row(row);
-        }
-        if let Some(attributes) = &table.attributes {
-            for child in &attributes.caption {
-                self.visit_node(child);
-            }
-        }
-    }
-
     fn visit_node(&mut self, node: &Node<'_>) {
         if !self.validate(node.span()) {
             return;
         }
-        if self.raw_text.is_some() && !matches!(node, Node::Html(_)) {
+        if self.inside_raw_text(node.span()) && !matches!(node, Node::Html(_)) {
             walk_node(self, node);
             return;
         }
@@ -283,19 +279,6 @@ impl Visit<'_> for Collector<'_> {
                 MarkdownProjectionDiagnosticKind::ExpressionOmitted,
             ),
             Node::Html(node) => {
-                let was_raw_text = self.raw_text.is_some();
-                update_raw_text_context(node.value, &mut self.raw_text);
-                if !was_raw_text && self.raw_text.is_some() {
-                    self.raw_text_start = Some(node.span.start);
-                } else if was_raw_text
-                    && self.raw_text.is_none()
-                    && let Some(start) = self.raw_text_start.take()
-                {
-                    self.omit(
-                        Span::new(start, node.span.end),
-                        MarkdownProjectionDiagnosticKind::RawTextElementOmitted,
-                    );
-                }
                 self.omit(node.span, MarkdownProjectionDiagnosticKind::RawHtmlOmitted);
             }
             Node::MdxJsxFlowElement(node) => {
@@ -331,6 +314,52 @@ impl Visit<'_> for Collector<'_> {
             }
         }
     }
+}
+
+#[derive(Default)]
+struct HtmlSpans {
+    spans: Vec<Span>,
+}
+
+impl Visit<'_> for HtmlSpans {
+    fn visit_html(&mut self, html: &Html<'_>) {
+        self.spans.push(html.span);
+    }
+}
+
+fn raw_text_omissions(
+    document: &Document<'_>,
+    source: &str,
+) -> Result<Vec<Span>, MarkdownProjectionError> {
+    // Captions and lowered inline footnotes can be visited in display order.
+    // Only parsed HTML occurrences participate; source gaps and code are never
+    // scanned. Track their original source slices in authored order instead.
+    let mut html = HtmlSpans::default();
+    html.visit_document(document);
+    html.spans.sort_by_key(|span| (span.start, span.end));
+    html.spans.dedup();
+    let mut context = None;
+    let mut start = None;
+    let mut ranges = Vec::new();
+    for span in html.spans {
+        let raw = source
+            .get(span.start as usize..span.end as usize)
+            .ok_or(MarkdownProjectionError { span })?;
+        let was_raw_text = context.is_some();
+        update_raw_text_context(raw, &mut context);
+        if !was_raw_text && context.is_some() {
+            start = Some(span.start);
+        } else if was_raw_text
+            && context.is_none()
+            && let Some(start) = start.take()
+        {
+            ranges.push(Span::new(start, span.end));
+        }
+    }
+    if let Some(start) = start {
+        ranges.push(Span::new(start, source.len() as u32));
+    }
+    Ok(ranges)
 }
 
 // Only verify delimiters of an already parsed element. Attribute spans skip

@@ -304,6 +304,67 @@ fn raw_html_context_follows_table_rows_before_the_authored_caption() {
 }
 
 #[test]
+fn raw_html_context_follows_original_inline_footnote_spans() {
+    for (source, ending) in [
+        (
+            "before ^[note<script>hidden] outside</script>visible\n",
+            "visible\n",
+        ),
+        (
+            "before<script>hidden ^[note</script>visible] after\n",
+            "visible] after\n",
+        ),
+    ] {
+        let allocator = Allocator::new();
+        let document = Parser::with_options(
+            &allocator,
+            source,
+            ParserOptions {
+                inline_footnotes: true,
+                ..ParserOptions::gfm()
+            },
+        )
+        .parse()
+        .unwrap();
+        let result = document
+            .project_markdown(source, &MarkdownProjectionOptions::default())
+            .unwrap();
+        assert!(result.markdown.ends_with(ending));
+        assert!(!result.markdown.contains("hidden"));
+        let omission = result
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == Kind::RawTextElementOmitted)
+            .unwrap();
+        assert_eq!(
+            omission.span.start as usize,
+            source.find("<script>").unwrap()
+        );
+        assert_eq!(
+            omission.span.end as usize,
+            source.find("</script>").unwrap() + "</script>".len()
+        );
+    }
+    let source = "before ^[note `<script>` text] after\n";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(
+        &allocator,
+        source,
+        ParserOptions {
+            inline_footnotes: true,
+            ..ParserOptions::gfm()
+        },
+    )
+    .parse()
+    .unwrap();
+    let result = document
+        .project_markdown(source, &MarkdownProjectionOptions::default())
+        .unwrap();
+    assert_eq!(result.markdown, source);
+    assert!(result.diagnostics.is_empty());
+}
+
+#[test]
 fn unterminated_inline_raw_text_body_is_omitted_through_the_end_of_source() {
     let source = "before<script>const hidden = 1;\n\n## Hidden heading\n";
     let allocator = Allocator::new();
