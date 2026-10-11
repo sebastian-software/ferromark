@@ -109,10 +109,8 @@ the same native fence metadata and highlighting. Start with the
 [Node JSX guide](docs/jsx-node.md) for API choices and runnable examples, or the
 [Rust renderer contract](docs/jsx-renderer.md) for core output.
 
-Use a prepared document's `projectMarkdown` method to export static authored
-Markdown and code with omission diagnostics. The
-[projection guide](docs/markdown-projection.md) explains its source fidelity and
-conservative MDX policies.
+Export [static Markdown from MDX](docs/markdown-projection.md) with a prepared
+document's `projectMarkdown` method.
 
 ## Make it yours
 
