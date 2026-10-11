@@ -128,6 +128,7 @@ test("MDX literal attributes preserve custom component origin and ignore express
 test("native passes preserve honest provenance and repeated extraction preserves body/module output", () => {
   const source = "[keep](/keep) [Hello :smile:](/changed) #521\n";
   const prepared = prepareDocument(source, {
+    trackReferences: true,
     passes: [
       { kind: "emojiShortcodes" },
       { kind: "githubReferences", repository: "sebastian-software/ferromark" },
@@ -169,6 +170,9 @@ test("prepareDocument shares preparation option validation and UTF-8 input error
     { output: "module" },
     { assets: { remote: false } },
     { format: "tsx" },
+    { trackReferences: null },
+    { trackReferences: 1 },
+    { trackReferences: "true" },
     { unexpected: true },
   ]) {
     assert.throws(() => prepareDocument("text", options), TypeError);
@@ -187,4 +191,56 @@ test("preparation copies bytes after option getters, matching compiler preparati
   assert.equal(analysis.collectReferences()[0].destination, "/after_");
   assert.equal(analysis.collectReferences()[0].text, "b");
   assert.deepEqual(analysis.collectReferences(), highlighted.collectReferences());
+});
+
+test("native passes require explicit reference tracking while ordinary prepared rendering stays available", () => {
+  const session = offlineCompiler();
+  for (const prepare of [prepareDocument, session.prepare.bind(session)]) {
+    const source = "[Hello :smile:](/target)";
+    const passes = [{ kind: "emojiShortcodes" }];
+    for (const options of [{ passes }, { passes, trackReferences: false }]) {
+      const prepared = prepare(source, options);
+      const before = prepared.render();
+      assert.ok(before.body.includes("Hello 😄"));
+      assert.throws(() => prepared.collectReferences(), /trackReferences: true during preparation/);
+      assert.deepEqual(prepared.render(), before);
+      assert.ok(prepared.renderModule().code.includes("Hello 😄"));
+    }
+    assert.equal(
+      prepare(source, { passes, trackReferences: true }).collectReferences()[0].provenance,
+      "transformed",
+    );
+    assert.equal(prepare(source, { passes: [] }).collectReferences()[0].provenance, "source");
+    assert.equal(
+      prepare(source, { trackReferences: true }).collectReferences()[0].provenance,
+      "source",
+    );
+  }
+});
+
+test("tracking getters are validated once, including inherited getters, for both preparations", () => {
+  const session = offlineCompiler();
+  for (const prepare of [prepareDocument, session.prepare.bind(session)]) {
+    let reads = 0;
+    const options = Object.create({
+      get trackReferences() {
+        reads += 1;
+        return reads === 1 ? true : "invalid second read";
+      },
+    });
+    options.passes = [{ kind: "emojiShortcodes" }];
+    const prepared = prepare("[Hello :smile:](/target)", options);
+    assert.equal(reads, 1);
+    assert.equal(prepared.collectReferences()[0].provenance, "transformed");
+    assert.throws(
+      () => prepare("text", Object.create({ trackReferences: "true" })),
+      /trackReferences must be a boolean/,
+    );
+  }
+  assert.throws(() => compileJsx("text", { trackReferences: true }), /unknown JSX option/);
+  assert.throws(() => session.compile("text", { trackReferences: true }), /unknown JSX option/);
+  assert.throws(
+    () => prepareDocument("text").render({ trackReferences: true }),
+    /unknown JSX render option/,
+  );
 });

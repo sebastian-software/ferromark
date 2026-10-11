@@ -15,6 +15,15 @@ use crate::jsx::{
 };
 use crate::{CodeCallback, Options, input::Utf8Input};
 
+/// Preparation-only choices kept separate from JSX rendering options.
+#[napi(object)]
+#[derive(Default)]
+pub struct PreparationOptions {
+    pub format: Option<String>,
+    /// Capture source reference provenance before native passes. Default: false.
+    pub track_references: Option<bool>,
+}
+
 /// Owns a Ferriki highlighter, asset catalogs, and theme registrations across documents.
 #[napi]
 pub struct JsxCompiler {
@@ -71,11 +80,16 @@ impl JsxCompiler {
         &self,
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
         options: Option<Options>,
-        jsx_options: Option<JsxOptions>,
+        preparation_options: Option<PreparationOptions>,
     ) -> Result<PreparedJsxDocument> {
         validate_preparation_options(options.as_ref())?;
-        let format = preparation_format(jsx_options)?;
-        let parsed = prepare_jsx_document(markdown, options, format.as_deref(), true)?;
+        let preparation = preparation_options.unwrap_or_default();
+        let parsed = prepare_jsx_document(
+            markdown,
+            options,
+            preparation.format.as_deref(),
+            preparation.track_references.unwrap_or(false),
+        )?;
         let metadata = parsed.metadata()?;
         Ok(PreparedJsxDocument {
             parsed,
@@ -405,27 +419,4 @@ pub(crate) fn engine_error(error: ferromark::ferriki::Error) -> Error {
         Status::GenericFailure,
         format!("Ferriki JSX highlighting: {error}"),
     )
-}
-
-pub(crate) fn preparation_format(jsx_options: Option<JsxOptions>) -> Result<Option<String>> {
-    let jsx = jsx_options.unwrap_or_default();
-    if jsx.component_prefix.is_some()
-        || jsx.callout_components.is_some()
-        || jsx.code_components.is_some()
-        || jsx.code_block_component.is_some()
-        || jsx.omit_title_heading.is_some()
-        || jsx.heading_ids.is_some()
-        || jsx.heading_offset.is_some()
-        || jsx.heading_id_prefix.is_some()
-        || jsx.callouts.is_some()
-        || jsx.provider_import_source.is_some()
-        || jsx.filename.is_some()
-        || jsx.default_export.is_some()
-        || jsx.reserved_bindings.is_some()
-    {
-        return Err(usage(
-            "prepare accepts only the JSX format; pass render choices to render or renderModule",
-        ));
-    }
-    Ok(jsx.format)
 }

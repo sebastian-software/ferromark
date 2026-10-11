@@ -151,6 +151,7 @@ compileJsx("```js\nvalue\n```", {}, async () => {
 
 const analysisDocument: PreparedJsxDocument = prepareDocument(Buffer.from("[typed](/target)"), {
   format: "mdx",
+  trackReferences: true,
   passes: [{ kind: "emojiShortcodes" }],
 });
 const references: readonly DocumentReference[] = analysisDocument.collectReferences();
@@ -162,3 +163,9 @@ references[0] = references[0];
 references[0].destination = "/changed";
 // @ts-expect-error -- preparation rejects render-time settings
 prepareDocument("text", { headingOffset: 1 });
+// @ts-expect-error -- reference tracking is a preparation-only choice
+compileJsx("text", { trackReferences: true });
+// @ts-expect-error -- reference tracking requires a boolean
+prepareDocument("text", { trackReferences: "true" });
+// @ts-expect-error -- tracking cannot be enabled after passes have already run
+analysisDocument.render({ trackReferences: true });

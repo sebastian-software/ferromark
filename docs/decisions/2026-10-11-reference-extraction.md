@@ -19,7 +19,11 @@ coverage or custom component rendering behavior.
 
 The source range contract uses half-open original UTF-8 byte offsets. A
 pre-pass identity map borrows source/arena values and retains labels for exact
-comparison when native passes run. Changed and generated nodes never claim a
+comparison only when native passes run and `trackReferences: true` was selected
+during preparation. The preparation-only option defaults to `false` on both
+Node entry points, preserving ordinary preparation without a reference walk
+or snapshot allocations. Collection with untracked passes fails explicitly;
+untouched trees need no tracking. Changed and generated nodes never claim a
 span for the resulting value; retained changes expose a related original
 range. Core snapshots are explicit. Reference extraction arrays are only
 materialized when requested.
@@ -39,6 +43,7 @@ entity-encoded source, Unicode, blockquotes, BOM, and CRLF input.
 Rust and Node fixtures exercise Markdown link/image forms, definition
 resolution across MDX boundaries, literal attributes, unsupported forms,
 code exclusion, original offsets, duplicates, transform provenance, immutable
-results, and repeat extraction with stable body/module rendering. The Node
+results, opt-in provenance capture, default preparation without snapshots,
+getter validation, and repeat extraction with stable body/module rendering. The Node
 example is exercised with Ferriki remote access disabled. No speed claim is
 made.

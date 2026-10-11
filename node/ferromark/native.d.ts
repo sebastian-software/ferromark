@@ -4,7 +4,7 @@
 export declare class JsxCompiler {
   constructor(settings: string)
   /** Parses source and runs native transforms once, returning an owned document handle. */
-  prepare(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null): PreparedJsxDocument
+  prepare(markdown: string | Uint8Array, options?: Options | undefined | null, preparationOptions?: PreparationOptions | undefined | null): PreparedJsxDocument
   /** Compiles source and reuses the loaded native grammars and themes. */
   compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
   /** Compiles source to an MDX module; the public facade selects this entry. */
@@ -210,8 +210,15 @@ export interface Options {
   preset?: string
 }
 
+/** Preparation-only choices kept separate from JSX rendering options. */
+export interface PreparationOptions {
+  format?: string
+  /** Capture source reference provenance before native passes. Default: false. */
+  trackReferences?: boolean
+}
+
 /** Parses and runs native passes without loading highlighting assets. */
-export declare function prepareDocument(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null): PreparedJsxDocument
+export declare function prepareDocument(markdown: string | Uint8Array, options?: Options | undefined | null, preparationOptions?: PreparationOptions | undefined | null): PreparedJsxDocument
 
 export interface RenderCodeBlockInput {
   code: string

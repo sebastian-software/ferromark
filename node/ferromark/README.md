@@ -472,6 +472,9 @@ console.log(document.collectReferences().map(({ kind, destination }) => ({ kind,
 ```
 
 Existing `JsxCompiler.prepare` handles also expose `collectReferences()`.
+With native passes, set `trackReferences: true` during preparation; collection
+otherwise throws. It defaults off to avoid provenance work during ordinary
+preparation, and is unnecessary when no passes are configured.
 Results are immutable occurrences with half-open original UTF-8 byte ranges;
 pass-generated or changed values have explicit provenance. The
 [reference guide](https://github.com/sebastian-software/ferromark/blob/main/docs/references.md)

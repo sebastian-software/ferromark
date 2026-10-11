@@ -371,7 +371,10 @@ type JsxRenderOptionKey =
   | "headingOffset"
   | "headingIdPrefix"
   | "callouts";
-export type JsxPreparationOptions = Omit<CompileJsxOptions, JsxRenderOptionKey | "output">;
+export type JsxPreparationOptions = {
+  /** Capture reference provenance before native passes. Default: false; required for collection with passes. */
+  trackReferences?: boolean;
+} & Omit<CompileJsxOptions, JsxRenderOptionKey | "output">;
 
 /** Render-time choices for a prepared JSX body. */
 export type JsxRenderOptions = Pick<CompileJsxOptions, JsxRenderOptionKey>;
@@ -424,7 +427,7 @@ export declare function prepareDocument(
 export type PreparedJsxDocument = Readonly<{
   /** Metadata snapshot computed from the prepared AST without rendering JSX. */
   metadata: JsxPreparedMetadata;
-  /** Read-only, ordered references. Raw HTML and dynamic MDX attributes are excluded. */
+  /** Ordered references. With native passes, preparation must set trackReferences: true or this throws. */
   collectReferences(): readonly DocumentReference[];
   /** Render a body. Repeated calls do not mutate the prepared tree or rerun passes. */
   render(options?: JsxRenderOptions, renderCode?: JsxCodeRenderer): JsxResult;

@@ -6,3 +6,9 @@ for (const reference of document.collectReferences()) {
   console.log(reference.kind, reference.destination, reference.span);
   // Apply application-specific route or asset rules to each destination.
 }
+
+const transformed = prepareDocument("[Hello :smile:](/hello)", {
+  passes: [{ kind: "emojiShortcodes" }],
+  trackReferences: true,
+});
+console.log(transformed.collectReferences()[0].provenance); // transformed

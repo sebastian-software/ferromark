@@ -135,6 +135,11 @@ highlighter even after the compiler object becomes unreachable. Keeping handles
 in an application cache also keeps those resources alive; dropping references
 lets garbage collection reclaim them. There is no explicit disposal method.
 
+`trackReferences` is a preparation-only opt-in for source provenance across
+native passes. It defaults off; ordinary preparation does not capture reference
+snapshots. Enable it before collecting references from a handle with passes.
+See the [reference guide](references.md) for the complete contract.
+
 ## Compile an MDX module
 
 ```js

@@ -34,9 +34,25 @@ Call `collectReferences()` on a compiler-prepared handle to reuse its exact
 AST and passes. Repeated collection does not reparse, rerun passes, highlight,
 change metadata, or change subsequent JSX body/module rendering. Each call
 returns a fresh frozen array of frozen owned occurrences and ranges. Extraction
-results are allocated on demand. When native passes are configured, preparation
-retains borrowed reference identity data and collected labels for exact source
-provenance comparisons; ordinary preparation without passes retains none.
+results are allocated on demand. `trackReferences` defaults to `false`, so
+ordinary preparation does not walk references or retain provenance snapshots.
+Without native passes, collection works without this setting. With passes,
+enable tracking explicitly before preparation; otherwise `collectReferences()`
+throws rather than claiming source provenance for a transformed tree:
+
+```js
+const transformed = prepareDocument('[Hello :smile:](/hello)', {
+  passes: [{ kind: "emojiShortcodes" }],
+  trackReferences: true,
+});
+console.log(transformed.collectReferences()[0].provenance); // "transformed"
+```
+
+Tracking with passes retains borrowed reference identity data and collected
+labels for exact source provenance comparisons. This choice applies equally
+to `prepareDocument` and `JsxCompiler.prepare`. Rendering remains available
+without tracking; its setting cannot be changed after passes have run.
+Compile and render options reject `trackReferences`.
 
 Asset-free handles can also render ordinary JSX, including plain code blocks,
 and accept the existing synchronous code callback. Compiler-prepared handles

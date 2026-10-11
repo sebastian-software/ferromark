@@ -509,6 +509,7 @@ const jsxCodeBlockInputKeys = new Set(["code", "language", "meta"]);
 const moduleOnlyKeys = ["providerImportSource", "filename", "defaultExport", "reservedBindings"];
 const jsxPreparationKeys = new Set([
   "format",
+  "trackReferences",
   "tables",
   "mergedTableCells",
   "tableAttributes",
@@ -667,6 +668,16 @@ function validateJsxPreparationOptions(options) {
   }
 }
 
+/** @param {import('./index.mjs').JsxPreparationOptions | undefined} options Preparation choices. */
+function nativePreparationOptions(options) {
+  const format = options?.format;
+  const trackReferences = options?.trackReferences;
+  if (trackReferences !== undefined && typeof trackReferences !== "boolean") {
+    throw new TypeError("trackReferences must be a boolean");
+  }
+  return { format, trackReferences };
+}
+
 /** @param {string | symbol} key An option key. @returns {string} Its rejected category. */
 function preparationOptionCategory(key) {
   if (typeof key !== "string") {
@@ -769,8 +780,8 @@ function preparedFacade(nativePrepared) {
  */
 export function prepareDocument(markdown, preparationOptions) {
   validateJsxPreparationOptions(preparationOptions);
-  const format = preparationOptions?.format;
-  return preparedFacade(loadNative().prepareDocument(markdown, preparationOptions, { format }));
+  const preparation = nativePreparationOptions(preparationOptions);
+  return preparedFacade(loadNative().prepareDocument(markdown, preparationOptions, preparation));
 }
 
 /**
@@ -818,8 +829,8 @@ export class JsxCompiler {
    */
   prepare(markdown, preparationOptions) {
     validateJsxPreparationOptions(preparationOptions);
-    const format = preparationOptions?.format;
-    const nativePrepared = this.#native.prepare(markdown, preparationOptions, { format });
+    const preparation = nativePreparationOptions(preparationOptions);
+    const nativePrepared = this.#native.prepare(markdown, preparationOptions, preparation);
     return preparedFacade(nativePrepared);
   }
 
@@ -941,7 +952,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  * }} NativePreparedJsxDocument
  * @typedef {{
  *   prepare(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,
- *     jsxOptions?: Pick<NativeJsxOptions, 'format'>): NativePreparedJsxDocument
+ *     preparationOptions?: Pick<import('./index.mjs').JsxPreparationOptions, 'format' | 'trackReferences'>): NativePreparedJsxDocument
  *   compile(markdown: string | Uint8Array, options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
@@ -977,7 +988,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   }
  *   JsxCompiler: { new (settings: string): NativeJsxCompilerSession }
  *   prepareDocument(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,
- *     jsxOptions?: Pick<NativeJsxOptions, 'format'>): NativePreparedJsxDocument
+ *     preparationOptions?: Pick<import('./index.mjs').JsxPreparationOptions, 'format' | 'trackReferences'>): NativePreparedJsxDocument
  *   compileJsx(
  *     markdown: string | Uint8Array,
  *     options?: NativeJsxOptions,

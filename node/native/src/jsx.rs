@@ -260,7 +260,14 @@ struct JsxDocumentOwner {
 
 struct PreparedDocument<'a> {
     document: Document<'a>,
-    references: Option<ferromark::ReferenceSnapshot<'a>>,
+    references: ReferenceTracking<'a>,
+}
+
+// Keep ordinary handles small; snapshot storage is allocated only on opt-in.
+enum ReferenceTracking<'a> {
+    Unmodified,
+    Untracked,
+    Tracked(Box<ferromark::ReferenceSnapshot<'a>>),
 }
 
 self_cell!(
@@ -283,12 +290,18 @@ impl ParsedJsxDocument {
             .with_dependent(|owner, document| render(&owner.source, &document.document))
     }
 
-    pub(crate) fn collect_references(&self) -> Vec<ferromark::DocumentReference> {
-        self.tree.with_dependent(|owner, document| {
-            document.references.as_ref().map_or_else(
-                || document.document.collect_references(&owner.source),
-                |snapshot| snapshot.collect(&document.document, &owner.source),
-            )
+    pub(crate) fn collect_references(&self) -> Result<Vec<ferromark::DocumentReference>> {
+        self.tree.with_dependent(|owner, document| match &document.references {
+            ReferenceTracking::Unmodified => {
+                Ok(document.document.collect_references(&owner.source))
+            }
+            ReferenceTracking::Tracked(snapshot) => {
+                Ok(snapshot.collect(&document.document, &owner.source))
+            }
+            ReferenceTracking::Untracked => Err(Error::new(
+                Status::InvalidArg,
+                "collectReferences requires trackReferences: true during preparation when native passes are configured",
+            )),
         })
     }
 
@@ -406,9 +419,18 @@ fn prepare_tree(
                 format!("MDX module declarations must appear at document top level (at {span:?})"),
             ));
         }
-        let references = (track_references && !pipeline.is_empty())
-            .then(|| ferromark::ReferenceSnapshot::capture(&document, &owner.source));
-        if !pipeline.is_empty() {
+        let has_passes = !pipeline.is_empty();
+        let references = if !has_passes {
+            ReferenceTracking::Unmodified
+        } else if track_references {
+            ReferenceTracking::Tracked(Box::new(ferromark::ReferenceSnapshot::capture(
+                &document,
+                &owner.source,
+            )))
+        } else {
+            ReferenceTracking::Untracked
+        };
+        if has_passes {
             let context = TransformContext::new(&owner.allocator, &owner.source, &html_options);
             pipeline
                 .run(&mut document, &context)
@@ -813,4 +835,55 @@ fn render_parsed(
             })
             .collect(),
     }))
+}
+
+#[cfg(test)]
+mod reference_tracking_tests {
+    use super::{ParsedJsxDocument, ReferenceTracking, prepare_tree, render_defaults};
+
+    #[test]
+    fn snapshots_require_both_passes_and_explicit_tracking() {
+        for (has_passes, track_references) in
+            [(false, false), (false, true), (true, false), (true, true)]
+        {
+            let mut options = crate::options::addon_defaults();
+            if has_passes {
+                options
+                    .pipeline
+                    .add(ferromark_transforms::EmojiShortcodesPass);
+            }
+            let defaults = render_defaults(&options);
+            let tree = prepare_tree(
+                "[Hello :smile:](/target)".to_owned(),
+                options,
+                None,
+                track_references,
+            )
+            .unwrap();
+            tree.with_dependent(|_, prepared| {
+                assert_eq!(
+                    matches!(&prepared.references, ReferenceTracking::Tracked(_)),
+                    has_passes && track_references,
+                );
+                assert_eq!(
+                    matches!(&prepared.references, ReferenceTracking::Untracked),
+                    has_passes && !track_references,
+                );
+            });
+            let parsed = ParsedJsxDocument { tree, defaults };
+            let references = parsed.collect_references();
+            if has_passes && !track_references {
+                assert!(
+                    references
+                        .unwrap_err()
+                        .to_string()
+                        .contains("trackReferences: true")
+                );
+            } else {
+                let references = references.unwrap();
+                assert_eq!(references.len(), 1);
+                assert_eq!(references[0].span.is_none(), has_passes);
+            }
+        }
+    }
 }

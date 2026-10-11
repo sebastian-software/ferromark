@@ -3,8 +3,8 @@
 use napi::bindgen_prelude::Result;
 use napi_derive::napi;
 
-use crate::jsx::{JsxOptions, SourceRange, prepare_jsx_document};
-use crate::jsx_compiler::{PreparedJsxDocument, preparation_format, validate_preparation_options};
+use crate::jsx::{SourceRange, prepare_jsx_document};
+use crate::jsx_compiler::{PreparationOptions, PreparedJsxDocument, validate_preparation_options};
 use crate::{Options, input::Utf8Input};
 
 /// Parses and runs native passes without loading highlighting assets.
@@ -12,15 +12,15 @@ use crate::{Options, input::Utf8Input};
 pub fn prepare_document(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
-    jsx_options: Option<JsxOptions>,
+    preparation_options: Option<PreparationOptions>,
 ) -> Result<PreparedJsxDocument> {
     validate_preparation_options(options.as_ref())?;
-    let format = preparation_format(jsx_options)?;
+    let preparation = preparation_options.unwrap_or_default();
     PreparedJsxDocument::without_highlighting(prepare_jsx_document(
         markdown,
         options,
-        format.as_deref(),
-        true,
+        preparation.format.as_deref(),
+        preparation.track_references.unwrap_or(false),
     )?)
 }
 
@@ -42,9 +42,10 @@ pub struct DocumentReference {
 impl PreparedJsxDocument {
     /// Collects Markdown references and literal MDX href/src attributes on demand.
     #[napi(catch_unwind)]
-    pub fn collect_references(&self) -> Vec<DocumentReference> {
-        self.parsed
-            .collect_references()
+    pub fn collect_references(&self) -> Result<Vec<DocumentReference>> {
+        Ok(self
+            .parsed
+            .collect_references()?
             .into_iter()
             .map(|reference| DocumentReference {
                 kind: match reference.kind {
@@ -67,7 +68,7 @@ impl PreparedJsxDocument {
                 }
                 .to_owned(),
             })
-            .collect()
+            .collect())
     }
 }
 
