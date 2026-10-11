@@ -806,7 +806,6 @@ function freezeTextExtraction(result) {
   return Object.freeze(result);
 }
 
-
 class PreparedDocumentFacade {
   /** @type {NativePreparedJsxDocument} */
   #nativePrepared;
