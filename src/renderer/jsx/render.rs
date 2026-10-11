@@ -1520,7 +1520,8 @@ fn callout_paragraph_has_body(paragraph: &Paragraph<'_>, consumed: usize) -> boo
     false
 }
 
-/// Tracks raw text elements for static text analysis, using JSX's tag scanner.
+/// Tracks HTML raw text elements for static analysis using JSX's tag scanner.
+/// HTML ignores a self-closing slash on these non-void start tags.
 pub fn update_raw_text_context(raw: &str, context: &mut Option<String>) {
     let mut cursor = 0;
     while let Some(relative) = raw[cursor..].find('<') {
@@ -1539,8 +1540,7 @@ pub fn update_raw_text_context(raw: &str, context: &mut Option<String>) {
                 {
                     *context = None;
                 }
-            } else if !tag.self_closing
-                && context.is_none()
+            } else if context.is_none()
                 && ["script", "style", "textarea", "title"]
                     .iter()
                     .any(|name| name.eq_ignore_ascii_case(tag.name))

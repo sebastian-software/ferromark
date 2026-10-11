@@ -365,3 +365,105 @@ fn custom_title_components_keep_nested_headings_and_match_final_jsx_anchors() {
     );
     assert_eq!(extracted.sections[1].parent_index, Some(0));
 }
+
+#[test]
+fn html_self_closing_slashes_do_not_make_raw_text_elements_void() {
+    for tag in ["script", "style", "title", "textarea"] {
+        let source = format!("before<{tag}/>hidden</{tag}>after\n");
+        let arena = Allocator::new();
+        let document = Parser::new(&arena, &source).parse().unwrap();
+        assert_eq!(
+            document
+                .extract_text(&TextExtractionOptions::default())
+                .text,
+            "before after",
+            "{tag}"
+        );
+    }
+}
+
+#[cfg(feature = "jsx")]
+#[test]
+fn mdx_self_closing_raw_text_elements_do_not_hide_following_prose() {
+    for tag in ["script", "style", "title", "textarea"] {
+        let source = format!("before<{tag}/>after\n");
+        let arena = Allocator::new();
+        let document = Parser::with_options(
+            &arena,
+            &source,
+            ParserOptions {
+                mdx: true,
+                mdx_compatible: true,
+                ..ParserOptions::default()
+            },
+        )
+        .parse()
+        .unwrap();
+        assert_eq!(
+            document
+                .extract_text(&TextExtractionOptions::default())
+                .text,
+            "before after",
+            "{tag}"
+        );
+    }
+}
+
+#[test]
+fn raw_text_context_does_not_cross_table_cells_captions_or_paragraphs() {
+    for (source, expected) in [
+        (
+            "| before</script>visible |\n| --- |\n| cell |\n: before<script>hidden\n\nVisible\n",
+            "before\n\nbeforevisible\ncell\n\nVisible",
+        ),
+        (
+            "| A |\n| --- |\n| before<script>hidden |\n: hidden</script>after\n\nVisible\n",
+            "hiddenafter\n\nA\nbefore\n\nVisible",
+        ),
+        ("before<script>hidden\n\nVisible\n", "before\n\nVisible"),
+        (
+            "> [!NOTE]\n> before<script>hidden</script>after\n",
+            "Note\n\nbefore after",
+        ),
+        (
+            "before<script>hidden *inner</script>after* visible\n",
+            "before after visible",
+        ),
+    ] {
+        let arena = Allocator::new();
+        let document = Parser::with_options(
+            &arena,
+            source,
+            ParserOptions {
+                table_attributes: true,
+                ..ParserOptions::gfm()
+            },
+        )
+        .parse()
+        .unwrap();
+        assert_eq!(
+            document
+                .extract_text(&TextExtractionOptions::default())
+                .text,
+            expected
+        );
+    }
+}
+
+#[test]
+fn omitted_generated_title_has_no_original_source_provenance() {
+    let arena = Allocator::new();
+    let source = "# Generated\n\n## Following\n";
+    let mut document = Parser::new(&arena, source).parse().unwrap();
+    let ferromark::ast::Node::Heading(heading) = &mut document.children[0] else {
+        panic!()
+    };
+    heading.span = ferromark::ast::Span::empty();
+    let extraction = document.extract_text(&options(JsxRendererOptions {
+        omit_title_heading: Some("Generated".to_owned()),
+        ..JsxRendererOptions::default()
+    }));
+    assert_eq!(extraction.text, "Following");
+    assert_eq!(extraction.sections.len(), 1);
+    assert_eq!(extraction.omitted_title_heading, None);
+}

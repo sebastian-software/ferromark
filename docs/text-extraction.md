@@ -38,9 +38,12 @@ retaining inline code.
 
 Raw HTML nodes are omitted. Inline raw HTML tags can surround parsed Markdown
 text, which remains visible; text in `script`, `style`, `textarea`, and `title`
-elements is conservatively omitted. The same four intrinsic MDX elements omit
-static children. Other supported MDX wrappers contribute only parsed static
-children. Self-closing components and expressions create a space boundary so
+elements is conservatively omitted. Raw-text state is scoped to each parsed
+paragraph, heading, table cell, and caption, so malformed HTML in one run does
+not suppress unrelated runs or depend on caption display order. In HTML, a
+self-closing slash does not make these four elements void. The same four
+intrinsic MDX elements omit static children. Other supported MDX wrappers
+contribute only parsed static children. Self-closing components and expressions create a space boundary so
 omitting unknown content does not merge surrounding words. Imports, JavaScript,
 components, and attribute expressions are never evaluated. Component rendering
 and runtime-only content cannot be inferred from this data.

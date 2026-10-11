@@ -113,3 +113,27 @@ test("asset-free preparation extracts unknown-language code without a highlighte
   assert.equal(prepared.extractText().text, "Offline\n\nsource code");
   assert.equal(prepared.extractText({ includeBlockCode: false }).text, "Offline");
 });
+
+test("raw HTML scopes stay local while MDX self-closing elements leave following prose", () => {
+  assert.equal(
+    prepareDocument("before<script/>hidden</script>after\n").extractText().text,
+    "before after",
+  );
+  assert.equal(
+    prepareDocument("before<script/>after\n", { format: "mdx" }).extractText().text,
+    "before after",
+  );
+  assert.equal(
+    prepareDocument("> [!NOTE]\n> before<script>hidden</script>after\n").extractText().text,
+    "Note\n\nbefore after",
+  );
+  assert.equal(
+    prepareDocument("before<script>hidden *inner</script>after* visible\n").extractText().text,
+    "before after visible",
+  );
+  const source = "| A |\n| --- |\n| before<script>hidden |\n: hidden</script>after\n\nVisible\n";
+  assert.equal(
+    prepareDocument(source, { tableAttributes: true }).extractText().text,
+    "hiddenafter\n\nA\nbefore\n\nVisible",
+  );
+});

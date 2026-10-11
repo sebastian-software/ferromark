@@ -121,7 +121,8 @@ impl Document<'_> {
                     .filter(|title| !title.is_empty())
                     && collect_jsx_heading_text(&heading.children).trim() == title
                 {
-                    projection.omitted_title_heading = Some(heading.span);
+                    projection.omitted_title_heading =
+                        (!heading.span.is_empty()).then_some(heading.span);
                     continue;
                 }
             }
@@ -166,6 +167,14 @@ impl<'a> Projection<'a> {
         for child in children {
             self.node(child, visible);
         }
+    }
+
+    // Inline raw HTML context belongs to one source run, never to a caption
+    // visited before its authored table cells or to a later paragraph.
+    fn inline_children(&mut self, children: &[Node<'_>], visible: bool) {
+        let previous = self.raw_text_context.take();
+        self.children(children, visible);
+        self.raw_text_context = previous;
     }
 
     fn boundary(&mut self) {
@@ -229,14 +238,16 @@ impl<'a> Projection<'a> {
             });
             self.ancestors.push(index);
         }
-        self.children(&heading.children, visible);
+        self.inline_children(&heading.children, visible);
         if visible {
             self.boundary();
         }
     }
 
-    fn node(&mut self, node: &Node<'_>, visible: bool) {
-        let visible = visible && self.raw_text_context.is_none();
+    fn node(&mut self, node: &Node<'_>, inherited_visible: bool) {
+        // Raw HTML closers inside inline groups can restore visibility; only
+        // inherited MDX suppression persists for the whole child subtree.
+        let visible = inherited_visible && self.raw_text_context.is_none();
         if !matches!(
             node,
             Node::Heading(_) | Node::Definition(_) | Node::MdxjsEsm(_)
@@ -265,7 +276,7 @@ impl<'a> Projection<'a> {
                 if visible {
                     self.boundary();
                 }
-                self.children(&value.children, visible);
+                self.inline_children(&value.children, visible);
                 if visible {
                     self.boundary();
                 }
@@ -282,6 +293,7 @@ impl<'a> Projection<'a> {
                         self.writer.prose(kind.label());
                         self.boundary();
                     }
+                    let previous_context = self.raw_text_context.take();
                     let mut remaining = consumed;
                     let mut before_body = true;
                     for child in &paragraph.children {
@@ -294,7 +306,7 @@ impl<'a> Projection<'a> {
                             }
                             if !value.is_empty() {
                                 before_body = false;
-                                if visible {
+                                if visible && self.raw_text_context.is_none() {
                                     self.writer.prose(value);
                                 }
                             }
@@ -303,6 +315,7 @@ impl<'a> Projection<'a> {
                             self.node(child, visible);
                         }
                     }
+                    self.raw_text_context = previous_context;
                     if visible {
                         self.boundary();
                     }
@@ -336,7 +349,7 @@ impl<'a> Projection<'a> {
                     self.boundary();
                 }
                 if let Some(attributes) = &value.attributes {
-                    self.children(&attributes.caption, visible);
+                    self.inline_children(&attributes.caption, visible);
                     if visible {
                         self.boundary();
                     }
@@ -353,7 +366,7 @@ impl<'a> Projection<'a> {
                         if visible && cell_index > 0 {
                             self.writer.delimiter('\t');
                         }
-                        self.children(&cell.children, visible);
+                        self.inline_children(&cell.children, visible);
                     }
                 }
                 if visible {
@@ -368,7 +381,7 @@ impl<'a> Projection<'a> {
                 if visible {
                     self.boundary();
                 }
-                self.children(&value.caption, visible);
+                self.inline_children(&value.caption, visible);
                 if visible {
                     self.boundary();
                 }
@@ -378,21 +391,21 @@ impl<'a> Projection<'a> {
                 if visible {
                     self.boundary();
                 }
-                self.children(&value.children, visible);
+                self.inline_children(&value.children, visible);
                 if visible {
                     self.boundary();
                 }
             }
             Node::DefinitionListDefinition(value) => self.children(&value.children, visible),
-            Node::Span(value) => self.children(&value.children, visible),
-            Node::Emphasis(value) => self.children(&value.children, visible),
-            Node::Strong(value) => self.children(&value.children, visible),
-            Node::Link(value) => self.children(&value.children, visible),
-            Node::Highlight(value) => self.children(&value.children, visible),
-            Node::Delete(value) => self.children(&value.children, visible),
-            Node::Insertion(value) => self.children(&value.children, visible),
-            Node::Superscript(value) => self.children(&value.children, visible),
-            Node::Subscript(value) => self.children(&value.children, visible),
+            Node::Span(value) => self.children(&value.children, inherited_visible),
+            Node::Emphasis(value) => self.children(&value.children, inherited_visible),
+            Node::Strong(value) => self.children(&value.children, inherited_visible),
+            Node::Link(value) => self.children(&value.children, inherited_visible),
+            Node::Highlight(value) => self.children(&value.children, inherited_visible),
+            Node::Delete(value) => self.children(&value.children, inherited_visible),
+            Node::Insertion(value) => self.children(&value.children, inherited_visible),
+            Node::Superscript(value) => self.children(&value.children, inherited_visible),
+            Node::Subscript(value) => self.children(&value.children, inherited_visible),
             Node::FootnoteReference(value) => {
                 let count = self
                     .footnote_counts
@@ -430,7 +443,7 @@ impl<'a> Projection<'a> {
                     self.writer.separator(" ");
                 }
                 if !value.self_closing {
-                    self.children(&value.children, visible && !hidden);
+                    self.children(&value.children, inherited_visible && !hidden);
                 }
                 if visible && hidden {
                     self.writer.separator(" ");
