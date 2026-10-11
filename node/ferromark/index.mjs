@@ -835,6 +835,20 @@ class PreparedDocumentFacade {
     return freezeTextExtraction(this.#nativePrepared.extractText(options));
   }
 
+  /** @param {import('./index.mjs').MarkdownProjectionOptions} [options] Source projection choices. */
+  projectMarkdown(options) {
+    validateMarkdownProjectionOptions(options);
+    const result = this.#nativePrepared.projectMarkdown(options);
+    for (const diagnostic of result.diagnostics) {
+      Object.freeze(diagnostic);
+    }
+    Object.freeze(result.diagnostics);
+    if (result.omittedTitleHeadingSpan != null) {
+      Object.freeze(result.omittedTitleHeadingSpan);
+    }
+    return Object.freeze(result);
+  }
+
   /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
   #render(options, renderCode) {
     validatePreparedRenderOptions(options, false);
@@ -859,6 +873,36 @@ Object.freeze(PreparedDocumentFacade.prototype);
 /** @param {NativePreparedJsxDocument} nativePrepared Native prepared document. */
 function preparedFacade(nativePrepared) {
   return new PreparedDocumentFacade(nativePrepared);
+}
+
+/** @param {import('./index.mjs').MarkdownProjectionOptions | undefined} options Projection choices. */
+function validateMarkdownProjectionOptions(options) {
+  if (options === undefined) {
+    return;
+  }
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
+    throw new TypeError("projectionOptions must be an object");
+  }
+  for (const key of Reflect.ownKeys(options)) {
+    if (key !== "frontMatter" && key !== "omitTitleHeading") {
+      throw new TypeError(`unknown Markdown projection option "${String(key)}"`);
+    }
+  }
+  validateMarkdownProjectionValues(options);
+}
+
+/** @param {import('./index.mjs').MarkdownProjectionOptions} options Projection choices. */
+function validateMarkdownProjectionValues(options) {
+  if (
+    options.frontMatter !== undefined &&
+    options.frontMatter !== "preserve" &&
+    options.frontMatter !== "omit"
+  ) {
+    throw new TypeError('frontMatter must be "preserve" or "omit"');
+  }
+  if (options.omitTitleHeading !== undefined && typeof options.omitTitleHeading !== "string") {
+    throw new TypeError("omitTitleHeading must be a string");
+  }
 }
 
 /**
@@ -1035,6 +1079,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   readonly metadata: import('./index.mjs').JsxPreparedMetadata
  *   collectReferences(): import('./index.mjs').DocumentReference[]
  *   extractText(options?: import('./index.mjs').TextExtractionOptions): import('./index.mjs').TextExtraction
+ *   projectMarkdown(options?: import('./index.mjs').MarkdownProjectionOptions): import('./index.mjs').MarkdownProjectionResult
  *   render(options?: import('./index.mjs').JsxRenderOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
  *   renderModule(options?: import('./index.mjs').JsxRenderModuleOptions,

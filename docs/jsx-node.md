@@ -10,6 +10,10 @@ their release, [build the Node package from source](../node/ferromark/README.md#
 The [TypeScript declarations](../node/ferromark/index.d.mts) own the full API
 reference; the [Rust renderer contract](jsx-renderer.md) explains core output.
 
+To reuse a prepared document for static documentation exports, see
+[static Markdown projection](markdown-projection.md). `projectMarkdown` preserves
+original Markdown and code and reports discarded MDX constructs.
+
 ## Choose the operation
 
 | Task                                         | API                                                    | Result                                                         |

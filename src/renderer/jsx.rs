@@ -16,6 +16,9 @@ pub use render::update_raw_text_context;
 mod module;
 mod render;
 
+pub use heading_text::heading_text;
+pub use render::update_raw_text_context;
+
 #[cfg(test)]
 mod tests;
 

@@ -23,6 +23,7 @@ pub mod ast;
 pub mod outline;
 pub mod parser;
 pub mod references;
+pub mod projection;
 pub mod renderer;
 pub mod text;
 
@@ -41,6 +42,10 @@ pub use convenience::{
 pub use outline::{OutlineEntry, OutlineOptions};
 pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
 pub use references::{DocumentReference, ReferenceKind, ReferenceProvenance, ReferenceSnapshot};
+pub use projection::{
+    MarkdownProjection, MarkdownProjectionDiagnostic, MarkdownProjectionDiagnosticKind,
+    MarkdownProjectionError, MarkdownProjectionOptions,
+};
 pub use renderer::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlRenderContext,

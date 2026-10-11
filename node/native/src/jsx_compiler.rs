@@ -207,6 +207,15 @@ impl PreparedJsxDocument {
 
 #[napi]
 impl PreparedJsxDocument {
+    /// Projects original static Markdown without rendering or highlighting.
+    #[napi(catch_unwind)]
+    pub fn project_markdown(
+        &self,
+        options: Option<crate::projection::ProjectMarkdownOptions>,
+    ) -> Result<crate::projection::MarkdownProjectionResult> {
+        crate::projection::project_markdown(&self.parsed, options)
+    }
+
     /// Metadata computed from the prepared tree without rendering its body.
     #[napi(getter)]
     pub fn metadata(&self) -> JsxPreparedMetadata {

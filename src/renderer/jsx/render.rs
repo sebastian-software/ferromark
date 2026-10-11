@@ -1,5 +1,7 @@
 //! Direct AST-to-JSX renderer.
 
+use super::heading_text::heading_text;
+
 use std::collections::BTreeMap;
 
 use crate::ast::{

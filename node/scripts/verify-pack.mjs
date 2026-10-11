@@ -40,9 +40,8 @@ if (mainFiles.some((file) => file.endsWith(".node"))) {
 if (mainFiles.some((file) => !allowedMain.has(file))) {
   throw new Error(`Main package contains unexpected files:\n${mainFiles.join("\n")}`);
 }
-// Additive prepared-document analysis APIs grow the facade and declarations.
-// The combined reference/text build is 113,055 bytes; retain modest review headroom.
-if (main.unpackedSize >= 116_000) {
+// Prepared Markdown projection adds public types and facade methods; retain modest headroom.
+if (main.unpackedSize >= 120_000) {
   throw new Error(`Main package is unexpectedly large: ${main.unpackedSize} bytes unpacked`);
 }
 

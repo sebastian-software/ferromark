@@ -399,6 +399,39 @@ export type JsxPreparedMetadata = Readonly<{
   frontMatterKind?: "yaml" | "toml";
 }>;
 
+/** Source-preserving Markdown projection choices; no JavaScript is evaluated. */
+export type MarkdownProjectionOptions = {
+  /** Preserve recognized front matter by default, or omit its delimiters and body. */
+  frontMatter?: "preserve" | "omit";
+  /** Omit the first top-level H1 only if its display text matches this title. */
+  omitTitleHeading?: string;
+};
+
+/** A loss or omission at an original half-open UTF-8 byte range `[start, end)`. */
+export type MarkdownProjectionDiagnostic = Readonly<{
+  code:
+    | "esm-omitted"
+    | "jsx-wrapper-unwrapped"
+    | "expression-omitted"
+    | "self-closing-element-omitted"
+    | "raw-html-omitted"
+    | "unsupported-jsx-omitted"
+    | "raw-text-element-omitted"
+    | "front-matter-omitted"
+    | "title-heading-omitted";
+  message: string;
+  start: number;
+  end: number;
+}>;
+
+/** Static Markdown copied from original source, with explicit omission diagnostics. */
+export type MarkdownProjectionResult = Readonly<{
+  /** Original Markdown and code; native pass changes are not serialized. */
+  markdown: string;
+  diagnostics: readonly MarkdownProjectionDiagnostic[];
+  omittedTitleHeadingSpan?: Readonly<{ start: number; end: number }>;
+}>;
+
 /** One source occurrence, or a reference created/changed by native passes. */
 export type DocumentReference = Readonly<{
   kind: "link" | "image" | "autolink" | "mdxAttribute";
@@ -469,6 +502,8 @@ export type PreparedJsxDocument = Readonly<{
   collectReferences(): readonly DocumentReference[];
   /** Bulk static text and final sections, without rendering/highlighting or rerunning passes. */
   extractText(options?: TextExtractionOptions): TextExtraction;
+  /** Project original source without parsing again, rendering, highlighting, or running passes. */
+  projectMarkdown(options?: MarkdownProjectionOptions): MarkdownProjectionResult;
   /** Render a body. Repeated calls do not mutate the prepared tree or rerun passes. */
   render(options?: JsxRenderOptions, renderCode?: JsxCodeRenderer): JsxResult;
   /** Render a complete module. Module and body choices can be varied per call. */
