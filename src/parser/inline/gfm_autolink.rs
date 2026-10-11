@@ -87,8 +87,6 @@ impl<'a> Parser<'a> {
         &self,
         children: &mut Vec<'a, Node<'a>>,
         scan: AutolinkScan,
-        content: &str,
-        offset: usize,
     ) {
         // Entity, escape, and unpaired-delimiter handling fragment plain
         // prose into adjacent text nodes; autolinks must see the joined
@@ -97,30 +95,14 @@ impl<'a> Parser<'a> {
         let mut i = 0;
         while i < children.len() {
             match &mut children[i] {
-                Node::Span(node) => {
-                    self.apply_gfm_autolinks(&mut node.children, scan, content, offset);
-                }
-                Node::Emphasis(node) => {
-                    self.apply_gfm_autolinks(&mut node.children, scan, content, offset);
-                }
-                Node::Strong(node) => {
-                    self.apply_gfm_autolinks(&mut node.children, scan, content, offset);
-                }
-                Node::Highlight(node) => {
-                    self.apply_gfm_autolinks(&mut node.children, scan, content, offset);
-                }
-                Node::Delete(node) => {
-                    self.apply_gfm_autolinks(&mut node.children, scan, content, offset);
-                }
-                Node::Insertion(node) => {
-                    self.apply_gfm_autolinks(&mut node.children, scan, content, offset);
-                }
-                Node::Superscript(node) => {
-                    self.apply_gfm_autolinks(&mut node.children, scan, content, offset);
-                }
-                Node::Subscript(node) => {
-                    self.apply_gfm_autolinks(&mut node.children, scan, content, offset);
-                }
+                Node::Span(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Emphasis(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Strong(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Highlight(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Delete(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Insertion(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Superscript(node) => self.apply_gfm_autolinks(&mut node.children, scan),
+                Node::Subscript(node) => self.apply_gfm_autolinks(&mut node.children, scan),
                 Node::Text(text) => {
                     let value = text.value;
                     if let Some(candidate) = find_candidate(value, scan) {
@@ -134,18 +116,9 @@ impl<'a> Parser<'a> {
                             url.into_bump_str()
                         };
 
-                        // Decoding entities and punctuation escapes changes byte counts.
-                        // Map through the original inline source before its container map.
-                        let raw =
-                            &content[span_start as usize - offset..text.span.end as usize - offset];
-                        let (source_start, source_end) = if std::ptr::eq(value, raw) {
-                            (candidate.start, candidate.end)
-                        } else {
-                            decoded_boundaries(raw, candidate.start, candidate.end)
-                        };
                         let link_span = Span::new(
-                            span_start + source_start as u32,
-                            span_start + source_end as u32,
+                            span_start + candidate.start as u32,
+                            span_start + candidate.end as u32,
                         );
                         let mut link_children = self.allocator.new_vec();
                         link_children.push(Node::Text(Text {
@@ -164,7 +137,7 @@ impl<'a> Parser<'a> {
                         let after_node = (!after.is_empty()).then(|| {
                             Node::Text(Text {
                                 value: after,
-                                span: Span::new(link_span.end, text.span.end),
+                                span: Span::new(span_start + candidate.end as u32, text.span.end),
                             })
                         });
 
@@ -172,7 +145,7 @@ impl<'a> Parser<'a> {
                             children[i] = link_node;
                         } else {
                             text.value = &value[..candidate.start];
-                            text.span = Span::new(span_start, link_span.start);
+                            text.span = Span::new(span_start, span_start + candidate.start as u32);
                             i += 1;
                             children.insert(i, link_node);
                         }
@@ -238,57 +211,4 @@ impl<'a> Parser<'a> {
 
         children.truncate(write);
     }
-}
-
-// Maps a decoded text boundary to its authored byte boundary. An entity that
-// expands to several bytes is indivisible in the source; partial ranges cover
-// that complete entity. This changes only spans, never autolink recognition.
-fn decoded_boundaries(raw: &str, start: usize, end: usize) -> (usize, usize) {
-    use super::entity::{EntityValue, scan_entity};
-    let mut authored = 0;
-    let mut decoded = 0;
-    let mut source_start = None;
-    while authored < raw.len() {
-        let rest = &raw[authored..];
-        let bytes = rest.as_bytes();
-        // Copy offsets across ordinary UTF-8 bytes without decoding characters.
-        // Bound the scan to this link, avoiding repeated scans of its suffix.
-        let limit = (end - decoded).min(bytes.len());
-        let plain = memchr::memchr2(b'&', b'\\', &bytes[..limit]).unwrap_or(limit);
-        if source_start.is_none() && start <= decoded + plain {
-            source_start = Some(authored + start - decoded);
-        }
-        if end <= decoded + plain {
-            return (source_start.unwrap_or(authored), authored + end - decoded);
-        }
-        authored += plain;
-        decoded += plain;
-        if authored == raw.len() {
-            break;
-        }
-        let rest = &raw[authored..];
-        let bytes = rest.as_bytes();
-        let (source_len, value_len) = if bytes[0] == b'&'
-            && let Some((entity, consumed)) = scan_entity(rest)
-        {
-            let len = match entity {
-                EntityValue::Named(value) => value.len(),
-                EntityValue::Char(value) => value.len_utf8(),
-            };
-            (consumed, len)
-        } else if bytes[0] == b'\\' && bytes.get(1).is_some_and(u8::is_ascii_punctuation) {
-            (2, 1)
-        } else {
-            (1, 1)
-        };
-        if source_start.is_none() && start < decoded + value_len {
-            source_start = Some(authored);
-        }
-        if end <= decoded + value_len {
-            return (source_start.unwrap_or(authored), authored + source_len);
-        }
-        authored += source_len;
-        decoded += value_len;
-    }
-    (source_start.unwrap_or(authored), authored)
 }

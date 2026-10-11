@@ -107,6 +107,11 @@ Markdown occurrence syntax, or the complete MDX named attribute and quoted
 value. A reference occurrence's range never points to its definition. Slice
 `Buffer.from(source).subarray(span.start, span.end)` in Node; JavaScript string
 indices count UTF-16 code units and cannot be substituted for these offsets.
+Bare autolink ranges are resolved only during collection or explicit tracking,
+by verifying AST text against the original source, including entities, escapes,
+line endings, and container prefixes. Ordinary parsing and rendering do not run
+this analysis. If the source and AST disagree, bare-link ranges are unavailable
+rather than guessed; pass snapshots retain the verified pre-pass location.
 For malformed UTF-8 byte input, the existing Node decoding policy replaces
 invalid sequences. Ranges address that decoded text's UTF-8 bytes; re-encode
 `Buffer.from(Buffer.from(input).toString("utf8"))` before slicing malformed byte input.

@@ -30,13 +30,15 @@ materialized when requested.
 
 ## Source-span correction
 
-The GFM autolink post-pass previously added offsets in decoded text directly
-to source offsets. Entities or punctuation escapes before or within a bare
-link made that range inaccurate. Map decoded candidate boundaries through the
-original inline source before existing container/BOM/line-ending maps run.
-This corrects location metadata without changing autolink recognition, rendered
-HTML/JSX, or conformance expectations. Regression fixtures cover escaped and
-entity-encoded source, Unicode, blockquotes, BOM, and CRLF input.
+The ordinary GFM autolink post-pass remains unchanged. Reference collection
+and explicit pre-pass snapshots resolve bare-link ranges on demand by
+verifying contiguous AST text/link runs against original source bytes. The
+analysis-only decoder reuses CommonMark entity scanning and handles escapes,
+expanding entities, NUL normalization, line endings, and stripped container
+prefixes. Snapshots compare original parser spans for identity while retaining
+verified source spans separately. Source/tree disagreement leaves bare-link
+ranges unavailable rather than guessing. No mapping or bookkeeping runs during
+ordinary parsing or rendering.
 
 ## Validation
 

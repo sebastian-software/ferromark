@@ -8,6 +8,7 @@ mod autolink;
 mod code_span;
 mod emphasis;
 mod entity;
+pub(crate) use self::entity::{EntityValue, scan_entity};
 mod gfm_autolink;
 mod image;
 mod line_break;
@@ -92,7 +93,7 @@ impl<'a> Parser<'a> {
             self.parse_inline(content, offset)?
         };
         if let Some(scan) = scan {
-            self.apply_gfm_autolinks(&mut children, scan, content, offset);
+            self.apply_gfm_autolinks(&mut children, scan);
         }
         Ok(children)
     }

@@ -7,9 +7,11 @@ use rustc_hash::FxHashMap;
 
 use crate::ast::{
     Document, Image, Link, MdxJsxAttributeEntry, MdxJsxAttributeValue, MdxJsxFlowElement,
-    MdxJsxTextElement, Node, Span, Visit, walk_link, walk_mdx_jsx_flow_element,
-    walk_mdx_jsx_text_element,
+    MdxJsxTextElement, Node, Span, Visit, walk_link, walk_node,
 };
+
+mod source_ranges;
+use source_ranges::{bare_link_text, bare_link_value, resolve_run};
 
 /// Syntax that produced a reference occurrence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -64,7 +66,7 @@ impl Document<'_> {
     /// Collects references from an unmodified parser tree in document order.
     ///
     /// `source` must be the original input used to parse this document. The
-    /// source is used only to distinguish Markdown links from autolinks;
+    /// source distinguishes syntax and resolves bare autolink ranges on demand;
     /// definitions, code, raw HTML and dynamic MDX attributes are excluded.
     /// This method does not render, mutate, deduplicate, or cache the tree.
     ///
@@ -74,7 +76,7 @@ impl Document<'_> {
     #[must_use]
     pub fn collect_references(&self, source: &str) -> Vec<DocumentReference> {
         let mut references = Vec::new();
-        visit_references(self, source, |_, reference| {
+        visit_references(self, source, true, |_, reference| {
             references.push(reference.owned());
         });
         references
@@ -100,7 +102,7 @@ impl<'a> ReferenceSnapshot<'a> {
     #[must_use]
     pub fn capture(document: &Document<'a>, source: &str) -> Self {
         let mut originals = FxHashMap::default();
-        visit_references(document, source, |identity, reference| {
+        visit_references(document, source, true, |identity, reference| {
             originals.insert(identity, reference);
         });
         Self { originals }
@@ -113,16 +115,17 @@ impl<'a> ReferenceSnapshot<'a> {
     #[must_use]
     pub fn collect(&self, document: &Document<'_>, source: &str) -> Vec<DocumentReference> {
         let mut references = Vec::new();
-        visit_references(document, source, |identity, reference| {
+        visit_references(document, source, false, |identity, reference| {
             let mut entry = reference.owned();
             match self.originals.get(&identity) {
                 Some(original) if original.unchanged(&reference) => {
                     entry.kind = original.kind;
+                    entry.span = original.source_span;
                 }
                 original => {
                     entry.provenance = ReferenceProvenance::Transformed;
                     entry.span = None;
-                    entry.original_span = original.map(|original| original.span);
+                    entry.original_span = original.and_then(|original| original.source_span);
                     if let Some(original) = original {
                         entry.kind = original.kind;
                     } else if entry.kind == ReferenceKind::Autolink {
@@ -146,6 +149,7 @@ struct BorrowedReference<'a> {
     element: Option<&'a str>,
     attribute: Option<&'a str>,
     span: Span,
+    source_span: Option<Span>,
 }
 
 impl BorrowedReference<'_> {
@@ -170,7 +174,7 @@ impl BorrowedReference<'_> {
             title: self.title.map(str::to_owned),
             element: self.element.map(str::to_owned),
             attribute: self.attribute.map(str::to_owned),
-            span: Some(self.span),
+            span: self.source_span,
             provenance: ReferenceProvenance::Source,
             original_span: None,
         }
@@ -180,10 +184,12 @@ impl BorrowedReference<'_> {
 fn visit_references<'a>(
     document: &Document<'a>,
     source: &str,
+    resolve_spans: bool,
     emit: impl FnMut(usize, BorrowedReference<'a>),
 ) {
     let mut collector = ReferenceVisitor {
         source,
+        resolve_spans,
         emit,
         lifetime: std::marker::PhantomData,
     };
@@ -192,6 +198,7 @@ fn visit_references<'a>(
 
 struct ReferenceVisitor<'source, 'a, F> {
     source: &'source str,
+    resolve_spans: bool,
     emit: F,
     lifetime: std::marker::PhantomData<&'a ()>,
 }
@@ -218,6 +225,7 @@ impl<'a, F: FnMut(usize, BorrowedReference<'a>)> ReferenceVisitor<'_, 'a, F> {
                     element,
                     attribute: Some(attribute.name),
                     span: attribute.span,
+                    source_span: Some(attribute.span),
                 },
             );
         }
@@ -225,6 +233,36 @@ impl<'a, F: FnMut(usize, BorrowedReference<'a>)> ReferenceVisitor<'_, 'a, F> {
 }
 
 impl<'a, F: FnMut(usize, BorrowedReference<'a>)> Visit<'a> for ReferenceVisitor<'_, 'a, F> {
+    fn visit_node(&mut self, node: &Node<'a>) {
+        let children = match node {
+            Node::Paragraph(node) => &node.children,
+            Node::Heading(node) => &node.children,
+            Node::DefinitionListTerm(node) => &node.children,
+            Node::Span(node) => &node.children,
+            Node::Emphasis(node) => &node.children,
+            Node::Strong(node) => &node.children,
+            Node::Highlight(node) => &node.children,
+            Node::Delete(node) => &node.children,
+            Node::Insertion(node) => &node.children,
+            Node::Superscript(node) => &node.children,
+            Node::Subscript(node) => &node.children,
+            _ => {
+                walk_node(self, node);
+                return;
+            }
+        };
+        self.children(children, node.span().end);
+    }
+
+    fn visit_table_cell(&mut self, cell: &crate::ast::TableCell<'a>) {
+        self.children(&cell.children, cell.span.end);
+    }
+
+    fn visit_figure(&mut self, figure: &crate::ast::Figure<'a>) {
+        self.visit_node(&figure.content);
+        self.children(&figure.caption, figure.span.end);
+    }
+
     fn visit_table(&mut self, table: &crate::ast::Table<'a>) {
         // The default walker visits captions first for display purposes, but
         // the authored table caption follows the source rows.
@@ -232,17 +270,80 @@ impl<'a, F: FnMut(usize, BorrowedReference<'a>)> Visit<'a> for ReferenceVisitor<
             self.visit_table_row(row);
         }
         if let Some(attributes) = &table.attributes {
-            for child in &attributes.caption {
-                self.visit_node(child);
-            }
+            self.children(&attributes.caption, table.span.end);
         }
     }
 
     fn visit_link(&mut self, link: &Link<'a>) {
+        self.link(link, Some(link.span));
+    }
+
+    fn visit_image(&mut self, image: &Image<'a>) {
+        (self.emit)(
+            std::ptr::from_ref(image).addr(),
+            BorrowedReference {
+                kind: ReferenceKind::Image,
+                destination: image.url,
+                text: Some(image.alt.to_owned()),
+                title: image.title,
+                element: None,
+                attribute: None,
+                span: image.span,
+                source_span: Some(image.span),
+            },
+        );
+    }
+
+    fn visit_mdx_jsx_flow_element(&mut self, element: &MdxJsxFlowElement<'a>) {
+        self.attributes(element.name, &element.attributes);
+        self.children(&element.children, element.span.end);
+    }
+
+    fn visit_mdx_jsx_text_element(&mut self, element: &MdxJsxTextElement<'a>) {
+        self.attributes(element.name, &element.attributes);
+        self.children(&element.children, element.span.end);
+    }
+}
+
+impl<'a, F: FnMut(usize, BorrowedReference<'a>)> ReferenceVisitor<'_, 'a, F> {
+    fn children(&mut self, children: &[Node<'a>], source_end: u32) {
+        let mut index = 0;
+        while index < children.len() {
+            if !matches!(children[index], Node::Text(_))
+                && bare_link_text(&children[index]).is_none()
+            {
+                self.visit_node(&children[index]);
+                index += 1;
+                continue;
+            }
+            let start = index;
+            while index < children.len()
+                && (matches!(children[index], Node::Text(_))
+                    || bare_link_text(&children[index]).is_some())
+            {
+                index += 1;
+            }
+            let run = &children[start..index];
+            let end = children
+                .get(index)
+                .map_or(source_end, |node| node.span().start);
+            let ranges = self
+                .resolve_spans
+                .then(|| resolve_run(self.source, run, end));
+            for (offset, child) in run.iter().enumerate() {
+                if let Node::Link(link) = child {
+                    self.link(link, ranges.as_ref().and_then(|ranges| ranges[offset]));
+                }
+            }
+        }
+    }
+
+    fn link(&mut self, link: &Link<'a>, source_span: Option<Span>) {
         let raw = self
             .source
             .get(link.span.start as usize..link.span.end as usize);
-        let kind = if raw.is_some_and(|raw| raw.starts_with('[')) {
+        let kind = if bare_link_value(link).is_none() && raw.is_some_and(|raw| raw.starts_with('['))
+        {
             ReferenceKind::Link
         } else {
             ReferenceKind::Autolink
@@ -257,34 +358,10 @@ impl<'a, F: FnMut(usize, BorrowedReference<'a>)> Visit<'a> for ReferenceVisitor<
                 element: None,
                 attribute: None,
                 span: link.span,
+                source_span,
             },
         );
         walk_link(self, link);
-    }
-
-    fn visit_image(&mut self, image: &Image<'a>) {
-        (self.emit)(
-            std::ptr::from_ref(image).addr(),
-            BorrowedReference {
-                kind: ReferenceKind::Image,
-                destination: image.url,
-                text: Some(image.alt.to_owned()),
-                title: image.title,
-                element: None,
-                attribute: None,
-                span: image.span,
-            },
-        );
-    }
-
-    fn visit_mdx_jsx_flow_element(&mut self, element: &MdxJsxFlowElement<'a>) {
-        self.attributes(element.name, &element.attributes);
-        walk_mdx_jsx_flow_element(self, element);
-    }
-
-    fn visit_mdx_jsx_text_element(&mut self, element: &MdxJsxTextElement<'a>) {
-        self.attributes(element.name, &element.attributes);
-        walk_mdx_jsx_text_element(self, element);
     }
 }
 

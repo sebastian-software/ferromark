@@ -38,6 +38,7 @@
 )]
 
 mod error;
+pub(crate) use self::inline::{EntityValue, scan_entity};
 pub use error::{ParseError, ParseErrorKind, ParseResult};
 
 use crate::allocator::Allocator;

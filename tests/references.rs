@@ -105,6 +105,211 @@ fn autolink_ranges_cover_expanding_entities_and_coalesced_text() {
 }
 
 #[test]
+fn lazy_autolink_ranges_verify_multiline_container_runs() {
+    let source = "\u{feff}> - > &nLt;\\* https://same.test/a?x=&fjlig; \r\n>   > \\> https://same.test/a?x=&fjlig;\r\n>   > third  \r\n>   > https://last.test/x\\?q=&amp;\r\n";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let references = document.collect_references(source);
+    assert_eq!(references.len(), 3);
+    assert_eq!(references[0].destination, references[1].destination);
+    assert_eq!(references[2].destination, "https://last.test/x?q=&");
+    assert_eq!(
+        references
+            .iter()
+            .map(|reference| reference.span.unwrap().source_text(source))
+            .collect::<Vec<_>>(),
+        vec![
+            "https://same.test/a?x=&fjlig;",
+            "https://same.test/a?x=&fjlig;",
+            "https://last.test/x\\?q=&amp;"
+        ]
+    );
+    assert_ne!(references[0].span, references[1].span);
+    assert_eq!(
+        ReferenceSnapshot::capture(&document, source).collect(&document, source),
+        references
+    );
+}
+
+#[test]
+fn lazy_autolink_ranges_do_not_confuse_code_bracket_angle_or_repeated_links() {
+    let source = "`https://same.test/x` &nLt;\\* https://same.test/x [https://same.test/x](https://same.test/x) <https://same.test/x> &amp; https://same.test/x\n\n&#104;ttps://same.test/x https://same.test/x";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let references = document.collect_references(source);
+    let expected = vec![
+        "https://same.test/x",
+        "[https://same.test/x](https://same.test/x)",
+        "<https://same.test/x>",
+        "https://same.test/x",
+        "&#104;ttps://same.test/x",
+        "https://same.test/x",
+    ];
+    assert_eq!(
+        references
+            .iter()
+            .map(|reference| reference.span.unwrap().source_text(source))
+            .collect::<Vec<_>>(),
+        expected
+    );
+    assert_eq!(references[1].kind, Kind::Link);
+    assert!(
+        references
+            .iter()
+            .enumerate()
+            .all(|(index, reference)| index == 1 || reference.kind == Kind::Autolink)
+    );
+    assert!(
+        references
+            .windows(2)
+            .all(|pair| pair[0].span.unwrap().end <= pair[1].span.unwrap().start)
+    );
+}
+
+#[test]
+fn snapshots_keep_verified_autolink_ranges_separate_from_parser_spans() {
+    let source = "&nLt;\\* https://example.test/x?value=&fjlig;";
+    let allocator = Allocator::new();
+    let mut document = Parser::with_options(&allocator, source, ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let references = document.collect_references(source);
+    let source_span = references[0].span.unwrap();
+    let snapshot = ReferenceSnapshot::capture(&document, source);
+    assert_eq!(snapshot.collect(&document, source), references);
+    let Node::Paragraph(paragraph) = &mut document.children[0] else {
+        panic!()
+    };
+    let link = paragraph
+        .children
+        .iter_mut()
+        .find_map(|node| match node {
+            Node::Link(link) => Some(link),
+            _ => None,
+        })
+        .unwrap();
+    assert_ne!(link.span, source_span);
+    link.url = "/changed";
+    let changed = snapshot.collect(&document, source);
+    assert_eq!(changed[0].provenance, Provenance::Transformed);
+    assert_eq!(changed[0].span, None);
+    assert_eq!(changed[0].original_span, Some(source_span));
+}
+
+#[test]
+fn bare_autolink_ranges_are_unavailable_when_source_verification_disagrees() {
+    let source = "&amp; https://example.test";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let references = document.collect_references("wrong https://example.test");
+    assert_eq!(references.len(), 1);
+    assert_eq!(references[0].span, None);
+}
+
+#[test]
+fn lazy_autolink_ranges_preserve_comment_gaps_and_authored_comment_like_lines() {
+    let source =
+        "&amp; https://first.test\n// hidden https://hidden.test\n    // literal https://last.test";
+    for comments in [false, true] {
+        let allocator = Allocator::new();
+        let document = Parser::with_options(
+            &allocator,
+            source,
+            ParserOptions {
+                line_comments: comments,
+                ..ParserOptions::gfm()
+            },
+        )
+        .parse()
+        .unwrap();
+        let references = document.collect_references(source);
+        let expected = if comments {
+            vec!["https://first.test", "https://last.test"]
+        } else {
+            vec![
+                "https://first.test",
+                "https://hidden.test",
+                "https://last.test",
+            ]
+        };
+        assert_eq!(
+            references
+                .iter()
+                .map(|reference| reference.span.unwrap().source_text(source))
+                .collect::<Vec<_>>(),
+            expected
+        );
+        assert_eq!(
+            ReferenceSnapshot::capture(&document, source).collect(&document, source),
+            references
+        );
+    }
+    let source = "before\n// literal https://same.test\n    // literal https://same.test";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(
+        &allocator,
+        source,
+        ParserOptions {
+            line_comments: true,
+            ..ParserOptions::gfm()
+        },
+    )
+    .parse()
+    .unwrap();
+    let references = document.collect_references(source);
+    assert_eq!(references.len(), 1);
+    assert_eq!(
+        references[0].span.unwrap().start as usize,
+        source.rfind("https://same.test").unwrap()
+    );
+}
+
+#[test]
+fn lazy_autolink_ranges_verify_formatting_attributes_tables_and_captions() {
+    for source in [
+        "# &amp; https://example.test {#id}\n",
+        "&amp; https://example.test\n---\n",
+        "*&amp; https://example.test*\n",
+        "[&amp; https://example.test]{#id}\n",
+        "| &amp; https://example.test/a\\|b |\n| --- |\n: &amp; https://example.test/caption {#id}\n",
+        "![alt](/image)\n: &amp; https://example.test {#figure}\n",
+        "> quote\n: &amp; https://example.test {#author}\n",
+        "&amp; https://example.test\n: definition\n",
+        "[^note]: &amp; https://example.test\n",
+        "\0 例子 &nLt; https://example.test/例子/é?q=&fjlig;\n",
+    ] {
+        let allocator = Allocator::new();
+        let document = Parser::with_options(&allocator, source, ParserOptions::ffm())
+            .parse()
+            .unwrap();
+        let references = document.collect_references(source);
+        assert!(!references.is_empty(), "{source:?}");
+        for reference in references
+            .iter()
+            .filter(|reference| reference.kind == Kind::Autolink)
+        {
+            let range = reference
+                .span
+                .unwrap_or_else(|| panic!("missing span: {source:?}"));
+            assert!(
+                range.source_text(source).starts_with("https://"),
+                "{source:?}"
+            );
+        }
+        assert_eq!(
+            ReferenceSnapshot::capture(&document, source).collect(&document, source),
+            references
+        );
+    }
+}
+
+#[test]
 fn code_and_raw_html_are_excluded_and_syntax_options_apply() {
     let source = "`[inline](/ignore)`\n\n```md\n[fenced](/ignore)\n```\n\n    [indented](/ignore)\n\n<a href=\"/raw\">raw</a>\n\nwww.example.test <https://example.test> [ref]\n\n[ref]: /reference\n";
     let allocator = Allocator::new();
