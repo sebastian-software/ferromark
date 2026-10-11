@@ -4,7 +4,7 @@
 //! not evaluate JavaScript, render components, serialize transforms, or reparse
 //! Markdown. Code and ordinary Markdown are copied from the source verbatim.
 
-use crate::ast::{Document, MdxJsxAttributeEntry, Node, Span, Visit, walk_node};
+use crate::ast::{Document, MdxJsxAttributeEntry, Node, Span, Table, Visit, walk_node};
 use crate::renderer::{collect_jsx_heading_text, update_raw_text_context};
 
 /// Choices for projecting original source as static Markdown.
@@ -249,6 +249,19 @@ impl Collector<'_> {
 }
 
 impl Visit<'_> for Collector<'_> {
+    fn visit_table(&mut self, table: &Table<'_>) {
+        // Raw HTML context follows authored source order. A caption is written
+        // after the rows even though the default display walker visits it first.
+        for row in &table.children {
+            self.visit_table_row(row);
+        }
+        if let Some(attributes) = &table.attributes {
+            for child in &attributes.caption {
+                self.visit_node(child);
+            }
+        }
+    }
+
     fn visit_node(&mut self, node: &Node<'_>) {
         if !self.validate(node.span()) {
             return;

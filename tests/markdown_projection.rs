@@ -236,6 +236,74 @@ fn inline_raw_text_bodies_are_omitted_in_markdown_grammar() {
 }
 
 #[test]
+fn raw_html_slashes_do_not_self_close_nonvoid_raw_text_elements() {
+    for name in ["script", "STYLE", "title", "textarea"] {
+        let source = format!("before<{name}/>hidden</{name}>after\n");
+        let allocator = Allocator::new();
+        let document = Parser::new(&allocator, &source).parse().unwrap();
+        let result = document
+            .project_markdown(&source, &MarkdownProjectionOptions::default())
+            .unwrap();
+        assert_eq!(result.markdown, "before after\n");
+        let omission = result
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == Kind::RawTextElementOmitted)
+            .unwrap();
+        assert_eq!(
+            omission.span.source_text(&source),
+            format!("<{name}/>hidden</{name}>")
+        );
+    }
+}
+
+#[test]
+fn raw_html_context_follows_table_rows_before_the_authored_caption() {
+    let sources = [
+        "| before</script>visible |\n| --- |\n| cell |\n: before<script>hidden\n\nVisible\n",
+        "| before<script>hidden |\n| --- |\n| cell |\n: hidden</script>after\n\nVisible\n",
+    ];
+    for (index, source) in sources.iter().enumerate() {
+        let allocator = Allocator::new();
+        let document = Parser::with_options(
+            &allocator,
+            source,
+            ParserOptions {
+                table_attributes: true,
+                ..ParserOptions::gfm()
+            },
+        )
+        .parse()
+        .unwrap();
+        let result = document
+            .project_markdown(source, &MarkdownProjectionOptions::default())
+            .unwrap();
+        assert!(!result.markdown.contains("hidden"));
+        let omission = result
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == Kind::RawTextElementOmitted)
+            .unwrap();
+        assert_eq!(
+            omission.span.start as usize,
+            source.find("<script>").unwrap()
+        );
+        if index == 0 {
+            assert!(result.markdown.contains("before visible |\n"));
+            assert!(result.markdown.contains("| cell |\n"));
+            assert!(!result.markdown.contains("Visible"));
+            assert_eq!(omission.span.end as usize, source.len());
+        } else {
+            assert!(result.markdown.ends_with("after\n\nVisible\n"));
+            assert_eq!(
+                omission.span.end as usize,
+                source.find("</script>").unwrap() + "</script>".len()
+            );
+        }
+    }
+}
+
+#[test]
 fn unterminated_inline_raw_text_body_is_omitted_through_the_end_of_source() {
     let source = "before<script>const hidden = 1;\n\n## Hidden heading\n";
     let allocator = Allocator::new();

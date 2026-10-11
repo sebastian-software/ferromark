@@ -1,14 +1,46 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { JsxCompiler } from "../index.mjs";
+import { prepareDocument } from "../index.mjs";
 
 function prepare(source, options = {}) {
-  return new JsxCompiler({
-    theme: { name: "projection-fixture", settings: [{ settings: { foreground: "#111111" } }] },
-    assets: { remote: false },
-  }).prepare(source, { format: "mdx", frontMatter: true, ...options });
+  return prepareDocument(source, { format: "mdx", frontMatter: true, ...options });
 }
+
+test("raw HTML slash syntax retains nonvoid raw text omission ranges", () => {
+  for (const name of ["script", "STYLE", "title", "textarea"]) {
+    const source = `before<${name}/>hidden</${name}>after\n`;
+    const result = prepare(source, { format: "md" }).projectMarkdown();
+    assert.equal(result.markdown, "before after\n");
+    const omission = result.diagnostics.find(({ code }) => code === "raw-text-element-omitted");
+    assert.equal(
+      Buffer.from(source).subarray(omission.start, omission.end).toString(),
+      `<${name}/>hidden</${name}>`,
+    );
+  }
+});
+
+test("raw HTML context visits authored table rows before their trailing captions", () => {
+  const sources = [
+    "| before</script>visible |\n| --- |\n| cell |\n: before<script>hidden\n\nVisible\n",
+    "| before<script>hidden |\n| --- |\n| cell |\n: hidden</script>after\n\nVisible\n",
+  ];
+  for (const [index, source] of sources.entries()) {
+    const result = prepare(source, { format: "md", tableAttributes: true }).projectMarkdown();
+    assert.ok(!result.markdown.includes("hidden"));
+    const omission = result.diagnostics.find(({ code }) => code === "raw-text-element-omitted");
+    assert.equal(omission.start, source.indexOf("<script>"));
+    if (index === 0) {
+      assert.ok(result.markdown.includes("before visible |\n"));
+      assert.ok(result.markdown.includes("| cell |\n"));
+      assert.ok(!result.markdown.includes("Visible"));
+      assert.equal(omission.end, Buffer.byteLength(source));
+    } else {
+      assert.ok(result.markdown.endsWith("after\n\nVisible\n"));
+      assert.equal(omission.end, source.indexOf("</script>") + "</script>".length);
+    }
+  }
+});
 
 const projectionSource = [
   "---",
