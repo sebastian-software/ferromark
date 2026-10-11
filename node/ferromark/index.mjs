@@ -747,8 +747,8 @@ class PreparedDocumentFacade {
   constructor(nativePrepared) {
     this.#nativePrepared = nativePrepared;
     this.metadata = freezePreparedMetadata(nativePrepared.metadata);
-    this.render = this.render.bind(this);
-    this.renderModule = this.renderModule.bind(this);
+    this.render = this.#render.bind(this);
+    this.renderModule = this.#renderModule.bind(this);
     Object.freeze(this);
   }
 
@@ -763,7 +763,7 @@ class PreparedDocumentFacade {
   }
 
   /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
-  render(options, renderCode) {
+  #render(options, renderCode) {
     validatePreparedRenderOptions(options, false);
     if (renderCode !== undefined && typeof renderCode !== "function") {
       throw new TypeError("renderCode must be a synchronous function");
@@ -772,7 +772,7 @@ class PreparedDocumentFacade {
   }
 
   /** @param {import('./index.mjs').JsxRenderModuleOptions} [options] Module and render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
-  renderModule(options, renderCode) {
+  #renderModule(options, renderCode) {
     validatePreparedRenderOptions(options, true);
     if (renderCode !== undefined && typeof renderCode !== "function") {
       throw new TypeError("renderCode must be a synchronous function");

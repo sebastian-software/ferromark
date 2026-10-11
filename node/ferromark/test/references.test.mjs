@@ -213,10 +213,10 @@ test("native passes require explicit reference tracking while ordinary prepared 
     for (const options of [{ passes }, { passes, trackReferences: false }]) {
       const prepared = prepare(source, options);
       const before = prepared.render();
-      assert.ok(before.body.includes("Hello 😄"));
+      assert.deepEqual(before, compileJsx(source, { passes }));
       assert.throws(() => prepared.collectReferences(), /trackReferences: true during preparation/);
       assert.deepEqual(prepared.render(), before);
-      assert.ok(prepared.renderModule().code.includes("Hello 😄"));
+      assert.deepEqual(prepared.renderModule(), compileJsx(source, { passes, output: "module" }));
     }
     assert.equal(
       prepare(source, { passes, trackReferences: true }).collectReferences()[0].provenance,
