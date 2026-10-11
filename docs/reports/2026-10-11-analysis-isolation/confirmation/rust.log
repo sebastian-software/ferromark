@@ -1,0 +1,53 @@
+Gnuplot not found, using plotters backend
+Benchmarking prose/before/render_html
+Benchmarking prose/before/render_html: Warming up for 1.0000 s
+Benchmarking prose/before/render_html: Collecting 40 samples in estimated 5.0223 s (84k iterations)
+Benchmarking prose/before/render_html: Analyzing
+prose/before/render_html
+                        time:   [59.344 µs 59.495 µs 59.648 µs]
+                        thrpt:  [466.61 MiB/s 467.80 MiB/s 469.00 MiB/s]
+                 change:
+                        time:   [−0.8083% −0.4986% −0.1429%] (p = 0.01 < 0.05)
+                        thrpt:  [+0.1431% +0.5011% +0.8149%]
+                        Change within noise threshold.
+Benchmarking prose/after/render_html
+Benchmarking prose/after/render_html: Warming up for 1.0000 s
+Benchmarking prose/after/render_html: Collecting 40 samples in estimated 5.0236 s (84k iterations)
+Benchmarking prose/after/render_html: Analyzing
+prose/after/render_html time:   [59.316 µs 59.384 µs 59.468 µs]
+                        thrpt:  [468.02 MiB/s 468.68 MiB/s 469.22 MiB/s]
+                 change:
+                        time:   [−5.1578% −4.4210% −3.6571%] (p = 0.00 < 0.05)
+                        thrpt:  [+3.7959% +4.6255% +5.4382%]
+                        Performance has improved.
+Found 8 outliers among 40 measurements (20.00%)
+  2 (5.00%) low mild
+  1 (2.50%) high mild
+  5 (12.50%) high severe
+
+Benchmarking gfm_dense/before/render_html
+Benchmarking gfm_dense/before/render_html: Warming up for 1.0000 s
+Benchmarking gfm_dense/before/render_html: Collecting 40 samples in estimated 5.0186 s (170k iterations)
+Benchmarking gfm_dense/before/render_html: Analyzing
+gfm_dense/before/render_html
+                        time:   [29.493 µs 29.533 µs 29.586 µs]
+                        thrpt:  [585.89 MiB/s 586.94 MiB/s 587.72 MiB/s]
+                 change:
+                        time:   [−1.4272% −0.7543% −0.1153%] (p = 0.01 < 0.05)
+                        thrpt:  [+0.1154% +0.7601% +1.4478%]
+                        Change within noise threshold.
+Found 2 outliers among 40 measurements (5.00%)
+  2 (5.00%) high severe
+Benchmarking gfm_dense/after/render_html
+Benchmarking gfm_dense/after/render_html: Warming up for 1.0000 s
+Benchmarking gfm_dense/after/render_html: Collecting 40 samples in estimated 5.0188 s (169k iterations)
+Benchmarking gfm_dense/after/render_html: Analyzing
+gfm_dense/after/render_html
+                        time:   [29.685 µs 29.819 µs 29.989 µs]
+                        thrpt:  [578.01 MiB/s 581.30 MiB/s 583.92 MiB/s]
+                 change:
+                        time:   [−2.1247% −1.8109% −1.5019%] (p = 0.00 < 0.05)
+                        thrpt:  [+1.5248% +1.8443% +2.1708%]
+                        Performance has improved.
+Found 3 outliers among 40 measurements (7.50%)
+  3 (7.50%) high severe

@@ -1,0 +1,47 @@
+    Finished `bench` profile [optimized] target(s) in 0.08s
+     Running benches/ordinary_paths.rs (/tmp/ferromark-extract-target/release/build/ferromark-analysis-performance/540836471f29c288/out/ordinary_paths-540836471f29c288)
+Gnuplot not found, using plotters backend
+Benchmarking gfm_bare/before/parse
+Benchmarking gfm_bare/before/parse: Warming up for 500.00 ms
+Benchmarking gfm_bare/before/parse: Collecting 20 samples in estimated 2.0004 s (128k iterations)
+Benchmarking gfm_bare/before/parse: Analyzing
+gfm_bare/before/parse   time:   [15.613 µs 15.704 µs 15.788 µs]
+                        thrpt:  [1.6158 GiB/s 1.6245 GiB/s 1.6339 GiB/s]
+Benchmarking gfm_bare/after/parse
+Benchmarking gfm_bare/after/parse: Warming up for 500.00 ms
+Benchmarking gfm_bare/after/parse: Collecting 20 samples in estimated 2.0074 s (24k iterations)
+Benchmarking gfm_bare/after/parse: Analyzing
+gfm_bare/after/parse    time:   [82.469 µs 82.864 µs 83.398 µs]
+                        thrpt:  [313.23 MiB/s 315.25 MiB/s 316.76 MiB/s]
+
+Benchmarking gfm_dense/before/parse
+Benchmarking gfm_dense/before/parse: Warming up for 500.00 ms
+Benchmarking gfm_dense/before/parse: Collecting 20 samples in estimated 2.0028 s (15k iterations)
+Benchmarking gfm_dense/before/parse: Analyzing
+gfm_dense/before/parse  time:   [134.37 µs 135.41 µs 136.22 µs]
+                        thrpt:  [127.25 MiB/s 128.01 MiB/s 129.00 MiB/s]
+Benchmarking gfm_dense/after/parse
+Benchmarking gfm_dense/after/parse: Warming up for 500.00 ms
+Benchmarking gfm_dense/after/parse: Collecting 20 samples in estimated 2.0046 s (13k iterations)
+Benchmarking gfm_dense/after/parse: Analyzing
+gfm_dense/after/parse   time:   [157.58 µs 158.33 µs 158.95 µs]
+                        thrpt:  [109.05 MiB/s 109.48 MiB/s 110.00 MiB/s]
+Found 3 outliers among 20 measurements (15.00%)
+  3 (15.00%) low mild
+
+Benchmarking gfm_decoded/before/parse
+Benchmarking gfm_decoded/before/parse: Warming up for 500.00 ms
+Benchmarking gfm_decoded/before/parse: Collecting 20 samples in estimated 2.0182 s (18k iterations)
+Benchmarking gfm_decoded/before/parse: Analyzing
+gfm_decoded/before/parse
+                        time:   [108.72 µs 110.65 µs 112.63 µs]
+                        thrpt:  [177.74 MiB/s 180.93 MiB/s 184.14 MiB/s]
+Found 2 outliers among 20 measurements (10.00%)
+  1 (5.00%) high mild
+  1 (5.00%) high severe
+Benchmarking gfm_decoded/after/parse
+Benchmarking gfm_decoded/after/parse: Warming up for 500.00 ms
+Benchmarking gfm_decoded/after/parse: Collecting 20 samples in estimated 2.0000 s (13k iterations)
+Benchmarking gfm_decoded/after/parse: Analyzing
+gfm_decoded/after/parse time:   [149.34 µs 150.23 µs 151.11 µs]
+                        thrpt:  [132.48 MiB/s 133.26 MiB/s 134.05 MiB/s]
