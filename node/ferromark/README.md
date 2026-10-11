@@ -100,6 +100,10 @@ provides complete offline examples, stage-specific options, module/provider
 behavior, fence metadata, asset configuration, ownership, and error recovery.
 See the [public types](./index.d.mts) for the complete API.
 
+Use `prepared.extractText()` for static text and final sections from the same
+native tree. See the [text extraction guide](https://github.com/sebastian-software/ferromark/blob/main/docs/text-extraction.md)
+for the content policy, source spans, and normalized UTF-8 text offsets.
+
 ## Install
 
 ```sh

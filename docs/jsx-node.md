@@ -140,6 +140,10 @@ native passes. It defaults off; ordinary preparation does not capture reference
 snapshots. Enable it before collecting references from a handle with passes.
 See the [reference guide](references.md) for the complete contract.
 
+The prepared handle also exposes `extractText()` for bulk static text and final
+heading sections. See [text and section extraction](text-extraction.md) for
+content policies, UTF-8 ranges, and analysis without highlighting assets.
+
 ## Compile an MDX module
 
 ```js

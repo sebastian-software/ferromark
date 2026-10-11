@@ -423,12 +423,52 @@ export declare function prepareDocument(
   preparationOptions?: JsxPreparationOptions,
 ): PreparedJsxDocument;
 
+/** Static text projection choices; heading choices must match render options for matching anchors. */
+export type TextExtractionOptions = Readonly<{
+  /** Include fenced and indented code (default true). Inline code is always retained. */
+  includeBlockCode?: boolean;
+  headingIds?: boolean;
+  headingOffset?: number;
+  headingIdPrefix?: string;
+  omitTitleHeading?: string;
+  callouts?: boolean;
+}>;
+
+/** Half-open UTF-8 byte range. Source spans and normalized text ranges are distinct. */
+export type TextByteRange = Readonly<{ start: number; end: number }>;
+
+/** A heading plus its text up to the next heading, in document order. */
+export type TextSection = Readonly<{
+  heading: string;
+  level: number;
+  /** Index of the nearest earlier section with a lower effective heading level. */
+  parentIndex?: number;
+  id?: string;
+  /** Original heading syntax, when its provenance is available. */
+  headingSpan?: TextByteRange;
+  /** Original heading through next heading/document end; absent for unavailable/reordered spans. */
+  sourceSpan?: TextByteRange;
+  /** UTF-8 byte range in TextExtraction.text, including the heading. Encode before slicing in JS. */
+  textRange: TextByteRange;
+  /** The normalized text in textRange; does not repeat descendant sections. */
+  text: string;
+}>;
+
+/** Immutable owned text analysis; raw HTML, ESM, expressions, and runtime MDX output are omitted. */
+export type TextExtraction = Readonly<{
+  text: string;
+  sections: readonly TextSection[];
+  omittedTitleHeadingSpan?: TextByteRange;
+}>;
+
 /** Immutable native document handle returned by `prepareDocument` or `JsxCompiler.prepare`. */
 export type PreparedJsxDocument = Readonly<{
   /** Metadata snapshot computed from the prepared AST without rendering JSX. */
   metadata: JsxPreparedMetadata;
   /** Ordered references. With native passes, preparation must set trackReferences: true or this throws. */
   collectReferences(): readonly DocumentReference[];
+  /** Bulk static text and final sections, without rendering/highlighting or rerunning passes. */
+  extractText(options?: TextExtractionOptions): TextExtraction;
   /** Render a body. Repeated calls do not mutate the prepared tree or rerun passes. */
   render(options?: JsxRenderOptions, renderCode?: JsxCodeRenderer): JsxResult;
   /** Render a complete module. Module and body choices can be varied per call. */

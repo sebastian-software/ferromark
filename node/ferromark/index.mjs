@@ -745,6 +745,67 @@ function freezePreparedMetadata(metadata) {
   return Object.freeze(metadata);
 }
 
+/** @param {import('./index.mjs').TextExtractionOptions | undefined} options Extraction settings. */
+function validateTextExtractionOptions(options) {
+  if (options == null) return;
+  if (typeof options !== "object" || Array.isArray(options)) {
+    throw new TypeError("text extraction options must be an object");
+  }
+  const keys = new Set([
+    "includeBlockCode",
+    "headingIds",
+    "headingOffset",
+    "headingIdPrefix",
+    "omitTitleHeading",
+    "callouts",
+  ]);
+  for (const key of Reflect.ownKeys(options)) {
+    if (typeof key !== "string" || !keys.has(key)) {
+      throw new TypeError(`unknown text extraction option "${String(key)}"`);
+    }
+    validateTextExtractionValue(key, Reflect.get(options, key));
+  }
+}
+
+/** @param {string} key Extraction option name. @param {unknown} value Option value. */
+function validateTextExtractionValue(key, value) {
+  if (value === undefined) return;
+  if (key === "headingOffset") {
+    validateTextHeadingOffset(value);
+    return;
+  }
+  const wantsString = key === "headingIdPrefix" || key === "omitTitleHeading";
+  const valid = wantsString ? typeof value === "string" : typeof value === "boolean";
+  if (!valid) {
+    throw new TypeError(`${key} must be a ${wantsString ? "string" : "boolean"}`);
+  }
+}
+
+/** @param {unknown} value Extraction heading level offset. */
+function validateTextHeadingOffset(value) {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < -2_147_483_648 ||
+    value > 2_147_483_647
+  ) {
+    throw new TypeError("headingOffset must be a signed 32-bit integer");
+  }
+}
+
+/** @param {import('./index.mjs').TextExtraction} result Owned native extraction. */
+function freezeTextExtraction(result) {
+  for (const section of result.sections) {
+    if (section.headingSpan != null) Object.freeze(section.headingSpan);
+    if (section.sourceSpan != null) Object.freeze(section.sourceSpan);
+    Object.freeze(section.textRange);
+    Object.freeze(section);
+  }
+  Object.freeze(result.sections);
+  if (result.omittedTitleHeadingSpan != null) Object.freeze(result.omittedTitleHeadingSpan);
+  return Object.freeze(result);
+}
+
 class PreparedDocumentFacade {
   /** @type {NativePreparedJsxDocument} */
   #nativePrepared;
@@ -766,6 +827,12 @@ class PreparedDocumentFacade {
         return Object.freeze(reference);
       }),
     );
+  }
+
+  /** @param {import('./index.mjs').TextExtractionOptions} [options] Static extraction and heading choices. */
+  extractText(options) {
+    validateTextExtractionOptions(options);
+    return freezeTextExtraction(this.#nativePrepared.extractText(options));
   }
 
   /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
@@ -967,6 +1034,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  * @typedef {{
  *   readonly metadata: import('./index.mjs').JsxPreparedMetadata
  *   collectReferences(): import('./index.mjs').DocumentReference[]
+ *   extractText(options?: import('./index.mjs').TextExtractionOptions): import('./index.mjs').TextExtraction
  *   render(options?: import('./index.mjs').JsxRenderOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
  *   renderModule(options?: import('./index.mjs').JsxRenderModuleOptions,

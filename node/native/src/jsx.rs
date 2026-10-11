@@ -309,6 +309,37 @@ impl ParsedJsxDocument {
         self.with_document(|_, document| prepared_metadata(document, &self.defaults))
     }
 
+    pub(crate) fn extract_text(
+        &self,
+        options: Option<crate::text::TextOptions>,
+    ) -> Result<crate::text::TextExtraction> {
+        let options = options.unwrap_or_default();
+        let prefix = options
+            .heading_id_prefix
+            .unwrap_or_else(|| self.defaults.heading_id_prefix.clone());
+        HtmlRenderer::validate_heading_id_prefix(&prefix)
+            .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+        let rendering = JsxRendererOptions {
+            heading_ids: options.heading_ids.unwrap_or(self.defaults.heading_ids),
+            heading_level_offset: options
+                .heading_offset
+                .map(heading_offset)
+                .transpose()?
+                .unwrap_or(self.defaults.heading_level_offset),
+            heading_id_prefix: prefix,
+            omit_title_heading: options.omit_title_heading,
+            callouts: options.callouts.unwrap_or(self.defaults.callouts),
+            ..JsxRendererOptions::default()
+        };
+        self.with_document(|_, document| {
+            crate::text::extract(
+                document,
+                options.include_block_code.unwrap_or(true),
+                rendering,
+            )
+        })
+    }
+
     pub(crate) fn render_body(
         &self,
         jsx: Option<JsxOptions>,
