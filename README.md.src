@@ -111,21 +111,16 @@ the same native fence metadata and highlighting. Start with the
 
 ### Document analysis
 
-Reuse a parsed document for [link and asset inventories](docs/references.md),
-[plain text and search sections](docs/text-extraction.md), and
-[static Markdown export from MDX](docs/markdown-projection.md).
-Rust exposes these operations on `Document`; Node exposes `collectReferences`,
-`extractText`, and `projectMarkdown` on `prepareDocument` and compiler-prepared
-handles. Analysis runs only when requested and keeps the document available for
-rendering. See [document analysis](https://ferromark.dev/guide/document-analysis)
-for examples and source-range rules. These additions are available on `main`;
-check your installed release's API or build from source.
+Rust and Node offer
+[reference collection](docs/references.md),
+[text extraction](docs/text-extraction.md), and
+[static Markdown projection](docs/markdown-projection.md).
+[Examples and release availability](https://ferromark.dev/guide/document-analysis).
 
 ## Make it yours
 
 - [Configuration](https://ferromark.dev/guide/configuration) — syntax and output policies.
 - [Content pipelines](https://ferromark.dev/guide/pipelines) — document metadata, navigation, and presentation.
-- [Document analysis](https://ferromark.dev/guide/document-analysis) — references, search sections, and static Markdown export.
 - [Rendering and trust](https://ferromark.dev/guide/rendering) — defaults and input boundaries.
 - [Native code highlighting](https://github.com/sebastian-software/ferromark/blob/main/docs/native-code-highlighting.md) — Rust hook contract and Ferriki integration status.
 - [Architecture](https://ferromark.dev/guide/architecture) — arena AST, modules, and integration points.
