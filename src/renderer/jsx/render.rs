@@ -15,6 +15,7 @@ use crate::renderer::{
 };
 
 use super::code_metadata::{CodeBlockMetadata, parse_code_block_metadata};
+use super::heading_text::heading_text;
 use super::line_index::LineIndex;
 use super::{
     JsxCodeBlock, JsxCodeBlockInput, JsxCodeBlockRenderOutput, JsxModuleSource, JsxOutput,
@@ -1519,36 +1520,37 @@ fn callout_paragraph_has_body(paragraph: &Paragraph<'_>, consumed: usize) -> boo
     false
 }
 
-fn heading_text(nodes: &[Node<'_>]) -> String {
-    let mut text = String::new();
-    for node in nodes {
-        append_heading_text(node, &mut text);
-    }
-    text
-}
-
-fn append_heading_text(node: &Node<'_>, text: &mut String) {
-    match node {
-        Node::Text(value) => text.push_str(value.value),
-        Node::InlineCode(value) => text.push_str(value.value),
-        Node::Emphasis(value) => append_heading_children(&value.children, text),
-        Node::Strong(value) => append_heading_children(&value.children, text),
-        Node::Highlight(value) => append_heading_children(&value.children, text),
-        Node::Delete(value) => append_heading_children(&value.children, text),
-        Node::Insertion(value) => append_heading_children(&value.children, text),
-        Node::Superscript(value) => append_heading_children(&value.children, text),
-        Node::Subscript(value) => append_heading_children(&value.children, text),
-        Node::Link(value) => append_heading_children(&value.children, text),
-        Node::Span(value) => append_heading_children(&value.children, text),
-        Node::MdxJsxFlowElement(value) => append_heading_children(&value.children, text),
-        Node::MdxJsxTextElement(value) => append_heading_children(&value.children, text),
-        _ => {}
-    }
-}
-
-fn append_heading_children(nodes: &[Node<'_>], text: &mut String) {
-    for node in nodes {
-        append_heading_text(node, text);
+/// Tracks raw text elements for static text analysis, using JSX's tag scanner.
+pub fn update_raw_text_context(raw: &str, context: &mut Option<String>) {
+    let mut cursor = 0;
+    while let Some(relative) = raw[cursor..].find('<') {
+        let open = cursor + relative;
+        if raw[open..].starts_with("<!--")
+            && let Some(end) = raw[open + 4..].find("-->")
+        {
+            cursor = open + 4 + end + 3;
+            continue;
+        }
+        if let Some((tag, end)) = parse_raw_tag(raw, open) {
+            if tag.closing {
+                if context
+                    .as_deref()
+                    .is_some_and(|name| name.eq_ignore_ascii_case(tag.name))
+                {
+                    *context = None;
+                }
+            } else if !tag.self_closing
+                && context.is_none()
+                && ["script", "style", "textarea", "title"]
+                    .iter()
+                    .any(|name| name.eq_ignore_ascii_case(tag.name))
+            {
+                *context = Some(tag.name.to_ascii_lowercase());
+            }
+            cursor = end;
+        } else {
+            cursor = open + 1;
+        }
     }
 }
 

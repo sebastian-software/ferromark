@@ -19,6 +19,8 @@ export declare class PreparedJsxDocument {
   collectReferences(): Array<DocumentReference>
   /** Metadata computed from the prepared tree without rendering its body. */
   get metadata(): JsxPreparedMetadata
+  /** Extracts static text and final heading sections without highlighting or rendering. */
+  extractText(options?: TextOptions | undefined | null): TextExtraction
   /** Renders the prepared document as a JSX body. */
   render(options?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
   /** Renders the prepared document as a complete MDX module. */
@@ -237,6 +239,37 @@ export interface RenderCodeBlockResult {
 export interface SourceRange {
   start: number
   end: number
+}
+
+export interface TextExtraction {
+  text: string
+  sections: Array<TextSection>
+  omittedTitleHeadingSpan?: SourceRange
+}
+
+export interface TextOptions {
+  includeBlockCode?: boolean
+  headingIds?: boolean
+  headingOffset?: number
+  headingIdPrefix?: string
+  omitTitleHeading?: string
+  callouts?: boolean
+}
+
+export interface TextRange {
+  start: number
+  end: number
+}
+
+export interface TextSection {
+  heading: string
+  level: number
+  parentIndex?: number
+  id?: string
+  headingSpan?: SourceRange
+  sourceSpan?: SourceRange
+  textRange: TextRange
+  text: string
 }
 
 export declare function toHtml(markdown: string | Uint8Array, options?: Options | undefined | null): string

@@ -8,7 +8,10 @@
 mod code_metadata;
 #[cfg(feature = "ferriki")]
 mod ferriki_integration;
+mod heading_text;
 mod line_index;
+pub use heading_text::heading_text;
+pub use render::update_raw_text_context;
 #[cfg(feature = "jsx")]
 mod module;
 mod render;

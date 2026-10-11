@@ -132,6 +132,11 @@ harness = false
 name = "insertions"
 harness = false
 
+[[bench]]
+name = "text_extraction"
+harness = false
+required-features = ["jsx"]
+
 [workspace]
 resolver = "2"
 members = ["node/native", "transforms"]

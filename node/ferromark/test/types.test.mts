@@ -169,3 +169,13 @@ compileJsx("text", { trackReferences: true });
 prepareDocument("text", { trackReferences: "true" });
 // @ts-expect-error -- tracking cannot be enabled after passes have already run
 analysisDocument.render({ trackReferences: true });
+
+const extractedText = analysisDocument.extractText({ includeBlockCode: false, headingOffset: 1 });
+const extractedSectionText: string = extractedText.sections[0].text;
+compileJsx(extractedSectionText);
+// @ts-expect-error -- preparation passes do not rerun during extraction
+preparedJsx.extractText({ passes: [] });
+// @ts-expect-error -- extraction is bulk native data, without per-node callbacks
+preparedJsx.extractText({ renderCode: () => "trusted JSX" });
+// @ts-expect-error -- extraction results are immutable
+extractedText.sections = [];

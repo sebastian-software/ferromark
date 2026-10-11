@@ -24,6 +24,7 @@ pub mod outline;
 pub mod parser;
 pub mod references;
 pub mod renderer;
+pub mod text;
 
 /// Ferriki's Rust API, available with the `ferriki` feature.
 #[cfg(feature = "ferriki")]
@@ -49,6 +50,7 @@ pub use renderer::{
     NoHtmlRenderHooks, NoJsxRenderHooks, collect_heading_text, find_autolink_ranges,
     map_heading_level, slugify_heading,
 };
+pub use text::{TextExtraction, TextExtractionOptions, TextRange, TextSection};
 
 #[cfg(feature = "jsx")]
 pub use renderer::{JsxModuleError, JsxModuleOptions, JsxModuleOutput, JsxSourceMap};

@@ -57,3 +57,6 @@ pub use jsx::{
 };
 
 pub(crate) use jsx::decode_html_entities;
+pub(crate) use jsx::heading_text as collect_jsx_heading_text;
+
+pub(crate) use jsx::update_raw_text_context;

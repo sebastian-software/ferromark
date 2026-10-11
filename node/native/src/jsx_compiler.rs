@@ -213,6 +213,15 @@ impl PreparedJsxDocument {
         self.metadata.clone()
     }
 
+    /// Extracts static text and final heading sections without highlighting or rendering.
+    #[napi(catch_unwind)]
+    pub fn extract_text(
+        &self,
+        options: Option<crate::text::TextOptions>,
+    ) -> Result<crate::text::TextExtraction> {
+        self.parsed.extract_text(options)
+    }
+
     /// Renders the prepared document as a JSX body.
     #[napi(catch_unwind)]
     pub fn render(
