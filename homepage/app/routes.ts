@@ -10,6 +10,7 @@ export default [
   route("guide/cli", "routes/guide/cli.mdx"),
   route("guide/configuration", "routes/guide/configuration.mdx"),
   route("guide/correctness", "routes/guide/correctness.mdx"),
+  route("guide/document-analysis", "routes/guide/document-analysis.mdx"),
   route("guide/feature-comparison", "routes/guide/feature-comparison.mdx"),
   route("guide/features", "routes/guide/features.mdx"),
   route("guide/ffm", "routes/guide/ffm.mdx"),

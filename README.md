@@ -115,8 +115,13 @@ the same native fence metadata and highlighting. Start with the
 [Node JSX guide](docs/jsx-node.md) for API choices and runnable examples, or the
 [Rust renderer contract](docs/jsx-renderer.md) for core output.
 
-Export [static Markdown from MDX](docs/markdown-projection.md) with a prepared
-document's `projectMarkdown` method.
+### Document analysis
+
+Rust and Node offer
+[reference collection](docs/references.md),
+[text extraction](docs/text-extraction.md), and
+[static Markdown projection](docs/markdown-projection.md).
+[Examples and release availability](https://ferromark.dev/guide/document-analysis).
 
 ## Make it yours
 

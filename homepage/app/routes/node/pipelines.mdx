@@ -82,6 +82,18 @@ The processing stages may feel familiar from Remark, but these are Ferromark
 APIs, not JavaScript Remark plugins. Arbitrary custom passes are available
 through the [Rust transform API](/rust/transforms).
 
+## Reuse a prepared document for analysis
+
+Use `prepareDocument()` or `JsxCompiler.prepare()` to parse once, then request
+`collectReferences()` for link and image inventories, `extractText()` for plain
+text and final heading sections, or `projectMarkdown()` for a static Markdown
+export. These operations leave the handle available for JSX rendering and do
+not rerun native passes or highlighting.
+
+The [document analysis guide](/guide/document-analysis) includes examples,
+release availability, UTF-8 source ranges, and the explicit `trackReferences`
+setting required for reference collection after native passes.
+
 ## Reuse a renderer for a collection
 
 ```js
