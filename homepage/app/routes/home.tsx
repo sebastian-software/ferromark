@@ -110,6 +110,39 @@ function ContractBand() {
   );
 }
 
+function DocumentAnalysisSection() {
+  return (
+    <Section
+      id="document-analysis"
+      title="Use the document you already parsed."
+      intro="Collect references, build search records, and export static Markdown from the same prepared document. Request each analysis when your application needs it."
+      note={
+        <>
+          <Link to="/guide/document-analysis">Explore document analysis in Rust and Node.js</Link>
+          {" · "}Available on main; check your installed release.
+        </>
+      }
+    >
+      <Principles
+        items={[
+          {
+            heading: "Reference inventories",
+            text: "Collect Markdown links, images, and static MDX URL attributes with destinations and available source ranges for your link and asset checks.",
+          },
+          {
+            heading: "Text and search sections",
+            text: "Extract static plain text and ordered heading sections with final JSX heading IDs and hierarchy for your search index.",
+          },
+          {
+            heading: "Static Markdown export",
+            text: "Keep original Markdown and code while removing dynamic MDX constructs. Omission diagnostics show where content was discarded.",
+          },
+        ]}
+      />
+    </Section>
+  );
+}
+
 function FamilySection() {
   return (
     <Section
@@ -202,6 +235,7 @@ export default function HomePage() {
         <ProjectIntro />
         <TransformShowcase />
         <FlavoredMarkdownSection />
+        <DocumentAnalysisSection />
         <ContractBand />
         <FamilySection />
         <EvidenceSection />

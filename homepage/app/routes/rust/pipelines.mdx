@@ -46,6 +46,17 @@ To change the document between parsing and rendering, see [Post-process the
 Rust AST](/rust/transforms) for the optional ordered transform pipeline and
 caller-placed table of contents.
 
+## Analyze the parsed document
+
+Call `document.collect_references(source)` to inventory links and assets,
+`document.extract_text(&options)` to get static text and final JSX heading
+sections, or `document.project_markdown(source, &options)` to export original
+static Markdown with omission diagnostics. Each method runs only when called.
+Keep the matching original source for operations that take it explicitly.
+
+See [document analysis](/guide/document-analysis) for Rust and Node examples,
+source-range rules, and reference snapshots around mutable native passes.
+
 ## Append HTML to an existing string
 
 ```rust

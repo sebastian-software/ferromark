@@ -48,5 +48,10 @@ Rust defaults preserve raw HTML. For untrusted Markdown, explicitly set
 | Inspect front matter or transform nodes | `Allocator` + `Parser` + `HtmlRenderer`          |
 | Customize HTML output                   | `HtmlRenderHooks`                                |
 
+The source on `main` also exposes reference collection, text and section
+extraction, and static Markdown projection on `Document`. See
+[document analysis](/guide/document-analysis) for Rust examples and how to try
+APIs that are not yet in your installed release.
+
 Continue with [configuration](/rust/configuration) and [content pipelines](/rust/pipelines).
 The <a href={docsRsUrl}>API reference</a> lists all types and methods.

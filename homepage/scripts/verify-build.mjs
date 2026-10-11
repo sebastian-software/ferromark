@@ -11,14 +11,17 @@ const expectedPages = [
   "guide/cli/index.html",
   "guide/configuration/index.html",
   "guide/correctness/index.html",
+  "guide/document-analysis/index.html",
   "guide/feature-comparison/index.html",
   "guide/features/index.html",
+  "guide/ffm/index.html",
   "guide/getting-started/index.html",
   "guide/mdx-examples/index.html",
   "guide/mdx/index.html",
   "guide/pipelines/index.html",
   "guide/quick-start/index.html",
   "guide/rendering/index.html",
+  "guide/typography/index.html",
   "guide/workflow-benchmarks/index.html",
   "node/configuration/index.html",
   "node/deployment/index.html",
@@ -42,6 +45,10 @@ const benchmarkPage = await readFile(
   "utf8",
 );
 const guidePage = await readFile(new URL("guide/quick-start/index.html", outputDirectory), "utf8");
+const analysisPage = await readFile(
+  new URL("guide/document-analysis/index.html", outputDirectory),
+  "utf8",
+);
 
 // The documented version has one source: the npm facade manifest the release
 // pull request updates. `app/version.ts` reads it, so a release must reach the
@@ -134,6 +141,11 @@ const requiredFragments = [
   version,
   "Start with Rust",
   "Start with Node.js",
+  'id="document-analysis"',
+  'href="/guide/document-analysis"',
+  "Reference inventories",
+  "Text and search sections",
+  "Static Markdown export",
 ];
 
 // The family chrome replaces Ardo's own header and footer (`handle.chrome` in
@@ -188,6 +200,44 @@ check(guidePage, "guide page", {
   required: requiredGuideFragments,
   forbidden: forbiddenFragments,
 });
+check(analysisPage, "document analysis guide", {
+  required: [
+    ...requiredGuideFragments,
+    "collectReferences",
+    "collect_references",
+    "extractText",
+    "extract_text",
+    "projectMarkdown",
+    "project_markdown",
+    "trackReferences",
+    "All analysis ranges count UTF-8 bytes.",
+    'href="https://github.com/sebastian-software/ferromark/blob/main/docs/references.md"',
+    'href="https://github.com/sebastian-software/ferromark/blob/main/docs/text-extraction.md"',
+    'href="https://github.com/sebastian-software/ferromark/blob/main/docs/markdown-projection.md"',
+  ],
+  forbidden: forbiddenFragments,
+});
+
+for (const path of [
+  "guide/getting-started/index.html",
+  "node/pipelines/index.html",
+  "rust/pipelines/index.html",
+]) {
+  const html = await readFile(new URL(path, outputDirectory), "utf8");
+  check(html, path, { required: ['href="/guide/document-analysis"'] });
+}
+
+const searchRecords = JSON.parse(
+  await readFile(new URL("search/chunk-0.json", outputDirectory), "utf8"),
+);
+const analysisRecords = searchRecords.filter(
+  (record) => record.routePath === "/guide/document-analysis",
+);
+for (const method of ["collectReferences", "extractText", "projectMarkdown"]) {
+  if (!analysisRecords.some((record) => record.content.includes(method))) {
+    throw new Error(`Document analysis search records are missing ${method}`);
+  }
+}
 
 // eslint-disable-next-line security/detect-unsafe-regex -- This scans local build output, not externally supplied HTML.
 if (/<p(?:\s[^>]*)?>\s*<nav\b/i.test(homepage)) {

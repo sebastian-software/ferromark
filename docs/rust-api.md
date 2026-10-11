@@ -175,6 +175,25 @@ resetting its allocator. Use AST visitors and `HtmlRenderHooks` when a caller
 needs document structure or custom output. Reuse `HtmlRenderer` and reset the
 allocator between documents to retain their buffers explicitly.
 
+## Analyze the parsed document
+
+These additive APIs are available on repository `main`. Check your installed
+crate's API before using them with an older release. Each operation runs only
+when called and leaves the document available for rendering.
+
+| Task | Method | Guide |
+| --- | --- | --- |
+| Inventory links, images, autolinks, and literal MDX URL attributes | `document.collect_references(source)` | [Reference collection](references.md) |
+| Extract static plain text and final JSX heading sections | `document.extract_text(&TextExtractionOptions)` | [Text extraction](text-extraction.md) |
+| Export original static Markdown with omission diagnostics | `document.project_markdown(source, &MarkdownProjectionOptions)` | [Markdown projection](markdown-projection.md) |
+
+Pass the matching original input to source-based operations. Capture
+`ReferenceSnapshot::capture(&document, source)` before mutable passes when
+you need reference provenance afterward. Text extraction reads the resulting
+tree; Markdown projection keeps original source slices and does not serialize
+native pass edits. The [document analysis guide](https://ferromark.dev/guide/document-analysis)
+compares the APIs and includes Rust and Node examples.
+
 ## Heading IDs
 
 The renderer assigns heading IDs in document order. It keeps the first requested

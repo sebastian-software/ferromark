@@ -1,0 +1,149 @@
+---
+title: Analyze a Parsed Document
+order: 6
+---
+
+# Analyze a Parsed Document
+
+Reuse the document you parsed for a link inventory, search indexing, or a static
+Markdown export. Rust exposes these operations on `Document`; Node.js exposes
+them on the immutable handle returned by `prepareDocument()` or
+`JsxCompiler.prepare()`. Each analysis runs only when called and leaves the
+document available for rendering.
+
+These additive APIs are available on repository `main`. Check your installed
+package's types; if your release does not include them, build
+[Rust from the repository](https://github.com/sebastian-software/ferromark/blob/main/CONTRIBUTING.md)
+or [Node.js from source](https://github.com/sebastian-software/ferromark/blob/main/node/ferromark/README.md#install).
+
+| Your task                                                 | Rust                                           | Node.js                              |
+| --------------------------------------------------------- | ---------------------------------------------- | ------------------------------------ |
+| Inventory links, images, and static MDX URL attributes    | `Document::collect_references(source)`         | `prepared.collectReferences()`       |
+| Extract plain text and ordered heading sections           | `Document::extract_text(&options)`             | `prepared.extractText(options?)`     |
+| Export original static Markdown with omission diagnostics | `Document::project_markdown(source, &options)` | `prepared.projectMarkdown(options?)` |
+
+## Prepare once in Node.js
+
+```js
+import { prepareDocument } from "ferromark";
+
+const source = "# Guide\n\n[Setup](/setup) ![Logo](./logo.svg)\n\n## Usage\n\nStatic prose.\n";
+const prepared = prepareDocument(source);
+
+console.log(prepared.collectReferences().map(({ destination }) => destination));
+// ["/setup", "./logo.svg"]
+
+const extracted = prepared.extractText({ includeBlockCode: false });
+console.log(extracted.sections[1].id); // "usage"
+console.log(extracted.sections[1].parentIndex); // 0
+
+console.log(prepared.projectMarkdown().markdown === source); // true
+const rendered = prepared.render(); // The same document remains available.
+```
+
+`prepareDocument()` parses once and runs configured native passes once without
+constructing a highlighter or loading themes and grammars. Use
+`JsxCompiler.prepare()` when later rendering should reuse the compiler's native
+highlighting. Analysis never highlights code, renders JSX, or reruns passes.
+
+## Parse once in Rust
+
+```rust
+use ferromark::{Allocator, MarkdownProjectionOptions, Parser, TextExtractionOptions};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let source = "# Guide\n\n[Setup](/setup)\n\n## Usage\n\nStatic prose.\n";
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, source).parse()?;
+
+    let references = document.collect_references(source);
+    assert_eq!(references[0].destination, "/setup");
+
+    let extracted = document.extract_text(&TextExtractionOptions::default());
+    assert_eq!(extracted.sections[1].id.as_deref(), Some("usage"));
+
+    let projected = document.project_markdown(source, &MarkdownProjectionOptions::default())?;
+    assert_eq!(projected.markdown, source);
+    Ok(())
+}
+```
+
+Keep the original source and allocator alive while using the document. The
+source passed to reference collection and Markdown projection must match the
+parsed input. See [Rust pipelines](/rust/pipelines) for arena ownership and
+rendering, and the linked API guides below for complete executable examples.
+
+## Collect references
+
+Build a link checker or asset inventory from parser-resolved destinations,
+labels, and available original source ranges. Occurrences retain document
+order and duplicates. Markdown links, images, autolinks, and literal MDX
+`href`/`src` attributes are covered; raw HTML, code, and dynamic attribute
+expressions are excluded. Your application resolves routes and paths and
+performs any filesystem or network checks.
+
+Reference tracking defaults to `false`. With Node native passes, explicitly
+set `trackReferences: true` during preparation before calling
+`collectReferences()`. Collection otherwise throws because the transformed
+tree has no tracked source provenance. Text extraction and Markdown projection
+do not need this setting. In Rust, capture `ReferenceSnapshot` before custom
+mutable passes when you need to compare references afterward.
+
+[Reference API, provenance rules, and Node/Rust examples](https://github.com/sebastian-software/ferromark/blob/main/docs/references.md).
+
+## Extract text and sections
+
+Build search records from decoded static prose and ordered heading sections.
+Each section includes its heading, effective level, optional final JSX heading
+ID, parent index, text, and available source ranges. A section ends at the next
+heading; descendant sections do not repeat inside their parent's text.
+
+Block code is included by default; `includeBlockCode: false` omits it while
+keeping inline code. Expressions, imports, attributes, and runtime component
+output are not evaluated. Match heading options between extraction and JSX
+rendering when using section IDs as anchors. Your application supplies page
+URLs, locales, search ranking, and snippets.
+
+[Text policy, heading options, and Node/Rust examples](https://github.com/sebastian-software/ferromark/blob/main/docs/text-extraction.md).
+
+## Project static Markdown
+
+Export static documentation for a downstream Markdown reader or an
+application-owned `llms.txt` workflow. Projection preserves authored Markdown,
+reference definitions, code, and line endings. It removes parsed ESM and
+expressions, unwraps paired JSX around static children, and returns diagnostics
+for omitted or unwrapped constructs.
+
+```js
+const mdx = prepareDocument("<Box>**Static** [link](/guide) {dynamic}</Box>\n", {
+  format: "mdx",
+});
+const projected = mdx.projectMarkdown();
+console.log(projected.markdown.includes("**Static** [link](/guide)")); // true
+console.log(projected.markdown.includes("{dynamic}")); // false
+console.log(projected.diagnostics.map(({ code }) => code));
+// ["jsx-wrapper-unwrapped", "expression-omitted"]
+```
+
+Projection reads original source slices. Native pass changes are not serialized
+into the export. It cannot infer component visibility or runtime content;
+inspect its diagnostics before publishing the result. Front matter and the
+first title heading are preserved unless you explicitly request omission.
+
+[Projection policies, diagnostics, and Node/Rust examples](https://github.com/sebastian-software/ferromark/blob/main/docs/markdown-projection.md).
+
+## Source ranges and performance
+
+All analysis ranges count UTF-8 bytes. Reference spans and projection diagnostics
+address the original source; a section's `textRange` addresses normalized
+extracted text. JavaScript string indexes count UTF-16 code units, so use
+`section.text` directly or encode with `Buffer.from(value, "utf8")` before
+slicing ranges.
+
+Analysis allocates its results on demand. Ordinary parsing and rendering do not
+perform these document analyses. Enabling reference tracking with native passes
+adds preparation work; each requested analysis has its own traversal and output
+allocation cost. The
+[performance report](https://github.com/sebastian-software/ferromark/blob/main/docs/reports/2026-10-11-analysis-isolation/README.md)
+records comparisons against the pre-feature baseline, remaining timing
+differences, and reproduction methods.
