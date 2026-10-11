@@ -20,8 +20,15 @@ const passes = [
   { kind: "githubReferences", repository: "sebastian-software/ferromark" },
 ];
 const options = { passes };
+const beforePrepared = beforeCompiler.prepare(source);
+const afterPrepared = afterCompiler.prepare(source);
+const beforeTransformed = beforeCompiler.prepare(source, options);
+const afterTransformed = afterCompiler.prepare(source, options);
+const beforeSmall = beforeCompiler.prepare(small);
+const afterSmall = afterCompiler.prepare(small);
 assert.equal(before.toHtml(source), after.toHtml(source));
 assert.deepEqual(before.compileJsx(source), after.compileJsx(source));
+assert.deepEqual(beforeSmall.render(), afterSmall.render());
 for (const opts of [undefined, options]) {
   assert.deepEqual(
     beforeCompiler.prepare(source, opts).render(),
@@ -51,6 +58,17 @@ const cases = [
     () => beforeCompiler.prepare(small).metadata.outline.length,
     () => afterCompiler.prepare(small).metadata.outline.length,
   ],
+  [
+    "render_default",
+    () => beforePrepared.render().body.length,
+    () => afterPrepared.render().body.length,
+  ],
+  [
+    "render_with_passes",
+    () => beforeTransformed.render().body.length,
+    () => afterTransformed.render().body.length,
+  ],
+  ["render_small", () => beforeSmall.render().body.length, () => afterSmall.render().body.length],
 ];
 function sample(run, milliseconds) {
   globalThis.gc?.();
