@@ -249,12 +249,14 @@ test("tracking getters are validated once, including inherited getters, for both
       /trackReferences must be a boolean/,
     );
   }
-  assert.throws(() => compileJsx("text", { trackReferences: true }), /unknown JSX option/);
-  assert.throws(() => session.compile("text", { trackReferences: true }), /unknown JSX option/);
-  assert.throws(
-    () => prepareDocument("text").render({ trackReferences: true }),
-    /unknown JSX render option/,
-  );
+  for (const options of [{ trackReferences: true }, Object.create({ trackReferences: true })]) {
+    assert.throws(() => compileJsx("text", options), /unknown JSX option/);
+    assert.throws(() => session.compile("text", options), /unknown JSX option/);
+    for (const prepared of [prepareDocument("text"), session.prepare("text")]) {
+      assert.throws(() => prepared.render(options), /unknown JSX render option/);
+      assert.throws(() => prepared.renderModule(options), /unknown JSX render option/);
+    }
+  }
 });
 
 test("prepared handles share analysis methods and preserve immutable, destructured rendering", () => {

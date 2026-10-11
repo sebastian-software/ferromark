@@ -574,6 +574,9 @@ function validateJsxOptions(options) {
   if (typeof options !== "object" && typeof options !== "function") {
     throw new TypeError("options must be an object");
   }
+  if ("trackReferences" in options) {
+    throw new TypeError('unknown JSX option "trackReferences"');
+  }
   for (const key of Reflect.ownKeys(options)) {
     if (
       typeof key !== "string" ||
@@ -707,6 +710,9 @@ function validatePreparedRenderOptions(options, module) {
   }
   if (typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("renderOptions must be an object");
+  }
+  if ("trackReferences" in options) {
+    throw new TypeError('unknown JSX render option "trackReferences"');
   }
   for (const key of Reflect.ownKeys(options)) {
     if (!isPreparedRenderOption(key, module)) {
