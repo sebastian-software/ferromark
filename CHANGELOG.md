@@ -1,5 +1,36 @@
 # Changelog
 
+## [3.5.0](https://github.com/sebastian-software/ferromark/compare/v3.4.0...v3.5.0) (2026-10-11)
+
+
+### Features
+
+* extract prepared document text and sections ([bf775b1](https://github.com/sebastian-software/ferromark/commit/bf775b1999665ba34c9bdb078bdb3a3a843fc033))
+* extract prepared document text and sections ([810d6de](https://github.com/sebastian-software/ferromark/commit/810d6dee21c4f9c0fd6bee5d84f4d8558d449d68))
+* extract references from prepared documents ([558e95f](https://github.com/sebastian-software/ferromark/commit/558e95fb3ee8f374a783b559fdca5646f42b2dba))
+* extract references from prepared documents ([0118c52](https://github.com/sebastian-software/ferromark/commit/0118c52dca7221f693d32378a97c631ee1ceb64d))
+* project static Markdown from prepared documents ([5017c30](https://github.com/sebastian-software/ferromark/commit/5017c3098e5e5ffdb0da5fe1eae0bfe67f094e60))
+* project static Markdown from prepared documents ([92452e8](https://github.com/sebastian-software/ferromark/commit/92452e8706979e61d0b86449fdfdcb6de4329117))
+
+
+### Bug Fixes
+
+* bind prepared render methods before freezing handles ([ca4c816](https://github.com/sebastian-software/ferromark/commit/ca4c816a57c1b9d009d081dfa0642b773afea9ae))
+* make reference provenance tracking opt-in ([1c42673](https://github.com/sebastian-software/ferromark/commit/1c4267355e0d54d761d91bc878f763cb6a5813af))
+* plan raw HTML omissions in original source order ([aa589d6](https://github.com/sebastian-software/ferromark/commit/aa589d642ebddc17277b51a28d4f6b494a0e4057))
+* preserve reference order after document transforms ([5a25b88](https://github.com/sebastian-software/ferromark/commit/5a25b887933b88e0866824fd7878346f6740810e))
+* project raw HTML in original table source order ([01adc7f](https://github.com/sebastian-software/ferromark/commit/01adc7f61363c0d3233e020fa68c3910040ae045))
+* reject inherited tracking options outside preparation ([11b3f4d](https://github.com/sebastian-software/ferromark/commit/11b3f4dc314e79ecbec6978cb67388762022de24))
+* scope raw HTML text extraction to inline runs ([b8510e6](https://github.com/sebastian-software/ferromark/commit/b8510e69447b83021983d7a9da3551d18fdee329))
+* upgrade Ferriki and use public multi-theme tokens ([2df7d36](https://github.com/sebastian-software/ferromark/commit/2df7d3689d4c3324342e690674f69239bf66f02b))
+
+
+### Performance Improvements
+
+* avoid scalar scans for ordinary autolink source ranges ([2e048a5](https://github.com/sebastian-software/ferromark/commit/2e048a56eb0620b236b285ab415d04fba38bbf46))
+* resolve reference source ranges only on demand ([84e46dd](https://github.com/sebastian-software/ferromark/commit/84e46dd2c0fbedba6cada1f1f09569b5f9d93e36))
+* share prepared document analysis methods ([f53022d](https://github.com/sebastian-software/ferromark/commit/f53022d029a50ae7185a10ea57cc5b7108c4e603))
+
 ## [3.4.0](https://github.com/sebastian-software/ferromark/compare/v3.3.0...v3.4.0) (2026-10-10)
 
 
