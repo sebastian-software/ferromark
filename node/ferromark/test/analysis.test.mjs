@@ -83,7 +83,7 @@ function checkRepeatability(prepared, before, { references, text, markdown }) {
 
 test("prepared analysis methods share owned Unicode source and preserve later rendering", () => {
   const input = Buffer.from(source);
-  const prepared = prepareDocument(input, preparation);
+  const prepared = prepareDocument(input, { ...preparation, trackReferences: true });
   input.fill(0);
   const before = prepared.render(rendering);
   assert.deepEqual(before, compileJsx(source, { ...preparation, ...rendering }));
@@ -91,4 +91,17 @@ test("prepared analysis methods share owned Unicode source and preserve later re
   const text = checkText(prepared, before.headings);
   const markdown = checkProjection(prepared);
   checkRepeatability(prepared, before, { references, text, markdown });
+});
+
+test("text and Markdown analysis need no reference snapshot after native passes", () => {
+  const untracked = prepareDocument(source, preparation);
+  const tracked = prepareDocument(source, { ...preparation, trackReferences: true });
+  assert.throws(() => untracked.collectReferences(), /trackReferences: true/);
+  assert.deepEqual(untracked.extractText(rendering), tracked.extractText(rendering));
+  assert.deepEqual(
+    untracked.projectMarkdown(projectionOptions),
+    tracked.projectMarkdown(projectionOptions),
+  );
+  assert.equal(untracked.extractText, tracked.extractText);
+  assert.equal(untracked.projectMarkdown, tracked.projectMarkdown);
 });

@@ -238,7 +238,6 @@ export interface PreparationOptions {
 
 /** Parses and runs native passes without loading highlighting assets. */
 export declare function prepareDocument(markdown: string | Uint8Array, options?: Options | undefined | null, preparationOptions?: PreparationOptions | undefined | null): PreparedJsxDocument
-export declare function prepareDocument(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null): PreparedJsxDocument
 
 export interface ProjectMarkdownOptions {
   /** Preserve recognized metadata by default, or omit its complete block. */
