@@ -75,13 +75,9 @@ impl Document<'_> {
     pub fn collect_references(&self, source: &str) -> Vec<DocumentReference> {
         let mut references = Vec::new();
         visit_references(self, source, |_, reference| {
-            references.push((reference.span.start, reference.owned()));
+            references.push(reference.owned());
         });
-        references.sort_by_key(|(start, _)| *start);
         references
-            .into_iter()
-            .map(|(_, reference)| reference)
-            .collect()
     }
 }
 
@@ -135,13 +131,9 @@ impl<'a> ReferenceSnapshot<'a> {
                     }
                 }
             }
-            references.push((reference.span.start, entry));
+            references.push(entry);
         });
-        references.sort_by_key(|(start, _)| *start);
         references
-            .into_iter()
-            .map(|(_, reference)| reference)
-            .collect()
     }
 }
 
@@ -233,6 +225,19 @@ impl<'a, F: FnMut(usize, BorrowedReference<'a>)> ReferenceVisitor<'_, 'a, F> {
 }
 
 impl<'a, F: FnMut(usize, BorrowedReference<'a>)> Visit<'a> for ReferenceVisitor<'_, 'a, F> {
+    fn visit_table(&mut self, table: &crate::ast::Table<'a>) {
+        // The default walker visits captions first for display purposes, but
+        // the authored table caption follows the source rows.
+        for row in &table.children {
+            self.visit_table_row(row);
+        }
+        if let Some(attributes) = &table.attributes {
+            for child in &attributes.caption {
+                self.visit_node(child);
+            }
+        }
+    }
+
     fn visit_link(&mut self, link: &Link<'a>) {
         let raw = self
             .source

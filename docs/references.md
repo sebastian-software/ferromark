@@ -70,8 +70,10 @@ The executable inventory is [examples/references.rs](../examples/references.rs).
 
 ## Occurrences and source ranges
 
-Occurrences stay in original document order, including duplicates. Inline,
-full/collapsed/shortcut reference links and images use the parser's definition
+Occurrences follow the current document tree in traversal order, including
+duplicates. Generated references keep their position among neighboring nodes;
+collection does not sort by synthetic source ranges. Tables visit authored
+rows before their trailing caption. Inline, full/collapsed/shortcut reference links and images use the parser's definition
 resolution, including definitions in different MDX segments. Definitions
 alone are not occurrences; unresolved syntax stays ordinary text. CommonMark
 angle autolinks and enabled GFM bare autolinks have `kind: "autolink"`.
@@ -91,7 +93,7 @@ value. A reference occurrence's range never points to its definition. Slice
 indices count UTF-16 code units and cannot be substituted for these offsets.
 For malformed UTF-8 byte input, the existing Node decoding policy replaces
 invalid sequences. Ranges address that decoded text's UTF-8 bytes; re-encode
-`Buffer.from(input.toString("utf8"))` before slicing malformed byte input.
+`Buffer.from(Buffer.from(input).toString("utf8"))` before slicing malformed byte input.
 
 Unchanged references have `provenance: "source"` and a `span`. When a native
 pass changes a retained reference's destination, label, title, or attribute,

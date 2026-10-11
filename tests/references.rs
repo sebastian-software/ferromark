@@ -148,6 +148,12 @@ fn snapshot_distinguishes_retained_changed_and_generated_references() {
         span: Span::empty(),
     })));
     let refs = snapshot.collect(&document, source);
+    assert_eq!(
+        refs.iter()
+            .map(|reference| reference.destination.as_str())
+            .collect::<Vec<_>>(),
+        vec!["/keep", "/new", "/created"]
+    );
     let keep = refs.iter().find(|r| r.destination == "/keep").unwrap();
     let changed = refs.iter().find(|r| r.destination == "/new").unwrap();
     let generated = refs.iter().find(|r| r.destination == "/created").unwrap();
@@ -160,6 +166,23 @@ fn snapshot_distinguishes_retained_changed_and_generated_references() {
     assert_eq!(generated.provenance, Provenance::Transformed);
     assert_eq!((generated.span, generated.original_span), (None, None));
     assert_eq!(refs, snapshot.collect(&document, source));
+    let Node::Paragraph(paragraph) = &mut document.children[0] else {
+        panic!()
+    };
+    paragraph.children.swap(0, 2);
+    let reordered = snapshot.collect(&document, source);
+    assert_eq!(
+        reordered
+            .iter()
+            .map(|reference| reference.destination.as_str())
+            .collect::<Vec<_>>(),
+        vec!["/new", "/keep", "/created"]
+    );
+    assert_eq!(reordered[1].provenance, Provenance::Source);
+    assert_eq!(
+        reordered[1].span.unwrap().source_text(source),
+        "[keep](/keep)"
+    );
 }
 
 #[cfg(feature = "jsx")]
@@ -197,4 +220,35 @@ fn mdx_references_resolve_across_segments_and_literals_retain_attribute_origin()
         "href=\"/card?a=1&amp;b=2\""
     );
     assert_eq!(refs[4].element.as_deref(), Some("a"));
+}
+
+#[test]
+fn table_references_follow_authored_rows_before_the_caption() {
+    let source = "| [header](/head) |\n| --- |\n| [cell](/body) |\n: [caption](/caption)\n";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(
+        &allocator,
+        source,
+        ParserOptions {
+            table_attributes: true,
+            ..ParserOptions::gfm()
+        },
+    )
+    .parse()
+    .unwrap();
+    let expected = vec!["/head", "/body", "/caption"];
+    let references = document.collect_references(source);
+    assert_eq!(
+        references
+            .iter()
+            .map(|reference| reference.destination.as_str())
+            .collect::<Vec<_>>(),
+        expected
+    );
+    let snapshot = ReferenceSnapshot::capture(&document, source);
+    assert_eq!(references, snapshot.collect(&document, source));
+    assert_eq!(
+        references[2].span.unwrap().source_text(source),
+        "[caption](/caption)"
+    );
 }

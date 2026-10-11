@@ -12,7 +12,7 @@ constructing or registering a Ferriki highlighter. Compiler preparation keeps
 its existing highlighting ownership.
 
 Reference inventories use AST occurrences and resolved destinations. They
-preserve duplicates and source ordering, exclude code and raw HTML, and report
+preserve duplicates and current document traversal ordering, exclude code and raw HTML, and report
 quoted MDX href/src attributes with their authored element origin. Expressions
 and spreads remain unevaluated; static inventory does not promise runtime
 coverage or custom component rendering behavior.
