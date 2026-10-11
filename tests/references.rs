@@ -85,6 +85,26 @@ fn source_ranges_survive_escapes_entities_containers_and_crlf_normalization() {
 }
 
 #[test]
+fn autolink_ranges_cover_expanding_entities_and_coalesced_text() {
+    let source = "&nLt;\\* https://example.test/x?value=&fjlig; then https://other.test/end\n";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, ParserOptions::gfm())
+        .parse()
+        .unwrap();
+    let references = document.collect_references(source);
+    assert_eq!(references.len(), 2);
+    assert_eq!(references[0].destination, "https://example.test/x?value=fj");
+    assert_eq!(
+        references[0].span.unwrap().source_text(source),
+        "https://example.test/x?value=&fjlig;"
+    );
+    assert_eq!(
+        references[1].span.unwrap().source_text(source),
+        "https://other.test/end"
+    );
+}
+
+#[test]
 fn code_and_raw_html_are_excluded_and_syntax_options_apply() {
     let source = "`[inline](/ignore)`\n\n```md\n[fenced](/ignore)\n```\n\n    [indented](/ignore)\n\n<a href=\"/raw\">raw</a>\n\nwww.example.test <https://example.test> [ref]\n\n[ref]: /reference\n";
     let allocator = Allocator::new();

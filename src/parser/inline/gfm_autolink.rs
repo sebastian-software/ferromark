@@ -138,8 +138,11 @@ impl<'a> Parser<'a> {
                         // Map through the original inline source before its container map.
                         let raw =
                             &content[span_start as usize - offset..text.span.end as usize - offset];
-                        let source_start = decoded_boundary(raw, candidate.start, false);
-                        let source_end = decoded_boundary(raw, candidate.end, true);
+                        let (source_start, source_end) = if std::ptr::eq(value, raw) {
+                            (candidate.start, candidate.end)
+                        } else {
+                            decoded_boundaries(raw, candidate.start, candidate.end)
+                        };
                         let link_span = Span::new(
                             span_start + source_start as u32,
                             span_start + source_end as u32,
@@ -240,11 +243,29 @@ impl<'a> Parser<'a> {
 // Maps a decoded text boundary to its authored byte boundary. An entity that
 // expands to several bytes is indivisible in the source; partial ranges cover
 // that complete entity. This changes only spans, never autolink recognition.
-fn decoded_boundary(raw: &str, target: usize, end: bool) -> usize {
+fn decoded_boundaries(raw: &str, start: usize, end: usize) -> (usize, usize) {
     use super::entity::{EntityValue, scan_entity};
     let mut authored = 0;
     let mut decoded = 0;
-    while decoded < target && authored < raw.len() {
+    let mut source_start = None;
+    while authored < raw.len() {
+        let rest = &raw[authored..];
+        let bytes = rest.as_bytes();
+        // Copy offsets across ordinary UTF-8 bytes without decoding characters.
+        // Bound the scan to this link, avoiding repeated scans of its suffix.
+        let limit = (end - decoded).min(bytes.len());
+        let plain = memchr::memchr2(b'&', b'\\', &bytes[..limit]).unwrap_or(limit);
+        if source_start.is_none() && start <= decoded + plain {
+            source_start = Some(authored + start - decoded);
+        }
+        if end <= decoded + plain {
+            return (source_start.unwrap_or(authored), authored + end - decoded);
+        }
+        authored += plain;
+        decoded += plain;
+        if authored == raw.len() {
+            break;
+        }
         let rest = &raw[authored..];
         let bytes = rest.as_bytes();
         let (source_len, value_len) = if bytes[0] == b'&'
@@ -258,14 +279,16 @@ fn decoded_boundary(raw: &str, target: usize, end: bool) -> usize {
         } else if bytes[0] == b'\\' && bytes.get(1).is_some_and(u8::is_ascii_punctuation) {
             (2, 1)
         } else {
-            let len = rest.chars().next().map_or(0, char::len_utf8);
-            (len, len)
+            (1, 1)
         };
-        if decoded + value_len > target {
-            return if end { authored + source_len } else { authored };
+        if source_start.is_none() && start < decoded + value_len {
+            source_start = Some(authored);
+        }
+        if end <= decoded + value_len {
+            return (source_start.unwrap_or(authored), authored + source_len);
         }
         authored += source_len;
         decoded += value_len;
     }
-    authored
+    (source_start.unwrap_or(authored), authored)
 }
