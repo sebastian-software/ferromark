@@ -739,37 +739,53 @@ function freezePreparedMetadata(metadata) {
   return Object.freeze(metadata);
 }
 
+class PreparedDocumentFacade {
+  /** @type {NativePreparedJsxDocument} */
+  #nativePrepared;
+
+  /** @param {NativePreparedJsxDocument} nativePrepared Native prepared document. */
+  constructor(nativePrepared) {
+    this.#nativePrepared = nativePrepared;
+    this.metadata = freezePreparedMetadata(nativePrepared.metadata);
+    this.render = this.render.bind(this);
+    this.renderModule = this.renderModule.bind(this);
+    Object.freeze(this);
+  }
+
+  collectReferences() {
+    return Object.freeze(
+      this.#nativePrepared.collectReferences().map((reference) => {
+        if (reference.span != null) Object.freeze(reference.span);
+        if (reference.originalSpan != null) Object.freeze(reference.originalSpan);
+        return Object.freeze(reference);
+      }),
+    );
+  }
+
+  /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
+  render(options, renderCode) {
+    validatePreparedRenderOptions(options, false);
+    if (renderCode !== undefined && typeof renderCode !== "function") {
+      throw new TypeError("renderCode must be a synchronous function");
+    }
+    return this.#nativePrepared.render(options, renderCode);
+  }
+
+  /** @param {import('./index.mjs').JsxRenderModuleOptions} [options] Module and render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
+  renderModule(options, renderCode) {
+    validatePreparedRenderOptions(options, true);
+    if (renderCode !== undefined && typeof renderCode !== "function") {
+      throw new TypeError("renderCode must be a synchronous function");
+    }
+    return this.#nativePrepared.renderModule(options, renderCode);
+  }
+}
+
+Object.freeze(PreparedDocumentFacade.prototype);
+
 /** @param {NativePreparedJsxDocument} nativePrepared Native prepared document. */
 function preparedFacade(nativePrepared) {
-  const metadata = freezePreparedMetadata(nativePrepared.metadata);
-  return Object.freeze({
-    metadata,
-    collectReferences() {
-      return Object.freeze(
-        nativePrepared.collectReferences().map((reference) => {
-          if (reference.span != null) Object.freeze(reference.span);
-          if (reference.originalSpan != null) Object.freeze(reference.originalSpan);
-          return Object.freeze(reference);
-        }),
-      );
-    },
-    /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
-    render(options, renderCode) {
-      validatePreparedRenderOptions(options, false);
-      if (renderCode !== undefined && typeof renderCode !== "function") {
-        throw new TypeError("renderCode must be a synchronous function");
-      }
-      return nativePrepared.render(options, renderCode);
-    },
-    /** @param {import('./index.mjs').JsxRenderModuleOptions} [options] Module and render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
-    renderModule(options, renderCode) {
-      validatePreparedRenderOptions(options, true);
-      if (renderCode !== undefined && typeof renderCode !== "function") {
-        throw new TypeError("renderCode must be a synchronous function");
-      }
-      return nativePrepared.renderModule(options, renderCode);
-    },
-  });
+  return new PreparedDocumentFacade(nativePrepared);
 }
 
 /**

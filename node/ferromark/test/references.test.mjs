@@ -25,6 +25,18 @@ function prepareWithGetter(prepare) {
   });
 }
 
+function assertPreparedImmutability(prepared, other) {
+  assert.deepEqual(Reflect.ownKeys(prepared), ["metadata", "render", "renderModule"]);
+  assert.ok(Object.isFrozen(prepared));
+  assert.ok(Object.isFrozen(Object.getPrototypeOf(prepared)));
+  assert.ok(Object.isFrozen(prepared.metadata));
+  for (const key of ["metadata", "render", "renderModule"]) {
+    assert.throws(() => {
+      prepared[key] = other[key];
+    }, TypeError);
+  }
+}
+
 test("asset-free preparation works offline, owns bytes, and keeps ordinary code rendering", () => {
   const source = Buffer.from(
     "# Guide\n\n[Guide](/guide)\n\n```unknown-language\n[example](/ignored)\n```\n",
@@ -243,4 +255,22 @@ test("tracking getters are validated once, including inherited getters, for both
     () => prepareDocument("text").render({ trackReferences: true }),
     /unknown JSX render option/,
   );
+});
+
+test("prepared handles share analysis methods and preserve immutable, destructured rendering", () => {
+  const session = offlineCompiler();
+  for (const prepare of [prepareDocument, session.prepare.bind(session)]) {
+    const prepared = prepare("# Title\n\n[Guide](/guide)");
+    const other = prepare("[Other](/other)");
+    assert.equal(prepared.collectReferences, other.collectReferences);
+    assert.equal(Object.hasOwn(prepared, "collectReferences"), false);
+    assertPreparedImmutability(prepared, other);
+    const { render, renderModule } = prepared;
+    assert.deepEqual(render({ headingOffset: 1 }), prepared.render({ headingOffset: 1 }));
+    assert.deepEqual(
+      renderModule({ filename: "guide.mdx" }),
+      prepared.renderModule({ filename: "guide.mdx" }),
+    );
+    assert.equal(prepared.collectReferences()[0].destination, "/guide");
+  }
 });
