@@ -8,6 +8,7 @@ mod autolink;
 mod code_span;
 mod emphasis;
 mod entity;
+pub use self::entity::{EntityValue, scan_entity};
 mod gfm_autolink;
 mod image;
 mod line_break;

@@ -1,6 +1,7 @@
 #[cfg(feature = "boundary-bench")]
 pub mod boundary;
 mod default_renderer;
+pub mod document;
 pub mod input;
 pub mod jsx;
 pub mod jsx_compiler;

@@ -509,6 +509,7 @@ const jsxCodeBlockInputKeys = new Set(["code", "language", "meta"]);
 const moduleOnlyKeys = ["providerImportSource", "filename", "defaultExport", "reservedBindings"];
 const jsxPreparationKeys = new Set([
   "format",
+  "trackReferences",
   "tables",
   "mergedTableCells",
   "tableAttributes",
@@ -572,6 +573,9 @@ function validateJsxOptions(options) {
   }
   if (typeof options !== "object" && typeof options !== "function") {
     throw new TypeError("options must be an object");
+  }
+  if ("trackReferences" in options) {
+    throw new TypeError('unknown JSX option "trackReferences"');
   }
   for (const key of Reflect.ownKeys(options)) {
     if (
@@ -667,6 +671,16 @@ function validateJsxPreparationOptions(options) {
   }
 }
 
+/** @param {import('./index.mjs').JsxPreparationOptions | undefined} options Preparation choices. */
+function nativePreparationOptions(options) {
+  const format = options?.format;
+  const trackReferences = options?.trackReferences;
+  if (trackReferences !== undefined && typeof trackReferences !== "boolean") {
+    throw new TypeError("trackReferences must be a boolean");
+  }
+  return { format, trackReferences };
+}
+
 /** @param {string | symbol} key An option key. @returns {string} Its rejected category. */
 function preparationOptionCategory(key) {
   if (typeof key !== "string") {
@@ -696,6 +710,9 @@ function validatePreparedRenderOptions(options, module) {
   }
   if (typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("renderOptions must be an object");
+  }
+  if ("trackReferences" in options) {
+    throw new TypeError('unknown JSX render option "trackReferences"');
   }
   for (const key of Reflect.ownKeys(options)) {
     if (!isPreparedRenderOption(key, module)) {
@@ -728,28 +745,65 @@ function freezePreparedMetadata(metadata) {
   return Object.freeze(metadata);
 }
 
+class PreparedDocumentFacade {
+  /** @type {NativePreparedJsxDocument} */
+  #nativePrepared;
+
+  /** @param {NativePreparedJsxDocument} nativePrepared Native prepared document. */
+  constructor(nativePrepared) {
+    this.#nativePrepared = nativePrepared;
+    this.metadata = freezePreparedMetadata(nativePrepared.metadata);
+    this.render = this.#render.bind(this);
+    this.renderModule = this.#renderModule.bind(this);
+    Object.freeze(this);
+  }
+
+  collectReferences() {
+    return Object.freeze(
+      this.#nativePrepared.collectReferences().map((reference) => {
+        if (reference.span != null) Object.freeze(reference.span);
+        if (reference.originalSpan != null) Object.freeze(reference.originalSpan);
+        return Object.freeze(reference);
+      }),
+    );
+  }
+
+  /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
+  #render(options, renderCode) {
+    validatePreparedRenderOptions(options, false);
+    if (renderCode !== undefined && typeof renderCode !== "function") {
+      throw new TypeError("renderCode must be a synchronous function");
+    }
+    return this.#nativePrepared.render(options, renderCode);
+  }
+
+  /** @param {import('./index.mjs').JsxRenderModuleOptions} [options] Module and render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
+  #renderModule(options, renderCode) {
+    validatePreparedRenderOptions(options, true);
+    if (renderCode !== undefined && typeof renderCode !== "function") {
+      throw new TypeError("renderCode must be a synchronous function");
+    }
+    return this.#nativePrepared.renderModule(options, renderCode);
+  }
+}
+
+Object.freeze(PreparedDocumentFacade.prototype);
+
 /** @param {NativePreparedJsxDocument} nativePrepared Native prepared document. */
 function preparedFacade(nativePrepared) {
-  const metadata = freezePreparedMetadata(nativePrepared.metadata);
-  return Object.freeze({
-    metadata,
-    /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
-    render(options, renderCode) {
-      validatePreparedRenderOptions(options, false);
-      if (renderCode !== undefined && typeof renderCode !== "function") {
-        throw new TypeError("renderCode must be a synchronous function");
-      }
-      return nativePrepared.render(options, renderCode);
-    },
-    /** @param {import('./index.mjs').JsxRenderModuleOptions} [options] Module and render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
-    renderModule(options, renderCode) {
-      validatePreparedRenderOptions(options, true);
-      if (renderCode !== undefined && typeof renderCode !== "function") {
-        throw new TypeError("renderCode must be a synchronous function");
-      }
-      return nativePrepared.renderModule(options, renderCode);
-    },
-  });
+  return new PreparedDocumentFacade(nativePrepared);
+}
+
+/**
+ * Prepare a document without loading highlighting themes or grammars.
+ * @param {string | Uint8Array} markdown Authored Markdown or MDX source.
+ * @param {import('./index.mjs').JsxPreparationOptions} [preparationOptions] Parser and native pass settings.
+ * @returns {import('./index.mjs').PreparedJsxDocument} An immutable handle for extraction and rendering.
+ */
+export function prepareDocument(markdown, preparationOptions) {
+  validateJsxPreparationOptions(preparationOptions);
+  const preparation = nativePreparationOptions(preparationOptions);
+  return preparedFacade(loadNative().prepareDocument(markdown, preparationOptions, preparation));
 }
 
 /**
@@ -797,8 +851,8 @@ export class JsxCompiler {
    */
   prepare(markdown, preparationOptions) {
     validateJsxPreparationOptions(preparationOptions);
-    const format = preparationOptions?.format;
-    const nativePrepared = this.#native.prepare(markdown, preparationOptions, { format });
+    const preparation = nativePreparationOptions(preparationOptions);
+    const nativePrepared = this.#native.prepare(markdown, preparationOptions, preparation);
     return preparedFacade(nativePrepared);
   }
 
@@ -912,6 +966,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  * @typedef {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} NativeJsxOptions
  * @typedef {{
  *   readonly metadata: import('./index.mjs').JsxPreparedMetadata
+ *   collectReferences(): import('./index.mjs').DocumentReference[]
  *   render(options?: import('./index.mjs').JsxRenderOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
  *   renderModule(options?: import('./index.mjs').JsxRenderModuleOptions,
@@ -919,7 +974,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  * }} NativePreparedJsxDocument
  * @typedef {{
  *   prepare(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,
- *     jsxOptions?: Pick<NativeJsxOptions, 'format'>): NativePreparedJsxDocument
+ *     preparationOptions?: Pick<import('./index.mjs').JsxPreparationOptions, 'format' | 'trackReferences'>): NativePreparedJsxDocument
  *   compile(markdown: string | Uint8Array, options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
@@ -954,6 +1009,8 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     withPackedOptions(...options: NativePackedOptions): NativeRendererSession
  *   }
  *   JsxCompiler: { new (settings: string): NativeJsxCompilerSession }
+ *   prepareDocument(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,
+ *     preparationOptions?: Pick<import('./index.mjs').JsxPreparationOptions, 'format' | 'trackReferences'>): NativePreparedJsxDocument
  *   compileJsx(
  *     markdown: string | Uint8Array,
  *     options?: NativeJsxOptions,

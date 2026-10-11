@@ -371,7 +371,10 @@ type JsxRenderOptionKey =
   | "headingOffset"
   | "headingIdPrefix"
   | "callouts";
-export type JsxPreparationOptions = Omit<CompileJsxOptions, JsxRenderOptionKey | "output">;
+export type JsxPreparationOptions = {
+  /** Capture reference provenance before native passes. Default: false; required for collection with passes. */
+  trackReferences?: boolean;
+} & Omit<CompileJsxOptions, JsxRenderOptionKey | "output">;
 
 /** Render-time choices for a prepared JSX body. */
 export type JsxRenderOptions = Pick<CompileJsxOptions, JsxRenderOptionKey>;
@@ -396,10 +399,36 @@ export type JsxPreparedMetadata = Readonly<{
   frontMatterKind?: "yaml" | "toml";
 }>;
 
-/** Immutable native document handle returned by `JsxCompiler.prepare`. */
+/** One source occurrence, or a reference created/changed by native passes. */
+export type DocumentReference = Readonly<{
+  kind: "link" | "image" | "autolink" | "mdxAttribute";
+  destination: string;
+  /** Markdown label or image alt text, when available. */
+  text?: string;
+  title?: string;
+  /** Authored MDX tag name, including custom components. */
+  element?: string;
+  /** Literal MDX href/src attribute name. */
+  attribute?: "href" | "src";
+  /** Half-open original UTF-8 byte range; absent for transformed references. */
+  span?: Readonly<{ start: number; end: number }>;
+  provenance: "source" | "transformed";
+  /** Related original occurrence for a changed retained node; never a generated value span. */
+  originalSpan?: Readonly<{ start: number; end: number }>;
+}>;
+
+/** Asset-free preparation using the same syntax and passes as JsxCompiler.prepare. */
+export declare function prepareDocument(
+  markdown: string | Uint8Array,
+  preparationOptions?: JsxPreparationOptions,
+): PreparedJsxDocument;
+
+/** Immutable native document handle returned by `prepareDocument` or `JsxCompiler.prepare`. */
 export type PreparedJsxDocument = Readonly<{
   /** Metadata snapshot computed from the prepared AST without rendering JSX. */
   metadata: JsxPreparedMetadata;
+  /** Ordered references. With native passes, preparation must set trackReferences: true or this throws. */
+  collectReferences(): readonly DocumentReference[];
   /** Render a body. Repeated calls do not mutate the prepared tree or rerun passes. */
   render(options?: JsxRenderOptions, renderCode?: JsxCodeRenderer): JsxResult;
   /** Render a complete module. Module and body choices can be varied per call. */

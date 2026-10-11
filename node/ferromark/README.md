@@ -458,3 +458,25 @@ the Node.js process.
 Siblings: [ferroni](https://ferroni.dev) — Oniguruma-compatible regex engine · [ferriki](https://ferriki.dev) — Shiki-compatible syntax highlighting · [ferrolex](https://github.com/sebastian-software/ferrolex) — Spell checking for text and code · [ferrocat](https://ferrocat.dev) — Translation catalog engine · [ferralk](https://github.com/sebastian-software/ferralk) — Glob matching and parallel filesystem walking · [ferrugo](https://github.com/sebastian-software/ferrugo) — PDF previews for untrusted files · [palamedes](https://palamedes.dev) — Internationalization for TypeScript applications · [dalo](https://dalo.sh) — Your team's agent setup, versioned like code.
 
 <!-- ferramenta-family:end -->
+
+## Link and asset inventories
+
+Use `prepareDocument` to parse once without loading highlighting assets:
+
+```js
+import { prepareDocument } from "ferromark";
+
+const document = prepareDocument("[Guide](/guide) ![Logo](./logo.svg)");
+console.log(document.collectReferences().map(({ kind, destination }) => ({ kind, destination })));
+// [{ kind: "link", destination: "/guide" }, { kind: "image", destination: "./logo.svg" }]
+```
+
+Existing `JsxCompiler.prepare` handles also expose `collectReferences()`.
+With native passes, set `trackReferences: true` during preparation; collection
+otherwise throws. It defaults off to avoid provenance work during ordinary
+preparation, and is unnecessary when no passes are configured.
+Results are immutable occurrences with half-open original UTF-8 byte ranges;
+pass-generated or changed values have explicit provenance. The
+[reference guide](https://github.com/sebastian-software/ferromark/blob/main/docs/references.md)
+explains MDX literal attributes, transform provenance, and excluded raw HTML
+and dynamic expressions. Your application supplies destination resolution.

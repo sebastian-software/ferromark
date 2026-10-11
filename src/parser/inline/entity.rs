@@ -11,7 +11,7 @@ use std::sync::OnceLock;
 use rustc_hash::FxHashMap;
 
 /// A successfully scanned reference at the start of the input.
-pub(in crate::parser) enum EntityValue {
+pub enum EntityValue {
     /// Expansion straight from the named entity table.
     Named(&'static str),
     /// Code point from a numeric reference.
@@ -21,7 +21,7 @@ pub(in crate::parser) enum EntityValue {
 /// Scans an entity or numeric character reference at the start of
 /// `rest` (which must begin with `&`). Returns the decoded value and the
 /// number of bytes consumed including the `&` and `;`.
-pub(in crate::parser) fn scan_entity(rest: &str) -> Option<(EntityValue, usize)> {
+pub fn scan_entity(rest: &str) -> Option<(EntityValue, usize)> {
     let bytes = rest.as_bytes();
     debug_assert_eq!(bytes.first(), Some(&b'&'));
 

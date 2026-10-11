@@ -1,0 +1,51 @@
+# Read-only reference extraction
+
+Issue: [#521](https://github.com/sebastian-software/ferromark/issues/521).
+
+## Decision
+
+Add `Document::collect_references(source)` and opt-in `ReferenceSnapshot` in
+the core, with `collectReferences()` on Node prepared handles. The public
+`prepareDocument` entry reuses the prepared AST owner, preparation validation,
+parser options, native passes, metadata, and rendering methods without
+constructing or registering a Ferriki highlighter. Compiler preparation keeps
+its existing highlighting ownership.
+
+Reference inventories use AST occurrences and resolved destinations. They
+preserve duplicates and current document traversal ordering, exclude code and raw HTML, and report
+quoted MDX href/src attributes with their authored element origin. Expressions
+and spreads remain unevaluated; static inventory does not promise runtime
+coverage or custom component rendering behavior.
+
+The source range contract uses half-open original UTF-8 byte offsets. A
+pre-pass identity map borrows source/arena values and retains labels for exact
+comparison only when native passes run and `trackReferences: true` was selected
+during preparation. The preparation-only option defaults to `false` on both
+Node entry points, preserving ordinary preparation without a reference walk
+or snapshot allocations. Collection with untracked passes fails explicitly;
+untouched trees need no tracking. Changed and generated nodes never claim a
+span for the resulting value; retained changes expose a related original
+range. Core snapshots are explicit. Reference extraction arrays are only
+materialized when requested.
+
+## Source-span correction
+
+The ordinary GFM autolink post-pass remains unchanged. Reference collection
+and explicit pre-pass snapshots resolve bare-link ranges on demand by
+verifying contiguous AST text/link runs against original source bytes. The
+analysis-only decoder reuses CommonMark entity scanning and handles escapes,
+expanding entities, NUL normalization, line endings, and stripped container
+prefixes. Snapshots compare original parser spans for identity while retaining
+verified source spans separately. Source/tree disagreement leaves bare-link
+ranges unavailable rather than guessing. No mapping or bookkeeping runs during
+ordinary parsing or rendering.
+
+## Validation
+
+Rust and Node fixtures exercise Markdown link/image forms, definition
+resolution across MDX boundaries, literal attributes, unsupported forms,
+code exclusion, original offsets, duplicates, transform provenance, immutable
+results, opt-in provenance capture, default preparation without snapshots,
+getter validation, and repeat extraction with stable body/module rendering. The Node
+example is exercised with Ferriki remote access disabled. No speed claim is
+made.

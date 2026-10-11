@@ -258,12 +258,24 @@ struct JsxDocumentOwner {
     allocator: Allocator,
 }
 
+struct PreparedDocument<'a> {
+    document: Document<'a>,
+    references: ReferenceTracking<'a>,
+}
+
+// Keep ordinary handles small; snapshot storage is allocated only on opt-in.
+enum ReferenceTracking<'a> {
+    Unmodified,
+    Untracked,
+    Tracked(Box<ferromark::ReferenceSnapshot<'a>>),
+}
+
 self_cell!(
     struct PreparedJsxTree {
         owner: JsxDocumentOwner,
 
         #[not_covariant]
-        dependent: Document,
+        dependent: PreparedDocument,
     }
 );
 
@@ -275,7 +287,22 @@ pub(crate) struct ParsedJsxDocument {
 impl ParsedJsxDocument {
     pub(crate) fn with_document<R>(&self, render: impl FnOnce(&str, &Document<'_>) -> R) -> R {
         self.tree
-            .with_dependent(|owner, document| render(&owner.source, document))
+            .with_dependent(|owner, document| render(&owner.source, &document.document))
+    }
+
+    pub(crate) fn collect_references(&self) -> Result<Vec<ferromark::DocumentReference>> {
+        self.tree.with_dependent(|owner, document| match &document.references {
+            ReferenceTracking::Unmodified => {
+                Ok(document.document.collect_references(&owner.source))
+            }
+            ReferenceTracking::Tracked(snapshot) => {
+                Ok(snapshot.collect(&document.document, &owner.source))
+            }
+            ReferenceTracking::Untracked => Err(Error::new(
+                Status::InvalidArg,
+                "collectReferences requires trackReferences: true during preparation when native passes are configured",
+            )),
+        })
     }
 
     pub(crate) fn metadata(&self) -> Result<JsxPreparedMetadata> {
@@ -339,10 +366,11 @@ pub(crate) fn prepare_jsx_document(
     markdown: Utf8Input,
     options: Option<Options>,
     format: Option<&str>,
+    track_references: bool,
 ) -> Result<ParsedJsxDocument> {
     let resolved = core_options(options)?;
     let defaults = render_defaults(&resolved);
-    let tree = prepare_tree(markdown.to_string(), resolved, format)?;
+    let tree = prepare_tree(markdown.to_string(), resolved, format, track_references)?;
     Ok(ParsedJsxDocument { tree, defaults })
 }
 
@@ -359,6 +387,7 @@ fn prepare_tree(
     source: String,
     mut options: CoreOptions,
     format: Option<&str>,
+    track_references: bool,
 ) -> Result<PreparedJsxTree> {
     options.parser.mdx = match format {
         None | Some("md") => false,
@@ -390,13 +419,27 @@ fn prepare_tree(
                 format!("MDX module declarations must appear at document top level (at {span:?})"),
             ));
         }
-        if !pipeline.is_empty() {
+        let has_passes = !pipeline.is_empty();
+        let references = if !has_passes {
+            ReferenceTracking::Unmodified
+        } else if track_references {
+            ReferenceTracking::Tracked(Box::new(ferromark::ReferenceSnapshot::capture(
+                &document,
+                &owner.source,
+            )))
+        } else {
+            ReferenceTracking::Untracked
+        };
+        if has_passes {
             let context = TransformContext::new(&owner.allocator, &owner.source, &html_options);
             pipeline
                 .run(&mut document, &context)
                 .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
         }
-        Ok(document)
+        Ok(PreparedDocument {
+            document,
+            references,
+        })
     })
 }
 
@@ -614,7 +657,7 @@ pub(crate) fn compile_jsx_with_highlighter(
     module: bool,
 ) -> Result<Compiled> {
     let jsx = jsx_options.unwrap_or_default();
-    let parsed = prepare_jsx_document(markdown, options, jsx.format.as_deref())?;
+    let parsed = prepare_jsx_document(markdown, options, jsx.format.as_deref(), false)?;
     if module {
         Ok(Compiled::Module(parsed.render_module(
             Some(jsx),
@@ -792,4 +835,55 @@ fn render_parsed(
             })
             .collect(),
     }))
+}
+
+#[cfg(test)]
+mod reference_tracking_tests {
+    use super::{ParsedJsxDocument, ReferenceTracking, prepare_tree, render_defaults};
+
+    #[test]
+    fn snapshots_require_both_passes_and_explicit_tracking() {
+        for (has_passes, track_references) in
+            [(false, false), (false, true), (true, false), (true, true)]
+        {
+            let mut options = crate::options::addon_defaults();
+            if has_passes {
+                options
+                    .pipeline
+                    .add(ferromark_transforms::EmojiShortcodesPass);
+            }
+            let defaults = render_defaults(&options);
+            let tree = prepare_tree(
+                "[Hello :smile:](/target)".to_owned(),
+                options,
+                None,
+                track_references,
+            )
+            .unwrap();
+            tree.with_dependent(|_, prepared| {
+                assert_eq!(
+                    matches!(&prepared.references, ReferenceTracking::Tracked(_)),
+                    has_passes && track_references,
+                );
+                assert_eq!(
+                    matches!(&prepared.references, ReferenceTracking::Untracked),
+                    has_passes && !track_references,
+                );
+            });
+            let parsed = ParsedJsxDocument { tree, defaults };
+            let references = parsed.collect_references();
+            if has_passes && !track_references {
+                assert!(
+                    references
+                        .unwrap_err()
+                        .to_string()
+                        .contains("trackReferences: true")
+                );
+            } else {
+                let references = references.unwrap();
+                assert_eq!(references.len(), 1);
+                assert_eq!(references[0].span.is_none(), has_passes);
+            }
+        }
+    }
 }
