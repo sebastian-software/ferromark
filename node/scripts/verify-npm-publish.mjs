@@ -3,7 +3,9 @@ import path from "node:path";
 
 import { releaseChannel } from "./release-channel.mjs";
 
-export const MAX_ATTEMPTS = 8;
+// npm can accept a publish before asynchronous processing exposes the version.
+// Allow nearly six minutes of retry delays for version and channel propagation.
+export const MAX_ATTEMPTS = 24;
 export const RETRY_DELAY_MS = 15_000;
 export const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -53,7 +55,9 @@ export async function verifyNpmPublication({
     }
     lastObservation = observation.message;
 
-    console.log(`npm release verification attempt ${attempt}/${MAX_ATTEMPTS}: ${lastObservation}`);
+    console.log(
+      `npm release verification for ${packageName}@${version}, attempt ${attempt}/${MAX_ATTEMPTS}: ${lastObservation}`,
+    );
     if (attempt < MAX_ATTEMPTS) {
       await sleepImpl(RETRY_DELAY_MS);
     }
