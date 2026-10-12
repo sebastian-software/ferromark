@@ -5,6 +5,7 @@ import {
   MAX_ATTEMPTS,
   registryPackageUrl,
   registryVersionUrl,
+  RETRY_DELAY_MS,
   verifyNpmPublication,
 } from "../../scripts/verify-npm-publish.mjs";
 
@@ -53,6 +54,44 @@ test("confirms a published version and the dist-tag that installs it", async () 
     [registryVersionUrl("ferromark", version), registryPackageUrl("ferromark")],
   );
   assert.equal(requests[1].options.headers.accept, "application/vnd.npm.install-v1+json");
+});
+
+test("waits for version processing and channel propagation beyond the original retry window", async () => {
+  const packageName = "ferromark-linux-x64-gnu";
+  const version = "3.5.0";
+  const delays = [];
+  let versionRequests = 0;
+  let channelRequests = 0;
+
+  await verifyNpmPublication({
+    packageName,
+    version,
+    publishResult: "success",
+    fetchImpl(url) {
+      if (url === registryVersionUrl(packageName, version)) {
+        versionRequests += 1;
+        return Promise.resolve(
+          respond(versionRequests <= 8 ? undefined : { name: packageName, version }),
+        );
+      }
+      assert.equal(url, registryPackageUrl(packageName));
+      channelRequests += 1;
+      return Promise.resolve(
+        respond({ "dist-tags": { latest: channelRequests <= 3 ? "3.4.0" : version } }),
+      );
+    },
+    sleepImpl(milliseconds) {
+      delays.push(milliseconds);
+      return Promise.resolve();
+    },
+  });
+
+  assert.equal(versionRequests, 12);
+  assert.equal(channelRequests, 4);
+  assert.deepEqual(
+    delays,
+    Array.from({ length: 11 }, () => RETRY_DELAY_MS),
+  );
 });
 
 test("fails when the release channel still points at an older version", async () => {
@@ -104,6 +143,7 @@ test("fails when a sidecar carries no dist-tag for the channel", async () => {
 
 test("fails when the version is missing and never asks for its dist-tags", async () => {
   const version = "2.0.0-rc.2";
+  const delays = [];
   const { fetchImpl, requests } = registry({
     packageName: "ferromark",
     versionDocument: undefined,
@@ -116,13 +156,21 @@ test("fails when the version is missing and never asks for its dist-tags", async
       version,
       publishResult: "success",
       fetchImpl,
-      sleepImpl,
+      sleepImpl(milliseconds) {
+        delays.push(milliseconds);
+        return Promise.resolve();
+      },
     }),
     /registry returned HTTP 404/,
   );
   assert.deepEqual(
     [...new Set(requests.map(({ url }) => url))],
     [registryVersionUrl("ferromark", version)],
+  );
+  assert.equal(requests.length, MAX_ATTEMPTS);
+  assert.deepEqual(
+    delays,
+    Array.from({ length: MAX_ATTEMPTS - 1 }, () => RETRY_DELAY_MS),
   );
 });
 

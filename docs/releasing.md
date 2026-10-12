@@ -263,7 +263,12 @@ unaffected. See [ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
 `verify-release.mjs`, `verify-pack.mjs --all-targets`, `pnpm smoke:clean`, the
 same Alpine musl runtime test through `docker run node:22-alpine` on the runner,
 and `release-archives.mjs` — before the first registry call, and
-`verify-npm-publish.mjs` confirms all eight versions on the registry afterwards.
+`verify-npm-publish.mjs` confirms all eight versions and their release-channel
+dist-tags on the registry afterwards. npm can accept a publication before its
+asynchronous processing makes the version available, so verification retries
+each package up to 24 times at 15-second intervals. Missing versions and stale
+dist-tags still fail when those attempts are exhausted; the verification job
+has a 20-minute timeout.
 
 ## Registry authorization
 
