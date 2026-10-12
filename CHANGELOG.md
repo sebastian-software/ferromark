@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.1](https://github.com/sebastian-software/ferromark/compare/v3.5.0...v3.5.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **ci:** tolerate delayed npm release visibility ([524dce1](https://github.com/sebastian-software/ferromark/commit/524dce129b07c5f5be62d448e032d354bb766e3f))
+
 ## [3.5.0](https://github.com/sebastian-software/ferromark/compare/v3.4.0...v3.5.0) (2026-10-11)
 
 
