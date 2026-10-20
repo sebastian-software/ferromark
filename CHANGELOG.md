@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.5.1](https://github.com/sebastian-software/ferromark/compare/v3.5.0...v3.5.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **ci:** tolerate delayed npm release visibility ([524dce1](https://github.com/sebastian-software/ferromark/commit/524dce129b07c5f5be62d448e032d354bb766e3f))
+* **deps:** adopt ferriki 1.1 for the retired asset CDN route ([#533](https://github.com/sebastian-software/ferromark/issues/533)) ([f1b329b](https://github.com/sebastian-software/ferromark/commit/f1b329b0dea7f2f2bf2bfd8c16f95b149a3be3ec))
+
 ## [3.5.0](https://github.com/sebastian-software/ferromark/compare/v3.4.0...v3.5.0) (2026-10-11)
 
 
