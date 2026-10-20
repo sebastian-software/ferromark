@@ -32,6 +32,33 @@ def command(args, output, name, **kwargs):
     return result.stdout
 
 
+BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+PAYLOAD_KEY = re.compile(r'^(languages|themes)/([a-z0-9-]+)\.(fkgram|fktheme)$')
+
+
+def short_hash(digest):
+    """Eight Base62 digits from the first 64 SHA-256 bits, as Ferriki's asset-path.mjs."""
+    if not re.fullmatch(r'[a-f0-9]{64}', digest):
+        raise ValueError(f'invalid asset digest: {digest}')
+    value = int(digest[:16], 16) % 62 ** 8
+    name = ''
+    for _ in range(8):
+        name = BASE62[value % 62] + name
+        value //= 62
+    return name
+
+
+def payload_path(key, digest, layout):
+    """Immutable CDN object path for a catalog payload, as Ferriki's payloadPath()."""
+    match = PAYLOAD_KEY.fullmatch(key)
+    if not match or (match[1] == 'languages') != (match[3] == 'fkgram'):
+        raise ValueError(f'invalid catalog payload path: {key}')
+    if layout not in ('language-hash-v1', 'language-hash-v2'):
+        raise ValueError(f'unknown asset storage layout: {layout}')
+    name = digest if layout == 'language-hash-v1' else short_hash(digest)
+    return f'{match[2]}/{name}' if match[1] == 'languages' else f'themes/{match[2]}/{name}'
+
+
 def prepare_assets(output):
     source = json.loads((HERE / 'asset-source.json').read_text(encoding='utf-8'))
     if source['version'] != json.loads(CASES.read_text(encoding='utf-8'))['ferrikiVersion']:
@@ -49,7 +76,7 @@ def prepare_assets(output):
     # files enter this fresh output; archive paths cannot escape it.
     with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
         for member in archive.getmembers():
-            prefix = 'package/assets/shiki/'
+            prefix = 'package/assets/standard/'
             if not member.name.startswith(prefix) or not member.isfile():
                 continue
             relative = Path(member.name[len(prefix):])
@@ -66,6 +93,9 @@ def prepare_assets(output):
         raise ValueError('pinned CDN commit differs from the release manifest')
     if not isinstance(release.get('assets'), dict) or not release['assets']:
         raise ValueError('release manifest has no assets')
+    # Ferriki 1.1 serves payloads only from immutable hash-based paths; the
+    # commit-based /<commit>/assets/shiki/ route was retired on 2026-10-16.
+    layout = release.get('storageLayout')
     base_url = source['cdnBaseUrl'].rstrip('/')
     if not base_url.startswith('https://'):
         raise ValueError('asset CDN must use HTTPS')
@@ -76,7 +106,7 @@ def prepare_assets(output):
         relative = Path(name)
         if relative.is_absolute() or '..' in relative.parts:
             raise ValueError(f'unsafe payload path: {name}')
-        url = f'{base_url}/{commit}/assets/shiki/{quote(name, safe="/")}'
+        url = f'{base_url}/{quote(payload_path(name, entry["sha256"], layout), safe="/")}'
         with urllib.request.urlopen(url, timeout=60) as response:
             content = response.read()
         if len(content) != entry['size'] or hashlib.sha256(content).hexdigest() != entry['sha256']:

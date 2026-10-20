@@ -1,7 +1,7 @@
 # Ferriki public Rust/Node fixture contract
 
 This lane exercises the shared authored fixtures from Ferromark [#462] and
-[#393] against the published Ferriki 0.13.0 crates and Node package, providing
+[#393] against the published Ferriki 1.1.2 crates and Node package, providing
 the executable consumer evidence requested in Ferriki [#123]. The cases pin
 that release and cover Rust/aliases, TypeScript, TSX, Markdown embeddings,
 custom language/theme registrations, Unicode, CRLF and lone CR, empty lines and
@@ -9,7 +9,7 @@ blocks, plain text, unknown and missing languages, missing themes, fence
 metadata, VitePress annotations, and multiple blocks/documents.
 
 The Rust peer retains its public token, UTF-8 offset, scope, token-type, asset,
-and lifecycle contract. Ferriki 0.13.0's Node API exposes HTML highlighting;
+and lifecycle contract. Ferriki 1.1.2's Node API exposes HTML highlighting;
 this lane does not call removed tokenization APIs or synthesize Node tokens or
 HAST. The Node peer uses the same published release's public HTML and Markdown
 adapter APIs. Its package archive pins the catalogs and release manifest; the
