@@ -7,7 +7,7 @@ the highlighter. This integration implements [issue #393].
 
 [issue #393]: https://github.com/sebastian-software/ferromark/issues/393
 [`ferriki` crate]: https://crates.io/crates/ferriki
-[Ferriki asset documentation]: https://github.com/sebastian-software/ferriki/blob/v0.13.0/docs/rust-api.md#assets-and-lifecycle
+[Ferriki asset documentation]: https://github.com/sebastian-software/ferriki/blob/v1.1.1/docs/rust-api.md#assets-and-lifecycle
 
 ## JSX output
 
@@ -98,7 +98,7 @@ construction; handle that error before rendering. If an application leaves an
 asset lazy, loading can still occur synchronously on first use during rendering.
 Preload every language and theme needed to keep network/file I/O out of render
 timing. Ferriki's environment settings support a mirror or pre-populated cache;
-see its [remote asset documentation](https://github.com/sebastian-software/ferriki/blob/v0.13.0/docs/rust-api.md#remote-assets).
+see its [remote asset documentation](https://github.com/sebastian-software/ferriki/blob/v1.1.1/docs/rust-api.md#remote-assets).
 
 ## Contract
 

@@ -404,9 +404,9 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "ferriki"
-version = "0.13.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "146d9dcb75cda74b1eab72a245ee15e9cfaa2d401b0433fafc54e5444dc54690"
+checksum = "85bfdddb09d31bfa8f71c2d39e959fb52e8c4ad7b7ac32b0cdce297a237835fb"
 dependencies = [
  "ferriki-asset-gen",
  "ferriki-textmate",
@@ -419,9 +419,9 @@ dependencies = [
 
 [[package]]
 name = "ferriki-asset-gen"
-version = "0.13.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b69dee522d994a3c1c9f1d33e6e94fd10f98aab4fc62d707a8e8448423e8d2e8"
+checksum = "b95d06865c556fb12a78e177912e3422ce4bf5c568aaca908af1190845c214ca"
 dependencies = [
  "postcard",
  "serde",
@@ -431,9 +431,9 @@ dependencies = [
 
 [[package]]
 name = "ferriki-textmate"
-version = "0.13.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4963933a355b199c2b28ec1a8cbed2274a16f76115b37c2095945947ff4650ea"
+checksum = "e586f8df179c57b197416f2044166b9fa19feed67712e350db22310fe9965abb"
 dependencies = [
  "ferroni",
  "serde",
@@ -484,9 +484,9 @@ dependencies = [
 
 [[package]]
 name = "ferroni"
-version = "2.1.0"
+version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d185cd9581342e21798b75cdad2dd09bd5476adfc94fe430b480811bc574e2ff"
+checksum = "83a5625f91788dfbfd109e4d1700bb0d56828c28923db18ff1db80b1b332f235"
 dependencies = [
  "aho-corasick",
  "bitflags",
@@ -1328,9 +1328,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.45"
+version = "0.23.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634"
+checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
 dependencies = [
  "log",
  "once_cell",
