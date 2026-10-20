@@ -1,5 +1,5 @@
+import { Link } from "ardo/router";
 import { Mark, Principles, Section } from "ferramenta-family";
-import { Link } from "react-router";
 
 const publishingBenefits = [
   {

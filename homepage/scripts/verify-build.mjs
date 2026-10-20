@@ -134,9 +134,9 @@ const requiredFragments = [
   ...platformFragments,
   'href="/guide/benchmarks"',
   '"/assets/',
-  '"/favicon.ico"',
-  'class="site-header"',
-  'class="site-footer"',
+  'sizes="32x32 48x48 64x64"',
+  'class="ferra-header ferra-wrap"',
+  'class="ferra-footer ferra-wrap"',
   "https://ferramenta.dev",
   version,
   "Start with Rust",
@@ -156,10 +156,10 @@ const forbiddenFragments = ['class="ardo-header', 'class="ardo-footer'];
 // the sidebar rail, plus the header menu that stands in for it once the rail is
 // hidden — without that menu a narrow viewport has no way into the guide.
 const requiredGuideFragments = [
-  'class="site-header"',
-  'class="site-footer"',
+  'class="ferra-header ferra-wrap"',
+  'class="ferra-footer ferra-wrap"',
   'class="ardo-sidebar',
-  'class="site-menu"',
+  'class="ferromark-guide-menu"',
 ];
 
 function check(page, label, { required, forbidden = [] }) {
@@ -177,7 +177,7 @@ function check(page, label, { required, forbidden = [] }) {
 
 const footer = homepage.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] ?? "";
 check(footer, "family footer", {
-  required: ["ferramenta.dev", "ferriki"],
+  required: ["ferramenta.dev", "Ferromark on GitHub"],
   forbidden: ["https://sebastian-software.github.io/ferromark/"],
 });
 

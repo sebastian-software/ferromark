@@ -4,36 +4,28 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "react-router dev",
-    "build": "react-router build && node scripts/verify-build.mjs && node --test scripts/test-benchmark-platforms.mjs",
+    "dev": "ardo dev",
+    "build": "ardo build && node scripts/verify-build.mjs && node --test scripts/test-benchmark-platforms.mjs",
     "lint": "oxlint -c oxlint.config.ts && eslint . --max-warnings=0",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "typecheck": "tsc6 --noEmit -p tsconfig.json",
-    "preview": "vite preview",
+    "preview": "ardo preview",
     "audit": "pnpm audit --prod --audit-level high"
   },
   "dependencies": {
-    "ardo": "^4.2.0",
-    "ferramenta-family": "2.0.0",
+    "ardo": "file:../../ardo/packages/ardo",
+    "ferramenta-family": "file:../../ferramenta/packages/family",
     "isbot": "*",
-    "lucide-react": "^1.27.0",
-    "mermaid": "^11.16.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router": "^8.3.0"
+    "mermaid": "^11.16.0"
   },
   "devDependencies": {
-    "@react-router/dev": "^8.3.0",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
     "eslint": "10.4.0",
     "eslint-config-setup": "0.4.0",
     "jiti": "2.7.0",
     "oxfmt": "0.57.0",
     "oxlint": "1.83.0",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vite": "^8.1.5"
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "packageManager": "pnpm@11.17.0"
 }

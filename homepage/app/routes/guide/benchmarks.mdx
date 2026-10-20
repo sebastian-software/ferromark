@@ -1,9 +1,12 @@
 ---
 title: Parser Benchmarks
+description: Recorded workloads, output checks, and the settings behind each result.
 order: 11
 ---
 
 # Parser Benchmarks
+
+import { BenchmarkChart } from "../../components/benchmark-chart";
 
 V2 benchmark reports preserve source revisions, compiler flags, output checks,
 and raw measurements. Results describe the recorded workloads and machines.
@@ -122,6 +125,13 @@ and earlier reports remain separate.
 [Raw evidence](https://github.com/sebastian-software/ferromark/tree/main/docs/reports/2026-10-01-blacksmith-macos-arm64), [manual workflow](https://github.com/sebastian-software/ferromark/blob/main/benchmarks/manual-comparison/README.md).
 
 {/* /current-comparisons */}
+
+## Archived agreement subsets
+
+This interactive view uses the original five-engine agreement subset for each
+recorded platform. It is separate from the complete campaigns above.
+
+<BenchmarkChart />
 
 ## Native engine comparison
 

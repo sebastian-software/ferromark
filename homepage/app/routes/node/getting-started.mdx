@@ -1,5 +1,6 @@
 ---
 title: Start with Node.js
+description: Render Markdown, collect metadata, and build a Node.js content pipeline.
 order: 1
 ---
 
@@ -15,7 +16,7 @@ Use **Node.js 22.12 or newer**. TypeScript declarations are included.
 
 ## Install
 
-```sh
+```sh title="Install the package"
 npm install ferromark
 ```
 
@@ -24,7 +25,7 @@ Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/
 
 Save this as `example.mjs` and run `node example.mjs`:
 
-```js
+```js title="example.mjs"
 import { toHtml } from "ferromark";
 
 const html = toHtml("# Hello\n\n**World**");
@@ -33,7 +34,7 @@ console.log(html);
 
 The result is:
 
-```html
+```html title="Rendered HTML"
 <h1 id="hello">Hello</h1>
 <p><strong>World</strong></p>
 ```

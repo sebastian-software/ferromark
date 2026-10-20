@@ -1,10 +1,15 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Fixture URLs point to fixed checked-in benchmark data. */
+import { createElement } from "ardo/react";
+import { renderToStaticMarkup } from "ardo/react-dom/server";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import test from "node:test";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { createServer } from "vite";
+import { pathToFileURL } from "node:url";
+
+// Exercise the same Vite runtime Ardo manages for the site.
+const requireArdo = createRequire(import.meta.resolve("ardo/package.json"));
+const { createServer } = await import(pathToFileURL(requireArdo.resolve("vite")).href);
 
 const completed = JSON.parse(
   await readFile(new URL("../app/data/benchmark-platform-values.json", import.meta.url), "utf8"),
@@ -17,7 +22,7 @@ async function renderComparison(figures, { claim = false } = {}) {
   const server = await createServer({
     configFile: false,
     server: { middlewareMode: true },
-    oxc: { jsx: { runtime: "automatic" } },
+    oxc: { jsx: { runtime: "automatic", importSource: "ardo" } },
     plugins: [
       {
         name: "comparison-test-data",

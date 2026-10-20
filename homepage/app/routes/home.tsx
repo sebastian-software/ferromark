@@ -1,248 +1,290 @@
+import { Link } from "ardo/router";
 import {
-  ClosingAction,
-  IronBand,
-  Ledger,
-  Mark,
-  Principles,
-  ProjectHero,
-  RegistryFacts,
-  Relations,
-  Section,
-  WorkWithUs,
-} from "ferramenta-family";
-import { Link } from "react-router";
+  FerraAction,
+  FerraCode,
+  FerraColumns,
+  FerraHero,
+  FerraSection,
+  FerraSpecimen,
+  FerraTable,
+} from "ferramenta-family/ferra";
 
-import {
-  BenchmarkComparison,
-  benchmarkHosts,
-  benchmarkLead,
-} from "../components/benchmark-comparison";
-import { FlavoredMarkdownSection } from "../components/ffm-showcase";
-import { TransformShowcase } from "../components/transform-showcase";
-import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
+import { HomeMeasurements } from "../components/home-measurements";
+import { ApiNotebook } from "../components/home-reference";
 import { version } from "../version";
+import "../styles/home.css";
 
-const conformanceEntries = [
-  {
-    name: "CommonMark 0.31.2",
-    status: "652 / 652",
-    settled: true,
-    detail: "Every specification example agrees with the CommonMark reference.",
-  },
-  {
-    name: "GFM extensions",
-    status: "Covered",
-    settled: true,
-    detail:
-      "The official GitHub Flavored Markdown extension examples run in the conformance suite.",
-  },
-  {
-    name: "CR and CRLF input",
-    status: "1,304 variants",
-    settled: true,
-    detail: "Line-ending variants are checked against the same expected output.",
-  },
-  {
-    name: "Original cmark corpus",
-    status: "Covered",
-    settled: true,
-    detail: "The upstream comparison corpus remains in the regression suite.",
-  },
-];
+export const handle = { layout: "bare" };
 
-function ProjectIntro() {
+function Introduction() {
   return (
-    <ProjectHero
-      icon="ferromark"
-      title="Ferromark"
-      what="A native Markdown engine for Rust and Node.js."
-      lede="Publish Markdown with CommonMark and GFM, add richer publishing features with FFM, and give your content its final polish with Afterburner."
-      facts={[
-        { label: "Built to", value: "CommonMark / GFM" },
-        { label: "Checked against", value: "Specification and reference corpora" },
-        { label: "Release", value: `v${version}` },
-      ]}
-      actions={
-        <>
-          <Link className="fam-btn fam-btn-primary" to="/rust/getting-started">
-            Start with Rust <Mark name="arrow" className="icon" size={18} />
-          </Link>
-          <Link className="fam-btn fam-btn-ghost" to="/node/getting-started">
-            Start with Node.js
-          </Link>
-        </>
-      }
-      install={
-        <>
-          <code>cargo add ferromark</code>
-          <span> · </span>
-          <code>npm install ferromark</code>
-          <span> · v{version}</span>
-        </>
-      }
-    />
+    <div className="ferra-hero-ground">
+      <FerraHero
+        product="ferromark"
+        title="Ferromark."
+        what="Markdown, ready for your pipeline."
+        actions={
+          <>
+            <FerraAction href="/rust/getting-started">Start with Rust</FerraAction>
+            <FerraAction href="/node/getting-started" variant="secondary">
+              Start with Node.js
+            </FerraAction>
+          </>
+        }
+      >
+        <p>
+          Turn Markdown into HTML and the metadata around it. A focused Rust engine for the
+          documents that get complicated.
+        </p>
+      </FerraHero>
+    </div>
   );
 }
 
-function ContractBand() {
+function WorkingExample() {
   return (
-    <IronBand
-      title="Correctness is part of the contract."
-      intro="The engine keeps Markdown parsing and HTML rendering in scope, with specification tests for correctness and measured public API comparisons for speed. Your application keeps control of trust, translation, routing, and presentation."
+    <FerraSection
+      id="example"
+      label="Rendering"
+      intro="From Markdown to structured HTML and metadata."
+      title="See what a document becomes."
+      className="ferromark-working-example"
     >
-      <Principles
-        items={[
-          {
-            heading: "Standards first",
-            text: "CommonMark and GFM define the syntax. Conformance results and retained reference corpora make the behavior reviewable.",
-          },
-          {
-            heading: "Trust stays explicit",
-            text: "Rust preserves raw HTML unless you enable sanitizing. Node.js escapes authored HTML and filters unsafe URL schemes until you trust the source.",
-          },
-          {
-            heading: "A focused core",
-            text: "Ferromark parses Markdown and renders HTML, with opt-in typography and technical abbreviation markup. Translation, site assembly, templates, and syntax highlighting stay in your pipeline.",
-          },
-        ]}
-      />
-    </IronBand>
+      <p>The same content, from Markdown input to rendered HTML output.</p>
+      <FerraColumns className="ferromark-transformation">
+        <FerraCode caption="Markdown input" file="release-notes.md">
+          {"# Release notes\n\n- Clear structure\n- Useful metadata"}
+        </FerraCode>
+        <span className="ferromark-transform-arrow" aria-hidden="true">
+          →
+        </span>
+        <FerraSpecimen caption="Rendered HTML output">
+          <h3>Release notes</h3>
+          <ul>
+            <li>Clear structure</li>
+            <li>Useful metadata</li>
+          </ul>
+        </FerraSpecimen>
+      </FerraColumns>
+      <p>
+        A document is more than its markup. Use the AST to inspect structure, extract front matter
+        as raw text and let your application decide how to publish it.
+      </p>
+      <p>
+        <Link to="/guide/rendering">Explore rendering and metadata</Link>
+      </p>
+    </FerraSection>
+  );
+}
+
+function Correctness() {
+  return (
+    <FerraSection
+      id="correctness"
+      label="Output policy"
+      intro="Correct handling for real documents."
+      title="Correctness is a contract."
+      className="ferromark-correctness"
+    >
+      <FerraColumns>
+        <div>
+          <p>
+            A Markdown engine has to earn trust on the awkward document: a nested list, a reference
+            that moves, a table with real content or a footnote added at the last minute.
+          </p>
+          <p>
+            Ferromark starts with CommonMark and GFM, then makes the publishing features explicit.
+            Specification profiles turn off publishing extras so conformance can be checked on its
+            own terms.
+          </p>
+          <p>
+            <Link to="/guide/correctness">Inspect correctness</Link> ·{" "}
+            <Link to="/guide/features">Explore syntax</Link>
+          </p>
+        </div>
+        <FerraSpecimen caption="A small publishing ledger">
+          <dl className="ferromark-notebook">
+            <div>
+              <dt>Front matter</dt>
+              <dd>Extracted as raw text</dd>
+            </div>
+            <div>
+              <dt>Heading IDs</dt>
+              <dd>Configurable output</dd>
+            </div>
+            <div>
+              <dt>Footnotes</dt>
+              <dd>Document references and notes</dd>
+            </div>
+            <div>
+              <dt>Rendering hooks</dt>
+              <dd>Your application decides</dd>
+            </div>
+          </dl>
+        </FerraSpecimen>
+      </FerraColumns>
+    </FerraSection>
+  );
+}
+
+function RenderingPolicy() {
+  return (
+    <FerraSection
+      id="policy"
+      label="Compatibility"
+      intro="Recognize content without granting permission."
+      title="Recognition is not permission."
+    >
+      <p>
+        The engine can recognize raw HTML without granting permission to emit it. Choose the output
+        policy for the source your application accepts.
+      </p>
+      <FerraTable caption="Defaults depend on the API">
+        <thead>
+          <tr>
+            <th scope="col">API</th>
+            <th scope="col">Default</th>
+            <th scope="col">For untrusted Markdown</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Rust</th>
+            <td>Raw HTML passthrough</td>
+            <td>
+              Enable <code>sanitize</code>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Node.js</th>
+            <td>Escaped HTML and filtered URL schemes</td>
+            <td>
+              Keep <code>renderPolicy: &apos;untrusted&apos;</code>
+            </td>
+          </tr>
+        </tbody>
+      </FerraTable>
+      <p>
+        Custom hooks and highlighter HTML are written verbatim. They must escape untrusted values
+        themselves. The GFM tag filter is not a general HTML sanitizer.
+      </p>
+      <p>
+        <Link to="/guide/rendering">Choose your rendering policy</Link>
+      </p>
+    </FerraSection>
+  );
+}
+
+function DocumentStructure() {
+  return (
+    <FerraSection
+      id="structure"
+      label="The document"
+      intro="More than paragraphs."
+      title="The document, beyond paragraphs."
+    >
+      <FerraColumns>
+        <div>
+          <p>
+            Publishing needs structure as well as markup. Extract front matter as raw text; let the
+            application interpret YAML or TOML. Configure heading IDs and footnotes for the site you
+            are building.
+          </p>
+          <p>
+            Ferromark leaves templates, translation, routing and syntax highlighting outside the
+            core. That boundary keeps the renderer focused and gives the surrounding pipeline room
+            to make its own decisions.
+          </p>
+          <p>
+            <Link to="/guide/pipelines">Plan your content pipeline</Link> ·{" "}
+            <Link to="/guide/ffm">Explore Ferromark Flavored Markdown</Link> ·{" "}
+            <Link to="/rust/transforms">Apply Afterburner transforms</Link>
+          </p>
+        </div>
+        <FerraSpecimen caption="API notebook">
+          <ApiNotebook />
+        </FerraSpecimen>
+      </FerraColumns>
+    </FerraSection>
   );
 }
 
 function DocumentAnalysisSection() {
   return (
-    <Section
+    <FerraSection
       id="document-analysis"
       title="Use the document you already parsed."
       intro="Collect references, build search records, and export static Markdown from the same prepared document. Request each analysis when your application needs it."
-      note={
-        <>
-          <Link to="/guide/document-analysis">Explore document analysis in Rust and Node.js</Link>
-          {" · "}Available on main; check your installed release.
-        </>
-      }
+      label="Document analysis"
     >
-      <Principles
-        items={[
-          {
-            heading: "Reference inventories",
-            text: "Collect Markdown links, images, and static MDX URL attributes with destinations and available source ranges for your link and asset checks.",
-          },
-          {
-            heading: "Text and search sections",
-            text: "Extract static plain text and ordered heading sections with final JSX heading IDs and hierarchy for your search index.",
-          },
-          {
-            heading: "Static Markdown export",
-            text: "Keep original Markdown and code while removing dynamic MDX constructs. Omission diagnostics show where content was discarded.",
-          },
-        ]}
-      />
-    </Section>
+      <dl className="ferromark-notebook">
+        <div>
+          <dt>Reference inventories</dt>
+          <dd>
+            Collect Markdown links, images, and static MDX URL attributes with destinations and
+            available source ranges for your link and asset checks.
+          </dd>
+        </div>
+        <div>
+          <dt>Text and search sections</dt>
+          <dd>
+            Extract static plain text and ordered heading sections with final JSX heading IDs and
+            hierarchy for your search index.
+          </dd>
+        </div>
+        <div>
+          <dt>Static Markdown export</dt>
+          <dd>
+            Keep original Markdown and code while removing dynamic MDX constructs. Omission
+            diagnostics show where content was discarded.
+          </dd>
+        </div>
+      </dl>
+      <p>
+        <Link to="/guide/document-analysis">Explore document analysis in Rust and Node.js</Link> ·
+        Available on main; check your installed release.
+      </p>
+    </FerraSection>
   );
 }
 
-function FamilySection() {
+function GetStarted() {
   return (
-    <Section
-      id="family"
-      title="A place in your toolchain."
-      intro="Use Ferromark on its own, pair it with Ferriki for syntax highlighting, or find it inside Palamedes. Each engine has its own job and its own API."
-    >
-      <Relations current="ferromark" />
-    </Section>
-  );
-}
-
-function EvidenceSection() {
-  return (
-    <Section
-      id="evidence"
-      layout="split"
-      title={benchmarkLead()}
-      intro="CommonMark and GFM, plus opt-in publishing features for richer documents. Enable what you need; extra syntax adds parsing work."
-      note={
-        <>
-          57 documents on macOS and Linux, fresh calls. 2× means twice the throughput. Node.js
-          includes binding overhead. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
-          <Link to="/guide/feature-comparison">Features and costs</Link>
-        </>
-      }
-    >
-      <BenchmarkComparison />
-      <p className="native-benchmark-note">{benchmarkHosts}</p>
-    </Section>
-  );
-}
-
-function ConformanceSection() {
-  return (
-    <Section
-      id="conformance"
-      layout="split"
-      title="Conformance with the evidence attached."
-      intro="Published output remains tied to the specification and compatibility fixtures."
-      note={
-        <Link to="/guide/correctness">Read the conformance methodology and source fixtures.</Link>
-      }
-    >
-      <Ledger entries={conformanceEntries} />
-    </Section>
-  );
-}
-
-function StartSection() {
-  return (
-    <ClosingAction
-      id="start"
-      title="Bring Markdown into your application."
-      actions={
-        <>
-          <Link className="fam-btn fam-btn-primary" to="/rust/getting-started">
-            Rust guide <Mark name="arrow" className="icon" size={18} />
-          </Link>
-          <Link className="fam-btn fam-btn-ghost" to="/node/getting-started">
-            Node.js guide
-          </Link>
-        </>
-      }
-      links={
-        <>
-          <a href="https://github.com/sebastian-software/ferromark">GitHub repository</a>
-          <span> · </span>
-          <a href="https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md">
-            Migration guide
-          </a>
-          <span> · </span>
-          <Link to="/guide/ffm">FFM guide</Link>
-        </>
-      }
+    <FerraSection
+      id="get-started"
+      label="Get started"
+      intro="Use it your way."
+      title="Build the pipeline that fits."
     >
       <p>
-        Choose Rust for direct access to the parser and document tree, or Node.js for a typed
-        JavaScript API backed by the same native engine.
+        Start with the Rust crate, or use the native engine through Node.js. Pair Ferromark with
+        Ferriki when your documents need syntax highlighting; neither engine requires the other.
       </p>
-    </ClosingAction>
+      <FerraCode caption={`Install Ferromark · version ${version}`} file="Rust">
+        cargo add ferromark
+      </FerraCode>
+      <div className="ferra-actions">
+        <FerraAction href="/rust/getting-started">Start with Rust</FerraAction>
+        <FerraAction href="/node/getting-started" variant="secondary">
+          Start with Node.js
+        </FerraAction>
+        <Link to="/guide/cli">Use the command line</Link>
+      </div>
+    </FerraSection>
   );
 }
 
 export default function HomePage() {
   return (
-    <RegistryFacts snapshot={registrySnapshot} snapshotGeneratedAt={registrySnapshotGeneratedAt}>
-      {/* A div, not a second <main>: Ardo already renders the page's main landmark. */}
-      <div className="fam-page">
-        <ProjectIntro />
-        <TransformShowcase />
-        <FlavoredMarkdownSection />
-        <DocumentAnalysisSection />
-        <ContractBand />
-        <FamilySection />
-        <EvidenceSection />
-        <ConformanceSection />
-        <StartSection />
-        <WorkWithUs title="Need Ferromark in your stack?" />
-      </div>
-    </RegistryFacts>
+    <>
+      <Introduction />
+      <WorkingExample />
+      <Correctness />
+      <HomeMeasurements />
+      <RenderingPolicy />
+      <DocumentStructure />
+      <DocumentAnalysisSection />
+      <GetStarted />
+    </>
   );
 }

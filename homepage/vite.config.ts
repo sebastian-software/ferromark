@@ -1,14 +1,9 @@
-import { ardo } from "ardo/vite";
-import { defineConfig } from "vite";
+import { defineConfig } from "ardo/vite";
 
+import manifest from "../node/ferromark/package.json" with { type: "json" };
+
+// Release metadata is read only by the build config. Documentation runtime
+// imports remain inside the package boundary enforced by Ardo 6.
 export default defineConfig({
-  base: "/",
-  plugins: [
-    ardo({
-      title: "ferromark",
-      description: "Native Markdown to HTML for Rust and Node.js, with reproducible benchmarks",
-      githubPages: false,
-      siteUrl: "https://ferromark.dev",
-    }),
-  ],
+  define: { __FERROMARK_VERSION__: JSON.stringify(manifest.version) },
 });
