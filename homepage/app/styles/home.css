@@ -1,0 +1,329 @@
+.ferromark-home {
+  min-width: 0;
+}
+.ferromark-home .ferra-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  padding-block-start: var(--ferra-space-8);
+}
+.ferromark-home .ferra-subtitle {
+  font-size: clamp(1.625rem, 2.6vw, 2.125rem);
+}
+.ferra-page .ferromark-transformation {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--ferra-space-4);
+  align-items: stretch;
+  margin-block-start: var(--ferra-space-6);
+}
+.ferromark-transform-arrow {
+  align-self: center;
+  color: var(--ferra-accent);
+  font-size: 1.75rem;
+}
+.ferromark-working-example .ferra-specimen-output h3 {
+  font-size: 1.875rem;
+}
+.ferromark-notebook {
+  display: grid;
+  margin: 0;
+  font-size: var(--ferra-text-small);
+  line-height: 1.6;
+}
+.ferromark-notebook > div {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: var(--ferra-space-4);
+  padding-block: var(--ferra-space-4);
+}
+.ferromark-notebook > div + div {
+  border-block-start: 1px solid var(--ferra-border);
+}
+.ferromark-notebook > div:first-child {
+  padding-block-start: 0;
+}
+.ferromark-notebook > div:last-child {
+  padding-block-end: 0;
+}
+.ferromark-notebook dt {
+  font-weight: 500;
+}
+.ferromark-notebook dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ferra-text-secondary);
+}
+.ferromark-notebook code {
+  font-family: var(--ferra-font-mono);
+  font-size: 0.875rem;
+}
+.ferromark-measure-link {
+  font-size: var(--ferra-text-small);
+}
+@media (min-width: 75rem) {
+  .ferromark-correctness .ferra-story {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: var(--ferra-space-8) var(--ferra-column-gap);
+  }
+  .ferromark-correctness .ferra-columns {
+    display: contents;
+  }
+  .ferromark-correctness .ferra-columns > div {
+    grid-column: 1;
+  }
+  .ferromark-correctness .ferra-specimen {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: start;
+  }
+}
+@media (max-width: 47.5rem) {
+  .ferromark-home .ferra-hero,
+  .ferra-page .ferromark-transformation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ferromark-transform-arrow {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+}
+
+.ferromark-comparison {
+  --comparison-padding-x: 0.5rem;
+
+  width: 100%;
+  margin-block: 0.5rem 0;
+  border-collapse: collapse;
+  color: var(--ferra-text);
+  text-align: left;
+}
+
+.ferromark-comparison caption {
+  padding: 0 var(--comparison-padding-x) 0.5rem;
+  color: var(--ferra-text-secondary);
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.ferromark-comparison th,
+.ferromark-comparison td {
+  padding: 0.15rem var(--comparison-padding-x);
+  border-bottom: 1px solid var(--ferra-border);
+  vertical-align: middle;
+}
+
+.ferromark-comparison thead th {
+  border-bottom-color: var(--ferra-border);
+  color: var(--ferra-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.ferromark-comparison th:first-child {
+  width: 46%;
+}
+
+.ferromark-comparison th:not(:first-child),
+.ferromark-comparison td {
+  text-align: right;
+}
+
+.ferromark-comparison tbody th {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.ferromark-comparison .ferromark-comparison-group th {
+  width: auto;
+  padding: 0.3rem var(--comparison-padding-x);
+  border-bottom-color: var(--ferra-border);
+  background: color-mix(in srgb, var(--ferra-text) 5%, transparent);
+  color: var(--ferra-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.ferromark-comparison td {
+  font-variant-numeric: tabular-nums;
+}
+
+.ferromark-comparison tfoot td {
+  padding-top: 0.75rem;
+  color: var(--ferra-text-secondary);
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+.ferromark-comparison .ferromark-project-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--ferra-border);
+  text-underline-offset: 0.2em;
+}
+
+.ferromark-project-backend {
+  display: inline-block;
+  margin-left: 0.5rem;
+  color: var(--ferra-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.ferromark-comparison .ferromark-project-link:hover {
+  color: var(--ferra-accent-hover);
+  text-decoration-color: currentColor;
+}
+
+.ferromark-comparison td a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  color: var(--ferra-accent);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+
+.ferromark-project-name {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.ferromark-project-name sup {
+  position: relative;
+  top: -0.35em;
+  margin-left: 0.15em;
+  color: var(--ferra-accent);
+  font-size: 0.75em;
+  line-height: 1;
+}
+
+.ferromark-comparison td a:hover {
+  color: var(--ferra-accent-hover);
+}
+
+.ferromark-comparison a:focus-visible {
+  outline: 2px solid var(--ferra-accent);
+  outline-offset: 4px;
+}
+
+@media (max-width: 30rem) {
+  .ferromark-comparison {
+    --comparison-padding-x: 0.35rem;
+  }
+
+  .ferromark-comparison tbody th {
+    font-size: 0.875rem;
+  }
+
+  .ferromark-comparison thead th {
+    font-size: 0.75rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .ferromark-comparison .ferromark-project-link,
+  .ferromark-comparison td a {
+    min-height: 44px;
+  }
+}
+
+.ferromark-comparison .ferromark-conformance {
+  min-width: 6.25rem;
+}
+
+.ferromark-comparison .ferromark-conformance a,
+.ferromark-comparison .ferromark-conformance span {
+  display: block;
+  min-height: 28px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 28px;
+}
+
+.ferromark-comparison .ferromark-reference-note {
+  color: var(--ferra-text-secondary);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 40rem) {
+  .ferromark-comparison th:first-child {
+    width: auto;
+  }
+
+  .ferromark-comparison .ferromark-project-name {
+    white-space: normal;
+  }
+
+  .ferromark-comparison .ferromark-project-backend {
+    display: block;
+    margin-left: 0;
+    white-space: normal;
+  }
+
+  .ferromark-comparison .ferromark-conformance {
+    min-width: 5rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .ferromark-comparison .ferromark-conformance a {
+    min-height: 44px;
+    line-height: 44px;
+  }
+}
+
+@media (max-width: 22rem) {
+  .ferromark-comparison {
+    --comparison-padding-x: 0.25rem;
+
+    table-layout: fixed;
+  }
+
+  .ferromark-comparison th:first-child,
+  .ferromark-comparison thead th:last-child {
+    width: 32%;
+  }
+
+  .ferromark-comparison .ferromark-project-link {
+    overflow-wrap: anywhere;
+  }
+
+  .ferromark-comparison thead th {
+    font-size: 0.6875rem;
+  }
+
+  .ferromark-comparison td:not(.ferromark-conformance) a {
+    font-size: 0.8125rem;
+  }
+
+  .ferromark-comparison .ferromark-conformance {
+    min-width: 0;
+  }
+}
+
+.ferromark-comparison-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  margin-block: var(--ferra-space-8);
+}
+.ferromark-comparison-scroll .ferromark-comparison {
+  min-width: 36rem;
+}
+.ferromark-comparison thead th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  background: var(--ferra-surface);
+}

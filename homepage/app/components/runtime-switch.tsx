@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { NavLink } from "ardo/router";
 
 type Topic = "configuration" | "getting-started" | "highlighting" | "pipelines";
 

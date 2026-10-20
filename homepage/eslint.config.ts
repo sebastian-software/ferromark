@@ -16,4 +16,11 @@ config.unshift({
   ],
 });
 
+// Fenced consumer examples describe imports installed by the reader. Ardo's
+// package-boundary check still validates actual MDX runtime dependencies.
+config.push({
+  files: ["app/routes/**/*.mdx/**"],
+  rules: { "import/no-extraneous-dependencies": "off" },
+});
+
 export default config;

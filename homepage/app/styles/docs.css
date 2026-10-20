@@ -1,0 +1,369 @@
+/* Ferra reading layouts, applied through Ardo's stable public styling hooks.
+   The document scrolls on one paper ground; only actual material changes get edges. */
+.ferromark-docs {
+  padding-block: var(--ferra-space-18) var(--ferra-section-gap);
+}
+.ferromark-docs #main-content {
+  background: transparent;
+  overflow: visible;
+  padding: 0 0 0 var(--ferra-column-gap);
+}
+.ferromark-docs .ardo-sidebar {
+  position: sticky;
+  top: var(--ferra-space-8);
+  align-self: flex-start;
+  max-height: calc(100dvh - var(--ferra-space-16));
+  overflow-y: auto;
+  padding: 0;
+  border-inline-end: 1px solid var(--ferra-border);
+}
+.ferromark-docs .ardo-sidebar-tabs {
+  display: none;
+}
+.ferromark-docs .ardo-sidebar-panel {
+  padding: 0 var(--ferra-space-6) 0 0;
+}
+.ferromark-docs .ardo-sidebar-nav {
+  overflow: visible;
+}
+.ferromark-docs .ardo-sidebar-nav ul {
+  padding: 0;
+  margin: 0;
+}
+.ferromark-docs .ardo-sidebar-nav li {
+  list-style: none;
+}
+.ferromark-docs .ardo-sidebar-nav li > div > span {
+  display: block;
+  padding: 0;
+  margin-block-end: var(--ferra-space-4);
+  font-weight: 600;
+  font-size: var(--ferra-text-small);
+  letter-spacing: 0;
+}
+.ferromark-docs .ardo-sidebar-nav li > ul {
+  padding: 0;
+  margin: 0;
+}
+.ferromark-docs .ardo-sidebar-nav a {
+  display: flex;
+  align-items: center;
+  min-height: var(--ferra-target);
+  padding: var(--ferra-space-2) 0;
+  font-size: var(--ferra-text-small);
+  line-height: 1.55;
+  color: var(--ferra-text-secondary);
+  background: transparent;
+  border-radius: 0;
+  text-decoration: none;
+}
+.ferromark-docs .ardo-sidebar-nav a[aria-current="page"] {
+  color: var(--ferra-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.35em;
+}
+.ferromark-docs .ardo-sidebar-nav a:hover {
+  color: var(--ferra-accent);
+}
+.ferromark-docs .ardo-doc-page {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
+  padding: 0;
+  gap: var(--ferra-column-gap);
+  margin: 0;
+}
+.ferromark-docs .ardo-content {
+  min-width: 0;
+}
+.ferromark-docs .ardo-content-header {
+  position: relative;
+  padding: 0;
+  margin-block-end: var(--ferra-space-12);
+}
+.ferromark-site .ferromark-docs .ardo-content-title {
+  max-width: 20ch;
+  margin: 0;
+  font-size: clamp(2.625rem, 4.8vw, 4.5rem);
+  font-weight: 600;
+  line-height: var(--ferra-leading-heading);
+  letter-spacing: -0.04em;
+  text-wrap: pretty;
+}
+.ferromark-docs .ardo-content-description {
+  max-width: 45ch;
+  margin-block: var(--ferra-space-6) 0;
+  color: var(--ferra-text-secondary);
+  font-size: var(--ferra-text-lead);
+  line-height: var(--ferra-leading-body);
+}
+.ferromark-docs-illustrated .ardo-content-header {
+  min-height: 14rem;
+  padding-inline-end: 36%;
+  margin-block-end: var(--ferra-space-16);
+}
+.ferromark-docs-illustrated .ardo-content-header::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 32%;
+  pointer-events: none;
+  background: url("ferramenta-family/ferra-assets/ferromark/instrument.webp") center / contain
+    no-repeat;
+}
+.ferromark-docs .ardo-content-body {
+  font-size: var(--ferra-text-body);
+  line-height: var(--ferra-leading-body);
+}
+.ferromark-docs .ardo-content-body :is(p, ul, ol, blockquote, pre, table, details) {
+  margin-block: 0 var(--ferra-space-6);
+}
+.ferromark-docs .ardo-content-body :is(p, ul, ol, blockquote) {
+  max-width: var(--ferra-measure);
+}
+.ferromark-docs .ardo-content-body > p:first-of-type {
+  font-size: var(--ferra-text-lead);
+  color: var(--ferra-text-secondary);
+}
+.ferromark-site .ferromark-docs .ardo-content-body h2 {
+  max-width: 28ch;
+  font-size: var(--ferra-text-heading);
+  font-weight: 600;
+  line-height: var(--ferra-leading-heading);
+  margin-block: var(--ferra-section-gap) var(--ferra-space-8);
+  padding: 0;
+  border: 0;
+  scroll-margin-block-start: var(--ferra-space-8);
+}
+.ferromark-site .ferromark-docs .ardo-content-body h3 {
+  font-size: var(--ferra-text-title);
+  margin-block: var(--ferra-space-12) var(--ferra-space-6);
+  padding: 0;
+  border: 0;
+}
+.ferromark-site .ferromark-docs .ardo-content-body :is(h2, h3) + :is(h3, h4) {
+  margin-block-start: var(--ferra-space-6);
+}
+.ferromark-docs .ardo-content-body :is(ul, ol) {
+  padding-inline-start: var(--ferra-space-6);
+}
+.ferromark-docs .ardo-content-body li + li {
+  margin-block-start: var(--ferra-space-2);
+}
+.ferromark-docs .ardo-content-body :is(pre, code) {
+  font-family: var(--ferra-font-mono);
+}
+.ferromark-docs .ardo-content-body :is(p, li, td) code {
+  overflow-wrap: anywhere;
+}
+.ferromark-docs .ardo-content-body blockquote {
+  border: 0;
+  border-inline-start: 2px solid var(--ferra-border);
+  padding: var(--ferra-space-2) 0 var(--ferra-space-2) var(--ferra-space-6);
+  background: transparent;
+  box-shadow: none;
+}
+.ferromark-docs .ardo-content-body blockquote > :last-child {
+  margin-block-end: 0;
+}
+.ferromark-docs .ardo-code-block {
+  width: 100%;
+  max-width: none;
+  margin-block: var(--ferra-space-8);
+  box-shadow: var(--ferra-sheet-shadow);
+}
+.ferromark-docs .ardo-code-title,
+.ferromark-docs .ardo-code-block:not(:has(.ardo-code-title))::before {
+  display: block;
+  padding: var(--ferra-space-3) var(--ferra-space-4);
+  border-block-end: 1px solid var(--ferra-border);
+  background: color-mix(in srgb, var(--ferra-pewter) 35%, var(--ferra-surface));
+  color: var(--ferra-text-secondary);
+  font: 500 var(--ferra-text-small) / 1.6 var(--ferra-font-sans);
+}
+.ferromark-docs .ardo-code-block:not(:has(.ardo-code-title))::before {
+  content: attr(data-lang);
+}
+.ferromark-docs .ardo-code-wrapper pre {
+  margin: 0;
+  padding: var(--ferra-space-6);
+  font-size: var(--ferra-text-small);
+  line-height: 1.8;
+}
+.ferromark-docs .ardo-copy-button {
+  min-height: var(--ferra-target);
+  min-width: var(--ferra-target);
+}
+.ferromark-docs .ardo-content-body table {
+  width: 100%;
+  margin-block: var(--ferra-space-8);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: var(--ferra-text-small);
+  font-variant-numeric: tabular-nums;
+}
+.ferromark-docs .ardo-content-body :is(th, td) {
+  padding: var(--ferra-space-4);
+  border-block-end: 1px solid var(--ferra-border);
+  vertical-align: top;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ferromark-docs .ardo-content-body th {
+  background: color-mix(in srgb, var(--ferra-pewter) 35%, var(--ferra-surface));
+  font-size: inherit;
+}
+.ferromark-docs .ardo-content-body :is(th, td) + :is(th, td) {
+  border-inline-start: 1px solid var(--ferra-border);
+}
+.ferromark-docs .ardo-page-rail {
+  width: auto;
+  top: var(--ferra-space-8);
+  max-height: calc(100dvh - var(--ferra-space-16));
+  padding: 0 0 0 var(--ferra-space-6);
+  border-inline-start: 1px solid var(--ferra-border);
+}
+.ferromark-docs .ardo-page-rail-section {
+  border: 0;
+  padding: 0;
+}
+.ferromark-docs .ardo-toc h3 {
+  margin: 0 0 var(--ferra-space-4);
+  font: 600 var(--ferra-text-small) / 1.6 var(--ferra-font-sans);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ferromark-docs .ardo-toc a {
+  font-size: var(--ferra-text-small);
+  padding-block: var(--ferra-space-2);
+  padding-inline-start: 0;
+  border: 0;
+}
+.ferromark-docs .ardo-toc a.active {
+  color: var(--ferra-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.35em;
+}
+.ferromark-docs nav[aria-label="Page navigation"] {
+  margin-block-start: var(--ferra-section-gap);
+  gap: var(--ferra-column-gap);
+}
+.ferromark-docs nav[aria-label="Page navigation"] > a {
+  border: 0;
+  padding: var(--ferra-space-4) 0;
+  background: transparent;
+}
+.ferromark-docs nav[aria-label="Page navigation"] > a > span:first-child {
+  font-size: var(--ferra-text-small);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ferromark-docs .runtime-switch {
+  margin-block-end: var(--ferra-space-8);
+}
+.ferromark-docs .runtime-switch a {
+  background: transparent;
+  border-radius: 0;
+  min-height: var(--ferra-target);
+}
+.ferromark-docs .runtime-switch a[aria-current="page"] {
+  color: var(--ferra-accent);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 0.35em;
+}
+.ferromark-docs .platform-choices article h2 {
+  margin-block: var(--ferra-space-4) var(--ferra-space-6);
+}
+.ferromark-docs .platform-choices article p {
+  font-size: inherit;
+  color: var(--ferra-text);
+}
+.ferromark-docs .platform-choices .platform-label {
+  font-size: var(--ferra-text-small);
+  color: var(--ferra-text-secondary);
+}
+.ferromark-docs .ferromark-benchmark-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ferra-space-3);
+  margin-block: var(--ferra-space-8);
+}
+.ferromark-docs .ferromark-benchmark-controls button {
+  min-height: var(--ferra-target);
+  padding: var(--ferra-space-2) var(--ferra-space-4);
+  border: 1px solid var(--ferra-border);
+  border-radius: var(--ferra-radius);
+  background: transparent;
+  color: var(--ferra-text);
+  font: inherit;
+  font-size: var(--ferra-text-small);
+  cursor: pointer;
+}
+.ferromark-docs .ferromark-benchmark-controls button[aria-pressed="true"] {
+  border-color: var(--ferra-accent);
+  color: var(--ferra-accent);
+  background: var(--ferra-surface);
+}
+.ferromark-docs .ferra-bars ul {
+  max-width: none;
+  padding: 0;
+}
+.ferromark-docs .ferra-bars li {
+  margin: 0;
+}
+@media (min-width: 1536px) {
+  .ferromark-docs .ardo-doc-page {
+    grid-template-columns: minmax(0, 1fr) var(--ardo-layout-tocWidth);
+  }
+}
+@media (max-width: 1535px) {
+  .ferromark-docs .ardo-page-rail {
+    display: none;
+  }
+}
+@media (max-width: 1024px) {
+  .ferromark-docs #main-content {
+    padding: 0;
+  }
+}
+@media (max-width: 760px) {
+  .ferromark-docs {
+    padding-block-start: var(--ferra-space-12);
+  }
+  .ferromark-docs .ardo-content-header {
+    margin-block-end: var(--ferra-space-12);
+  }
+  .ferromark-docs-illustrated .ardo-content-header {
+    padding: 0;
+    min-height: 0;
+  }
+  .ferromark-docs-illustrated .ardo-content-header::after {
+    display: none;
+  }
+  .ferromark-docs .ardo-content-body {
+    font-size: 1rem;
+  }
+  .ferromark-docs .ardo-content-title {
+    font-size: 2.625rem;
+  }
+  .ferromark-docs .ardo-code-wrapper pre {
+    padding: var(--ferra-space-4);
+  }
+}
+
+.ferromark-platform-selector {
+  display: grid;
+  gap: var(--ferra-space-2);
+  max-width: 22rem;
+  margin-block-end: var(--ferra-space-4);
+}
+.ferromark-platform-selector select {
+  min-height: var(--ferra-target);
+  color: var(--ferra-text);
+  background: var(--ferra-surface);
+  border: 1px solid var(--ferra-border);
+  padding: var(--ferra-space-2);
+  font: inherit;
+}

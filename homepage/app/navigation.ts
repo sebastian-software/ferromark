@@ -39,6 +39,7 @@ export const documentationSections = [
       ["Document analysis", "/guide/document-analysis"],
       ["Rendering and trust", "/guide/rendering"],
       ["MDX boundaries", "/guide/mdx"],
+      ["MDX examples", "/guide/mdx-examples"],
       ["Command line", "/guide/cli"],
       ["Architecture", "/guide/architecture"],
       ["Correctness", "/guide/correctness"],

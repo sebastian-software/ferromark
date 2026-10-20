@@ -1,418 +1,160 @@
-/* Ardo shell and Ferromark documentation controls around the family chrome. */
-
-.ferromark-ffm .fam-note a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-weight: 700;
+/* The shared library owns the materials and type. This adapter maps Ardo's
+   public theme contract and the site's navigation to those same Ferra roles. */
+body {
+  margin: 0;
 }
-
-.ferromark-menu-label {
-  margin-bottom: 0.25rem;
-  padding: 0.5rem 0.6rem 0;
-  color: var(--iron-soft);
-  font-size: 0.75rem;
-  text-transform: uppercase;
+html.ferra-tokens {
+  --ardo-color-brand: var(--ferra-accent);
+  --ardo-color-brandLight: var(--ferra-accent-hover);
+  --ardo-color-brandDark: var(--ferra-accent-hover);
+  --ardo-color-brandInk: var(--ferra-on-accent);
+  --ardo-color-brandSubtle: color-mix(in srgb, var(--ferra-accent) 9%, var(--ferra-surface));
+  --ardo-color-ring: var(--ferra-accent);
+  --ardo-color-accent: var(--ferra-accent);
+  --ardo-color-bg: var(--ferra-surface);
+  --ardo-color-bgSoft: var(--ferra-surface);
+  --ardo-color-bgMute: var(--ferra-surface);
+  --ardo-color-bgAlt: var(--ferra-background);
+  --ardo-color-text: var(--ferra-text);
+  --ardo-color-textLight: var(--ferra-text-secondary);
+  --ardo-color-textLighter: var(--ferra-text-secondary);
+  --ardo-color-border: var(--ferra-border);
+  --ardo-color-borderLight: var(--ferra-border);
+  --ardo-color-divider: var(--ferra-border);
+  --ardo-color-sidebarBg: transparent;
+  --ardo-color-sidebarRailBg: transparent;
+  --ardo-color-codeBg: var(--ferra-surface);
+  --ardo-color-codeBorder: var(--ferra-border);
+  --ardo-color-codeShadow: var(--ferra-sheet-shadow);
+  --ardo-color-headerBg: var(--ferra-surface);
+  --ardo-color-surfaceCard: var(--ferra-surface);
+  --ardo-color-surfaceInset: none;
+  --ardo-font-family: var(--ferra-font-sans);
+  --ardo-font-familyHeading: var(--ferra-font-display);
+  --ardo-font-mono: var(--ferra-font-mono);
+  --ardo-font-lineHeight: var(--ferra-leading-body);
+  --ardo-fontSize-base: var(--ferra-text-body);
+  --ardo-fontSize-sm: var(--ferra-text-small);
+  --ardo-layout-headerHeight: 0px;
+  --ardo-layout-sidebarWidth: var(--ferra-margin-width);
+  --ardo-layout-tocWidth: 12rem;
+  --ardo-layout-contentMaxWidth: var(--ferra-measure);
+  --ardo-radius-base: var(--ferra-radius);
+  --ardo-radius-lg: var(--ferra-radius);
+  min-height: 100vh;
 }
-
-.ferromark-guide-flyout a {
+.ferromark-skip {
+  position: fixed;
+  inset: 1rem auto auto 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--ferra-surface);
+  transform: translateY(-200%);
+  z-index: 100;
+}
+.ferromark-skip:focus {
+  transform: none;
+}
+.ferra-page .ferra-nav a[aria-current="page"] {
+  color: var(--ferra-accent);
+}
+.ferromark-guide-menu {
   display: block;
-  padding: 0.55rem 0.75rem;
+  position: relative;
+  font-size: var(--ferra-text-small);
 }
-.ferromark-section-switch {
-  border-bottom: 1px solid var(--iron-line);
+.ferromark-guide-menu summary {
+  cursor: pointer;
+  min-height: var(--ferra-target);
+  display: flex;
+  align-items: center;
 }
-/* Wide docs tables scroll within the content column. */
+.ferromark-guide-flyout {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: min(20rem, calc(100vw - 3rem));
+  max-height: 65vh;
+  overflow: auto;
+  z-index: 30;
+  background: var(--ferra-surface);
+  border: 1px solid var(--ferra-border);
+  padding: var(--ferra-space-4);
+}
+.ferra-page .ferromark-guide-flyout a {
+  display: flex;
+  padding-inline: var(--ferra-space-2);
+}
+.ferra-page .ferromark-guide-flyout p {
+  font-weight: 600;
+  margin-block: var(--ferra-space-4) var(--ferra-space-2);
+}
+@media (max-width: 1024px) {
+  .ferromark-guide-menu {
+    display: block;
+  }
+  .ferromark-site .ferra-nav a.ferromark-desktop-link {
+    display: none;
+  }
+}
+@media (max-width: 480px) {
+  .ferromark-guide-flyout {
+    right: auto;
+    left: 0;
+  }
+  .ferromark-search span:has(> kbd) {
+    display: none;
+  }
+}
+
+.ferromark-search {
+  width: 12rem;
+  max-width: 100%;
+  min-width: 0;
+}
+.ferromark-site .runtime-switch {
+  display: flex;
+  gap: var(--ferra-space-2);
+  margin-block-end: var(--ferra-space-8);
+}
+.ferromark-site .runtime-switch a {
+  padding: var(--ferra-space-2) var(--ferra-space-4);
+  border-radius: var(--ferra-radius);
+  text-decoration: none;
+  font-size: var(--ferra-text-small);
+}
+.ferromark-site .runtime-switch a[aria-current="page"] {
+  background: var(--ferra-surface);
+  color: var(--ferra-accent);
+}
+.platform-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ferra-column-gap);
+  margin-block: var(--ferra-space-8);
+}
+.platform-choices article {
+  min-width: 0;
+}
+.platform-label {
+  color: var(--ferra-text-secondary);
+  font-size: var(--ferra-text-small);
+}
 .feature-benchmark-table,
 .native-benchmark-table {
-  overflow-x: auto;
+  max-width: 100%;
+  overflow: auto;
 }
-
-.feature-benchmark-table table {
-  min-width: 720px;
-}
-
-.feature-benchmark-table td {
-  white-space: nowrap;
-}
-
-.native-benchmark-table {
-  margin-block: 1rem;
-}
-
 .native-benchmark-table table {
-  width: 100%;
-  min-width: 620px;
-  border-collapse: collapse;
-  text-align: left;
+  min-width: 38rem;
 }
-
-.native-benchmark-table th,
-.native-benchmark-table td {
-  padding: 0.65rem 0.8rem;
-  border-bottom: 1px solid var(--ardo-color-border, #d8e0e8);
-}
-
-.native-benchmark-table td {
-  font-variant-numeric: tabular-nums;
-}
-
 .native-benchmark-selector {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin-block: 1rem;
-  font-weight: 600;
+  gap: var(--ferra-space-4);
+  margin-block: var(--ferra-space-8);
 }
-
-.native-benchmark-selector select {
-  max-width: 100%;
-  padding: 0.5rem;
-  font: inherit;
-}
-
-.native-benchmark-note {
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-/* Runtime choices are shared by the landing page and documentation entry pages. */
-.platform-choices {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 1.25rem;
-  margin-block: 2rem 1rem;
-  color: var(--ink);
-}
-
-.platform-choices article {
-  display: flex;
-  flex-direction: column;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--line-heavy);
-  background: var(--bg-dim);
-}
-
-.platform-choices .platform-label {
-  margin: 0;
-  color: var(--rust);
-  font: 600 0.75rem/1.5 var(--mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.platform-choices h2 {
-  margin: 0.6rem 0;
-  border: 0;
-  padding: 0;
-  font:
-    750 2rem/1.2 var(--display),
-    var(--body);
-}
-
-.platform-choices p:not(.platform-label) {
-  color: var(--ink-soft);
-  line-height: 1.65;
-}
-
-.platform-choices .platform-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  min-height: 44px;
-  margin-top: auto;
-  padding-top: 1rem;
-  color: var(--rust);
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.platform-link:hover {
-  text-decoration: underline;
-}
-
-.platform-choices .platform-primary {
-  border-top-color: var(--rust);
-}
-
-.platform-choices .platform-primary .platform-link {
-  margin-top: auto;
-  padding: 0.75rem 1rem;
-  background: var(--rust);
-  color: var(--bg);
-}
-
-.runtime-switch {
-  display: flex;
-  gap: 0.25rem;
-  margin-block: 1rem 2rem;
-  border-bottom: 1px solid var(--line-heavy);
-}
-
-.ferromark-shell .runtime-switch a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin-bottom: -1px;
-  padding: 0.5rem 1.25rem;
-  border-bottom: 3px solid transparent;
-  color: var(--ink-soft);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.ferromark-shell .runtime-switch a[aria-current="page"] {
-  border-bottom-color: var(--rust);
-  color: var(--rust);
-}
-
-.ferromark-shell .runtime-switch a:hover {
-  background: var(--bg-dim);
-  color: var(--rust);
-}
-
-.ferromark-shell .runtime-switch a:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-.platform-link:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 5px;
-}
-
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .platform-choices {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* One comparison row per library, with platform results side by side. */
-.ferromark-comparison {
-  --comparison-padding-x: 0.5rem;
-
-  width: 100%;
-  margin-block: 0.5rem 0;
-  border-collapse: collapse;
-  color: var(--ink);
-  text-align: left;
-}
-
-.ferromark-comparison caption {
-  padding: 0 var(--comparison-padding-x) 0.5rem;
-  color: var(--ink-soft);
-  font-size: 0.875rem;
-  text-align: left;
-}
-
-.ferromark-comparison th,
-.ferromark-comparison td {
-  padding: 0.15rem var(--comparison-padding-x);
-  border-bottom: 1px solid var(--line);
-  vertical-align: middle;
-}
-
-.ferromark-comparison thead th {
-  border-bottom-color: var(--line-heavy);
-  color: var(--ink);
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
-}
-
-.ferromark-comparison th:first-child {
-  width: 46%;
-}
-
-.ferromark-comparison th:not(:first-child),
-.ferromark-comparison td {
-  text-align: right;
-}
-
-.ferromark-comparison tbody th {
-  font-size: 0.9375rem;
-  font-weight: 500;
-}
-
-.ferromark-comparison .ferromark-comparison-group th {
-  width: auto;
-  padding: 0.3rem var(--comparison-padding-x);
-  border-bottom-color: var(--line-heavy);
-  background: color-mix(in srgb, var(--ink) 5%, transparent);
-  color: var(--ink);
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-align: left;
-  text-transform: uppercase;
-}
-
-.ferromark-comparison td {
-  font-variant-numeric: tabular-nums;
-}
-
-.ferromark-comparison tfoot td {
-  padding-top: 0.75rem;
-  color: var(--ink-soft);
-  font-size: 0.8125rem;
-  text-align: left;
-}
-
-.ferromark-comparison .ferromark-project-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-color: var(--line-heavy);
-  text-underline-offset: 0.2em;
-}
-
-.ferromark-project-backend {
-  display: inline-block;
-  margin-left: 0.5rem;
-  color: var(--ink-soft);
-  font-size: 0.75rem;
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.ferromark-comparison .ferromark-project-link:hover {
-  color: var(--rust-deep);
-  text-decoration-color: currentColor;
-}
-
-.ferromark-comparison td a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  color: var(--rust);
-  font-size: 1rem;
-  font-weight: 700;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
-  white-space: nowrap;
-}
-
-.ferromark-project-name {
-  display: inline-flex;
-  align-items: baseline;
-  white-space: nowrap;
-}
-
-.ferromark-project-name sup {
-  position: relative;
-  top: -0.35em;
-  margin-left: 0.15em;
-  color: var(--rust);
-  font-size: 0.75em;
-  line-height: 1;
-}
-
-.ferromark-comparison td a:hover {
-  color: var(--rust-deep);
-}
-
-.ferromark-comparison a:focus-visible {
-  outline: 2px solid var(--rust);
-  outline-offset: 4px;
-}
-
-@media (max-width: 30rem) {
-  .ferromark-comparison {
-    --comparison-padding-x: 0.35rem;
-  }
-
-  .ferromark-comparison tbody th {
-    font-size: 0.875rem;
-  }
-
-  .ferromark-comparison thead th {
-    font-size: 0.75rem;
-  }
-}
-
-@media (pointer: coarse) {
-  .ferromark-comparison .ferromark-project-link,
-  .ferromark-comparison td a {
-    min-height: 44px;
-  }
-}
-
-.ferromark-comparison .ferromark-conformance {
-  min-width: 6.25rem;
-}
-
-.ferromark-comparison .ferromark-conformance a,
-.ferromark-comparison .ferromark-conformance span {
-  display: block;
-  min-height: 28px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 28px;
-}
-
-.ferromark-comparison .ferromark-reference-note {
-  color: var(--ink-soft);
-  font-size: 0.75rem;
-}
-
-@media (max-width: 40rem) {
-  .ferromark-comparison th:first-child {
-    width: auto;
-  }
-
-  .ferromark-comparison .ferromark-project-name {
-    white-space: normal;
-  }
-
-  .ferromark-comparison .ferromark-project-backend {
-    display: block;
-    margin-left: 0;
-    white-space: normal;
-  }
-
-  .ferromark-comparison .ferromark-conformance {
-    min-width: 5rem;
-  }
-}
-
-@media (pointer: coarse) {
-  .ferromark-comparison .ferromark-conformance a {
-    min-height: 44px;
-    line-height: 44px;
-  }
-}
-
-@media (max-width: 22rem) {
-  .ferromark-comparison {
-    --comparison-padding-x: 0.25rem;
-
-    table-layout: fixed;
-  }
-
-  .ferromark-comparison th:first-child,
-  .ferromark-comparison thead th:last-child {
-    width: 32%;
-  }
-
-  .ferromark-comparison .ferromark-project-link {
-    overflow-wrap: anywhere;
-  }
-
-  .ferromark-comparison thead th {
-    font-size: 0.6875rem;
-  }
-
-  .ferromark-comparison td:not(.ferromark-conformance) a {
-    font-size: 0.8125rem;
-  }
-
-  .ferromark-comparison .ferromark-conformance {
-    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

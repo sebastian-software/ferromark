@@ -1,10 +1,6 @@
-import type { Config } from "@react-router/dev/config";
+import type { ReactRouterConfig } from "ardo/config";
 
-import { withArdoGitHubPages } from "ardo/vite";
-
-const config = {
+export default {
   ssr: false,
   prerender: true,
-} satisfies Config;
-
-export default withArdoGitHubPages(config, { basename: "/" });
+} satisfies ReactRouterConfig;

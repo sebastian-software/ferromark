@@ -1,5 +1,6 @@
 ---
 title: Start with Rust
+description: Render your first document, then choose the API your pipeline needs.
 order: 1
 ---
 
@@ -16,7 +17,7 @@ structure. Requires **Rust 1.95 or newer**.
 
 ## Install
 
-```sh
+```sh title="Install the crate"
 cargo add ferromark
 ```
 
@@ -25,7 +26,7 @@ Read the [migration guide](https://github.com/sebastian-software/ferromark/blob/
 
 Save this in `src/main.rs` and run `cargo run`:
 
-```rust
+```rust title="src/main.rs"
 fn main() -> Result<(), ferromark::ParseError> {
     let html = ferromark::to_html("Hello, **world**!")?;
     assert_eq!(html, "<p>Hello, <strong>world</strong>!</p>\n");

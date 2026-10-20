@@ -1,8 +1,8 @@
-import type { EntryContext } from "react-router";
+import type { EntryContext } from "ardo/router";
 
+import { renderToReadableStream } from "ardo/react-dom/server";
+import { ServerRouter } from "ardo/router";
 import { isbot } from "isbot";
-import { renderToReadableStream } from "react-dom/server";
-import { ServerRouter } from "react-router";
 
 /* eslint-disable max-params -- React Router requires this four-argument entry point. */
 // oxlint-disable-next-line max-params -- React Router requires this four-argument entry point.

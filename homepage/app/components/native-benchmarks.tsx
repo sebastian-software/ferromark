@@ -9,6 +9,33 @@ export { benchmarks as nativeBenchmarks };
 export type NativeBenchmarkPlatform = (typeof benchmarks.platforms)[number];
 export type NativeBenchmarkFigure = NativeBenchmarkPlatform["figures"][number];
 
+/** Relative throughput within one platform's five-engine agreement subset. */
+export function nativeBenchmarkBars(
+  lifecycle: "fresh" | "reuse",
+  platform: NativeBenchmarkPlatform,
+) {
+  return [
+    { id: "ferromark", label: "Ferromark v2", value: 1, displayValue: "1.00×", highlight: true },
+    ...platform.figures
+      .filter((figure) => figure.documents === platform.documents.fiveEngineAgreement)
+      .map((figure) => ({
+        id: figure.id,
+        label: figure.label,
+        value: 1 / figure[lifecycle],
+        displayValue: `${(1 / figure[lifecycle]).toFixed(2)}×`,
+      })),
+  ];
+}
+
+export function NativeBenchmarkConditions({ platform }: { platform: NativeBenchmarkPlatform }) {
+  return (
+    <>
+      Measured {platform.measured} · {platform.machine} · revision <code>{platform.revision}</code>.{" "}
+      {platform.documents.fiveEngineAgreement} documents with equivalent HTML across five engines.
+    </>
+  );
+}
+
 /** The landing page states one decimal: 2.07 becomes "2.1×". */
 export function formatSpeed(value: number): string {
   return `${value.toFixed(1)}×`;

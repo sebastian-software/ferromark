@@ -1,84 +1,58 @@
-# Ferromark homepage
+# Ferromark website
 
-This private workspace contains the React Router and Ardo site for Ferromark.
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for repository checks and the boundaries
-between the native engine, Node.js bindings, and website.
+The homepage and documentation use the shared Ferra system from
+`ferramenta-family/ferra`: IBM Plex Sans headings, system-ui body text, paper and
+metal materials, product marks, and the shared workshop and footer components.
+`app/styles/site.css` maps Ardo's public theme variables. `app/styles/docs.css`
+adapts its documented CSS hooks for normal document scrolling and the reading
+layout. The site uses the light theme throughout.
 
-## Inherited family system
+The homepage combines a Markdown/HTML specimen, publishing notes, an output-policy
+table, the current measured library comparison, document analysis, and Rust/Node.js
+entry points. Benchmark values and evidence links come from the existing data
+files. All current documentation routes remain in the route and navigation tables.
 
-The visual authority is the existing
-[Ferramenta design system](https://github.com/sebastian-software/ferramenta/blob/main/DESIGN.md),
-implemented by `ferramenta-family@2.0.0`. The package owns its tokens, Barlow
-Condensed fonts, textures, member icons, landing components, and site chrome.
-Consult the package README and its kit before adding a shared pattern. Keep
-system changes in the family package rather than maintaining a second local
-token specification.
+## Development dependencies
 
-`app/root.tsx` loads Ardo styles, then the family tokens, fonts, theme, landing
-styles, and docs styles. Site styles follow; family chrome loads last so it wins
-selector ties. Keep docs styles after the theme and landing styles before local
-styles. The root also preloads the package's Barlow Condensed 700 font.
+This draft migration uses sibling source checkouts while Ardo 6 and the remaining
+Ferra material refinements are prepared. It is not ready for standalone CI or
+deployment. Arrange the repositories as siblings:
 
-The family header and footer sit outside `ArdoRoot`, with `handle.chrome = false`
-disabling Ardo's own chrome. Documentation uses `fam-docs-shell`, `SiteMenu`, and
-the `site-search` slot while retaining Ardo's sidebar, reading layout, and theme
-toggle. Only the landing content uses `fam-page`, which pins its authored scheme.
-The home route uses `ProjectHero`, `Relations`, and the `WorkWithUs` close.
-Member icons and their provenance sidecars come from the package.
+```text
+workspace/
+  ardo/
+  ferramenta/
+  ferromark/
+```
 
-## Transform showcase
+Use the Ardo commit and shared-library requirements recorded in
+[ARDO-V6-NOTES.md](ARDO-V6-NOTES.md). Build both dependencies before installing
+the site. The lockfile contains relative source paths; replace those dependencies
+with reviewed release versions and regenerate the lockfile before merging.
 
-`app/components/transform-showcase.tsx` presents four rocket stages: CommonMark,
-GFM, FFM, and Afterburner, the optional processing stage before rendering. The
-adjacent list explains and links to each capability. Keep the illustration
-compact and the fins unmarked; it does not define a new family component. The
-rocket labels read CommonMark, GitHub (GFM), Ferro (FFM), and Afterburner, with
-bright metal letter faces for readability and a static 10-degree clockwise tilt.
-
-`app/assets/rocket-stages.webp` is a photorealistic transparent cutout generated
-with the built-in image tool, using the package's Ferromark icon as the material
-and lighting reference. Its exact generation and edit prompts and provenance live in
-`app/assets/rocket-stages.webp.json`. Preserve the native alpha and the family's
-forged steel, worn edges, and orange-hot accent when replacing it. The shipping
-asset is resized to 864 pixels high and encoded as WebP quality 88 with lossless
-alpha; its displayed height is 288 pixels on desktop and 240 pixels on mobile.
-
-The separate "Afterburner in action" demo groups typography, GitHub-reference,
-and emoji controls within that fourth capability. These controls change the
-example output; the four product stages stay assembled. Afterburner names the
-processing stage, while public Rust and Node.js API names remain unchanged.
-
-All three controls start enabled. A three-bit key selects one of eight frozen
-outputs from `app/data/transform-samples.json`: typography first, GitHub
-references second, emoji third. The sample records Ferromark 3.0.0 and source
-commit `2b00ce0f`; its source and outputs were rendered with the real `ferromark`
-and `ferromark-transforms` crates. Browser controls only select those outputs.
-The preview accepts no visitor input or remote HTML.
-
-When changing the sample, regenerate every combination with the native engine,
-retain the version and source commit, and compare all eight outputs before
-updating the data. Keep button pressed states and preview output in agreement.
-The controls expose `aria-pressed` and a preview relationship; the
-result announces changes politely. The rocket has descriptive alternative text
-and no motion; its capability names and explanations also appear as live text.
-
-The Rust and Node.js guides document opt-in passes in order, protected syntax,
-an explicit GitHub repository, and the bundled emoji dictionary. Built-in passes
-are available in both runtimes; arbitrary custom passes use Rust's API. The
-Remark comparison describes a processing shape, without claiming plugin
-compatibility. The FFM section presents publishing benefits and links to its
-guide; benchmark and conformance sections retain their measured evidence.
-
-## Development and checks
-
-Run these commands from `homepage/`:
+From each dependency's repository root, use its declared package manager:
 
 ```sh
-pnpm install --frozen-lockfile
+# ardo/
+CI=true pnpm install --frozen-lockfile
+pnpm build
+
+# ferramenta/
+CI=true pnpm install --frozen-lockfile
+pnpm build:package
+```
+
+Then run these commands from `ferromark/homepage/`:
+
+```sh
+CI=true pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Before shipping website changes, run:
+After changing a source dependency, rebuild it and refresh the site's copied
+packages with `CI=true pnpm install --force --frozen-lockfile`.
+
+## Validation
 
 ```sh
 pnpm format:check
@@ -88,7 +62,11 @@ pnpm run audit
 pnpm build
 ```
 
-Use `pnpm format` when formatting is needed. The build prerenders the site,
-verifies routes, navigation, and benchmark content, and runs the benchmark
-platform tests. Preserve generated benchmark data and upstream attribution;
-follow the repository's benchmark workflow when measured content needs updating.
+The build verifies every prerendered route, current release metadata, family
+navigation, document-analysis search records, and all current benchmark values
+and evidence links. It also runs the existing benchmark platform tests.
+
+The benchmark guide's historical tables remain generated by
+`scripts/publish-native-readme.py`. Its interactive chart and import sit outside
+the generated section and read the same archived platform data. Fresh/reuse and
+platform controls change the selected view; they do not modify measurements.
