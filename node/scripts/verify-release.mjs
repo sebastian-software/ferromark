@@ -11,10 +11,7 @@ const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
 
 if (!cargoVersion || cargoVersion !== packageJson.version) {
   throw new Error(
-    "Rust/npm version mismatch: Cargo=" +
-      (cargoVersion ?? "missing") +
-      ", npm=" +
-      packageJson.version,
+    `Rust/npm version mismatch: Cargo=${cargoVersion ?? "missing"}, npm=${packageJson.version}`,
   );
 }
 
@@ -27,7 +24,7 @@ for (const [name, manifest] of [
   const version = manifest.match(/^version = "([^"]+)"/m)?.[1];
   if (version !== packageJson.version) {
     throw new Error(
-      name + " version mismatch: Cargo=" + (version ?? "missing") + ", npm=" + packageJson.version,
+      `${name} version mismatch: Cargo=${version ?? "missing"}, npm=${packageJson.version}`,
     );
   }
 }
@@ -35,17 +32,17 @@ for (const [name, manifest] of [
 const transformCoreRequirement = transformsCargo.match(
   /^ferromark = \{ version = "([^"]+)", path = "\.\." \}$/m,
 )?.[1];
-if (transformCoreRequirement !== "=" + packageJson.version) {
+if (transformCoreRequirement !== `=${packageJson.version}`) {
   throw new Error("Transform crate does not pin the matching core version");
 }
 
 const targets = Object.keys(packageJson.optionalDependencies).map((name) => {
-  const prefix = packageJson.name + "-";
-  if (!name.startsWith(prefix)) throw new Error("Unexpected platform package: " + name);
+  const prefix = `${packageJson.name}-`;
+  if (!name.startsWith(prefix)) throw new Error(`Unexpected platform package: ${name}`);
   return name.slice(prefix.length);
 });
 if (targets.length !== 7 || new Set(targets).size !== targets.length) {
-  throw new Error("Expected seven unique platform packages, found " + targets.length);
+  throw new Error(`Expected seven unique platform packages, found ${targets.length}`);
 }
 
 for (const target of targets) {
@@ -53,23 +50,23 @@ for (const target of targets) {
   const platformPackage = JSON.parse(
     await readFile(path.join(platformDir, "package.json"), "utf8"),
   );
-  if (platformPackage.name !== packageJson.name + "-" + target) {
-    throw new Error("Unexpected platform package name: " + platformPackage.name);
+  if (platformPackage.name !== `${packageJson.name}-${target}`) {
+    throw new Error(`Unexpected platform package name: ${platformPackage.name}`);
   }
   if (platformPackage.version !== packageJson.version) {
     throw new Error(
-      "Platform package version mismatch: " + platformPackage.name + "@" + platformPackage.version,
+      `Platform package version mismatch: ${platformPackage.name}@${platformPackage.version}`,
     );
   }
   // The workspace reference resolves to the sidecar version while packing.
   if (packageJson.optionalDependencies[platformPackage.name] !== "workspace:*") {
-    throw new Error("Main package does not reference " + platformPackage.name + " as workspace:*");
+    throw new Error(`Main package does not reference ${platformPackage.name} as workspace:*`);
   }
   if (!options.metadataOnly) {
-    const file = path.join(platformDir, "ferromark." + target + ".node");
+    const file = path.join(platformDir, `ferromark.${target}.node`);
     const info = await stat(file);
     if (!info.isFile() || info.size === 0) {
-      throw new Error("Invalid native binary: " + file);
+      throw new Error(`Invalid native binary: ${file}`);
     }
   }
 }
@@ -79,18 +76,13 @@ if (options.tag) {
     /^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-rc\.(?:0|[1-9]\d*))?$/;
   if (!releaseTagPattern.test(options.tag) || options.tag.slice(1) !== packageJson.version) {
     throw new Error(
-      "Release tag " + options.tag + " does not match package version " + packageJson.version,
+      `Release tag ${options.tag} does not match package version ${packageJson.version}`,
     );
   }
 }
 
 console.log(
-  "Verified ferromark " +
-    packageJson.version +
-    " with " +
-    targets.length +
-    " platform packages" +
-    (options.metadataOnly ? " (metadata only)" : ""),
+  `Verified ferromark ${packageJson.version} with ${targets.length} platform packages${options.metadataOnly ? " (metadata only)" : ""}`,
 );
 
 function parseOptions(args) {
@@ -101,10 +93,10 @@ function parseOptions(args) {
       options.metadataOnly = true;
     } else if (value === "--root" || value === "--tag") {
       const argument = args[++index];
-      if (!argument) throw new Error(value + " requires a value");
+      if (!argument) throw new Error(`${value} requires a value`);
       options[value === "--root" ? "root" : "tag"] = argument;
     } else {
-      throw new Error("Unknown argument: " + value);
+      throw new Error(`Unknown argument: ${value}`);
     }
   }
   if (options.metadataOnly && !options.tag) {
