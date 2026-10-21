@@ -72,23 +72,24 @@ fn parse_within_budget(source: &str) -> Duration {
 }
 
 fn assert_linear(name: &str, unit: &str) {
-    // Best of four, so a scheduling stall on a busy runner has to hit every
-    // repetition to fail the build.
+    // Five paired samples make an isolated scheduling stall insufficient to
+    // fail the build.
     let (small_source, large_source) = (repeat_to(unit, 32 * 1024), repeat_to(unit, 128 * 1024));
-    let (small, large) = timing::best_of_pairs(
-        4,
-        8.0,
+    let estimate = timing::median_of_pairs(
+        5,
         || parse_within_budget(&small_source),
         || parse_within_budget(&large_source),
     );
 
-    let ratio = large.as_secs_f64() / small.as_secs_f64().max(1e-9);
+    let ratio = estimate.ratio;
     // 4x the input. Linear costs about 4x the time; quadratic costs 16x,
     // which is what every one of these measured before the fix.
     assert!(
         ratio < 8.0,
-        "{name}: 128 KiB took {large:?} against {small:?} for 32 KiB (x{ratio:.1}); \
-         linear is about x4, quadratic about x16"
+        "{name}: median paired ratio was x{ratio:.1} (median timings: {:?} for 128 KiB, {:?} for 32 KiB); \
+         linear is about x4, quadratic about x16",
+        estimate.large,
+        estimate.small
     );
 }
 

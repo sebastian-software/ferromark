@@ -145,22 +145,24 @@ fn assert_linear(name: &str, options: &ParserOptions, shape: impl Fn(usize) -> S
     // One shape is timed at a time; the parses that only check output are
     // too short to disturb them.
     let (small_source, large_source) = (shape(SMALL), shape(LARGE));
-    let (small, large) = timing::best_of_pairs(
-        3,
-        8.0,
+    let estimate = timing::median_of_pairs(
+        5,
         || parse_within_budget(&small_source, options),
         || parse_within_budget(&large_source, options),
     );
 
     assert!(
-        large < SANITY,
-        "{name}: 128 KiB took {large:?}, past the {SANITY:?} bound on its own"
+        estimate.large < SANITY,
+        "{name}: 128 KiB took {:?}, past the {SANITY:?} bound on its own",
+        estimate.large
     );
-    let ratio = large.as_secs_f64() / small.as_secs_f64().max(1e-9);
+    let ratio = estimate.ratio;
     assert!(
         ratio < 8.0,
-        "{name}: 128 KiB took {large:?} against {small:?} for 32 KiB (x{ratio:.1}); \
-         linear is about x4, quadratic about x16"
+        "{name}: median paired ratio was x{ratio:.1} (median timings: {:?} for 128 KiB, {:?} for 32 KiB); \
+         linear is about x4, quadratic about x16",
+        estimate.large,
+        estimate.small
     );
 }
 

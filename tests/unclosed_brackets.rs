@@ -77,14 +77,12 @@ fn parse_within_budget(source: &str, options: &ParserOptions) -> Duration {
     elapsed
 }
 
-/// The 32 KiB and 128 KiB runs of `unit`, best of four each, so a
-/// scheduling stall on a busy runner has to hit every repetition to fail
-/// the build.
-fn small_and_large(unit: &str, options: &ParserOptions) -> (Duration, Duration) {
+/// The 32 KiB and 128 KiB runs of `unit`, measured in five paired samples so
+/// an isolated scheduling stall cannot fail the build.
+fn small_and_large(unit: &str, options: &ParserOptions) -> timing::TimingEstimate {
     let (small, large) = (repeat_to(unit, 32 * 1024), repeat_to(unit, 128 * 1024));
-    timing::best_of_pairs(
-        4,
-        8.0,
+    timing::median_of_pairs(
+        5,
         || parse_within_budget(&small, options),
         || parse_within_budget(&large, options),
     )
@@ -96,15 +94,17 @@ fn a_run_of_unclosed_brackets_costs_linear_time() {
     // opener, an image opener, a nested opener, a footnote-looking opener,
     // and an opener with text after it.
     for unit in ["[ ", "[", "![ ", "[[ ", "[^ ", "[a "] {
-        let (small, large) = small_and_large(unit, &ParserOptions::gfm());
+        let estimate = small_and_large(unit, &ParserOptions::gfm());
 
-        let ratio = large.as_secs_f64() / small.as_secs_f64().max(1e-9);
+        let ratio = estimate.ratio;
         // 4x the input. Linear costs about 4x the time; quadratic costs
         // 16x, which is what every one of these measured before the fix.
         assert!(
             ratio < 8.0,
-            "{unit:?}: 128 KiB took {large:?} against {small:?} for 32 KiB (x{ratio:.1}); \
-             linear is about x4, quadratic about x16"
+            "{unit:?}: median paired ratio was x{ratio:.1} (median timings: {:?} for 128 KiB, {:?} for 32 KiB); \
+             linear is about x4, quadratic about x16",
+            estimate.large,
+            estimate.small
         );
     }
 }

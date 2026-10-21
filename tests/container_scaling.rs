@@ -12,9 +12,9 @@
 //!
 //! Heap use is measured through a counting allocator, so the memory guard
 //! holds on every platform; time is compared between two sizes of the same
-//! shape, best of three, so a slow runner cannot fail it and a quadratic
-//! regression cannot pass it. The two sizes are timed in alternation, one
-//! measurement at a time (see `support/timing.rs`).
+//! shape using the median of five paired samples, so an isolated slow sample
+//! cannot fail it and a quadratic regression cannot pass it. The two sizes
+//! are timed in alternation, one measurement at a time (see `support/timing.rs`).
 
 // The counting allocator is the one `unsafe` item in the test suite: it
 // forwards every call to the system allocator unchanged and only keeps two
@@ -98,14 +98,14 @@ fn assert_linear(label: &str, small: &str, large: &str, options: &ParserOptions)
         (3.9..=4.1).contains(&size_ratio),
         "{label}: the large input should be 4x, got x{size_ratio:.2}"
     );
-    let (small_time, large_time) = timing::best_of_pairs(
-        3,
-        8.0,
+    let estimate = timing::median_of_pairs(
+        5,
         || time_once(small, options),
         || time_once(large, options),
     );
-    let small_time = small_time.max(Duration::from_millis(1));
-    let ratio = large_time.as_secs_f64() / small_time.as_secs_f64();
+    let small_time = estimate.small;
+    let large_time = estimate.large;
+    let ratio = estimate.ratio;
     assert!(
         ratio < 8.0,
         "{label}: {} bytes took {small_time:?}, {} bytes took {large_time:?} (x{ratio:.1})",
