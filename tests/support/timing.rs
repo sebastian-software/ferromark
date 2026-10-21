@@ -1,12 +1,10 @@
-//! Timing for the tests that pin a shape to linear cost.
+//! Timing for tests that pin a shape to a relative cost.
 //!
-//! Each of those compares the time of a small input with the time of a
-//! larger one. Timed one after the other, a burst of load from a neighboring
-//! test, or from another job on a shared runner, lands on one side of the
-//! ratio only; that pushed linear shapes past x8 on macOS runners. The two
-//! inputs are therefore timed in alternation, with the order swapped every
-//! round as `emphasis_pairing.rs` does, and only one measurement runs at a
-//! time within a test binary.
+//! Each guard compares two inputs whose expected relative costs are known. A
+//! burst of runner load can distort a single wall-clock sample, so each size is
+//! measured in five alternating pairs and the median paired ratio is used. For
+//! a four-times-larger input, linear work stays near x4 and quadratic work near
+//! x16.
 
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
@@ -20,35 +18,57 @@ pub fn measuring() -> MutexGuard<'static, ()> {
     MEASURING.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// The best of `rounds` timings of each input, taken in alternation, so a
-/// scheduling stall on a busy runner has to hit every repetition of a side
-/// to move the ratio.
-///
-/// While `large / small` is still at or above `bound`, up to `rounds` more
-/// rounds follow. Each one can only lower the two minimums toward the true
-/// cost: a linear shape settles near its own ratio, and a quadratic one
-/// stays past the bound however long it is timed.
-pub fn best_of_pairs(
+/// Measures each input in alternating order and returns median durations plus
+/// the median of the paired large-to-small ratios. An odd number of samples is
+/// required so the ratio comes from one observed pair rather than an average
+/// across samples that may have seen different runner load.
+pub fn median_of_pairs(
     rounds: usize,
-    bound: f64,
     mut small: impl FnMut() -> Duration,
     mut large: impl FnMut() -> Duration,
-) -> (Duration, Duration) {
+) -> TimingEstimate {
+    assert!(rounds > 0, "at least one timing pair is required");
+    assert_eq!(rounds % 2, 1, "the number of timing pairs must be odd");
+
     let _measuring = measuring();
-    let (mut small_best, mut large_best) = (Duration::MAX, Duration::MAX);
-    for round in 0..2 * rounds {
-        if round >= rounds && ratio(large_best, small_best) < bound {
-            break;
-        }
-        if round % 2 == 0 {
-            small_best = small_best.min(small());
-            large_best = large_best.min(large());
+    let mut samples = Vec::with_capacity(rounds);
+    for round in 0..rounds {
+        let pair = if round % 2 == 0 {
+            let small = small();
+            let large = large();
+            (small, large)
         } else {
-            large_best = large_best.min(large());
-            small_best = small_best.min(small());
-        }
+            let large = large();
+            let small = small();
+            (small, large)
+        };
+        samples.push(pair);
     }
-    (small_best, large_best)
+
+    let mut small_durations: Vec<_> = samples.iter().map(|(small, _)| *small).collect();
+    let mut large_durations: Vec<_> = samples.iter().map(|(_, large)| *large).collect();
+    let mut ratios: Vec<_> = samples
+        .iter()
+        .map(|(small, large)| ratio(*large, *small))
+        .collect();
+    small_durations.sort_unstable();
+    large_durations.sort_unstable();
+    ratios.sort_unstable_by(f64::total_cmp);
+    let middle = rounds / 2;
+
+    TimingEstimate {
+        small: small_durations[middle],
+        large: large_durations[middle],
+        ratio: ratios[middle],
+    }
+}
+
+/// Median timings for each input and the median ratio from paired samples.
+#[derive(Debug, Clone, Copy)]
+pub struct TimingEstimate {
+    pub small: Duration,
+    pub large: Duration,
+    pub ratio: f64,
 }
 
 fn ratio(large: Duration, small: Duration) -> f64 {

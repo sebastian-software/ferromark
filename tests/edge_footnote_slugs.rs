@@ -8,12 +8,15 @@
 #[path = "support/edge.rs"]
 mod edge_support;
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use edge_support::render;
 use ferromark::allocator::Allocator;
 use ferromark::parser::{Parser, ParserOptions};
 use ferromark::renderer::{HtmlRenderer, HtmlRendererOptions};
+
+#[path = "support/timing.rs"]
+mod timing;
 
 fn semantic(source: &str) -> String {
     render(
@@ -162,17 +165,14 @@ fn many_footnotes_cost_linear_time() {
         start.elapsed()
     };
 
-    // One render each is at the mercy of a shared CI runner's scheduler: a
-    // single preemption during the large render has failed this guard while
-    // the ratio was fine. Take the best of a few renders per size, as the
-    // other linearity guards do, so noise has to hit every repetition.
-    let best_of = |source: &str| (0..3).map(|_| measure(source)).min().unwrap_or_default();
     let small_source = build(2_000);
     let large_source = build(8_000);
-    let small = best_of(&small_source).max(Duration::from_micros(1));
-    let large = best_of(&large_source);
+    let estimate = timing::median_of_pairs(5, || measure(&small_source), || measure(&large_source));
     assert!(
-        large < small * 8,
-        "8,000 footnotes took {large:?} against {small:?} for 2,000"
+        estimate.ratio < 8.0,
+        "median paired ratio was x{:.1} (median timings: {:?} for 8,000 footnotes, {:?} for 2,000)",
+        estimate.ratio,
+        estimate.large,
+        estimate.small
     );
 }

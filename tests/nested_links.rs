@@ -90,17 +90,17 @@ fn outcome_once(source: &str, options: &ParserOptions) -> (Duration, bool) {
     (elapsed, parsed)
 }
 
-/// The best of three bounded parses of each document, timed in alternation
-/// (see `support/timing.rs`) so a burst of load cannot favor one of them,
-/// and timed longer while `second / first` has not come under `bound`.
-fn paired_within_budget(first: &str, second: &str, bound: f64) -> (Duration, Duration) {
+/// The median of five paired bounded parses of each document, timed in
+/// alternation (see `support/timing.rs`) so an isolated load spike cannot
+/// favor one of them.
+fn paired_within_budget(first: &str, second: &str) -> timing::TimingEstimate {
     let options = ParserOptions::gfm();
     let parse = |source: &str| {
         let (elapsed, parsed) = outcome_once(source, &options);
         assert!(parsed, "nested brackets should parse to a document");
         elapsed
     };
-    timing::best_of_pairs(3, bound, || parse(first), || parse(second))
+    timing::median_of_pairs(5, || parse(first), || parse(second))
 }
 
 fn nested_inline_links(depth: usize) -> String {
@@ -161,10 +161,6 @@ fn parse_uncapped_within_budget(source: String) -> Duration {
     best
 }
 
-fn ratio(large: Duration, small: Duration) -> f64 {
-    large.as_secs_f64() / small.as_secs_f64().max(1e-9)
-}
-
 #[test]
 fn deeply_nested_inline_links_finish_in_bounded_time() {
     parse_within_budget(nested_inline_links(64));
@@ -192,12 +188,13 @@ fn nested_bracket_cost_grows_far_slower_than_it_doubles() {
     // Each added level used to double the work. Sixteen more levels would
     // therefore cost 65536x; anything under 100x proves the doubling is
     // gone without pinning an absolute time on a shared runner.
-    let (shallow, deep) =
-        paired_within_budget(&nested_inline_links(32), &nested_inline_links(48), 100.0);
-    let shallow = shallow.max(Duration::from_micros(1));
+    let estimate = paired_within_budget(&nested_inline_links(32), &nested_inline_links(48));
     assert!(
-        deep < shallow * 100,
-        "depth 48 took {deep:?} against {shallow:?} at depth 32; the doubling is back"
+        estimate.ratio < 100.0,
+        "depth 48 took {:?} against {:?} at depth 32 (x{:.1}); the doubling is back",
+        estimate.large,
+        estimate.small,
+        estimate.ratio
     );
 }
 
@@ -298,17 +295,18 @@ fn nested_link_groups_cost_the_same_per_byte_at_any_depth() {
     // per-level probe made the cost per byte grow with the depth, so the
     // deep one measured 53 ms against 9 ms for the shallow one at 32 KiB;
     // parsing each level once makes them cost the same per byte.
-    let (shallow, deep) = paired_within_budget(
+    let estimate = paired_within_budget(
         &nested_link_groups(25, 32 * 1024),
         &nested_link_groups(100, 32 * 1024),
-        3.0,
     );
 
-    let ratio = ratio(deep, shallow);
+    let ratio = estimate.ratio;
     assert!(
         ratio < 3.0,
-        "depth 100 took {deep:?} against {shallow:?} at depth 25 for the same 32 KiB (x{ratio:.1}); \
-         the same cost per byte is about x1, the per-level probe about x6"
+        "median paired ratio was x{ratio:.1} for depth 100 vs depth 25 (median timings: {:?} and {:?}); \
+         the same cost per byte is about x1, the per-level probe about x6",
+        estimate.large,
+        estimate.small
     );
 }
 
@@ -329,17 +327,18 @@ fn a_run_of_openers_with_one_closer_costs_linear_time() {
     // `[`xN `a](u)`: one bracket closes, so every opener before it walked to
     // the end of the content looking for its own `]`. 100 KB took 2.0 s and
     // grew x4 for every x2 of input.
-    let (small, large) = paired_within_budget(
+    let estimate = paired_within_budget(
         &("[".repeat(32 * 1024) + "a](u)"),
         &("[".repeat(128 * 1024) + "a](u)"),
-        8.0,
     );
 
-    let ratio = ratio(large, small);
+    let ratio = estimate.ratio;
     assert!(
         ratio < 8.0,
-        "128 Ki openers took {large:?} against {small:?} for 32 Ki (x{ratio:.1}); \
-         linear is about x4, quadratic about x16"
+        "median paired ratio was x{ratio:.1} for 128 Ki vs 32 Ki (median timings: {:?} and {:?}); \
+         linear is about x4, quadratic about x16",
+        estimate.large,
+        estimate.small
     );
 }
 
