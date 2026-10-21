@@ -401,7 +401,12 @@ pub(crate) fn prepare_jsx_document(
 ) -> Result<ParsedJsxDocument> {
     let resolved = core_options(options)?;
     let defaults = render_defaults(&resolved);
-    let tree = prepare_tree(markdown.to_string(), resolved, format, track_references)?;
+    let tree = prepare_tree(
+        markdown.try_into_string()?,
+        resolved,
+        format,
+        track_references,
+    )?;
     Ok(ParsedJsxDocument { tree, defaults })
 }
 

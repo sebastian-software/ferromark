@@ -2,6 +2,57 @@ use super::*;
 use crate::ast::Node;
 
 #[test]
+fn heap_owned_memo_tables_drop_before_arena_reset() {
+    let mut allocator = Allocator::new();
+    let mut bracket_source = "[".repeat(64);
+    bracket_source.push('a');
+    bracket_source.push_str(&"]".repeat(64));
+    let link_source = "[outer [inner](u)](u)";
+    let math_source = "$a$";
+    let mdx_source = "<A><A><A>{value}</A></A></A>";
+    let math_options = ParserOptions {
+        math: true,
+        ..ParserOptions::default()
+    };
+
+    let cases = [
+        (bracket_source.as_str(), ParserOptions::default(), false),
+        (link_source, ParserOptions::default(), false),
+        (math_source, math_options, true),
+        (mdx_source, ParserOptions::mdx(), true),
+    ];
+
+    for (source, options, extension) in cases {
+        for _ in 0..16 {
+            let (live_before, created_before) = memo_table_counts();
+            let extension_entries_before = extension_memo_entries();
+            {
+                let _document = Parser::with_options(&allocator, source, options.clone())
+                    .parse()
+                    .expect("memo regression input should parse");
+                let (live_after, created_after) = memo_table_counts();
+
+                assert!(
+                    created_after > created_before,
+                    "the input did not allocate a memo table: {source:?}"
+                );
+                assert_eq!(
+                    live_after, live_before,
+                    "heap-owned memo tables must be dropped before the next arena reset: {source:?}"
+                );
+                if extension {
+                    assert!(
+                        extension_memo_entries() > extension_entries_before,
+                        "the extension input did not insert a memo entry: {source:?}"
+                    );
+                }
+            }
+            allocator.reset();
+        }
+    }
+}
+
+#[test]
 fn find_type1_end_tag_matches_any_raw_text_tag_case_insensitively() {
     assert_eq!(
         super::html::find_type1_end_tag(b"end </SCRIPT> tail", 0),

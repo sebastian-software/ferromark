@@ -168,7 +168,7 @@ pub fn to_html_packed<'env>(
         typography,
         passes,
     );
-    render_one_shot(&markdown, options, |html| js_string(env, html))
+    render_one_shot(markdown.try_as_str()?, options, |html| js_string(env, html))
 }
 
 /// Internal to the `ferromark` facade: `toHtmlBuffer` with packed options.
@@ -193,7 +193,7 @@ pub fn to_html_buffer_packed(
         typography,
         passes,
     );
-    render_one_shot(&markdown, options, html_buffer)
+    render_one_shot(markdown.try_as_str()?, options, html_buffer)
 }
 
 /// Internal to the `ferromark` facade: `transform` with packed options.
@@ -218,7 +218,7 @@ pub fn transform_packed(
         typography,
         passes,
     );
-    render_document(&markdown, core_options(Some(options))?, None)
+    render_document(markdown.try_as_str()?, core_options(Some(options))?, None)
 }
 
 /// Internal to the `ferromark` facade: `toHtmlWithRenderer` with packed
@@ -246,7 +246,12 @@ pub fn to_html_with_renderer_packed(
         typography,
         passes,
     );
-    Ok(render_document(&markdown, core_options(Some(options))?, Some(renderer))?.html)
+    Ok(render_document(
+        markdown.try_as_str()?,
+        core_options(Some(options))?,
+        Some(renderer),
+    )?
+    .html)
 }
 
 /// Internal to the `ferromark` facade: `transformWithRenderer` with packed
@@ -274,5 +279,9 @@ pub fn transform_with_renderer_packed(
         typography,
         passes,
     );
-    render_document(&markdown, core_options(Some(options))?, Some(renderer))
+    render_document(
+        markdown.try_as_str()?,
+        core_options(Some(options))?,
+        Some(renderer),
+    )
 }

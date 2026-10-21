@@ -70,16 +70,17 @@
 //! data pointer is null, and a view out of bounds of a shrunk resizable
 //! buffer. Input above `MAX_BYTES` (`u32::MAX`) fails with a `RangeError`
 //! (code `ERR_OUT_OF_RANGE`), because the parser stores offsets as `u32`; no
-//! JavaScript string can be that long, so only bytes need the check.
+//! JavaScript string can be that long. Lossy decoding can expand the bytes,
+//! so decoded text above the same limit also fails with that `RangeError`.
 //!
 //! ## Reading and copying
 //!
 //! A `&str` promises valid UTF-8 for as long as it lives, and the parser and
 //! renderer rely on that promise, including in `unsafe` code. JavaScript owns
 //! a `Uint8Array`'s memory, and code outside this call can change it: a
-//! highlighter the export calls, an option getter, a worker writing a
-//! `SharedArrayBuffer`, or native code that still fills the buffer, such as an
-//! unfinished asynchronous `fs.read`. So the text is never a borrow of that
+//! highlighter the export calls, an option getter, a worker using
+//! `Atomics` to write a `SharedArrayBuffer`, or native code that still fills
+//! the buffer, such as an unfinished asynchronous `fs.read`. So the text is never a borrow of that
 //! memory:
 //!
 //! 1. **The bytes are read when the export first uses them**, after napi-rs has
@@ -89,24 +90,29 @@
 //!    dereference asks N-API for the view's current data and length, and
 //!    caches the text for the rest of the call.
 //! 2. **They are copied, then validated.** The copy is the call's own memory,
-//!    so nothing that runs later, and nothing another thread does meanwhile,
-//!    can change the text the parser sees. Bytes of a plain `ArrayBuffer`,
-//!    which `napi_is_arraybuffer` confirms, are copied with one `memcpy`: only
-//!    this thread's JavaScript can write them, and none runs during the copy.
-//!    Native code that races on the same buffer can at most change which
-//!    bytes are copied. Bytes of a `SharedArrayBuffer`, for which V8 answers
-//!    false, and of anything else the check does not confirm, are copied with
-//!    relaxed atomic loads, because Rust allows memory that another thread
-//!    writes at the same time to be read only through atomics. A growable
-//!    `SharedArrayBuffer` never shrinks, so its first `length` bytes stay
-//!    readable for the copy. Either copy may mix bytes from before and after a
-//!    concurrent write, and is then validated like any other input: valid
-//!    UTF-8 becomes the text as it is, and anything else the text with its
-//!    replacements.
+//!    so nothing that runs later can change the text the parser sees. Bytes of
+//!    a plain `ArrayBuffer`, which `napi_is_arraybuffer` confirms, are copied
+//!    with one `memcpy`. JavaScript cannot run on this thread during the copy,
+//!    but native work on another thread can still write the same storage. The
+//!    caller must ensure any native write has finished before passing the
+//!    view, whether its backing store is plain or shared; in particular, wait
+//!    for an asynchronous native operation such as `fs.read` to complete. The
+//!    addon cannot detect or synchronize with an in-flight native write, and
+//!    a non-atomic native write racing with either copy is undefined behavior
+//!    under Rust's memory model. Atomic reader loads do not make a native
+//!    writer safe. Bytes of a `SharedArrayBuffer`, for which V8 answers false,
+//!    and of anything else the check does not confirm, are copied with relaxed
+//!    atomic loads. A JavaScript worker may write shared bytes concurrently
+//!    only with `Atomics` operations. A growable `SharedArrayBuffer` never
+//!    shrinks, so its first `length` bytes stay readable for the copy. The
+//!    shared-memory copy may mix bytes from before and after an atomic write,
+//!    and is then validated like any other input: valid UTF-8 becomes the text
+//!    as it is, and anything else the text with its replacements.
 //! 3. **The copy's memory is reserved fallibly**, with `try_reserve_exact`, as
 //!    the string conversion reserves its buffer. If the allocation fails, the
-//!    export throws an error instead of aborting the process. Decoding invalid
-//!    input allocates as `String::from_utf8_lossy` does.
+//!    export throws an error instead of aborting the process. Before decoding
+//!    invalid input, the addon measures its lossy UTF-8 output and rejects it
+//!    if it would exceed the parser's `u32` byte-offset bound.
 //! 4. **The handles stay inside the call.** `Utf8Input` carries the lifetime of
 //!    the call's argument handles, so it cannot be moved into anything that
 //!    outlives the export, where the recorded handles would dangle.
@@ -117,7 +123,6 @@
 use std::cell::OnceCell;
 use std::ffi::CString;
 use std::marker::PhantomData;
-use std::ops::Deref;
 use std::ptr;
 use std::sync::atomic::{AtomicU8, Ordering};
 
@@ -161,17 +166,33 @@ enum Source {
 struct Bytes {
     env: sys::napi_env,
     value: sys::napi_value,
-    text: OnceCell<String>,
+    text: OnceCell<std::result::Result<String, String>>,
 }
 
 impl Utf8Input<'_> {
-    /// The text, owned.
-    pub fn into_string(self) -> String {
+    /// The decoded text, borrowed for this call.
+    pub fn try_as_str(&self) -> Result<&str> {
+        match &self.source {
+            Source::Text(text) => Ok(text),
+            Source::Bytes(bytes) => bytes.text(),
+        }
+    }
+
+    /// The decoded text, owned.
+    pub fn try_into_string(self) -> Result<String> {
         match self.source {
-            Source::Text(text) => text,
+            Source::Text(text) => Ok(text),
             Source::Bytes(bytes) => {
-                bytes.text();
-                bytes.text.into_inner().unwrap_or_default()
+                let Bytes { env, value, text } = bytes;
+                let decoded = match text.into_inner() {
+                    Some(decoded) => decoded,
+                    None => {
+                        // SAFETY: these are the argument handles of the
+                        // current call, still carried by this value.
+                        unsafe { read(env, value, MAX_BYTES) }
+                    }
+                };
+                decoded.map_err(|message| range_error(env, &message))
             }
         }
     }
@@ -194,26 +215,27 @@ impl Utf8Input<'_> {
     }
 }
 
-impl Deref for Utf8Input<'_> {
-    type Target = str;
-
-    fn deref(&self) -> &str {
-        match &self.source {
-            Source::Text(text) => text,
-            Source::Bytes(bytes) => bytes.text(),
-        }
-    }
-}
-
 impl Bytes {
     /// Reads and copies the bytes on first use, then returns the same text for
     /// the rest of the call.
-    fn text(&self) -> &str {
+    fn text(&self) -> Result<&str> {
         // SAFETY: `self.env` and `self.value` are the handles of the current
         // call: `Bytes` only comes from `Utf8Input::from_napi_value`, whose
-        // lifetime keeps it inside the export. `value` is a `Uint8Array`.
-        self.text
-            .get_or_init(|| unsafe { read(self.env, self.value) })
+        // lifetime keeps it inside the export. `value` is a `Uint8Array`, and
+        // the caller must ensure no native write overlaps the copy. Shared
+        // JavaScript writers use `Atomics` operations.
+        match self
+            .text
+            .get_or_init(|| unsafe { read(self.env, self.value, MAX_BYTES) })
+        {
+            Ok(text) => Ok(text),
+            Err(message) => Err(self.range_error(message)),
+        }
+    }
+
+    /// Raises the byte-input error in the active N-API call.
+    fn range_error(&self, message: &str) -> Error {
+        range_error(self.env, message)
     }
 }
 
@@ -378,8 +400,8 @@ enum View {
     /// Bytes of a plain `ArrayBuffer`, which no other JavaScript thread can
     /// write.
     Private(*const u8, usize),
-    /// Bytes another thread may write: a `SharedArrayBuffer`'s, or those of
-    /// any buffer N-API does not confirm as a plain `ArrayBuffer`.
+    /// Bytes a JavaScript worker may write atomically: a `SharedArrayBuffer`'s,
+    /// or those of any buffer N-API does not confirm as a plain `ArrayBuffer`.
     Shared(*const u8, usize),
 }
 
@@ -434,18 +456,114 @@ unsafe fn view(env: sys::napi_env, value: sys::napi_value) -> View {
 /// # Safety
 ///
 /// `env` and `value` must be the valid handles of the current N-API call, and
-/// `value` must be a typed array.
-unsafe fn read(env: sys::napi_env, value: sys::napi_value) -> String {
+/// `value` must be a typed array, and no native writer may modify its backing
+/// bytes during the copy, whether the backing store is plain or shared. A
+/// JavaScript writer to shared bytes must use `Atomics` operations.
+unsafe fn read(
+    env: sys::napi_env,
+    value: sys::napi_value,
+    max_decoded_bytes: usize,
+) -> std::result::Result<String, String> {
     // SAFETY: the caller's handles.
     let bytes = match unsafe { view(env, value) } {
-        View::Empty => return String::new(),
+        View::Empty => return Ok(String::new()),
         // SAFETY: N-API reported `length` readable bytes at `data`.
         View::Private(data, length) => unsafe { copy_private(data, length) },
         // SAFETY: the same.
         View::Shared(data, length) => unsafe { copy_shared(data, length) },
     };
-    String::from_utf8(bytes)
-        .unwrap_or_else(|error| String::from_utf8_lossy(error.as_bytes()).into_owned())
+    decode(bytes, max_decoded_bytes)
+}
+
+fn range_error(env: sys::napi_env, message: &str) -> Error {
+    // SAFETY: the caller passes the `env` handle of the current N-API call.
+    unsafe { throw(env, Throw::RangeError, message) }
+}
+
+/// Decodes bytes like `Buffer#toString('utf8')`, bounding the resulting UTF-8
+/// length before allocating an expanded lossy string.
+fn decode(bytes: Vec<u8>, max_decoded_bytes: usize) -> std::result::Result<String, String> {
+    match String::from_utf8(bytes) {
+        Ok(text) if text.len() <= max_decoded_bytes => Ok(text),
+        Ok(_) => Err(decoded_too_long(max_decoded_bytes)),
+        Err(error) => {
+            let bytes = error.into_bytes();
+            lossy_output_len_at_most(&bytes, max_decoded_bytes)
+                .ok_or_else(|| decoded_too_long(max_decoded_bytes))?;
+            Ok(String::from_utf8_lossy(&bytes).into_owned())
+        }
+    }
+}
+
+/// Returns the output byte length for `String::from_utf8_lossy`, if it fits
+/// within `limit`. This walks the same `Utf8Error` boundaries as the standard
+/// library without allocating the replacement string.
+fn lossy_output_len_at_most(mut bytes: &[u8], limit: usize) -> Option<usize> {
+    let mut output_len = 0usize;
+    loop {
+        match std::str::from_utf8(bytes) {
+            Ok(valid) => {
+                output_len = output_len.checked_add(valid.len())?;
+                return (output_len <= limit).then_some(output_len);
+            }
+            Err(error) => {
+                output_len = output_len.checked_add(error.valid_up_to())?;
+                if output_len > limit {
+                    return None;
+                }
+                output_len = output_len.checked_add("\u{fffd}".len())?;
+                if output_len > limit {
+                    return None;
+                }
+                let invalid_len = error
+                    .error_len()
+                    .unwrap_or_else(|| bytes.len() - error.valid_up_to());
+                bytes = &bytes[error.valid_up_to() + invalid_len..];
+            }
+        }
+    }
+}
+
+fn decoded_too_long(max_decoded_bytes: usize) -> String {
+    format!("decoded markdown must be at most {max_decoded_bytes} UTF-8 bytes")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{decode, lossy_output_len_at_most};
+
+    #[test]
+    fn lossy_decoding_obeys_a_small_decoded_byte_limit() {
+        assert_eq!(decode(vec![0xff], 3).unwrap(), "\u{fffd}");
+        assert!(decode(vec![0xff], 2).is_err());
+        assert_eq!(decode(vec![0xff, 0xff], 6).unwrap(), "\u{fffd}\u{fffd}");
+        assert!(decode(vec![0xff, 0xff], 5).is_err());
+        assert_eq!(decode(b"valid".to_vec(), 5).unwrap(), "valid");
+        assert!(decode(b"valid".to_vec(), 4).is_err());
+    }
+
+    #[test]
+    fn lossy_length_preflight_matches_standard_decoder() {
+        for bytes in [
+            vec![0xff],
+            vec![0xf0, 0x9f],
+            vec![0xe2, 0x28, 0xa1],
+            vec![0xe2, 0x82, b'A'],
+            vec![b'x', 0xf0, 0x90, 0x80, 0x80, 0xff],
+        ] {
+            let expected = String::from_utf8_lossy(&bytes);
+            assert_eq!(
+                lossy_output_len_at_most(&bytes, usize::MAX),
+                Some(expected.len()),
+                "bytes: {bytes:?}"
+            );
+            assert_eq!(
+                decode(bytes.clone(), usize::MAX).unwrap(),
+                expected,
+                "bytes: {bytes:?}"
+            );
+        }
+    }
 }
 
 /// Reserves `length` bytes for a copy, or panics with a message the export
@@ -465,7 +583,7 @@ fn reserve(length: usize) -> Vec<u8> {
 /// # Safety
 ///
 /// `data` must point to `length` readable bytes that stay allocated for the
-/// copy and that no JavaScript can write during it.
+/// copy, with no JavaScript or native writer modifying them during it.
 unsafe fn copy_private(data: *const u8, length: usize) -> Vec<u8> {
     let mut bytes = reserve(length);
     // SAFETY: `data` points to `length` readable bytes, and `bytes` owns at
@@ -482,13 +600,16 @@ unsafe fn copy_private(data: *const u8, length: usize) -> Vec<u8> {
 
 /// Copies bytes that another thread may be writing.
 ///
-/// Rust allows memory that another thread writes at the same time to be read
-/// only through atomics, so each byte is read with a relaxed atomic load. The
-/// copy may mix bytes from before and after a concurrent write.
+/// Each byte is read with a relaxed atomic load, which supports concurrent
+/// JavaScript writes to shared bytes made with `Atomics` operations. The copy
+/// may mix bytes from before and after such a write. Atomic reader loads do
+/// not make concurrent native writes safe.
 ///
 /// # Safety
 ///
-/// `data` must point to `length` bytes that stay allocated for the copy.
+/// `data` must point to `length` bytes that stay allocated for the copy, no
+/// native writer may modify them during it, and any concurrent JavaScript
+/// writer must use atomic byte operations.
 unsafe fn copy_shared(data: *const u8, length: usize) -> Vec<u8> {
     let mut bytes = reserve(length);
     for index in 0..length {

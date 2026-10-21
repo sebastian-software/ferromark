@@ -14,7 +14,7 @@ workspace = true
 [lib]
 crate-type = ["cdylib"]
 doctest = false
-test = false
+test = true
 
 [[bin]]
 name = "pgo_train"
