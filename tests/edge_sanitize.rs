@@ -3,9 +3,8 @@ mod edge_support;
 
 use edge_support::render;
 use ferromark::allocator::Allocator;
-use ferromark::parser::ParserOptions;
-use ferromark::renderer::HtmlRenderer;
-use ferromark::renderer::HtmlRendererOptions;
+use ferromark::parser::{Parser, ParserOptions};
+use ferromark::renderer::{AbbreviationOptions, HtmlRenderer, HtmlRendererOptions};
 
 #[test]
 fn html_blocks_are_escaped_when_sanitize_is_enabled() {
@@ -56,6 +55,60 @@ fn obfuscated_unsafe_link_schemes_are_neutralized() {
     );
 
     assert_eq!(html, "<p><a href=\"#\">run</a></p>\n");
+}
+
+#[test]
+fn custom_autolinks_obey_url_sanitization() {
+    let source = "ssh://danger.example [manual](ssh://danger.example) http://example.com https://example.org mailto:help@example.com";
+    let allocator = Allocator::new();
+    let document = Parser::with_options(&allocator, source, ParserOptions::default())
+        .parse()
+        .unwrap();
+    let renderer_options = HtmlRendererOptions {
+        sanitize: true,
+        autolink_patterns: vec![
+            "ssh://".into(),
+            "http://".into(),
+            "https://".into(),
+            "mailto:".into(),
+        ]
+        .into(),
+        ..Default::default()
+    };
+    let mut renderer = HtmlRenderer::with_options(renderer_options.clone());
+    let html = renderer.render(&document);
+    let mut abbreviation_renderer = HtmlRenderer::with_options_and_abbreviations(
+        renderer_options,
+        AbbreviationOptions::default(),
+    );
+    let html_with_abbreviations = abbreviation_renderer.render(&document);
+    let unsanitized_options = HtmlRendererOptions {
+        sanitize: false,
+        autolink_patterns: vec!["ssh://".into()].into(),
+        autolink_target_blank: false,
+        ..Default::default()
+    };
+    let mut unsanitized_renderer = HtmlRenderer::with_options(unsanitized_options);
+    let html_without_sanitization = unsanitized_renderer.render(&document);
+
+    let expected = concat!(
+        "<p><a href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\">ssh://danger.example</a> ",
+        "<a href=\"#\">manual</a> ",
+        "<a href=\"http://example.com\" target=\"_blank\" rel=\"noopener noreferrer\">http://example.com</a> ",
+        "<a href=\"https://example.org\" target=\"_blank\" rel=\"noopener noreferrer\">https://example.org</a> ",
+        "<a href=\"mailto:help@example.com\" target=\"_blank\" rel=\"noopener noreferrer\">mailto:help@example.com</a></p>\n"
+    );
+    assert_eq!(html, expected);
+    assert_eq!(html_with_abbreviations, expected);
+    assert!(
+        html_without_sanitization
+            .contains("<a href=\"ssh://danger.example\">ssh://danger.example</a>"),
+        "sanitize: false should preserve custom autolink URLs: {html_without_sanitization}"
+    );
+    assert!(
+        html_without_sanitization.contains("<a href=\"ssh://danger.example\">manual</a>"),
+        "sanitize: false should preserve ordinary links: {html_without_sanitization}"
+    );
 }
 
 #[test]
