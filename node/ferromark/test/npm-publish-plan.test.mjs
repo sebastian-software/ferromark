@@ -205,20 +205,12 @@ test("fails closed on unexpected successful statuses and mismatched archive list
   );
 });
 
-test("workflow keeps the release tag checkout and pins its helper to the workflow commit", () => {
+test("workflow uses the validated release source and pins retry helpers to the workflow commit", () => {
   const workflow = readFileSync(
     new URL("../../../.github/workflows/publish.yml", import.meta.url),
     "utf8",
   );
 
-  assert.match(
-    workflow,
-    /ref: \$\{\{ inputs\.tag \|\| needs\.release-please\.outputs\.tag_name \}\}/,
-  );
-  assert.match(
-    workflow,
-    /ref: \$\{\{ github\.workflow_sha \}\}\s+path: release-tools\s+persist-credentials: false/,
-  );
   assert.match(
     workflow,
     /node \.\.\/release-tools\/node\/scripts\/npm-publish-plan\.mjs \.\/artifacts/,
@@ -232,9 +224,38 @@ test("workflow keeps the release tag checkout and pins its helper to the workflo
     "uses: sebastian-software/standards/.github/actions/publish-npm@" +
     "a840766444dbb0e421f1f1868c48bee315ead769";
   assert.ok(workflow.includes(publishAction));
+
+  const publishNpmJob = workflow.match(
+    /  publish-npm:\n([\s\S]*?)(?=\n  [a-z][a-z0-9-]*:\n|$)/,
+  )?.[1];
+  assert.ok(publishNpmJob, "workflow defines publish-npm");
   assert.match(
-    workflow,
-    /verify-npm-publish:[\s\S]*?needs: \[release-please, native-matrix, publish-npm\]/,
+    publishNpmJob,
+    /needs: \[release-please, validate-release, validate-release-version, native-matrix, build-native\]/,
   );
-  assert.match(workflow, /NPM_PUBLISH_RESULT: \$\{\{ needs\.publish-npm\.result \}\}/);
+  assert.match(
+    publishNpmJob,
+    /ref: \$\{\{ needs\.validate-release\.outputs\.source_sha \}\}/,
+  );
+  assert.match(
+    publishNpmJob,
+    /ref: \$\{\{ github\.workflow_sha \}\}\s+path: release-tools\s+persist-credentials: false/,
+  );
+
+  const verifyNpmJob = workflow.match(
+    /  verify-npm-publish:\n([\s\S]*?)(?=\n  [a-z][a-z0-9-]*:\n|$)/,
+  )?.[1];
+  assert.ok(verifyNpmJob, "workflow defines verify-npm-publish");
+  assert.match(
+    verifyNpmJob,
+    /needs: \[release-please, validate-release, validate-release-version, native-matrix, publish-npm\]/,
+  );
+  assert.match(
+    verifyNpmJob,
+    /ref: \$\{\{ needs\.validate-release\.outputs\.source_sha \}\}/,
+  );
+  assert.match(
+    verifyNpmJob,
+    /NPM_PUBLISH_RESULT: \$\{\{ needs\.publish-npm\.result \}\}/,
+  );
 });
