@@ -71,14 +71,13 @@ for (const target of targets) {
   }
 }
 
-if (options.tag) {
-  const releaseTagPattern =
-    /^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-rc\.(?:0|[1-9]\d*))?$/;
-  if (!releaseTagPattern.test(options.tag) || options.tag.slice(1) !== packageJson.version) {
-    throw new Error(
-      `Release tag ${options.tag} does not match package version ${packageJson.version}`,
-    );
-  }
+if (
+  options.tag &&
+  (!isCanonicalReleaseVersion(packageJson.version) || options.tag !== `v${packageJson.version}`)
+) {
+  throw new Error(
+    `Release tag ${options.tag} does not match package version ${packageJson.version}`,
+  );
 }
 
 console.log(
@@ -91,16 +90,41 @@ function parseOptions(args) {
     const value = args[index];
     if (value === "--metadata-only") {
       options.metadataOnly = true;
-    } else if (value === "--root" || value === "--tag") {
-      const argument = args[++index];
-      if (!argument) throw new Error(`${value} requires a value`);
-      options[value === "--root" ? "root" : "tag"] = argument;
-    } else {
-      throw new Error(`Unknown argument: ${value}`);
+      continue;
     }
+    if (value === "--root" || value === "--tag") {
+      options[value.slice(2)] = requiredOptionValue(args, ++index, value);
+      continue;
+    }
+    throw new Error(`Unknown argument: ${value}`);
   }
   if (options.metadataOnly && !options.tag) {
     throw new Error("--metadata-only requires --tag");
   }
   return options;
+}
+
+function requiredOptionValue(args, index, option) {
+  const value = args[index];
+  if (!value) throw new Error(`${option} requires a value`);
+  return value;
+}
+
+function isCanonicalReleaseVersion(version) {
+  const [core, rc, extra] = version.split("-rc.");
+  if (extra !== undefined) return false;
+  const parts = core.split(".");
+  return (
+    parts.length === 3 &&
+    parts.every((part) => isCanonicalNumber(part)) &&
+    (rc === undefined || isCanonicalNumber(rc))
+  );
+}
+
+function isCanonicalNumber(value) {
+  if (value.length === 0 || (value.length > 1 && value[0] === "0")) return false;
+  for (const digit of value) {
+    if (digit < "0" || digit > "9") return false;
+  }
+  return true;
 }
