@@ -220,13 +220,13 @@ test("workflow uses the validated release source and pins retry helpers to the w
     /if: \$\{\{ steps\.npm-publish-plan\.outputs\.publish_required == 'true' \}\}/,
   );
   assert.match(workflow, /packages: \$\{\{ steps\.npm-publish-plan\.outputs\.packages \}\}/);
-  const publishAction =
-    "uses: sebastian-software/standards/.github/actions/publish-npm@" +
-    "a840766444dbb0e421f1f1868c48bee315ead769";
-  assert.ok(workflow.includes(publishAction));
+  assert.match(
+    workflow,
+    /uses: sebastian-software\/standards\/\.github\/actions\/publish-npm@a840766444dbb0e421f1f1868c48bee315ead769/,
+  );
 
   const publishNpmJob = workflow.match(
-    /  publish-npm:\n([\s\S]*?)(?=\n  [a-z][a-z0-9-]*:\n|$)/,
+    /[ ]{2}publish-npm:\n([\s\S]*?)(?=\n[ ]{2}[a-z][a-z0-9-]*:\n|$)/,
   )?.[1];
   assert.ok(publishNpmJob, "workflow defines publish-npm");
   assert.match(
@@ -240,7 +240,7 @@ test("workflow uses the validated release source and pins retry helpers to the w
   );
 
   const verifyNpmJob = workflow.match(
-    /  verify-npm-publish:\n([\s\S]*?)(?=\n  [a-z][a-z0-9-]*:\n|$)/,
+    /[ ]{2}verify-npm-publish:\n([\s\S]*?)(?=\n[ ]{2}[a-z][a-z0-9-]*:\n|$)/,
   )?.[1];
   assert.ok(verifyNpmJob, "workflow defines verify-npm-publish");
   assert.match(
