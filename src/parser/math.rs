@@ -197,6 +197,8 @@ impl<'a> Parser<'a> {
             Some(memo) if memo.origin <= from && from <= memo.candidate => memo,
             _ => {
                 let memo = first_close_candidate(bytes, from, open_len);
+                #[cfg(test)]
+                super::record_extension_memo_entry();
                 self.extension_memos()
                     .math_closers
                     .borrow_mut()

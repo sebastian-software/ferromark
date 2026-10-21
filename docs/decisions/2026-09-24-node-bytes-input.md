@@ -88,7 +88,11 @@ dereferences its pointer.
 
 The parser stores source offsets as `u32`. No JavaScript string reaches 4 GiB,
 but a `Uint8Array` can, so input of more than `u32::MAX` bytes throws a
-`RangeError` with the code `ERR_OUT_OF_RANGE` before any byte is read.
+`RangeError` with the code `ERR_OUT_OF_RANGE` before any byte is read. Lossy
+UTF-8 decoding can expand invalid input, so the addon also measures the
+decoded byte length before allocating replacement characters. A decoded
+string above `u32::MAX` bytes throws the same `RangeError`; this check uses a
+small injectable limit in unit tests instead of a multi-gigabyte fixture.
 
 ### Other values, and the changed error
 
@@ -146,13 +150,17 @@ an `ArrayBuffer` is a type error.
 A Rust `&str` promises valid UTF-8 for as long as it lives, and the parser and
 renderer rely on that promise, including in `unsafe` code. The bytes of a
 `Uint8Array` belong to JavaScript, and code outside the call can change them
-while it renders: a highlighter the call invokes, an option getter, a worker
-writing a `SharedArrayBuffer`, or native code that still fills the buffer,
-such as an unfinished asynchronous `fs.read()` into the same `Buffer`. The
-addon therefore never renders from that memory. Every entry copies the bytes
-into memory of its own, then validates and decodes the copy. All of the
-addon's `unsafe` code sits in `node/native/src/input.rs`, the only module
-allowed to use it, with a `SAFETY` comment on every block.
+while it renders: a highlighter the call invokes, an option getter, or a
+worker using `Atomics` to write a `SharedArrayBuffer`. An asynchronous
+native operation can also write a buffer backed by either an ordinary `ArrayBuffer` or a
+`SharedArrayBuffer` while the addon is copying it. Node's `Buffer.from()` can
+share memory with either backing type ([Buffer documentation](https://nodejs.org/api/buffer.html#static-method-bufferfromarraybufferbyteoffsetlength)),
+and `fs.read()` writes into its supplied buffer. Every entry copies bytes into
+its own memory, then validates and decodes the copy. This makes writes after
+the copy irrelevant to the render. It does not make an overlapping native
+write safe during the copy. All of the addon's `unsafe` code sits in
+`node/native/src/input.rs`, the only module allowed to use it, with a
+`SAFETY` comment on every block.
 
 **The bytes are read after the option getters.** napi-rs converts the Markdown
 argument first and an `Options` object after it, and converting options runs
@@ -167,16 +175,31 @@ input, and check that the render matches the bytes as the getter left them.
 
 **The copy fits the memory it comes from.** For a plain `ArrayBuffer`, which
 `napi_is_arraybuffer` confirms, the copy is one `memcpy` through raw
-pointers. No other JavaScript thread can write that memory, and no JavaScript
-runs on this one during the copy. Native code racing on the same buffer can at
-most change which bytes are copied, and it cannot make the parser see invalid
-UTF-8. For a `SharedArrayBuffer`, for which V8 answers `false`, and for
-anything else the check does not confirm, the copy reads each byte with a
-relaxed atomic load, since Rust allows memory that another thread writes to be
-read only through atomics. A growable `SharedArrayBuffer` never shrinks, so
-the length read before the copy stays readable. Either copy may mix bytes from
-before and after a concurrent write, and it is validated like any other input.
-The check sits in the addon, not the facade. A facade check
+pointers. JavaScript cannot run on this thread during the copy, but native
+work on another thread can still write the same memory. Node documents that
+callback-based file-system operations use the libuv threadpool and that
+`fs.read()` writes into its supplied buffer ([Node.js file-system
+documentation](https://nodejs.org/api/fs.html#fsreadfd-buffer-offset-length-position-callback)).
+The caller must wait for any native write to finish before passing the view,
+whether it is backed by an ordinary or shared buffer; for `fs.read()`, wait
+for its callback or promise to settle. The addon has no N-API lock or
+in-flight-operation check for that storage. A concurrent non-atomic native
+write and either copy are a data race and undefined behavior under Rust's
+memory model ([Rust atomic
+documentation](https://doc.rust-lang.org/stable/core/sync/atomic/index.html#memory-model-for-atomics));
+they are not merely a way to select mixed bytes. Atomic loads on the reader
+alone cannot make a native writer safe. This caller precondition is therefore
+an unenforced limitation of the current API.
+
+For a `SharedArrayBuffer`, for which V8 answers `false`, and for anything else
+the check does not confirm, the copy reads each byte with a relaxed atomic
+load. A growable `SharedArrayBuffer` never shrinks, so the length read before
+the copy stays readable. A JavaScript worker may write shared bytes during the
+copy only with `Atomics` operations; the result may mix bytes from before and
+after those writes, and is validated like any other input. The native-writer
+precondition above applies to shared backing too: a native write must finish
+before the call, because atomic loads alone do not synchronize with a native
+writer. The check sits in the addon, not the facade. A facade check
 (`bytes.buffer instanceof SharedArrayBuffer`) would go through a patchable
 `buffer` getter and a realm-specific constructor, and the native exports can
 be called without the facade.
@@ -213,15 +236,13 @@ caller behavior can break the `&str` invariant.
 **Borrowing when no JavaScript runs.** The first version of this change
 borrowed the bytes of a plain `ArrayBuffer` as a `&str` for the render in the
 entries that call no JavaScript while they render, and copied only for the
-highlighter entries and shared memory. That is sound against everything
-JavaScript can do. It is not sound against native code that holds the
-buffer's data pointer and writes from another thread, such as an unfinished
-asynchronous `fs.read()` into the same `Buffer`. Such a write during the
-render would break the `&str` invariant, which is undefined behavior, not
-just wrong output. No addon can detect that case, so the borrow needed a
-documented caller contract. With a copy, the same race can only produce odd
-text. The measurement above puts the price of dropping the contract at a few
-percent of the bytes call, so the borrow was rejected.
+highlighter entries and shared memory. That is sound against JavaScript
+running on the same thread, but not against native code writing from another
+thread. An unfinished asynchronous `fs.read()` into the same `Buffer` could
+break the `&str` invariant during the render. Copying shortens the period in
+which input memory is read and makes later changes irrelevant, but it still
+requires the caller to wait for native writes to finish before the copy. No
+addon-side synchronization for such writes is available through N-API.
 
 **Separate entries (`toHtmlFromBytes` and friends).** Seven more functions and
 two more `Renderer` methods, each needing its own packed native export, type
@@ -262,13 +283,18 @@ call with the string call of the equivalence rule:
   conversion sweep in `scripts/verify-input-conversion.mjs`, described above,
   for every form of `Uint8Array` on the random input and every eighth block of
   the exhaustive sweep.
+- **Decoded offset bound:** unit tests inject a small decoded-byte limit and
+  check that lossy expansion is measured before replacement allocation.
 - **Copy paths:** the verifier checks through a `boundary-bench` diagnostic
   that plain buffers are copied with `memcpy`, shared and growable shared ones
   with atomic loads, and that empty and detached views read no bytes.
 - **Mutation:** highlighters that overwrite, detach or shrink the input, a
-  worker writing a `SharedArrayBuffer` while it is rendered, and option getters
-  that change the input through the facade and through the object-taking
-  exports.
+  worker using `Atomics` to write a `SharedArrayBuffer` while it is rendered,
+  and option getters that change the input through the facade and through the
+  object-taking exports. A native write racing with either copy is not
+  exercised: it would be undefined behavior, not a useful regression-test
+  outcome. Callers must wait for native writers to finish before passing any
+  view, including a `Buffer` backed by a `SharedArrayBuffer`.
 - **Rejected values:** the class, code and message for every kind of value,
   that describing it runs none of its code, and the error order.
 - **Mutation checks** (not committed): reading the bytes before the option

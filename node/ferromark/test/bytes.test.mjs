@@ -484,7 +484,7 @@ async function startWriter(shared) {
       while (Atomics.load(control, 0) === 0) {
         for (let index = 0; index < bytes.length; index++) {
           seed = (seed * 1103515245 + 12345) >>> 0;
-          bytes[index] = seed & 0x1_00 ? 0xff : 0x61;
+          Atomics.store(bytes, index, seed & 0x1_00 ? 0xff : 0x61);
         }
       }
     `,

@@ -313,12 +313,20 @@ file read as a `Buffer` gives the same HTML as the same file read with
 leading byte order mark is handled as it is in a string. An empty or detached
 view renders like `""`. Any other value, including an `ArrayBuffer`, another
 typed array or a `DataView`, throws a `TypeError` with the code
-`ERR_INVALID_ARG_TYPE`; wrap an `ArrayBuffer` in a `Uint8Array` first.
+`ERR_INVALID_ARG_TYPE`; wrap an `ArrayBuffer` in a `Uint8Array` first. A byte
+view or decoded text above the parser's `u32` offset limit throws a `RangeError`
+with the code `ERR_OUT_OF_RANGE`.
 
 Each call copies the bytes once, after it has read the options, and renders
 from that copy. A highlighter passed to `toHtmlWithHighlighter()` or
-`transformWithHighlighter()`, or a worker writing a `SharedArrayBuffer`, can
-change the buffer without affecting the call.
+`transformWithHighlighter()` can change the input after the copy without
+affecting the call. A worker may write a `SharedArrayBuffer` during the copy
+only with `Atomics` operations; the copied text may reflect bytes from before
+and after those writes. Native code must finish writing any input before the
+call, whether its backing store is an ordinary or shared buffer. For example,
+wait for an asynchronous `fs.read()` callback or promise to settle before
+passing its `Buffer`; atomic reads in Ferromark do not make a concurrent native
+write safe.
 
 ## Untrusted by default
 

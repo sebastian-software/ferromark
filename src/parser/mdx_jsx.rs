@@ -190,6 +190,8 @@ impl<'a> Parser<'a> {
             name,
             &mut |at| self.matching_brace_end(content, at),
             &mut |opener, close| {
+                #[cfg(test)]
+                super::record_extension_memo_entry();
                 self.extension_memos()
                     .mdx_jsx_closer_presence
                     .borrow_mut()
@@ -279,6 +281,8 @@ impl<'a> Parser<'a> {
             return None;
         }
         let walk = braces::record_brace_matches(content.as_bytes(), start, &mut |brace, close| {
+            #[cfg(test)]
+            super::record_extension_memo_entry();
             self.extension_memos()
                 .brace_matches
                 .borrow_mut()
