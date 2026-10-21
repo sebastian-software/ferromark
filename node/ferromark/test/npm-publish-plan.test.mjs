@@ -233,10 +233,7 @@ test("workflow uses the validated release source and pins retry helpers to the w
     publishNpmJob,
     /needs: \[release-please, validate-release, validate-release-version, native-matrix, build-native\]/,
   );
-  assert.match(
-    publishNpmJob,
-    /ref: \$\{\{ needs\.validate-release\.outputs\.source_sha \}\}/,
-  );
+  assert.match(publishNpmJob, /ref: \$\{\{ needs\.validate-release\.outputs\.source_sha \}\}/);
   assert.match(
     publishNpmJob,
     /ref: \$\{\{ github\.workflow_sha \}\}\s+path: release-tools\s+persist-credentials: false/,
@@ -250,12 +247,6 @@ test("workflow uses the validated release source and pins retry helpers to the w
     verifyNpmJob,
     /needs: \[release-please, validate-release, validate-release-version, native-matrix, publish-npm\]/,
   );
-  assert.match(
-    verifyNpmJob,
-    /ref: \$\{\{ needs\.validate-release\.outputs\.source_sha \}\}/,
-  );
-  assert.match(
-    verifyNpmJob,
-    /NPM_PUBLISH_RESULT: \$\{\{ needs\.publish-npm\.result \}\}/,
-  );
+  assert.match(verifyNpmJob, /ref: \$\{\{ needs\.validate-release\.outputs\.source_sha \}\}/);
+  assert.match(verifyNpmJob, /NPM_PUBLISH_RESULT: \$\{\{ needs\.publish-npm\.result \}\}/);
 });
