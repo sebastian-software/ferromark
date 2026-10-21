@@ -1,7 +1,7 @@
-# Contributing to ferromark v2
+# Contributing to ferromark v3
 
-Clone `sebastian-software/ferromark` and check out `main`. The branch combines
-the original Ferromark history with the separately developed v2 core. Read
+Clone `sebastian-software/ferromark` and check out `main`. The v3 line builds on
+the original Ferromark history and the separately developed v2 core. Read
 [the integration decision](docs/arch/ADR-0015-v2-repository-integration.md) and
 [upstream provenance](UPSTREAM.md) before changing the architecture.
 
@@ -20,10 +20,12 @@ cargo fmt --all --check
 cargo bench --workspace --no-run --locked
 ```
 
-`ferromark` is the repository root package: its `src/`, `tests/`, `benches/`
-and `examples/` sit at the top level, and `node/native` is the only workspace
-member. A Cargo `include` list decides what the published archive contains, so
-compare `cargo package --list` whenever you change it.
+`ferromark` is the workspace root package: its `src/`, `tests/`, `benches/`
+and `examples/` sit at the top level. The workspace members are `node/native`,
+which contains the Node.js native bindings, and `transforms`, which contains
+the optional Rust AST transform passes. Workspace checks cover the root package
+and both members. A Cargo `include` list decides what the published archive
+contains, so compare `cargo package --list` whenever you change it.
 
 Releases are automatic. Every push to `main` updates one release pull request,
 and **merging that pull request tags the version and publishes both
@@ -37,7 +39,7 @@ needs the `llvm-tools` rustup component and `FERROMARK_PGO=1`, as described in
 [ADR-0019](docs/arch/ADR-0019-profile-guided-native-addon.md).
 Website changes require `pnpm install --frozen-lockfile`, `pnpm format:check`,
 `pnpm lint`, `pnpm typecheck`, `pnpm run audit`, and `pnpm build` from
-`homepage/`. The build checks all prerendered routes, navigation, and v2 content.
+`homepage/`. The build checks all prerendered routes, navigation, and documentation content.
 
 The Node and homepage workspaces use the managed Oxfmt configuration. Run
 `pnpm format` in the affected workspace before checking formatting. Their seeded
