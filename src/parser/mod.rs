@@ -146,8 +146,7 @@ struct ExtensionMemos<'a> {
     /// The key names the opener, not just the slice: the answer depends on
     /// where the scan starts, so an answer recorded for one opener must never
     /// be handed to another.
-    mdx_jsx_closer_presence:
-        std::cell::RefCell<rustc_hash::FxHashMap<JsxCloserKey<'a>, Option<(usize, usize)>>>,
+    mdx_jsx_closer_presence: MemoTable<JsxCloserKey<'a>, Option<(usize, usize)>>,
 
     /// The range of unclosed openers the last such walk left behind.
     mdx_jsx_closer_gap: std::cell::Cell<Option<JsxCloserGap<'a>>>,
@@ -159,7 +158,7 @@ struct ExtensionMemos<'a> {
     /// end of the content, so a run of `{` paid one walk each, and a single
     /// `}` behind the run defeats the cheap `has_closer_from` guard in front
     /// of it. One walk decides every brace it passes.
-    brace_matches: std::cell::RefCell<rustc_hash::FxHashMap<(usize, usize), Option<usize>>>,
+    brace_matches: MemoTable<(usize, usize), Option<usize>>,
 
     /// The end of a content slice and a range of it the last brace walk
     /// read byte by byte without finding a closer: a `{` in that range
@@ -177,7 +176,7 @@ struct ExtensionMemos<'a> {
     /// it can report that nothing closes it, and — unlike the script spans —
     /// keeps going past a candidate that cannot close. A run of them
     /// therefore cost one walk each.
-    math_closers: std::cell::RefCell<rustc_hash::FxHashMap<MathCloserKey, math::MathClose>>,
+    math_closers: MemoTable<MathCloserKey, math::MathClose>,
 
     /// Ranges of a content slice that a scan for an inline-math closer read
     /// without finding one, keyed like `math_closers`.
@@ -186,7 +185,7 @@ struct ExtensionMemos<'a> {
     /// `$` at all. This settles the run whose only candidate sits inside a
     /// code span: the walk that stepped over it read everything else, so
     /// every opener in what it read is answered from the record.
-    math_closer_gaps: std::cell::RefCell<rustc_hash::FxHashMap<MathCloserKey, math::MathGaps>>,
+    math_closer_gaps: MemoTable<MathCloserKey, math::MathGaps>,
 
     /// Memo for the next `*` or `_` in a content slice, which is what a `$`
     /// before a digit has to find between itself and its closer before it
@@ -203,15 +202,78 @@ struct ExtensionMemos<'a> {
     math_block_close: std::cell::Cell<Option<(usize, usize)>>,
 }
 
-/// A memo table allocated in the arena on first use, so a parser that never
-/// consults it carries one pointer, not an empty table. The inline memos
-/// answer the quadratic shapes the release review bounded, which ordinary
-/// documents rarely present; held inline they had grown the parser from 272
-/// to 736 bytes, and every block quote and list item builds a sub-parser.
-type LazyMap<'a, K, V> = std::cell::OnceCell<crate::allocator::Box<'a, MemoTable<K, V>>>;
+/// A heap-owning memo table. It is boxed on first use, so parsers that never
+/// consult it carry one pointer, while dropping the parser releases both the
+/// map's bucket storage and the table itself.
+struct MemoTable<K, V> {
+    map: std::cell::RefCell<rustc_hash::FxHashMap<K, V>>,
+}
 
-/// A memo table behind a [`LazyMap`].
-type MemoTable<K, V> = std::cell::RefCell<rustc_hash::FxHashMap<K, V>>;
+impl<K, V> Default for MemoTable<K, V> {
+    fn default() -> Self {
+        #[cfg(test)]
+        {
+            LIVE_MEMO_TABLES.with(|live| live.set(live.get() + 1));
+            CREATED_MEMO_TABLES.with(|created| created.set(created.get() + 1));
+        }
+
+        Self {
+            map: std::cell::RefCell::default(),
+        }
+    }
+}
+
+impl<K, V> std::ops::Deref for MemoTable<K, V> {
+    type Target = std::cell::RefCell<rustc_hash::FxHashMap<K, V>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.map
+    }
+}
+
+#[cfg(test)]
+impl<K, V> Drop for MemoTable<K, V> {
+    fn drop(&mut self) {
+        LIVE_MEMO_TABLES.with(|live| {
+            assert!(live.get() > 0, "memo table live count underflowed");
+            live.set(live.get() - 1);
+        });
+    }
+}
+
+#[cfg(test)]
+std::thread_local! {
+    static LIVE_MEMO_TABLES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static CREATED_MEMO_TABLES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static EXTENSION_MEMO_ENTRIES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+fn memo_table_counts() -> (usize, usize) {
+    (
+        LIVE_MEMO_TABLES.with(std::cell::Cell::get),
+        CREATED_MEMO_TABLES.with(std::cell::Cell::get),
+    )
+}
+
+#[cfg(test)]
+fn record_extension_memo_entry() {
+    EXTENSION_MEMO_ENTRIES.with(|entries| entries.set(entries.get() + 1));
+}
+
+#[cfg(test)]
+fn extension_memo_entries() -> usize {
+    EXTENSION_MEMO_ENTRIES.with(std::cell::Cell::get)
+}
+
+/// A memo table allocated on the heap on first use. The inline memos answer
+/// the quadratic shapes the release review bounded, which ordinary documents
+/// rarely present; held inline they had grown the parser from 272 to 736
+/// bytes, and every block quote and list item builds a sub-parser.
+// The standard box is intentional: the arena box skips destructors, and
+// storing the map inline would grow every parser even when its memo is unused.
+#[allow(clippy::disallowed_types)]
+type LazyMap<K, V> = std::cell::OnceCell<std::boxed::Box<MemoTable<K, V>>>;
 
 /// Markdown parser.
 pub struct Parser<'a> {
@@ -333,7 +395,7 @@ pub struct Parser<'a> {
     /// Every slice lives in the source or the arena, both of which outlive
     /// the parser, so an address plus a length names one byte range for as
     /// long as the cache exists.
-    link_probe_cache: LazyMap<'a, (usize, usize), bool>,
+    link_probe_cache: LazyMap<(usize, usize), bool>,
 
     /// Memoized bracket matches: for the address of a scan start and of the
     /// content end, where that scan's `]` is and whether an opener sits
@@ -350,7 +412,7 @@ pub struct Parser<'a> {
     /// Same lifetime argument as `link_probe_cache`: every slice lives in the
     /// source or the arena, so an address pair names one byte range for as
     /// long as the cache exists.
-    bracket_matches: LazyMap<'a, (usize, usize), (usize, bool)>,
+    bracket_matches: LazyMap<(usize, usize), (usize, bool)>,
 
     /// One forward window per closing byte — `]`, `>` and `}` — over the
     /// bytes this parser reads: a range that holds none of it, and the one
@@ -366,10 +428,11 @@ pub struct Parser<'a> {
     /// from three words of parser state instead of a hash of the slice.
     closer_windows: [std::cell::Cell<delimiters::CloserWindow>; delimiters::CLOSER_SLOTS],
 
-    /// The memo tables of the opt-in scans — MDX and math — allocated in the
-    /// arena the first time one of them is consulted, so a parse that never
-    /// enables them carries one pointer for all eight.
-    extension_memos: std::cell::OnceCell<crate::allocator::Box<'a, ExtensionMemos<'a>>>,
+    /// The heap-owning memo tables of the opt-in scans — MDX and math —
+    /// allocated on first use, so a parser that never enables them carries
+    /// one pointer. The box drops their maps with the parser.
+    #[allow(clippy::disallowed_types)]
+    extension_memos: std::cell::OnceCell<std::boxed::Box<ExtensionMemos<'a>>>,
 
     /// The last `[scanned_from, blank_line)` window found while bounding a
     /// link reference definition, so a run of them costs one scan in total.
@@ -388,23 +451,25 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    /// A memo table, allocated in the arena the first time it is consulted.
-    fn lazy_map<'s, K, V>(&'s self, cell: &'s LazyMap<'a, K, V>) -> &'s MemoTable<K, V> {
-        cell.get_or_init(|| self.allocator.boxed(std::cell::RefCell::default()))
+    /// A memo table, allocated on the heap the first time it is consulted.
+    #[allow(clippy::disallowed_types)]
+    fn lazy_map<K, V>(cell: &LazyMap<K, V>) -> &MemoTable<K, V> {
+        cell.get_or_init(|| std::boxed::Box::new(MemoTable::default()))
     }
 
     fn link_probe_cache(&self) -> &MemoTable<(usize, usize), bool> {
-        self.lazy_map(&self.link_probe_cache)
+        Self::lazy_map(&self.link_probe_cache)
     }
 
     fn bracket_matches(&self) -> &MemoTable<(usize, usize), (usize, bool)> {
-        self.lazy_map(&self.bracket_matches)
+        Self::lazy_map(&self.bracket_matches)
     }
 
-    /// The opt-in scans' memo tables, allocated in the arena on first use.
+    /// The opt-in scans' memo tables, allocated on the heap on first use.
+    #[allow(clippy::disallowed_types)]
     fn extension_memos(&self) -> &ExtensionMemos<'a> {
         self.extension_memos
-            .get_or_init(|| self.allocator.boxed(ExtensionMemos::default()))
+            .get_or_init(|| std::boxed::Box::new(ExtensionMemos::default()))
     }
 
     /// Creates a new parser with default options.

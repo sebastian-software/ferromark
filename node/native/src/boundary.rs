@@ -40,8 +40,8 @@ pub fn noop() {}
 /// buffer, and a `Uint8Array` has its bytes copied and validated. The text is
 /// dropped again.
 #[napi(catch_unwind, js_name = "boundaryLen")]
-pub fn len(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> u32 {
-    markdown.len() as u32
+pub fn len(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> Result<u32> {
+    Ok(markdown.try_as_str()?.len() as u32)
 }
 
 /// Input conversion only, with napi-rs's `String` conversion
@@ -54,8 +54,10 @@ pub fn len_napi_string(markdown: String) -> u32 {
 
 /// The UTF-8 text the public exports convert a string or bytes to.
 #[napi(catch_unwind, js_name = "boundaryInputBytes")]
-pub fn input_bytes(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> Buffer {
-    markdown.into_string().into_bytes().into()
+pub fn input_bytes(
+    #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+) -> Result<Buffer> {
+    Ok(markdown.try_into_string()?.into_bytes().into())
 }
 
 /// How the public exports obtain the text.
@@ -79,8 +81,8 @@ pub fn napi_string_bytes(markdown: String) -> Buffer {
 
 /// Input and output conversion of the same string, without the core.
 #[napi(catch_unwind, js_name = "boundaryEcho")]
-pub fn echo(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> String {
-    markdown.into_string()
+pub fn echo(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> Result<String> {
+    markdown.try_into_string()
 }
 
 thread_local! {
@@ -129,6 +131,7 @@ pub fn core_only(
     iterations: u32,
     lifecycle: String,
 ) -> Result<u32> {
+    let markdown = markdown.try_into_string()?;
     let mut checksum = 0u32;
     let length = |html: &str| Ok(black_box(html).len() as u32);
     match lifecycle.as_str() {
@@ -188,7 +191,7 @@ fn render_owned(markdown: &str) -> Result<String> {
 pub fn to_html_fresh(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
 ) -> Result<String> {
-    render_owned(&markdown)
+    render_owned(markdown.try_as_str()?)
 }
 
 /// Option handling only: napi-rs reads every `Options` field from the object
@@ -232,7 +235,7 @@ pub fn to_html_external<'env>(
     env: &'env Env,
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
 ) -> Result<JsString<'env>> {
-    let html = render_owned(&markdown)?;
+    let html = render_owned(markdown.try_as_str()?)?;
     if !html.is_empty() && html.is_ascii() {
         Ok(JsStringLatin1::from_data(env, html.into_bytes())?.into_value())
     } else {
@@ -253,7 +256,7 @@ impl BoundaryProbe {
     #[napi(constructor, catch_unwind)]
     pub fn new(#[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input) -> Result<Self> {
         let mut renderer = Renderer::new(None)?;
-        let html = renderer.render_reused(&markdown)?.to_owned();
+        let html = renderer.render_reused(markdown.try_as_str()?)?.to_owned();
         Ok(Self { html })
     }
 

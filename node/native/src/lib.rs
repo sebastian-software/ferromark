@@ -41,7 +41,7 @@ pub fn __test_panic_unwind() {
 pub fn __test_panic_in_default_renderer(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
 ) -> Result<()> {
-    render_one_shot(&markdown, None, |_| {
+    render_one_shot(markdown.try_as_str()?, None, |_| {
         panic!("ferromark N-API panic-unwind verification in the kept renderer")
     })
 }
@@ -415,7 +415,7 @@ pub fn to_html<'env>(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
 ) -> Result<JsString<'env>> {
-    render_one_shot(&markdown, options, |html| js_string(env, html))
+    render_one_shot(markdown.try_as_str()?, options, |html| js_string(env, html))
 }
 
 #[napi(catch_unwind)]
@@ -423,7 +423,7 @@ pub fn to_html_buffer(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
 ) -> Result<Buffer> {
-    render_one_shot(&markdown, options, html_buffer)
+    render_one_shot(markdown.try_as_str()?, options, html_buffer)
 }
 
 /// Reuses arena storage and HTML buffers; documents never outlive a call.
@@ -493,7 +493,7 @@ impl Renderer {
         &mut self,
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     ) -> Result<&str> {
-        self.render_reused(&markdown)
+        self.render_reused(markdown.try_as_str()?)
     }
 
     #[napi(catch_unwind, js_name = "toHtmlBuffer")]
@@ -501,7 +501,7 @@ impl Renderer {
         &mut self,
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     ) -> Result<Buffer> {
-        html_buffer(self.render_reused(&markdown)?)
+        html_buffer(self.render_reused(markdown.try_as_str()?)?)
     }
 }
 
@@ -755,7 +755,7 @@ pub fn transform(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
 ) -> Result<TransformResult> {
-    render_document(&markdown, core_options(options)?, None)
+    render_document(markdown.try_as_str()?, core_options(options)?, None)
 }
 
 #[napi(catch_unwind)]
@@ -765,7 +765,12 @@ pub fn to_html_with_renderer(
     options: Option<Options>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<String> {
-    Ok(render_document(&markdown, core_options(options)?, Some(renderer))?.html)
+    Ok(render_document(
+        markdown.try_as_str()?,
+        core_options(options)?,
+        Some(renderer),
+    )?
+    .html)
 }
 
 #[napi(catch_unwind)]
@@ -775,5 +780,9 @@ pub fn transform_with_renderer(
     options: Option<Options>,
     renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
 ) -> Result<TransformResult> {
-    render_document(&markdown, core_options(options)?, Some(renderer))
+    render_document(
+        markdown.try_as_str()?,
+        core_options(options)?,
+        Some(renderer),
+    )
 }
