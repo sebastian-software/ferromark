@@ -62,13 +62,14 @@ exceptions without changing the family-wide allow-list. For Oxc's
 retain the copyright notices and license; the license exempts copies solely
 in machine-executable object code from that notice requirement.
 
-`webpki-root-certs` 1.0.9 contains Mozilla certificate data under
+`webpki-root-certs` 1.0.10 contains Mozilla certificate data under
 [CDLA-Permissive-2.0](https://cdla.dev/permissive-2-0/). It appears only in the
 wasm32 branch of `rustls-platform-verifier`, which cargo-deny includes when
 checking all targets. The native Node sidecars use platform trust stores and
-do not ship this data. Any future distribution that includes the certificate
-data must include the agreement text with it. Both exceptions require review
-when the dependency version changes.
+do not ship this data. Version 1.0.10 removes the distrusted
+`emSign ECC Root CA - G3` certificate. Any future distribution that includes
+the certificate data must include the agreement text with it. Both exceptions
+require review when the dependency version changes.
 
 ## Amendment (2026-10-01): MDX module output
 

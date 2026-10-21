@@ -32,9 +32,10 @@ allow = ["BSL-1.0"]
 
 # This certificate data is a wasm32-only rustls-platform-verifier dependency.
 # Native Node builds use the operating system's trust store; cargo-deny still
-# checks the union of all targets. See ADR-0023 for the redistribution policy.
+# checks the union of all targets. Version 1.0.10 removes the distrusted emSign
+# root certificate. See ADR-0023 for the redistribution policy.
 [[licenses.exceptions]]
-crate = "webpki-root-certs@1.0.9"
+crate = "webpki-root-certs@1.0.10"
 allow = ["CDLA-Permissive-2.0"]
 
 [bans]
