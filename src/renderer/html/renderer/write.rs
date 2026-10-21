@@ -140,6 +140,7 @@ impl HtmlRenderer {
             .collect();
         let patterns: &[&str] = &patterns;
         let target_blank = self.options.autolink_target_blank;
+        let sanitize = self.options.sanitize;
         let out = &mut self.output;
         let mut cursor = 0usize;
         while cursor < bytes.len() {
@@ -152,8 +153,9 @@ impl HtmlRenderer {
                 write_escaped_into(out, &s[cursor..match_start]);
             }
             let url = &s[match_start..url_end];
+            let href = Self::sanitized_url_with_policy(url, sanitize, "#");
             out.push_str("<a href=\"");
-            write_url_escaped_into(out, url);
+            write_url_escaped_into(out, href);
             out.push('"');
             if target_blank {
                 out.push_str(" target=\"_blank\" rel=\"noopener noreferrer\"");
@@ -178,7 +180,15 @@ impl HtmlRenderer {
         url: &'a str,
         fallback: &'static str,
     ) -> &'a str {
-        if !self.options.sanitize {
+        Self::sanitized_url_with_policy(url, self.options.sanitize, fallback)
+    }
+
+    fn sanitized_url_with_policy<'a>(
+        url: &'a str,
+        sanitize: bool,
+        fallback: &'static str,
+    ) -> &'a str {
+        if !sanitize {
             return url;
         }
 
@@ -368,6 +378,7 @@ impl HtmlRenderer {
             .iter()
             .map(String::as_str)
             .collect::<SmallVec<[&str; 4]>>();
+        let sanitize = self.options.sanitize;
         let out = &mut self.output;
         let mut cursor = 0usize;
         let mut before_segment = before;
@@ -393,8 +404,9 @@ impl HtmlRenderer {
                         .is_some_and(|prefix| prefix.eq_ignore_ascii_case(pattern))
                 });
             if should_link {
+                let href = Self::sanitized_url_with_policy(url, sanitize, "#");
                 out.push_str("<a href=\"");
-                write_url_escaped_into(out, url);
+                write_url_escaped_into(out, href);
                 out.push('"');
                 if self.options.autolink_target_blank {
                     out.push_str(" target=\"_blank\" rel=\"noopener noreferrer\"");
