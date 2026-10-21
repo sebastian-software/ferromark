@@ -66,7 +66,9 @@ pub struct HtmlRendererOptions {
     /// Default: `"<br>\n"`.
     pub hard_break: Cow<'static, str>,
 
-    /// Sanitize HTML output.
+    /// Escape raw HTML and neutralize link, image, and autolink destinations
+    /// with disallowed schemes. Relative URLs and `http`, `https`, `mailto`,
+    /// and `tel` schemes are allowed.
     ///
     /// Default: `false`.
     pub sanitize: bool,
