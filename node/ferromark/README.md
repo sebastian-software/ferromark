@@ -1,4 +1,4 @@
-# ferromark v2 for Node.js
+# ferromark v3 for Node.js
 
 Native Node.js bindings for the [Ferromark](https://github.com/sebastian-software/ferromark) Markdown-to-HTML compiler.
 
@@ -123,13 +123,17 @@ pnpm build
 pnpm test
 ```
 
-See the [v2 migration guide](../../docs/migration-v2.md) for breaking changes.
-The v2 engine uses an arena AST and retains upstream MIT attribution in `LICENSE`.
+For breaking changes when upgrading from v2, see the
+[v2-to-v3 migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v3.md). If you are upgrading
+from v1, follow the [v1-to-v2 migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md)
+first, then the v2-to-v3 guide.
+
+The parser uses an arena AST and retains upstream MIT attribution in `LICENSE`.
 
 Removed options `tableColumnWidths` and `indentedCodeBlocks` throw an unknown-option error. `tableColgroup`,
 `tableColumnNames`, `tableAttributes`, `imageAttributes`, `imageCaptions`,
 `extendedAttributes`, `bracketedSpans`, `blockquoteAttributions`,
-`headingAttributes`, `cjkEmphasis`, and `mdx` expose v2 features.
+`headingAttributes`, `cjkEmphasis`, and `mdx` expose features introduced in v2.
 Optional `highlight` (`==text==`) and `inlineFootnotes` (`^[note]`) default off.
 `allowLinkRefs` defaults on; disabling it keeps reference definitions visible.
 See [optional writing syntax](../../docs/optional-writing.md).
@@ -139,7 +143,7 @@ for visible quote sources. The enabled table extension also accepts plain
 captions without attributes.
 See [shared attributes](../../docs/shared-attributes.md) for bracketed spans,
 key/value metadata, and automatic `data-*` mapping.
-Heading slugs and extension HTML follow v2. `linkBasePath` enables v2 site routing:
+Heading slugs and extension HTML retain v2 behavior. `linkBasePath` enables v2 site routing:
 root-absolute links, images, and raw HTML URLs use the base, and Markdown links
 become index.html routes. Highlighters receive fenced and indented code blocks.
 
