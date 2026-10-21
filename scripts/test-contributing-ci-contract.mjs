@@ -97,13 +97,12 @@ test("release packages target public registries", () => {
   assert.equal(deploy.jobs.build.if, "github.ref == 'refs/heads/main'");
 });
 
-test("publication follows the standards release blueprint", () => {
+test("publication validates one immutable release source before publishing", () => {
   const publisher = parse(read(".github/workflows/publish.yml"));
-  // One release signal: Release Please runs unconditionally on pushes to main,
-  // and merging the release pull request is what tags and publishes.
   assert.deepEqual(Object.keys(publisher.on), ["push", "workflow_dispatch"]);
   assert.deepEqual(publisher.on.push.branches, ["main"]);
   assert.equal(publisher.jobs["release-please"].if, "${{ github.event_name == 'push' }}");
+  assert.equal(publisher.on.workflow_dispatch.inputs.tag.required, true);
   assert.equal(
     publisher.jobs["release-please"].outputs.releases_created.includes("releases_created"),
     true,
@@ -112,56 +111,128 @@ test("publication follows the standards release blueprint", () => {
   const releaseBranchCheckout = publisher.jobs["release-please"].steps.find(
     (step) => step.name === "Check out the Release Please branch",
   );
-  assert.equal(releaseBranchCheckout.if, "${{ steps.release.outputs.prs_created == 'true' }}");
-  // Release Please leaves `pr` empty on a push with no release pull request.
-  // GitHub evaluates step inputs and env before `if`, so both accesses need a
-  // valid empty-object fallback even though their steps are skipped then.
-  const releaseBranchExpression =
-    "${{ fromJSON(steps.release.outputs.pr || '{}').headBranchName }}";
-  assert.equal(releaseBranchCheckout.with.ref, releaseBranchExpression);
+  const gha = (body) => "$" + "{{ " + body + " }}";
+  assert.equal(releaseBranchCheckout.if, gha("steps.release.outputs.prs_created == 'true'"));
+  assert.equal(
+    releaseBranchCheckout.with.ref,
+    gha("fromJSON(steps.release.outputs.pr || '{}').headBranchName"),
+  );
   const pinStep = publisher.jobs["release-please"].steps.find(
     (step) => step.name === "Restore the exact transform dependency pin",
   );
-  assert.equal(pinStep.if, "${{ steps.release.outputs.prs_created == 'true' }}");
-  assert.equal(pinStep.env.RELEASE_BRANCH, releaseBranchExpression);
+  assert.equal(pinStep.if, gha("steps.release.outputs.prs_created == 'true'"));
+  assert.equal(pinStep.env.RELEASE_BRANCH, releaseBranchCheckout.with.ref);
   assert.match(pinStep.run, /preserve-exact-transform-pin\.mjs/);
   assert.match(pinStep.run, /git push origin/);
 
-  // The manual path is a retry for an existing release, so it needs the tag and
-  // every publishing job checks out that tag rather than the branch head. The
-  // npm retry helper is the only extra checkout, pinned to the workflow commit.
-  assert.equal(publisher.on.workflow_dispatch.inputs.tag.required, true);
-  const checkoutRef = "${{ inputs.tag || needs.release-please.outputs.tag_name }}";
-  const workflowRef = "${{ github.workflow_sha }}";
-  for (const [name, job] of Object.entries(publisher.jobs)) {
-    if (name === "release-please" || name === "native-matrix") continue;
+  const validation = publisher.jobs["validate-release"];
+  assert.equal(validation.needs, "release-please");
+  assert.match(validation.if, /releases_created == 'true'/);
+  assert.match(validation.if, /workflow_dispatch/);
+  assert.equal(validation.permissions.contents, "read");
+  assert.equal(validation.permissions["id-token"], undefined);
+  assert.equal(validation.outputs.tag_name, "${{ steps.source.outputs.tag_name }}");
+  assert.equal(validation.outputs.source_sha, "${{ steps.source.outputs.source_sha }}");
+
+  const steps = validation.steps;
+  const workflowCheckout = steps.find((step) => step.uses?.startsWith("actions/checkout@"));
+  assert.equal(workflowCheckout.with.ref, gha("github.workflow_sha"));
+  assert.equal(workflowCheckout.with["fetch-depth"], 0);
+  const source = steps.find((step) => step.id === "source");
+  const releaseRecord = steps.find(
+    (step) => step.name === "Require a published GitHub release for the tag",
+  );
+  assert.match(source.run, /resolve-release-source\.mjs/);
+  assert.equal(source.env.RELEASE_TAG, gha("inputs.tag || needs.release-please.outputs.tag_name"));
+  assert.match(releaseRecord.run, /verify-github-release\.mjs/);
+  assert.ok(steps.indexOf(source) < steps.indexOf(releaseRecord));
+  assert.match(read("scripts/resolve-release-source.mjs"), /refs\/heads\/main/);
+  assert.match(read("scripts/resolve-release-source.mjs"), /merge-base/);
+  assert.match(read("scripts/verify-github-release.mjs"), /isDraft/);
+
+  const versionGate = publisher.jobs["validate-release-version"];
+  assert.equal(versionGate.needs, "validate-release");
+  assert.equal(versionGate.permissions.contents, "read");
+  assert.equal(versionGate.permissions["id-token"], undefined);
+  assert.match(versionGate.if, /needs\.validate-release\.result == 'success'/);
+  const versionCheck = versionGate.steps.find(
+    (step) => step.name === "Verify the release tag matches the package versions",
+  );
+  assert.match(versionCheck.run, /verify-release\.mjs --metadata-only/);
+  assert.match(versionCheck.run, /--root release-source/);
+  const versionCheckouts = versionGate.steps.filter((step) =>
+    step.uses?.startsWith("actions/checkout@"),
+  );
+  assert.equal(versionCheckouts.length, 2);
+  assert.equal(versionCheckouts[0].with.ref, gha("github.workflow_sha"));
+  assert.equal(versionCheckouts[0].with.path, "release-tools");
+  assert.equal(versionCheckouts[0].with["persist-credentials"], false);
+  assert.equal(versionCheckouts[1].with.ref, gha("needs.validate-release.outputs.source_sha"));
+  assert.equal(versionCheckouts[1].with.path, "release-source");
+  assert.equal(versionCheckouts[1].with["persist-credentials"], false);
+
+  const sourceCheckoutRef = gha("needs.validate-release.outputs.source_sha");
+  const workflowRef = gha("github.workflow_sha");
+  for (const name of ["publish-crates", "build-native", "publish-npm", "verify-npm-publish"]) {
+    const job = publisher.jobs[name];
     const checkouts = job.steps.filter((step) => step.uses?.startsWith("actions/checkout@"));
-    for (const step of checkouts) {
-      if (step.with.path === "release-tools") {
-        assert.equal(name, "publish-npm", `${name}: only npm loads retry helper code`);
-        assert.equal(step.with.ref, workflowRef, "release-tools: uses the workflow's commit");
-        assert.equal(step.with["persist-credentials"], false, "release-tools: no credentials");
-      } else {
-        assert.equal(step.with.path, undefined, `${name}: release source stays at workspace root`);
-        assert.equal(step.with.ref, checkoutRef, `${name}: checks out the release tag`);
-      }
+    const sourceCheckouts = checkouts.filter((step) => !step.with.path);
+    assert.ok(sourceCheckouts.length > 0, name + ": checks out the validated release source");
+    for (const step of sourceCheckouts) {
+      assert.equal(step.with.ref, sourceCheckoutRef, name + ": uses the immutable source SHA");
     }
-    assert.ok(
-      checkouts.some((step) => !step.with.path && step.with.ref === checkoutRef),
-      `${name}: checks out the release tag at the workspace root`,
-    );
+
     const helperCheckouts = checkouts.filter((step) => step.with.path === "release-tools");
+    const shouldLoadHelpers = name === "build-native" || name === "publish-npm";
     assert.equal(
       helperCheckouts.length,
-      name === "publish-npm" ? 1 : 0,
-      `${name}: only publish-npm has one retry-helper checkout`,
+      shouldLoadHelpers ? 1 : 0,
+      name + ": helper checkout count",
+    );
+    for (const step of helperCheckouts) {
+      assert.equal(step.with.ref, workflowRef, name + ": helper comes from the workflow commit");
+      assert.equal(step.with["persist-credentials"], false);
+      if (name === "build-native") {
+        assert.equal(
+          step.env.GIT_CONFIG_COUNT,
+          gha("runner.os == 'Windows' && '1' || '0'"),
+          name + ": disable NTFS protection only for the Windows checkout",
+        );
+        assert.equal(step.env.GIT_CONFIG_KEY_0, "core.protectNTFS");
+        assert.equal(step.env.GIT_CONFIG_VALUE_0, "false");
+      } else {
+        assert.equal(step.env, undefined, name + ": no NTFS override on the Ubuntu checkout");
+      }
+    }
+  }
+
+  for (const name of [
+    "publish-crates",
+    "native-matrix",
+    "build-native",
+    "publish-npm",
+    "verify-npm-publish",
+  ]) {
+    const needs = publisher.jobs[name].needs;
+    const dependencies = Array.isArray(needs) ? needs : [needs];
+    assert.ok(dependencies.includes("validate-release"), name + ": waits for source validation");
+    assert.ok(
+      dependencies.includes("validate-release-version"),
+      name + ": waits for version validation",
+    );
+    assert.match(publisher.jobs[name].if, /needs\.validate-release\.result == 'success'/, name);
+    assert.match(
+      publisher.jobs[name].if,
+      /needs\.validate-release-version\.result == 'success'/,
+      name,
     );
   }
-  for (const name of ["publish-crates", "native-matrix"]) {
-    assert.match(publisher.jobs[name].if, /releases_created == 'true'/, name);
+  for (const name of ["publish-crates", "publish-npm"]) {
+    assert.equal(publisher.jobs[name].permissions["id-token"], "write");
+    assert.match(publisher.jobs[name].if, /needs\.validate-release\.result == 'success'/);
+    assert.match(publisher.jobs[name].if, /needs\.validate-release-version\.result == 'success'/);
   }
-  assert.deepEqual(publisher.jobs["publish-crates"].permissions["id-token"], "write");
-  assert.deepEqual(publisher.jobs["publish-npm"].permissions["id-token"], "write");
+
   const cratePublisher = publisher.jobs["publish-crates"].steps.find((step) =>
     step.uses?.includes("/publish-crates@"),
   );
@@ -170,30 +241,41 @@ test("publication follows the standards release blueprint", () => {
     "ferromark-transforms",
   ]);
 
-  // The release-shaped steps are the org's shared composite actions, not
-  // hand-written copies. The selected platforms are checked against manifests
-  // and CI below because this package supports fewer targets than the action.
   const uses = Object.values(publisher.jobs).flatMap((job) =>
     job.steps.map((step) => step.uses).filter(Boolean),
   );
   for (const action of ["publish-crates", "napi-matrix", "publish-npm"]) {
     assert.ok(
-      uses.some((entry) =>
-        new RegExp(`^sebastian-software/standards/\\.github/actions/${action}@[0-9a-f]{40}$`).test(
-          entry,
-        ),
+      uses.some(
+        (entry) =>
+          entry.startsWith("sebastian-software/standards/.github/actions/" + action + "@") &&
+          /^[a-f0-9]{40}$/.test(entry.slice(entry.lastIndexOf("@") + 1)),
       ),
-      `${action} must come from the standards repository, pinned by commit`,
+      action + " must come from the standards repository, pinned by commit",
     );
   }
-  assert.ok(
-    !publisher.jobs["build-native"].strategy.matrix.include,
-    "the platform matrix comes from the napi-matrix action",
-  );
   assert.equal(
     publisher.jobs["build-native"].strategy.matrix,
-    "${{ fromJSON(needs.native-matrix.outputs.matrix) }}",
+    "$" + "{{ fromJSON(needs.native-matrix.outputs.matrix) }}",
   );
+
+  assert.equal(publisher.jobs["build-native"].strategy.matrix.include, undefined);
+  const build = publisher.jobs["build-native"];
+  const stage = build.steps.find(
+    (step) => step.name === "Bind the native artifact to the validated source SHA",
+  );
+  const upload = build.steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
+  assert.equal(stage.env.SOURCE_SHA, sourceCheckoutRef);
+  assert.match(upload.with.path, /ferromark-source-/);
+
+  const publishSteps = publisher.jobs["publish-npm"].steps;
+  const provenance = publishSteps.findIndex(
+    (step) => step.name === "Verify native artifact source identities",
+  );
+  const assemble = publishSteps.findIndex((step) => step.name === "Assemble all platform packages");
+  const publish = publishSteps.findIndex((step) => step.uses?.includes("/publish-npm@"));
+  assert.ok(provenance >= 0 && provenance < assemble);
+  assert.ok(assemble < publish);
 });
 
 test("the release native matrix matches supported packages and CI targets", () => {
