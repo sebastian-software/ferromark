@@ -24,11 +24,11 @@ repository root package, and the release follows the organization's
    the changelog section that becomes the release notes.
 3. Merge it. Release Please writes the version commit, creates the `v<version>`
    tag and the GitHub release, and sets `releases_created`.
-4. The currently gated jobs in the same workflow run from that tag. They gate on Release
-   Please alone, so the crates.io publication and the native addon pipeline start
-   in parallel: the core crate goes to crates.io while the seven native addons are
-   built, assembled, verified and published to npm, sidecars before the facade,
-   and the published versions are confirmed on the registry.
+4. The workflow resolves the tag to one commit SHA, verifies its published
+   GitHub release and package versions, then starts the publisher jobs. The core
+   crate goes to crates.io while the seven native addons are built, assembled,
+   verified and published to npm, sidecars before the facade, and the published
+   versions are confirmed on the registry.
 
 The package and version-bump rehearsal do not test registry credentials or
 upload an archive. The shared publish action receives `ferromark` before
@@ -296,16 +296,35 @@ as its `tag` input. For example, retrying `v3.1.0`:
 gh workflow run publish.yml --repo sebastian-software/ferromark --ref main -f tag=v3.1.0
 ```
 
-The workflow definition comes from current `main`; publishing jobs check out the
-supplied tag, while the retry helper comes from the exact commit that defined
-the workflow. This keeps a delayed retry on its original release sources without
-losing retry fixes added later. An unknown tag fails checkout. The crate
-publisher skips a version that is already in the crates.io sparse index, and an
-index lookup that fails outright stops the job instead of guessing. The npm
-preflight skips only exact package versions confirmed by the registry and fails
-closed on other responses. npm versions are immutable: a version that was
-already published cannot be replaced, and a conflict requires a new candidate
-rather than a forced upload.
+The dispatch must run from main. Before any publication job receives OIDC
+permissions, the source validation job accepts only a stable or RC version tag
+with a published, non-draft GitHub release. It fetches the current main branch
+and tag, then requires the tag commit to be on main. A separate version
+validation job checks that the tag version matches the Cargo, npm, and platform
+package versions at that commit. A branch name, raw commit SHA, missing tag,
+draft release, tag outside main, or version mismatch fails validation.
+
+The validation job resolves the tag once to a full commit SHA. Every release
+source checkout uses that SHA, so a tag move during a run cannot make the jobs
+publish different commits. Native build jobs store the SHA in each platform
+artifact; npm promotion verifies all seven artifact records against the same
+SHA before assembling packages. Older releases can still be retried while
+their tag remains on main and their published GitHub release remains available.
+The retry helper is loaded from the commit that defined the current workflow,
+so later retry fixes remain available.
+
+The crate publisher skips a version that is already in the crates.io sparse
+index, and an index lookup that fails outright stops the job instead of
+guessing. The npm preflight skips only exact package versions confirmed by the
+registry and fails closed on other responses. npm versions are immutable: a
+version that was already published cannot be replaced, and a conflict requires
+a new candidate rather than a forced upload.
+
+The repository does not reveal the current hosted controls. Before publishing,
+the release owner must review them without changing them and record who can
+dispatch this workflow, whether release tag updates and deletion are blocked
+for all roles and bypassers, any environment approvals, and the crates.io and
+npm Trusted Publisher claims.
 
 ## Release notes and history
 

@@ -7,11 +7,10 @@ name: publish
 # is what publishes — see docs/arch/ADR-0020-standards-release-blueprint.md and
 # the blueprint in sebastian-software/standards.
 #
-# `workflow_dispatch` is the retry path only. It takes the release tag, and
-# every job checks out `inputs.tag || needs.release-please.outputs.tag_name`,
-# never `main`, so a delayed retry cannot publish newer sources under a version
-# that already exists. (A workflow-level `env` cannot hold that expression: the
-# `needs` context is not available there.)
+# `workflow_dispatch` is the retry path only. A validation job resolves the
+# approved release tag to one commit SHA, checks the tag and version, and passes
+# that SHA to every release-source checkout. Delayed retries therefore use the
+# original release source even when current main has moved forward.
 
 on:
   push:
@@ -76,13 +75,83 @@ jobs:
             git push origin "HEAD:refs/heads/$RELEASE_BRANCH"
           fi
 
+  validate-release:
+    name: validate release source
+    needs: release-please
+    if: >-
+      ${{ !cancelled() && (
+        (github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      ) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      tag_name: ${{ steps.source.outputs.tag_name }}
+      source_sha: ${{ steps.source.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+
+      - id: source
+        name: Resolve and validate the release tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+        run: node scripts/resolve-release-source.mjs
+
+      - name: Require a published GitHub release for the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.source.outputs.tag_name }}
+        run: node scripts/verify-github-release.mjs
+
+  validate-release-version:
+    name: validate release package versions
+    needs: validate-release
+    if: ${{ !cancelled() && needs.validate-release.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: release-tools
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /node/scripts/
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate-release.outputs.source_sha }}
+          path: release-source
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+
+      - name: Verify the release tag matches the package versions
+        env:
+          RELEASE_TAG: ${{ needs.validate-release.outputs.tag_name }}
+        run: node release-tools/node/scripts/verify-release.mjs --metadata-only --root release-source --tag "$RELEASE_TAG"
+
   publish-crates:
     name: publish to crates.io
-    needs: release-please
+    needs: [release-please, validate-release, validate-release-version]
     # `!cancelled()` lets the job run when release-please was skipped by the
     # manual path; a plain `needs` would skip it too.
     if: >-
-      ${{ !cancelled() && (
+      ${{ !cancelled() && needs.validate-release.result == 'success' && needs.validate-release-version.result == 'success' && (
         (github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true') ||
         github.event_name == 'workflow_dispatch'
       ) }}
@@ -99,7 +168,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.validate-release.outputs.source_sha }}
 
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
@@ -115,9 +184,9 @@ jobs:
 
   native-matrix:
     name: napi platform matrix
-    needs: release-please
+    needs: [release-please, validate-release, validate-release-version]
     if: >-
-      ${{ !cancelled() && (
+      ${{ !cancelled() && needs.validate-release.result == 'success' && needs.validate-release-version.result == 'success' && (
         (github.event_name == 'push' && needs.release-please.outputs.releases_created == 'true') ||
         github.event_name == 'workflow_dispatch'
       ) }}
@@ -137,8 +206,8 @@ jobs:
 
   build-native:
     name: build ${{ matrix.id }}
-    needs: [release-please, native-matrix]
-    if: ${{ !cancelled() && needs.native-matrix.result == 'success' }}
+    needs: [release-please, validate-release, validate-release-version, native-matrix]
+    if: ${{ !cancelled() && needs.validate-release.result == 'success' && needs.validate-release-version.result == 'success' && needs.native-matrix.result == 'success' }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
@@ -151,7 +220,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: runner.os != 'Windows'
         with:
-          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.validate-release.outputs.source_sha }}
       # NUL is a reserved Windows device name. Preserve the frozen report in
       # Git and omit only this historical input from Windows working trees.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -163,11 +232,24 @@ jobs:
           GIT_CONFIG_KEY_0: core.protectNTFS
           GIT_CONFIG_VALUE_0: "false"
         with:
-          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.validate-release.outputs.source_sha }}
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /*
             !/docs/reports/2026-09-14-ox-regression/normalization-guards/nul.md
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        env:
+          GIT_CONFIG_COUNT: ${{ runner.os == 'Windows' && '1' || '0' }}
+          GIT_CONFIG_KEY_0: core.protectNTFS
+          GIT_CONFIG_VALUE_0: "false"
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: release-tools
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
@@ -181,7 +263,6 @@ jobs:
         with:
           toolchain: "1.95"
           targets: ${{ matrix.target }}
-          # llvm-profdata merges the profile-guided training counters.
           components: llvm-tools
 
       # `matrix.native` is false for the two musl targets: their runner is not a
@@ -216,17 +297,26 @@ jobs:
       - name: Verify platform package
         run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.id }}
 
+      - name: Bind the native artifact to the validated source SHA
+        env:
+          PLATFORM_ID: ${{ matrix.id }}
+          BINARY_NAME: ${{ matrix.binary }}
+          SOURCE_SHA: ${{ needs.validate-release.outputs.source_sha }}
+        run: node ../release-tools/scripts/stage-native-release-artifact.mjs
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ${{ matrix.artifact }}
-          path: node/ferromark/npm/${{ matrix.id }}/${{ matrix.binary }}
+          path: |
+            ${{ runner.temp }}/ferromark-native-${{ matrix.id }}/${{ matrix.binary }}
+            ${{ runner.temp }}/ferromark-native-${{ matrix.id }}/ferromark-source-${{ matrix.id }}.json
           if-no-files-found: error
           retention-days: 7
 
   publish-npm:
     name: publish to npm
-    needs: [release-please, native-matrix, build-native]
-    if: ${{ !cancelled() && needs.build-native.result == 'success' }}
+    needs: [release-please, validate-release, validate-release-version, native-matrix, build-native]
+    if: ${{ !cancelled() && needs.validate-release.result == 'success' && needs.validate-release-version.result == 'success' && needs.build-native.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -240,7 +330,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.validate-release.outputs.source_sha }}
 
       # This workflow can be retried for an immutable tag, whose tree does not
       # contain the retry-safety helper added later on main. Load only that
@@ -250,6 +340,10 @@ jobs:
           ref: ${{ github.workflow_sha }}
           path: release-tools
           persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /node/scripts/
+            /scripts/
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
@@ -274,7 +368,15 @@ jobs:
         with:
           pattern: native-*
           merge-multiple: true
-          path: node/ferromark/.napi-artifacts
+          path: node/ferromark/.napi-release-artifacts
+
+      - name: Verify native artifact source identities
+        env:
+          ARTIFACT_DIRECTORY: ferromark/.napi-release-artifacts
+          DESTINATION_DIRECTORY: ferromark/.napi-artifacts
+          SOURCE_SHA: ${{ needs.validate-release.outputs.source_sha }}
+        run: node ../release-tools/scripts/verify-native-release-artifacts.mjs
+
       - name: Assemble all platform packages
         run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm
 
@@ -350,14 +452,14 @@ jobs:
 
   verify-npm-publish:
     name: verify the npm release
-    needs: [release-please, native-matrix, publish-npm]
-    if: ${{ always() && needs.native-matrix.result == 'success' }}
+    needs: [release-please, validate-release, validate-release-version, native-matrix, publish-npm]
+    if: ${{ always() && needs.validate-release.result == 'success' && needs.validate-release-version.result == 'success' && needs.native-matrix.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.validate-release.outputs.source_sha }}
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
