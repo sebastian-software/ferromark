@@ -40,6 +40,7 @@ export const documentationSections = [
       ["Rendering and trust", "/guide/rendering"],
       ["MDX boundaries", "/guide/mdx"],
       ["Command line", "/guide/cli"],
+      ["Optional Typography", "/guide/typography"],
       ["Architecture", "/guide/architecture"],
       ["Correctness", "/guide/correctness"],
       ["Feature comparison", "/guide/feature-comparison"],

@@ -211,8 +211,12 @@ function StartSection() {
         <>
           <a href="https://github.com/sebastian-software/ferromark">GitHub repository</a>
           <span> · </span>
+          <a href="https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v3.md">
+            v2 to v3 migration
+          </a>
+          <span> · </span>
           <a href="https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v2.md">
-            Migration guide
+            v1 to v2 migration
           </a>
           <span> · </span>
           <Link to="/guide/ffm">FFM guide</Link>
