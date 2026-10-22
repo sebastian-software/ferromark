@@ -160,10 +160,9 @@ jobs:
     permissions:
       contents: read
       # crates.io Trusted Publishing exchanges this OIDC token for a
-      # short-lived registry token. It is enabled for `ferromark`. Bootstrap
-      # `ferromark-transforms` with an initial credentialed publish, then enable
-      # Trusted Publishing as documented in docs/releasing.md. No long-lived
-      # registry secret is stored here.
+      # short-lived registry token. Registry settings must require Trusted
+      # Publishing for every crate before this job publishes; see
+      # docs/releasing.md. No long-lived registry secret is stored here.
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

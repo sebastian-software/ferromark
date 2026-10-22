@@ -2,11 +2,11 @@
 
 The `ferromark` core crate publishes to crates.io. The optional
 `ferromark-transforms` crate shares its version and depends on that core. The
-publish workflow sends the core first and then the extension. The extension's
-first version needs a one-time credentialed Cargo publication; configure
-crates.io Trusted Publishing for it before the next release. The npm facade and
-seven native platform packages share the root product version. The Node
-development workspace and
+publish workflow sends the core first and then the extension. The extension
+has already been bootstrapped with its first publication. Both crates must
+have a crates.io Trusted Publisher configured and verified before a release
+that includes them. The npm facade and seven native platform packages share
+the root product version. The Node development workspace and
 `ferromark-node` binding crate remain private. Allocator, AST, parser and
 renderer are modules inside the core library; consumers can use them
 individually through `ferromark`. Since
@@ -272,20 +272,136 @@ has a 20-minute timeout.
 
 ## Registry authorization
 
-Both registries authenticate through Trusted Publishing (OIDC): no crates.io or
-npm token exists in this repository. It is configured for the `ferromark` crate
-and for the eight npm packages, repository `sebastian-software/ferromark`,
-workflow `publish.yml`. The publishing jobs therefore need
-`permissions: id-token: write`, and npm publishing needs npm 11.5.1 or newer,
-which the workflow installs explicitly.
+Automated releases and retries use Trusted Publishing (OIDC); `publish.yml` has
+no registry API-token fallback. The release workflow requests
+`permissions: id-token: write`, and it uses crates.io's OIDC authentication
+action and npm 11.5.1 or newer with Node 22.14.0 or newer. If registry
+authorization fails, stop the publish and fix the publisher configuration,
+workflow claim, or OIDC permissions before retrying the same immutable release
+tag from `main`. Do not use an emergency registry token. `RELEASE_PLEASE_TOKEN`
+is a GitHub release automation token for Release Please and release bookkeeping,
+separate from registry credentials.
 
-A new package name cannot bootstrap itself through Trusted Publishing: an
-authorized first publication must create it before Trusted Publishing can be
-configured. For a new crate such as `ferromark-transforms`, an authorized person
-must publish its first version with a Cargo credential, then configure crates.io
-Trusted Publishing before the next release. A new npm package likewise needs an
-initial credentialed npm publication before its Trusted Publisher can be
-configured.
+As of 2026-10-22, registry restrictions are in progress. The restrictive npm
+setting has been saved and rechecked for `ferromark`, `ferromark-darwin-arm64`,
+and `ferromark-win32-x64-msvc`. The `ferromark-linux-arm64-gnu` change is waiting
+for its interactive confirmation; the other four npm packages have not been
+updated. Both crates still need their Trusted Publisher and policy settings
+checked. Issue #559 records the previous npm option as allowing bypass-2FA
+tokens and the crates.io option as allowing API-token publication. Do not treat
+the target settings below as the active release policy until every registry
+page shows the corresponding value.
+
+For each npm package, the target Trusted Publisher is GitHub Actions repository
+`sebastian-software/ferromark` with workflow `publish.yml` and status `Valid`.
+The release action uses direct `npm publish`, which must be allowed for this
+Trusted Publisher. `npm stage publish` is always allowed. The npm package
+settings UI has displayed the target option `Require two-factor
+authentication and disallow bypass 2fa tokens (recommended)`. Use that exact
+setting as the target.
+The current npm docs use the separate label `Require two-factor authentication
+and disallow tokens (Recommended)` and describe that option's broader token
+behavior. The npm CLI exposes the corresponding restrictive publishing policy
+as `mfa=publish`: it requires MFA to publish and disallows automation tokens.
+Do not infer additional token restrictions from the package settings UI label.
+The Trusted Publishing docs confirm that OIDC authorization remains available
+with token restrictions. Confirm each package's selected option and Trusted
+Publisher status after saving. See [npm's 2FA
+documentation](https://docs.npmjs.com/requiring-2fa-for-package-publishing-and-settings-modification/)
+and [Trusted Publishing documentation](https://docs.npmjs.com/trusted-publishers/),
+the [`npm access` CLI documentation](https://docs.npmjs.com/cli/v11/commands/npm-access/),
+and the [`libnpmaccess` README in the npm CLI
+repository](https://github.com/npm/cli/blob/latest/workspaces/libnpmaccess/README.md).
+
+| npm package | Target publishing access option (npm UI label) |
+| --- | --- |
+| `ferromark` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-darwin-arm64` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-linux-arm64-gnu` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-linux-arm64-musl` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-linux-x64-gnu` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-linux-x64-musl` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-win32-arm64-msvc` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-win32-x64-msvc` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+
+### Batch npm publishing-access updates
+
+Run the interactive review in a terminal with Node.js, Bash, npm, `jq`, and
+`shasum` installed:
+
+```bash
+node scripts/npm-token-publishing-tui.mjs
+```
+
+The tool discovers packages you can write from your npm account. Repeat
+`--owner USER_OR_SCOPE` to include additional npm users or organization scopes,
+or pass a newline-delimited inventory across repositories with
+`--packages-file FILE`. For example:
+
+```bash
+node scripts/npm-token-publishing-tui.mjs \
+  --owner @team-a \
+  --owner @team-b
+```
+
+The npm CLI login is separate from a browser login. If `npm whoami` fails, the
+tool offers to run `npm login` interactively and retries discovery. It displays
+each package's configured Trusted Publisher identity, workflow file, and
+permissions, and filters out packages without current write access and a
+publish-capable OIDC permission. `createPackage` permits `npm publish`;
+`createStagedPackage` permits `npm stage publish`. Multiple configured
+publishers are shown separately.
+
+Use `show N` or `review N` to inspect a package's full claims. `review N` asks
+you to acknowledge that npm's UI status and current policy are unknown; after
+`ACK UNKNOWN`, it selects that package for apply. `toggle N` checks or unchecks
+an eligible package. The acknowledgement records your explicit decision to
+proceed despite those unknowns; it does not claim a publisher is `Valid`, that
+its two-day validation window has not expired, or that token publishing is
+currently enabled. The npm CLI and trust API expose configured claims but do
+not expose the UI's `Valid` status, publisher expiry, or current Publishing
+access option.
+
+`apply` makes no changes unless at least one package is selected and each
+selected package has the per-package `ACK UNKNOWN` review. The helper rechecks
+account access and publisher claims before each write, then asks for the final
+`APPLY UNKNOWN` confirmation. It runs `npm access set mfa=publish <package>`;
+npm may prompt for MFA during each update. The tool never accepts an OTP or
+token as an argument or writes one to its temporary plan or state. It stops at
+the first error and resumes from its state file on the next run. The default
+state file is outside the repository under the user's state directory; pass
+`--state FILE` to choose another location.
+
+`COMMAND_OK` means only that the npm CLI command returned success, not that the
+registry saved the option. Check each package's Publishing access in npm
+settings after the batch. If a command fails or its result is unclear, inspect
+the package's settings before retrying. If settings show the policy did not
+save after a `COMMAND_OK`, use `reset N` and confirm `RESET <package>` to clear
+that package's resume marker. `npm access get status <package>` reports
+visibility only.
+The five-minute 2FA skip is documented for bulk `npm trust` configuration; do
+not assume it also covers `npm access`. See the [`npm trust` CLI
+documentation](https://docs.npmjs.com/cli/v11/commands/npm-trust/) and the
+[`npm access` CLI documentation](https://docs.npmjs.com/cli/v11/commands/npm-access/).
+
+For both crates, the target Trusted Publisher is GitHub Actions repository
+`sebastian-software/ferromark` with workflow `publish.yml`. Verify the live
+publisher identity and validation status for each crate before enabling
+`Require trusted publishing for all new versions`; crates.io then rejects
+API-token publication. The `ferromark-transforms` first-publication bootstrap
+is complete, but its live Trusted Publisher row remains unverified until its
+settings page is checked. See [crates.io's Trusted Publishing
+documentation](https://crates.io/docs/trusted-publishing).
+
+| Crates.io crate | Target Trusted Publisher | Target new-version policy |
+| --- | --- | --- |
+| `ferromark` | GitHub Actions, `sebastian-software/ferromark`, `publish.yml` | Require trusted publishing for all new versions (enabled; API tokens rejected) |
+| `ferromark-transforms` | GitHub Actions, `sebastian-software/ferromark`, `publish.yml` | Require trusted publishing for all new versions (enabled; API tokens rejected) |
+
+A new crate or npm package still needs one authorized credentialed publication
+to create its registry entry before a Trusted Publisher can be configured. That
+bootstrap does not create an emergency publishing path for later versions. The
+retry procedure below uses the configured OIDC publishers.
 
 ## Retry a failed publish
 
