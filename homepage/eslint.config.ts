@@ -13,6 +13,9 @@ config.unshift({
     "pnpm-lock.yaml",
     "**/*.json",
     "**/*.md",
+    // MDX code blocks are documentation snippets, not project sources; they
+    // have no tsconfig entry for the type-aware rules to use.
+    "**/*.mdx/**",
   ],
 });
 

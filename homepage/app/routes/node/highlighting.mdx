@@ -9,10 +9,66 @@ import { RuntimeSwitch } from "../../components/runtime-switch";
 
 <RuntimeSwitch topic="highlighting" />
 
-Connect an initialized Ferriki highlighter to Ferromark. The same interface
-also accepts a compatible synchronous highlighter.
+Ferromark offers two code-highlighting paths. For HTML output, connect an
+initialized Ferriki highlighter to Ferromark. For JSX output, `JsxCompiler`
+uses Ferriki natively while compiling authored Markdown or MDX, so Markdown
+fences do not need a JavaScript highlighting callback. Its JSX stays framework
+neutral for your usual React and Vite pipeline.
 
-## Install and initialize
+## Compile Markdown or MDX to JSX
+
+Create one compiler and reuse it across documents. It reuses its native
+highlighter, themes, and loaded fence languages. The compiler returns a JSX
+fragment in `body` and preserved MDX imports or exports in `esm`; your existing
+module pipeline handles those alongside its normal JSX lowering. Ferromark
+does not import React or evaluate JavaScript. JSX compilation is for trusted
+authored content and does not sanitize untrusted Markdown.
+
+```js
+import { readFileSync } from "node:fs";
+import { JsxCompiler } from "ferromark";
+
+const compiler = new JsxCompiler({
+  theme: {
+    light: "github-light-default",
+    dark: "github-dark-default",
+  },
+  lineNumbers: true,
+});
+
+const source = readFileSync("content/counter.mdx", "utf8");
+const page = compiler.compile(source, {
+  format: "mdx",
+  codeBlockComponent: "CodeBlock",
+});
+
+console.log(page.headings);
+console.log(page.body);
+```
+
+`CodeBlock` is supplied by your framework. Markdown fences are highlighted by
+the native Ferriki integration; this path does not require `@ferriki/core`,
+`codeToHtml()`, or a JavaScript callback. The fence metadata becomes component
+props, and the original code is retained separately from its highlighted JSX.
+
+This MDX fence demonstrates a title, a label, highlighted lines, and line
+numbers:
+
+```tsx title="Counter.tsx" [counter component] {3-5} showLineNumbers
+import { useState } from "react";
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>Count: {count}</button>;
+}
+```
+
+## Highlight HTML with a JavaScript highlighter
+
+The HTML helper APIs remain available when your application needs HTML output.
+They accept Ferriki or another compatible synchronous highlighter.
+
+### Install and initialize
 
 ```sh
 npm install ferromark @ferriki/core
@@ -48,7 +104,7 @@ The arguments are Markdown, the highlighter, highlighting settings, and optional
 Markdown options. Initialization is asynchronous; rendering uses synchronous
 `codeToHtml()` calls.
 
-## Keep document metadata
+### Keep document metadata
 
 ```js
 import { transformWithHighlighter } from "ferromark";
@@ -65,7 +121,7 @@ console.log(page.headings, page.frontMatter);
 
 The callback receives fenced and indented code blocks.
 
-## Understand fallback behavior
+### Understand fallback behavior
 
 Unsupported languages and highlighter exceptions fall back to escaped
 `<pre><code>` output. `onHighlightError` can observe exceptions; if it throws,
