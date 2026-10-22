@@ -282,28 +282,38 @@ tag from `main`. Do not use an emergency registry token. `RELEASE_PLEASE_TOKEN`
 is a GitHub release automation token for Release Please and release bookkeeping,
 separate from registry credentials.
 
-As of 2026-10-22, the new registry restrictions are pending and have not all
-been saved and rechecked. Issue #559 records the current npm option as allowing
-bypass-2FA tokens and the crates.io option as allowing API-token publication.
-The target settings below become the active release policy only after every
-registry page shows the corresponding value.
+As of 2026-10-22, registry restrictions are in progress. The restrictive npm
+setting has been saved and rechecked for `ferromark`, `ferromark-darwin-arm64`,
+and `ferromark-win32-x64-msvc`. The `ferromark-linux-arm64-gnu` change is waiting
+for its interactive confirmation; the other four npm packages have not been
+updated. Both crates still need their Trusted Publisher and policy settings
+checked. Issue #559 records the previous npm option as allowing bypass-2FA
+tokens and the crates.io option as allowing API-token publication. Do not treat
+the target settings below as the active release policy until every registry
+page shows the corresponding value.
 
 For each npm package, the target Trusted Publisher is GitHub Actions repository
 `sebastian-software/ferromark` with workflow `publish.yml` and status `Valid`.
 The release action uses direct `npm publish`, which must be allowed for this
-Trusted Publisher. `npm stage publish` is always allowed. Before the change,
-Helium displayed the package option `Require two-factor authentication and
-disallow bypass 2fa tokens (recommended)`. Use that exact setting as the target.
+Trusted Publisher. `npm stage publish` is always allowed. The npm package
+settings UI has displayed the target option `Require two-factor
+authentication and disallow bypass 2fa tokens (recommended)`. Use that exact
+setting as the target.
 The current npm docs use the separate label `Require two-factor authentication
 and disallow tokens (Recommended)` and describe that option's broader token
-behavior. Do not infer additional token restrictions from the Helium label. The
-Trusted Publishing docs confirm that OIDC authorization remains available with
-token restrictions. Confirm each package's selected option and Trusted
+behavior. The npm CLI exposes the corresponding restrictive publishing policy
+as `mfa=publish`: it requires MFA to publish and disallows automation tokens.
+Do not infer additional token restrictions from the package settings UI label.
+The Trusted Publishing docs confirm that OIDC authorization remains available
+with token restrictions. Confirm each package's selected option and Trusted
 Publisher status after saving. See [npm's 2FA
 documentation](https://docs.npmjs.com/requiring-2fa-for-package-publishing-and-settings-modification/)
-and [Trusted Publishing documentation](https://docs.npmjs.com/trusted-publishers/).
+and [Trusted Publishing documentation](https://docs.npmjs.com/trusted-publishers/),
+the [`npm access` CLI documentation](https://docs.npmjs.com/cli/v11/commands/npm-access/),
+and the [`libnpmaccess` README in the npm CLI
+repository](https://github.com/npm/cli/blob/latest/workspaces/libnpmaccess/README.md).
 
-| npm package | Target publishing access option (Helium UI label) |
+| npm package | Target publishing access option (npm UI label) |
 | --- | --- |
 | `ferromark` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
 | `ferromark-darwin-arm64` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
@@ -313,6 +323,77 @@ and [Trusted Publishing documentation](https://docs.npmjs.com/trusted-publishers
 | `ferromark-linux-x64-musl` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
 | `ferromark-win32-arm64-msvc` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
 | `ferromark-win32-x64-msvc` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+
+### Apply the npm publishing policy in a batch
+
+Use an interactive terminal session for the npm account that owns these
+packages. Confirm `npm whoami --registry=https://registry.npmjs.org` identifies
+the expected account. The allowlist below is the full eight-package scope.
+Use `npm trust list <package> --json` to check each package's OIDC identity and
+permissions before making any changes. The output must show
+`type: github`, `repository: sebastian-software/ferromark`, `file: publish.yml`,
+and both `createPackage` and `createStagedPackage` in `permissions`. The CLI
+does not report the publisher's `Valid` status, so check each package in npm
+settings before continuing. Stop if any identity, permission, or status
+differs; repair and validate that publisher first.
+
+The loop below prints all eight read-only Trusted Publisher records before any
+write. Review each record against the expected values above. `npm trust list`
+returns the trust configuration, not its live validation result, and may print
+one JSON object per configured relationship. Review every object for each
+package; do not treat the command's successful exit as sufficient validation.
+The script pauses after preflight so you can inspect all eight `Valid` statuses
+in npm settings before confirming the write phase. Run it in an interactive
+Bash session, such as macOS's default Bash 3.2. This batches the CLI preflight
+and write sequence; it does not promise fewer 2FA challenges.
+
+```bash
+(
+  set -euo pipefail
+
+  packages=(
+    ferromark
+    ferromark-darwin-arm64
+    ferromark-linux-arm64-gnu
+    ferromark-linux-arm64-musl
+    ferromark-linux-x64-gnu
+    ferromark-linux-x64-musl
+    ferromark-win32-arm64-msvc
+    ferromark-win32-x64-msvc
+  )
+
+  for package in "${packages[@]}"; do
+    printf '\nTrusted Publisher configuration for %s:\n' "$package"
+    npm --registry=https://registry.npmjs.org trust list "$package" --json
+  done
+
+  printf '\nCheck all eight Trusted Publisher statuses in npm settings.\n'
+  printf 'Type APPLY only after every publisher is Valid and matches the expected identity and permissions: '
+  IFS= read -r confirmation
+  [[ "$confirmation" == "APPLY" ]] || { printf 'Stopped before changing packages.\n' >&2; exit 1; }
+
+  for package in "${packages[@]}"; do
+    printf '\nApplying publishing MFA policy to %s.\n' "$package"
+    npm --registry=https://registry.npmjs.org access set mfa=publish "$package"
+  done
+)
+```
+
+`npm access set mfa=publish` requires MFA for publishing and does not allow
+automation tokens to publish. The CLI may prompt for a separate OTP during each
+package update. npm documents a five-minute 2FA skip only for bulk `npm trust`
+configuration; do not assume that it also covers `npm access`. Do not put an
+OTP or publishing token in the command, shell history, or a script.
+
+The write loop stops at the first error. Keep a checklist of packages whose
+update and UI verification both succeeded. If interrupted or a command's result
+is uncertain, check that package's access page first: mark it complete if the
+target option is selected, or retry its CLI command after verifying its
+publisher. Resume by editing the allowlist to include only unverified names.
+After all writes, verify the target option in npm settings for every package;
+the CLI does not report the saved publishing policy. `npm access get status
+<package>` reports package visibility only. See
+[`npm trust` CLI documentation](https://docs.npmjs.com/cli/v11/commands/npm-trust/).
 
 For both crates, the target Trusted Publisher is GitHub Actions repository
 `sebastian-software/ferromark` with workflow `publish.yml`. Verify the live
