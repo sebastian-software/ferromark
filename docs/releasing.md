@@ -2,11 +2,11 @@
 
 The `ferromark` core crate publishes to crates.io. The optional
 `ferromark-transforms` crate shares its version and depends on that core. The
-publish workflow sends the core first and then the extension. The extension's
-first version needs a one-time credentialed Cargo publication; configure
-crates.io Trusted Publishing for it before the next release. The npm facade and
-seven native platform packages share the root product version. The Node
-development workspace and
+publish workflow sends the core first and then the extension. The extension
+has already been bootstrapped with its first publication. Both crates must
+have a crates.io Trusted Publisher configured and verified before a release
+that includes them. The npm facade and seven native platform packages share
+the root product version. The Node development workspace and
 `ferromark-node` binding crate remain private. Allocator, AST, parser and
 renderer are modules inside the core library; consumers can use them
 individually through `ferromark`. Since
@@ -272,20 +272,66 @@ has a 20-minute timeout.
 
 ## Registry authorization
 
-Both registries authenticate through Trusted Publishing (OIDC): no crates.io or
-npm token exists in this repository. It is configured for the `ferromark` crate
-and for the eight npm packages, repository `sebastian-software/ferromark`,
-workflow `publish.yml`. The publishing jobs therefore need
-`permissions: id-token: write`, and npm publishing needs npm 11.5.1 or newer,
-which the workflow installs explicitly.
+Automated releases and retries use Trusted Publishing (OIDC); `publish.yml` has
+no registry API-token fallback. The release workflow requests
+`permissions: id-token: write`, and it uses crates.io's OIDC authentication
+action and npm 11.5.1 or newer with Node 22.14.0 or newer. If registry
+authorization fails, stop the publish and fix the publisher configuration,
+workflow claim, or OIDC permissions before retrying the same immutable release
+tag from `main`. Do not use an emergency registry token. `RELEASE_PLEASE_TOKEN`
+is a GitHub release automation token for Release Please and release bookkeeping,
+separate from registry credentials.
 
-A new package name cannot bootstrap itself through Trusted Publishing: an
-authorized first publication must create it before Trusted Publishing can be
-configured. For a new crate such as `ferromark-transforms`, an authorized person
-must publish its first version with a Cargo credential, then configure crates.io
-Trusted Publishing before the next release. A new npm package likewise needs an
-initial credentialed npm publication before its Trusted Publisher can be
-configured.
+As of 2026-10-22, the new registry restrictions are pending and have not all
+been saved and rechecked. Issue #559 records the current npm option as allowing
+bypass-2FA tokens and the crates.io option as allowing API-token publication.
+The target settings below become the active release policy only after every
+registry page shows the corresponding value.
+
+For each npm package, the target Trusted Publisher is GitHub Actions repository
+`sebastian-software/ferromark` with workflow `publish.yml` and status `Valid`.
+The release action uses direct `npm publish`, which must be allowed for this
+Trusted Publisher. `npm stage publish` is always allowed. Before the change,
+Helium displayed the package option `Require two-factor authentication and
+disallow bypass 2fa tokens (recommended)`. Use that exact setting as the target.
+The current npm docs use the separate label `Require two-factor authentication
+and disallow tokens (Recommended)` and describe that option's broader token
+behavior. Do not infer additional token restrictions from the Helium label. The
+Trusted Publishing docs confirm that OIDC authorization remains available with
+token restrictions. Confirm each package's selected option and Trusted
+Publisher status after saving. See [npm's 2FA
+documentation](https://docs.npmjs.com/requiring-2fa-for-package-publishing-and-settings-modification/)
+and [Trusted Publishing documentation](https://docs.npmjs.com/trusted-publishers/).
+
+| npm package | Target publishing access option (Helium UI label) |
+| --- | --- |
+| `ferromark` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-darwin-arm64` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-linux-arm64-gnu` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-linux-arm64-musl` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-linux-x64-gnu` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-linux-x64-musl` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-win32-arm64-msvc` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+| `ferromark-win32-x64-msvc` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
+
+For both crates, the target Trusted Publisher is GitHub Actions repository
+`sebastian-software/ferromark` with workflow `publish.yml`. Verify the live
+publisher identity and validation status for each crate before enabling
+`Require trusted publishing for all new versions`; crates.io then rejects
+API-token publication. The `ferromark-transforms` first-publication bootstrap
+is complete, but its live Trusted Publisher row remains unverified until its
+settings page is checked. See [crates.io's Trusted Publishing
+documentation](https://crates.io/docs/trusted-publishing).
+
+| Crates.io crate | Target Trusted Publisher | Target new-version policy |
+| --- | --- | --- |
+| `ferromark` | GitHub Actions, `sebastian-software/ferromark`, `publish.yml` | Require trusted publishing for all new versions (enabled; API tokens rejected) |
+| `ferromark-transforms` | GitHub Actions, `sebastian-software/ferromark`, `publish.yml` | Require trusted publishing for all new versions (enabled; API tokens rejected) |
+
+A new crate or npm package still needs one authorized credentialed publication
+to create its registry entry before a Trusted Publisher can be configured. That
+bootstrap does not create an emergency publishing path for later versions. The
+retry procedure below uses the configured OIDC publishers.
 
 ## Retry a failed publish
 
