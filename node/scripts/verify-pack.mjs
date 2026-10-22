@@ -40,8 +40,8 @@ if (mainFiles.some((file) => file.endsWith(".node"))) {
 if (mainFiles.some((file) => !allowedMain.has(file))) {
   throw new Error(`Main package contains unexpected files:\n${mainFiles.join("\n")}`);
 }
-// Prepared Markdown projection adds public types and facade methods; retain modest headroom.
-if (main.unpackedSize >= 120_000) {
+// Keep a cap on the JS package while leaving room for documented input contracts.
+if (main.unpackedSize >= 124_000) {
   throw new Error(`Main package is unexpectedly large: ${main.unpackedSize} bytes unpacked`);
 }
 
