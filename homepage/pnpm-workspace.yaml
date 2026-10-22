@@ -18,6 +18,8 @@ overrides:
   esbuild@>=0.27.3 <0.28.1: 0.28.1
   # GHSA-2883-xcg3-v3hh: preserve gray-matter's v3 API while fixing merge limits.
   js-yaml@>=3.0.0 <3.15.2: 3.15.2
+  # GHSA-hp3w-g68c-fv3c: the homepage uses js-yaml parsing, not its CLI.
+  "js-yaml@3.15.2>argparse": 2.0.1
   lodash@<=4.17.23: 4.18.1
   nanoid@<3.3.18: 3.3.18
   picomatch@>=4.0.0 <4.0.4: 4.0.5
