@@ -322,9 +322,23 @@ a new candidate rather than a forced upload.
 
 The active repository ruleset `Ferromark v* release tag protection` (ID
 `25623547`) targets `refs/tags/v*` and restricts tag updates and deletion. Its
-bypass list is empty, and tag creation is not restricted. The Release Please
-job retains `contents: write`, so it can create the version tag. Do not update
-or delete a live release tag to test this control.
+bypass list is intentionally empty: a bypass could move a release tag between
+a partial publish and a retry, causing the same version to refer to different
+source commits. Tag creation is not restricted. The Release Please job retains
+`contents: write`, so it can create the version tag.
+
+Before publishing, have a ruleset editor verify the active rule and empty
+bypass list through these read-only API calls:
+
+```sh
+gh api 'repos/sebastian-software/ferromark/rulesets?includes_parents=true'
+gh api 'repos/sebastian-software/ferromark/rulesets/25623547?includes_parents=true'
+```
+
+Confirm that the rule still targets `refs/tags/v*` and blocks updates and
+deletion. The detail response includes `bypass_actors` only for users with
+write access to the ruleset. Do not update or delete a live release tag to test
+this control.
 
 Before publishing, the release owner must still review and record who can
 dispatch this workflow and any environment approvals. See [Registry
