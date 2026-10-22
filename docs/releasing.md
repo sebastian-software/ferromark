@@ -328,9 +328,10 @@ repository](https://github.com/npm/cli/blob/latest/workspaces/libnpmaccess/READM
 
 Use an interactive terminal logged in to the npm account that owns the
 packages. The reusable Bash script `scripts/npm-token-publishing-batch.sh`
-requires `npm`, `jq`, and `shasum`. It previews by default and writes no plan or
-state file unless `--plan` is given. It discovers the current account's
-writable packages; repeat `--owner USER_OR_SCOPE` to include additional npm
+requires `npm`, `jq`, and `shasum`. It previews by default and never changes
+npm settings without `--apply`. It writes a plan only when `--plan` is given
+and creates a state file only during `--apply`. It discovers the current
+account's writable packages; repeat `--owner USER_OR_SCOPE` to include additional npm
 users or organization scopes. For an inventory across repositories, pass a
 newline-delimited `--packages-file`;
 the script deduplicates names and checks current write access. Each package
