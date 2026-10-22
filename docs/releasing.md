@@ -324,76 +324,95 @@ repository](https://github.com/npm/cli/blob/latest/workspaces/libnpmaccess/READM
 | `ferromark-win32-arm64-msvc` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
 | `ferromark-win32-x64-msvc` | Require two-factor authentication and disallow bypass 2fa tokens (recommended) |
 
-### Apply the npm publishing policy in a batch
+### Batch npm publishing-access updates
 
-Use an interactive terminal session for the npm account that owns these
-packages. Confirm `npm whoami --registry=https://registry.npmjs.org` identifies
-the expected account. The allowlist below is the full eight-package scope.
-Use `npm trust list <package> --json` to check each package's OIDC identity and
-permissions before making any changes. The output must show
-`type: github`, `repository: sebastian-software/ferromark`, `file: publish.yml`,
-and both `createPackage` and `createStagedPackage` in `permissions`. The CLI
-does not report the publisher's `Valid` status, so check each package in npm
-settings before continuing. Stop if any identity, permission, or status
-differs; repair and validate that publisher first.
+Use an interactive terminal logged in to the npm account that owns the
+packages. The reusable Bash script `scripts/npm-token-publishing-batch.sh`
+requires `npm`, `jq`, and `shasum`. It previews by default and writes no plan or
+state file unless `--plan` is given. It discovers the current account's
+writable packages; repeat `--owner USER_OR_SCOPE` to include additional npm
+users or organization scopes. For an inventory across repositories, pass a
+newline-delimited `--packages-file`;
+the script deduplicates names and checks current write access. Each package
+must also have at least one Trusted Publisher permission for `npm publish`
+(`createPackage`) or `npm stage publish` (`createStagedPackage`). Stage-only
+publishing is a valid OIDC flow.
 
-The loop below prints all eight read-only Trusted Publisher records before any
-write. Review each record against the expected values above. `npm trust list`
-returns the trust configuration, not its live validation result, and may print
-one JSON object per configured relationship. Review every object for each
-package; do not treat the command's successful exit as sufficient validation.
-The script pauses after preflight so you can inspect all eight `Valid` statuses
-in npm settings before confirming the write phase. Run it in an interactive
-Bash session, such as macOS's default Bash 3.2. This batches the CLI preflight
-and write sequence; it does not promise fewer 2FA challenges.
+For this repository, an explicit inventory can include the eight published
+packages:
 
 ```bash
-(
-  set -euo pipefail
-
-  packages=(
-    ferromark
-    ferromark-darwin-arm64
-    ferromark-linux-arm64-gnu
-    ferromark-linux-arm64-musl
-    ferromark-linux-x64-gnu
-    ferromark-linux-x64-musl
-    ferromark-win32-arm64-msvc
-    ferromark-win32-x64-msvc
-  )
-
-  for package in "${packages[@]}"; do
-    printf '\nTrusted Publisher configuration for %s:\n' "$package"
-    npm --registry=https://registry.npmjs.org trust list "$package" --json
-  done
-
-  printf '\nCheck all eight Trusted Publisher statuses in npm settings.\n'
-  printf 'Type APPLY only after every publisher is Valid and matches the expected identity and permissions: '
-  IFS= read -r confirmation
-  [[ "$confirmation" == "APPLY" ]] || { printf 'Stopped before changing packages.\n' >&2; exit 1; }
-
-  for package in "${packages[@]}"; do
-    printf '\nApplying publishing MFA policy to %s.\n' "$package"
-    npm --registry=https://registry.npmjs.org access set mfa=publish "$package"
-  done
-)
+batch_dir=$(mktemp -d /tmp/ferromark-npm-policy.XXXXXX)
+cat >"$batch_dir/packages.txt" <<'EOF'
+ferromark
+ferromark-darwin-arm64
+ferromark-linux-arm64-gnu
+ferromark-linux-arm64-musl
+ferromark-linux-x64-gnu
+ferromark-linux-x64-musl
+ferromark-win32-arm64-msvc
+ferromark-win32-x64-msvc
+EOF
+bash scripts/npm-token-publishing-batch.sh \
+  --packages-file "$batch_dir/packages.txt" \
+  --plan "$batch_dir/plan.json"
 ```
 
-`npm access set mfa=publish` requires MFA for publishing and does not allow
-automation tokens to publish. The CLI may prompt for a separate OTP during each
-package update. npm documents a five-minute 2FA skip only for bulk `npm trust`
-configuration; do not assume that it also covers `npm access`. Do not put an
-OTP or publishing token in the command, shell history, or a script.
+For account and organization discovery across repositories, omit
+`--packages-file` and repeat `--owner`, for example:
 
-The write loop stops at the first error. Keep a checklist of packages whose
-update and UI verification both succeeded. If interrupted or a command's result
-is uncertain, check that package's access page first: mark it complete if the
-target option is selected, or retry its CLI command after verifying its
-publisher. Resume by editing the allowlist to include only unverified names.
-After all writes, verify the target option in npm settings for every package;
-the CLI does not report the saved publishing policy. `npm access get status
-<package>` reports package visibility only. See
-[`npm trust` CLI documentation](https://docs.npmjs.com/cli/v11/commands/npm-trust/).
+```bash
+bash scripts/npm-token-publishing-batch.sh \
+  --owner @team-a \
+  --owner @team-b \
+  --plan "$batch_dir/org-plan.json"
+```
+
+Review the printed OIDC claims and permissions and the generated plan. The npm
+CLI returns one JSON object per configured relationship and the script handles
+multiple configurations per package. `npm trust list --json` exposes the
+configured identity and permissions, but it does not report the npm UI's
+`Valid` status or configuration expiry. The CLI also cannot read back the
+current Publishing access option. Before applying, check each selected package
+in npm settings. Only list a package in `validated-packages.txt` when every
+configured publisher is `Valid`, its identity and permissions match the
+intended release workflow, and Publishing access currently allows token
+publishing. This all-publishers check is deliberately conservative: if a
+package has an expired or otherwise unverified publisher configuration, leave
+it out even if another publisher is valid.
+
+Use the same plan path you created above. If you used the account and
+organization discovery example, replace `plan.json` below with `org-plan.json`.
+
+```bash
+: >"$batch_dir/validated-packages.txt"
+# Add only individually UI-validated package names, one per line, then save.
+vi "$batch_dir/validated-packages.txt"
+bash scripts/npm-token-publishing-batch.sh \
+  --apply \
+  --plan "$batch_dir/plan.json" \
+  --validated-packages "$batch_dir/validated-packages.txt" \
+  --state "$batch_dir/state.tsv"
+```
+
+The script checks the account, package write access, publisher fingerprint, and
+permissions before the batch, then rechecks access and publisher configuration
+immediately before each write. It asks you to type `APPLY` before making
+changes, stops at the first error, and can resume with the same plan and state
+file. `COMMAND_OK` in that file means only that the npm CLI command returned
+success; it is not registry readback. Verify the saved Publishing access
+option in npm settings for every package. If a command's result is uncertain,
+inspect its package settings before resuming. If the policy did not save,
+remove that package's `COMMAND_OK` row before retrying.
+
+`npm access set mfa=publish <package>` requires MFA for publishing and
+disallows automation-token publishing. npm may prompt for an OTP during each
+update; the script never accepts an OTP or token as an argument or writes one
+to its plan or state file. npm documents a five-minute 2FA skip only for bulk
+`npm trust` configuration; do not assume it also covers `npm access`. After
+the batch, verify the target option in npm settings for each package.
+`npm access get status <package>` reports visibility only. See the [`npm trust`
+CLI documentation](https://docs.npmjs.com/cli/v11/commands/npm-trust/).
 
 For both crates, the target Trusted Publisher is GitHub Actions repository
 `sebastian-software/ferromark` with workflow `publish.yml`. Verify the live
