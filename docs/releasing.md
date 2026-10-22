@@ -320,11 +320,16 @@ registry and fails closed on other responses. npm versions are immutable: a
 version that was already published cannot be replaced, and a conflict requires
 a new candidate rather than a forced upload.
 
-The repository does not reveal the current hosted controls. Before publishing,
-the release owner must review them without changing them and record who can
-dispatch this workflow, whether release tag updates and deletion are blocked
-for all roles and bypassers, any environment approvals, and the crates.io and
-npm Trusted Publisher claims.
+The active repository ruleset `Ferromark v* release tag protection` (ID
+`25623547`) targets `refs/tags/v*` and restricts tag updates and deletion. Its
+bypass list is empty, and tag creation is not restricted. The Release Please
+job retains `contents: write`, so it can create the version tag. Do not update
+or delete a live release tag to test this control.
+
+Before publishing, the release owner must still review and record who can
+dispatch this workflow and any environment approvals. See [Registry
+authorization](#registry-authorization) for the crates.io and npm Trusted
+Publisher claims.
 
 ## Release notes and history
 
