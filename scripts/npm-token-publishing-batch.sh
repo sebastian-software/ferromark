@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Preview or apply npm's mfa=publish policy for packages with reviewed OIDC publishers.
+# Preview or apply npm's mfa=publish policy for packages with configured OIDC publishers.
 set -uo pipefail
 
 REGISTRY=https://registry.npmjs.org
@@ -28,7 +28,7 @@ apply=0
 plan_path=
 state_path=
 packages_path=
-validated_path=
+acknowledged_path=
 while (($#)); do
   case "$1" in
     --owner)
@@ -52,17 +52,17 @@ while (($#)); do
       state_path=$2
       shift 2
       ;;
-    --validated-packages)
-      (($# >= 2)) || fail '--validated-packages requires a path'
-      validated_path=$2
+    --acknowledged-packages)
+      (($# >= 2)) || fail '--acknowledged-packages requires a path'
+      acknowledged_path=$2
       shift 2
       ;;
     --apply) apply=1; shift ;;
     --help|-h)
       printf '%s\n' \
         'Usage: npm-token-publishing-batch.sh [--owner USER_OR_SCOPE ...] [--packages-file FILE] [--plan FILE]' \
-        '       npm-token-publishing-batch.sh --apply --plan FILE --validated-packages FILE --state FILE' \
-        'Preview is read-only. Apply requires a reviewed plan and caller-selected state file.'
+        '       npm-token-publishing-batch.sh --apply --plan FILE --acknowledged-packages FILE --state FILE' \
+        'Preview is read-only. Apply requires explicit acknowledgement of unknown npm UI status.'
       exit 0
       ;;
     *) fail "unknown option: $1" ;;
@@ -70,14 +70,20 @@ while (($#)); do
 done
 
 if ((apply)); then
-  [[ -n "$plan_path" && -n "$state_path" && -n "$validated_path" ]] || fail '--apply requires --plan FILE, --validated-packages FILE, and --state FILE'
+  [[ -n "$plan_path" && -n "$state_path" && -n "$acknowledged_path" ]] || fail '--apply requires --plan FILE, --acknowledged-packages FILE, and --state FILE'
   [[ -f "$plan_path" ]] || fail "plan file does not exist: $plan_path"
-  [[ -f "$validated_path" ]] || fail "validated package list does not exist: $validated_path"
+  [[ -f "$acknowledged_path" ]] || fail "acknowledged package list does not exist: $acknowledged_path"
   [[ -z "$packages_path" && ! -s "$owners_file" ]] || fail '--apply reads its package inventory and owner selectors from the plan'
   [[ ! -d "$state_path" ]] || fail "state path is a directory: $state_path"
+  if [[ -e "$state_path" ]]; then
+    [[ -f "$state_path" ]] || fail "state path is not a file: $state_path"
+    IFS= read -r state_header <"$state_path" || fail "state file is empty or malformed: $state_path"
+    [[ "$state_header" == $'package\tfingerprint\tresult' ]] || fail "state file has an unsupported header: $state_path"
+    awk -F '\t' 'NR == 1 { next } NF == 0 { next } NF != 3 || $1 == "" || length($2) != 64 || $2 ~ /[^0-9a-f]/ || $3 != "COMMAND_OK" { exit 1 }' "$state_path" || fail "state file has a malformed row: $state_path"
+  fi
 else
   [[ -z "$state_path" ]] || fail '--state is only used with --apply'
-  [[ -z "$validated_path" ]] || fail '--validated-packages is only used with --apply'
+  [[ -z "$acknowledged_path" ]] || fail '--acknowledged-packages is only used with --apply'
   [[ -z "$plan_path" || ! -e "$plan_path" ]] || fail "refusing to overwrite plan file: $plan_path"
   [[ -z "$packages_path" || -f "$packages_path" ]] || fail "package inventory does not exist: $packages_path"
 fi
@@ -130,9 +136,9 @@ if ((apply)); then
   while IFS= read -r package || [[ -n "$package" ]]; do
     package=$(printf '%s' "$package" | tr -d '\r')
     [[ -z "$package" || "$package" == \#* ]] && continue
-    valid_package_name "$package" || fail "invalid package name in validated list: $package"
+    valid_package_name "$package" || fail "invalid package name in acknowledged list: $package"
     printf '%s\n' "$package" >>"$tmp_dir/selected"
-  done <"$validated_path"
+  done <"$acknowledged_path"
 else
   : >"$tmp_dir/selected"
   if [[ -n "$packages_path" ]]; then
@@ -150,7 +156,7 @@ sort -u "$tmp_dir/selected" >"$tmp_dir/selected.sorted"
 mv "$tmp_dir/selected.sorted" "$tmp_dir/selected"
 if [[ ! -s "$tmp_dir/selected" ]]; then
   if ((apply)); then
-    printf 'No packages were marked as UI-validated; no changes made.\n'
+    printf 'No packages were acknowledged for update; no changes made.\n'
     exit 0
   fi
   fail 'selected inventory is empty'
@@ -213,7 +219,7 @@ if ((apply)); then
       '{package:$package,fingerprint:$fingerprint,permissions:$permissions}' >>"$tmp_dir/preflight"
   done <"$tmp_dir/selected"
 
-  [[ -s "$tmp_dir/preflight" ]] || { printf 'No reviewed, current packages are ready to update.\n'; exit 0; }
+  [[ -s "$tmp_dir/preflight" ]] || { printf 'No acknowledged, current packages are ready to update.\n'; exit 0; }
   state_dir=$(dirname "$state_path")
   [[ -d "$state_dir" ]] || fail "state directory does not exist: $state_dir"
   if [[ -e "$state_path" && ! -f "$state_path" ]]; then
@@ -223,9 +229,9 @@ if ((apply)); then
   jq -r '[.package, .permissions] | @tsv' "$tmp_dir/preflight" | while IFS=$'\t' read -r package summary; do
     printf '  %s (%s OIDC publish)\n' "$package" "$summary"
   done
-  printf 'Type APPLY to continue: '
+  printf 'npm CLI cannot report UI Valid status, publisher expiry, or current Publishing access. Type APPLY UNKNOWN to continue: '
   IFS= read -r confirmation || fail 'confirmation input ended; no changes made'
-  [[ "$confirmation" == APPLY ]] || fail 'confirmation did not match APPLY; no changes made'
+  [[ "$confirmation" == 'APPLY UNKNOWN' ]] || fail 'confirmation did not match APPLY UNKNOWN; no changes made'
   if [[ ! -e "$state_path" ]]; then
     printf 'package\tfingerprint\tresult\n' >"$state_path" || fail "could not create state file: $state_path"
   fi
@@ -292,5 +298,5 @@ if [[ -n "$plan_path" ]]; then
   jq -s -n --arg account "$account" --arg registry "$REGISTRY" --slurpfile packages "$tmp_dir/plan-packages" --rawfile owner_lines "$owners_file" \
     '{schema:1,account:$account,registry:$registry,owners:($owner_lines | split("\n") | map(select(length > 0))),packages:$packages}' >"$tmp_dir/plan.json" || fail 'could not build plan'
   (set -C; cat "$tmp_dir/plan.json" >"$plan_path") 2>/dev/null || fail "could not create plan: $plan_path"
-  printf 'Review plan written to %s. Edit each eligible package review, then run --apply --plan %s --state PATH.\n' "$plan_path" "$plan_path"
+  printf 'Review plan written to %s. Use the interactive TUI to review packages and apply safely.\n' "$plan_path"
 fi

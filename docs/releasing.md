@@ -326,94 +326,63 @@ repository](https://github.com/npm/cli/blob/latest/workspaces/libnpmaccess/READM
 
 ### Batch npm publishing-access updates
 
-Use an interactive terminal logged in to the npm account that owns the
-packages. The reusable Bash script `scripts/npm-token-publishing-batch.sh`
-requires `npm`, `jq`, and `shasum`. It previews by default and never changes
-npm settings without `--apply`. It writes a plan only when `--plan` is given
-and creates a state file only during `--apply`. It discovers the current
-account's writable packages; repeat `--owner USER_OR_SCOPE` to include additional npm
-users or organization scopes. For an inventory across repositories, pass a
-newline-delimited `--packages-file`;
-the script deduplicates names and checks current write access. Each package
-must also have at least one Trusted Publisher permission for `npm publish`
-(`createPackage`) or `npm stage publish` (`createStagedPackage`). Stage-only
-publishing is a valid OIDC flow.
-
-For this repository, an explicit inventory can include the eight published
-packages:
+Run the interactive review in a terminal with Node.js, Bash, npm, `jq`, and
+`shasum` installed:
 
 ```bash
-batch_dir=$(mktemp -d /tmp/ferromark-npm-policy.XXXXXX)
-cat >"$batch_dir/packages.txt" <<'EOF'
-ferromark
-ferromark-darwin-arm64
-ferromark-linux-arm64-gnu
-ferromark-linux-arm64-musl
-ferromark-linux-x64-gnu
-ferromark-linux-x64-musl
-ferromark-win32-arm64-msvc
-ferromark-win32-x64-msvc
-EOF
-bash scripts/npm-token-publishing-batch.sh \
-  --packages-file "$batch_dir/packages.txt" \
-  --plan "$batch_dir/plan.json"
+node scripts/npm-token-publishing-tui.mjs
 ```
 
-For account and organization discovery across repositories, omit
-`--packages-file` and repeat `--owner`, for example:
+The tool discovers packages you can write from your npm account. Repeat
+`--owner USER_OR_SCOPE` to include additional npm users or organization scopes,
+or pass a newline-delimited inventory across repositories with
+`--packages-file FILE`. For example:
 
 ```bash
-bash scripts/npm-token-publishing-batch.sh \
+node scripts/npm-token-publishing-tui.mjs \
   --owner @team-a \
-  --owner @team-b \
-  --plan "$batch_dir/org-plan.json"
+  --owner @team-b
 ```
 
-Review the printed OIDC claims and permissions and the generated plan. The npm
-CLI returns one JSON object per configured relationship and the script handles
-multiple configurations per package. `npm trust list --json` exposes the
-configured identity and permissions, but it does not report the npm UI's
-`Valid` status or configuration expiry. The CLI also cannot read back the
-current Publishing access option. Before applying, check each selected package
-in npm settings. Only list a package in `validated-packages.txt` when every
-configured publisher is `Valid`, its identity and permissions match the
-intended release workflow, and Publishing access currently allows token
-publishing. This all-publishers check is deliberately conservative: if a
-package has an expired or otherwise unverified publisher configuration, leave
-it out even if another publisher is valid.
+The npm CLI login is separate from a browser login. If `npm whoami` fails, the
+tool offers to run `npm login` interactively and retries discovery. It displays
+each package's configured Trusted Publisher identity, workflow file, and
+permissions, and filters out packages without current write access and a
+publish-capable OIDC permission. `createPackage` permits `npm publish`;
+`createStagedPackage` permits `npm stage publish`. Multiple configured
+publishers are shown separately.
 
-Use the same plan path you created above. If you used the account and
-organization discovery example, replace `plan.json` below with `org-plan.json`.
+Use `show N` or `review N` to inspect a package's full claims. `review N` asks
+you to acknowledge that npm's UI status and current policy are unknown; after
+`ACK UNKNOWN`, it selects that package for apply. `toggle N` checks or unchecks
+an eligible package. The acknowledgement records your explicit decision to
+proceed despite those unknowns; it does not claim a publisher is `Valid`, that
+its two-day validation window has not expired, or that token publishing is
+currently enabled. The npm CLI and trust API expose configured claims but do
+not expose the UI's `Valid` status, publisher expiry, or current Publishing
+access option.
 
-```bash
-: >"$batch_dir/validated-packages.txt"
-# Add only individually UI-validated package names, one per line, then save.
-vi "$batch_dir/validated-packages.txt"
-bash scripts/npm-token-publishing-batch.sh \
-  --apply \
-  --plan "$batch_dir/plan.json" \
-  --validated-packages "$batch_dir/validated-packages.txt" \
-  --state "$batch_dir/state.tsv"
-```
+`apply` makes no changes unless at least one package is selected and each
+selected package has the per-package `ACK UNKNOWN` review. The helper rechecks
+account access and publisher claims before each write, then asks for the final
+`APPLY UNKNOWN` confirmation. It runs `npm access set mfa=publish <package>`;
+npm may prompt for MFA during each update. The tool never accepts an OTP or
+token as an argument or writes one to its temporary plan or state. It stops at
+the first error and resumes from its state file on the next run. The default
+state file is outside the repository under the user's state directory; pass
+`--state FILE` to choose another location.
 
-The script checks the account, package write access, publisher fingerprint, and
-permissions before the batch, then rechecks access and publisher configuration
-immediately before each write. It asks you to type `APPLY` before making
-changes, stops at the first error, and can resume with the same plan and state
-file. `COMMAND_OK` in that file means only that the npm CLI command returned
-success; it is not registry readback. Verify the saved Publishing access
-option in npm settings for every package. If a command's result is uncertain,
-inspect its package settings before resuming. If the policy did not save,
-remove that package's `COMMAND_OK` row before retrying.
-
-`npm access set mfa=publish <package>` requires MFA for publishing and
-disallows automation-token publishing. npm may prompt for an OTP during each
-update; the script never accepts an OTP or token as an argument or writes one
-to its plan or state file. npm documents a five-minute 2FA skip only for bulk
-`npm trust` configuration; do not assume it also covers `npm access`. After
-the batch, verify the target option in npm settings for each package.
-`npm access get status <package>` reports visibility only. See the [`npm trust`
-CLI documentation](https://docs.npmjs.com/cli/v11/commands/npm-trust/).
+`COMMAND_OK` means only that the npm CLI command returned success, not that the
+registry saved the option. Check each package's Publishing access in npm
+settings after the batch. If a command fails or its result is unclear, inspect
+the package's settings before retrying. If settings show the policy did not
+save after a `COMMAND_OK`, use `reset N` and confirm `RESET <package>` to clear
+that package's resume marker. `npm access get status <package>` reports
+visibility only.
+The five-minute 2FA skip is documented for bulk `npm trust` configuration; do
+not assume it also covers `npm access`. See the [`npm trust` CLI
+documentation](https://docs.npmjs.com/cli/v11/commands/npm-trust/) and the
+[`npm access` CLI documentation](https://docs.npmjs.com/cli/v11/commands/npm-access/).
 
 For both crates, the target Trusted Publisher is GitHub Actions repository
 `sebastian-software/ferromark` with workflow `publish.yml`. Verify the live

@@ -128,11 +128,11 @@ function harness(t) {
   };
 }
 
-function writeValidated(path, names) {
+function writeAcknowledged(path, names) {
   writeFileSync(path, names.join("\n") + (names.length ? "\n" : ""));
 }
 
-test("preview is read-only, deduplicates inventory, and leaves Valid status for human review", (t) => {
+test("preview is read-only, deduplicates inventory, and does not infer npm UI Valid status", (t) => {
   const h = harness(t);
   const planPath = join(h.root, "review-plan.json");
   const defaultPreview = h.run(["--packages-file", h.inventoryPath]);
@@ -161,32 +161,48 @@ test("preview is read-only, deduplicates inventory, and leaves Valid status for 
   assert.equal("review" in plan.packages.find((pkg) => pkg.name === "pkg-direct"), false);
 });
 
-test("apply skips unreviewed and changed publishers before writing", (t) => {
+test("apply skips unacknowledged and changed publishers before writing", (t) => {
   const h = harness(t);
   writeFileSync(h.inventoryPath, "pkg-direct\n");
   const planPath = join(h.root, "review-plan.json");
-  const validatedPath = join(h.root, "validated.txt");
+  const acknowledgedPath = join(h.root, "acknowledged.txt");
   const statePath = join(h.root, "state.tsv");
   const preview = h.run(["--packages-file", h.inventoryPath, "--plan", planPath]);
   assert.equal(preview.status, 0, preview.stderr);
 
-  writeValidated(validatedPath, []);
+  writeAcknowledged(acknowledgedPath, []);
   const unreviewed = h.run(
-    ["--apply", "--plan", planPath, "--validated-packages", validatedPath, "--state", statePath],
-    { input: "APPLY\n" },
+    [
+      "--apply",
+      "--plan",
+      planPath,
+      "--acknowledged-packages",
+      acknowledgedPath,
+      "--state",
+      statePath,
+    ],
+    { input: "APPLY UNKNOWN\n" },
   );
   assert.equal(unreviewed.status, 0, unreviewed.stderr);
-  assert.match(unreviewed.stdout, /No packages were marked as UI-validated/);
+  assert.match(unreviewed.stdout, /No packages were acknowledged for update/);
   assert.equal(existsSync(h.writePath), false);
   assert.equal(readFileSync(h.logPath, "utf8").includes('\"set\"'), false);
 
-  writeValidated(validatedPath, ["pkg-direct"]);
+  writeAcknowledged(acknowledgedPath, ["pkg-direct"]);
   const changed = JSON.parse(readFileSync(h.trustPath, "utf8"));
   changed["pkg-direct"] = [{ ...direct, file: "other.yml" }];
   writeFileSync(h.trustPath, JSON.stringify(changed));
   const result = h.run(
-    ["--apply", "--plan", planPath, "--validated-packages", validatedPath, "--state", statePath],
-    { input: "APPLY\n" },
+    [
+      "--apply",
+      "--plan",
+      planPath,
+      "--acknowledged-packages",
+      acknowledgedPath,
+      "--state",
+      statePath,
+    ],
+    { input: "APPLY UNKNOWN\n" },
   );
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /pkg-direct: Trusted Publisher records changed after review/);
@@ -198,16 +214,24 @@ test("apply revalidates publisher records immediately before each write", (t) =>
   const h = harness(t);
   writeFileSync(h.inventoryPath, "pkg-direct\n");
   const planPath = join(h.root, "review-plan.json");
-  const validatedPath = join(h.root, "validated.txt");
+  const acknowledgedPath = join(h.root, "acknowledged.txt");
   const statePath = join(h.root, "state.tsv");
   const preview = h.run(["--packages-file", h.inventoryPath, "--plan", planPath]);
   assert.equal(preview.status, 0, preview.stderr);
-  writeValidated(validatedPath, ["pkg-direct"]);
+  writeAcknowledged(acknowledgedPath, ["pkg-direct"]);
 
   const result = h.run(
-    ["--apply", "--plan", planPath, "--validated-packages", validatedPath, "--state", statePath],
+    [
+      "--apply",
+      "--plan",
+      planPath,
+      "--acknowledged-packages",
+      acknowledgedPath,
+      "--state",
+      statePath,
+    ],
     {
-      input: "APPLY\n",
+      input: "APPLY UNKNOWN\n",
       env: { MOCK_CHANGE_TRUST_ON_CALL: "3" },
     },
   );
@@ -223,16 +247,24 @@ test("apply stops on error and resumes successful packages without repeating the
   const h = harness(t);
   writeFileSync(h.inventoryPath, "pkg-direct\npkg-stage\n");
   const planPath = join(h.root, "review-plan.json");
-  const validatedPath = join(h.root, "validated.txt");
+  const acknowledgedPath = join(h.root, "acknowledged.txt");
   const statePath = join(h.root, "state.tsv");
   const preview = h.run(["--packages-file", h.inventoryPath, "--plan", planPath]);
   assert.equal(preview.status, 0, preview.stderr);
-  writeValidated(validatedPath, ["pkg-direct", "pkg-stage"]);
+  writeAcknowledged(acknowledgedPath, ["pkg-direct", "pkg-stage"]);
 
   const first = h.run(
-    ["--apply", "--plan", planPath, "--validated-packages", validatedPath, "--state", statePath],
+    [
+      "--apply",
+      "--plan",
+      planPath,
+      "--acknowledged-packages",
+      acknowledgedPath,
+      "--state",
+      statePath,
+    ],
     {
-      input: "APPLY\n",
+      input: "APPLY UNKNOWN\n",
       env: { MOCK_FAIL_PACKAGE: "pkg-stage" },
     },
   );
@@ -245,8 +277,16 @@ test("apply stops on error and resumes successful packages without repeating the
   ]);
 
   const resumed = h.run(
-    ["--apply", "--plan", planPath, "--validated-packages", validatedPath, "--state", statePath],
-    { input: "APPLY\n" },
+    [
+      "--apply",
+      "--plan",
+      planPath,
+      "--acknowledged-packages",
+      acknowledgedPath,
+      "--state",
+      statePath,
+    ],
+    { input: "APPLY UNKNOWN\n" },
   );
   assert.equal(resumed.status, 0, resumed.stderr);
   assert.match(resumed.stdout, /SKIP pkg-direct: command already succeeded/);
@@ -270,4 +310,35 @@ test("apply stops on error and resumes successful packages without repeating the
     ],
   );
   assert.ok(writes.every((args) => !args.some((arg) => arg.startsWith("--otp"))));
+});
+
+test("apply rejects malformed resume state before any npm write", (t) => {
+  const h = harness(t);
+  writeFileSync(h.inventoryPath, "pkg-direct\n");
+  const planPath = join(h.root, "review-plan.json");
+  const acknowledgedPath = join(h.root, "acknowledged.txt");
+  const statePath = join(h.root, "state.tsv");
+  assert.equal(h.run(["--packages-file", h.inventoryPath, "--plan", planPath]).status, 0);
+  writeAcknowledged(acknowledgedPath, ["pkg-direct"]);
+  writeFileSync(statePath, "package\tfingerprint\tresult\npkg-direct\tbroken\tCOMMAND_OK\n");
+
+  const result = h.run(
+    [
+      "--apply",
+      "--plan",
+      planPath,
+      "--acknowledged-packages",
+      acknowledgedPath,
+      "--state",
+      statePath,
+    ],
+    { input: "APPLY UNKNOWN\n" },
+  );
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /state file has a malformed row/);
+  assert.equal(existsSync(h.writePath), false);
+  assert.equal(
+    readFileSync(statePath, "utf8"),
+    "package\tfingerprint\tresult\npkg-direct\tbroken\tCOMMAND_OK\n",
+  );
 });
