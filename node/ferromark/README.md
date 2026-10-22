@@ -311,6 +311,36 @@ const html = toHtml(await readFile("guide.md"));
 response.end(toHtmlBuffer(await readFile("guide.md")));
 ```
 
+Without `await`, `readFile("guide.md")` is a `Promise`, not bytes, so passing it
+to `toHtml()` fails with a `TypeError`. The less obvious mistake is starting a
+read into an existing `Buffer` and rendering it before the read finishes. With
+the `file` and `buffer` from the example below, this order is unsafe:
+
+```js
+// Wrong: file.read() may still be writing into buffer.
+const pendingRead = file.read(buffer, 0, buffer.length, 0);
+const html = toHtml(buffer);
+await pendingRead;
+```
+
+Wait for the read to finish, then render only the bytes it returned. For a
+single read from an open file:
+
+```js
+import { open } from "node:fs/promises";
+import { toHtml } from "ferromark";
+
+const file = await open("guide.md");
+try {
+  const buffer = Buffer.alloc(64 * 1024);
+  const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+  const html = toHtml(buffer.subarray(0, bytesRead));
+  console.log(html);
+} finally {
+  await file.close();
+}
+```
+
 Bytes render exactly like the string `buffer.toString("utf8")` returns, so a
 file read as a `Buffer` gives the same HTML as the same file read with
 `"utf8"`. Invalid UTF-8 becomes U+FFFD the way Node.js decodes it, and a
