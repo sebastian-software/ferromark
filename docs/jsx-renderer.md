@@ -217,3 +217,7 @@ Use `JsxCompiler.renderCodeBlock` to share a compiler's native highlighting
 with code outside a Markdown document. See the
 [standalone example and fence metadata](jsx-node.md#highlight-fences-and-standalone-code)
 in the Node guide.
+
+For typed parser error categories, related opening-tag ranges, and bounded
+collection of independent errors, see [MDX diagnostics](rust-api.md#typed-mdx-diagnostics-and-bounded-recovery).
+AST consumers can also inspect [image alt structure and callout bodies](rust-api.md#ast-provenance-for-image-alt-text-and-callouts) before rendering.

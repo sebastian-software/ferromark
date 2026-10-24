@@ -1,7 +1,7 @@
 //! Inline images and their plain-text alternative content.
 
 use crate::allocator::Vec;
-use crate::ast::{Image, Node, Span};
+use crate::ast::{Image, ImageAlt, Node, Span};
 
 use super::Parser;
 use crate::parser::error::ParseResult;
@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
         if *pos < content.len() && bytes[*pos] == b']' {
             let close = *pos;
             let raw_alt = &content[alt_start..close];
-            let alt = self.flatten_image_alt(raw_alt, offset + alt_start)?;
+            let (alt, alt_content) = self.image_alt(raw_alt, offset + alt_start)?;
 
             if bytes.get(close + 1) == Some(&b'(')
                 && let Some(target) = self.parse_link_target(content, close + 1)
@@ -54,6 +54,7 @@ impl<'a> Parser<'a> {
                 children.push(Node::Image(self.allocator.boxed(Image {
                     url: target.url,
                     alt,
+                    alt_content,
                     title: target.title,
                     attributes,
                     span: Span::new((offset + image_start) as u32, (offset + end) as u32),
@@ -86,6 +87,7 @@ impl<'a> Parser<'a> {
                         children.push(Node::Image(self.allocator.boxed(Image {
                             url: reference.url,
                             alt,
+                            alt_content,
                             title: reference.title,
                             attributes,
                             span: Span::new((offset + image_start) as u32, (offset + end) as u32),
@@ -101,6 +103,7 @@ impl<'a> Parser<'a> {
                 children.push(Node::Image(self.allocator.boxed(Image {
                     url: reference.url,
                     alt,
+                    alt_content,
                     title: reference.title,
                     attributes,
                     span: Span::new((offset + image_start) as u32, (offset + end) as u32),
@@ -125,20 +128,37 @@ impl<'a> Parser<'a> {
     /// Builds an image's `alt` attribute: the bracket text parsed as
     /// inlines and flattened to plain text (links contribute their text,
     /// code its literal content). Plain text stays zero-copy.
-    fn flatten_image_alt(&self, raw: &'a str, offset: usize) -> ParseResult<&'a str> {
+    fn image_alt(
+        &self,
+        raw: &'a str,
+        offset: usize,
+    ) -> ParseResult<(&'a str, Option<crate::allocator::Box<'a, ImageAlt<'a>>>)> {
         // Alt text is usually a handful of words, so these three probes are
         // short-slice searches (see `short_scan`) rather than vector ones.
-        if short_scan::find3(b'[', b'*', b'_', raw.as_bytes()).is_none()
+        let plain = short_scan::find3(b'[', b'*', b'_', raw.as_bytes()).is_none()
             && short_scan::find3(b'`', b'\\', b'&', raw.as_bytes()).is_none()
             && short_scan::find(b'<', raw.as_bytes()).is_none()
-            && (!self.options.insertions || short_scan::find(b'+', raw.as_bytes()).is_none())
-        {
-            return Ok(raw);
+            && (!self.options.insertions || short_scan::find(b'+', raw.as_bytes()).is_none());
+        if plain && !self.options.image_alt_content {
+            return Ok((raw, None));
         }
         let nodes = self.parse_inline(raw, offset)?;
-        let mut out = self.allocator.new_string();
-        flatten_inline_text(&nodes, &mut out);
-        Ok(out.into_bump_str())
+        let alt = if plain {
+            // Preserve the existing projection even for syntax (such as MDX
+            // expressions) that the plain-alt fast path leaves literal.
+            raw
+        } else {
+            let mut out = self.allocator.new_string();
+            flatten_inline_text(&nodes, &mut out);
+            out.into_bump_str()
+        };
+        let content = self.options.image_alt_content.then(|| {
+            self.allocator.boxed(ImageAlt {
+                span: Span::new(offset as u32, (offset + raw.len()) as u32),
+                children: nodes,
+            })
+        });
+        Ok((alt, content))
     }
 }
 

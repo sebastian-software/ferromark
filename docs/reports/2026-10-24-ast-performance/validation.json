@@ -1,0 +1,28 @@
+{
+  "tests_passed": 1418,
+  "tests_failed": 0,
+  "tests_ignored": 0,
+  "test_suites": 97,
+  "checks": [
+    {
+      "command": "cargo fmt --all --check",
+      "exit_code": 0
+    },
+    {
+      "command": "RUST_TEST_THREADS=1 cargo test --workspace --all-features --locked",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo bench --workspace --no-run --locked",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo check -p ferromark --no-default-features --locked",
+      "exit_code": 0
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-24",
+  "base_commit": "b4e4377a541a15aa72559cda1ab26fc8e3f322e8",
+  "candidate": "Local working tree containing the AST provenance implementation",
+  "os": "macOS 27.0.1",
+  "architecture": "aarch64-apple-darwin",
+  "cpu_model": "Not exposed by the execution sandbox",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2",
+  "criterion": "0.8.2",
+  "cargo_features": [],
+  "profile": "bench: opt-level=3, fat LTO, codegen-units=1",
+  "command": "cargo bench -p ferromark --bench image_alt_content --locked -- --warm-up-time 1 --measurement-time 3 --sample-size 30 --noplot",
+  "sampling": "1 s warmup, 3 s measurement, 30 samples per lane; off then on for each workload",
+  "limits": "One local characterization run, no controlled CPU power/thermal state; no cross-machine claim"
+}

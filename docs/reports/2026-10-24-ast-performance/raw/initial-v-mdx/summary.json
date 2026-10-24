@@ -1,0 +1,138 @@
+[
+  {
+    "case": "target-strict-mdx",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 78687.728125,
+    "candidate_ns_per_document": 78620.41015625,
+    "baseline_over_candidate_median": 1.0039810731138974,
+    "baseline_over_candidate_min": 0.9907469441197714,
+    "baseline_over_candidate_max": 1.0312190300553166,
+    "pairs": 15,
+    "round_medians": [
+      1.0040210150899789,
+      0.9941775464257573,
+      1.0043166784375765
+    ]
+  },
+  {
+    "case": "target-strict-mdx",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 102054.05745967742,
+    "candidate_ns_per_document": 101419.14516129032,
+    "baseline_over_candidate_median": 1.0056853892830198,
+    "baseline_over_candidate_min": 0.9969259863380685,
+    "baseline_over_candidate_max": 1.015197043493228,
+    "pairs": 15,
+    "round_medians": [
+      1.008636540806383,
+      1.0056853892830198,
+      1.003449621885047
+    ]
+  },
+  {
+    "case": "target-strict-nested",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 11578.819444444445,
+    "candidate_ns_per_document": 11627.318657063197,
+    "baseline_over_candidate_median": 0.9933173897484693,
+    "baseline_over_candidate_min": 0.9845424843306978,
+    "baseline_over_candidate_max": 0.9986030596481097,
+    "pairs": 15,
+    "round_medians": [
+      0.9967562372723027,
+      0.9920100083763544,
+      0.992221029430529
+    ]
+  },
+  {
+    "case": "target-strict-nested",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 12189.567120622569,
+    "candidate_ns_per_document": 12301.802450980393,
+    "baseline_over_candidate_median": 0.9920434743319693,
+    "baseline_over_candidate_min": 0.9807213129110103,
+    "baseline_over_candidate_max": 1.0133299120941492,
+    "pairs": 15,
+    "round_medians": [
+      0.9942082488494025,
+      0.9876325749087146,
+      0.9859538412741206
+    ]
+  },
+  {
+    "case": "target-strict-fragments",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 53756.20127118644,
+    "candidate_ns_per_document": 54248.18157327586,
+    "baseline_over_candidate_median": 0.9914207652840611,
+    "baseline_over_candidate_min": 0.9802672209567358,
+    "baseline_over_candidate_max": 1.00552813423703,
+    "pairs": 15,
+    "round_medians": [
+      0.9896802485701272,
+      0.9955269256930313,
+      0.9914207652840611
+    ]
+  },
+  {
+    "case": "target-strict-fragments",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 56130.8828125,
+    "candidate_ns_per_document": 56610.42131696428,
+    "baseline_over_candidate_median": 0.9935326793721283,
+    "baseline_over_candidate_min": 0.9739483087086989,
+    "baseline_over_candidate_max": 1.0053512319358002,
+    "pairs": 15,
+    "round_medians": [
+      0.9946646143092441,
+      0.9928146285311108,
+      0.9919278414534491
+    ]
+  },
+  {
+    "case": "target-strict-deep",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 62588.9325,
+    "candidate_ns_per_document": 62626.51,
+    "baseline_over_candidate_median": 0.9976731190365925,
+    "baseline_over_candidate_min": 0.9884679567845046,
+    "baseline_over_candidate_max": 1.0178575228625228,
+    "pairs": 15,
+    "round_medians": [
+      0.9976731190365925,
+      0.9919146447439301,
+      1.0090030364138127
+    ]
+  },
+  {
+    "case": "target-strict-deep",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 63928.57142857143,
+    "candidate_ns_per_document": 64234.77359693877,
+    "baseline_over_candidate_median": 0.9945525640813322,
+    "baseline_over_candidate_min": 0.9882816579411645,
+    "baseline_over_candidate_max": 1.003241361836301,
+    "pairs": 15,
+    "round_medians": [
+      0.9979160768869108,
+      0.9963826077477821,
+      0.9937800099354197
+    ]
+  }
+]

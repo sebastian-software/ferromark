@@ -62,7 +62,9 @@ fn ordinary_image_nodes_keep_attributes_unallocated() {
         panic!("expected image");
     };
     assert!(image.attributes.is_none());
-    assert!(std::mem::size_of::<ferromark::ast::Image<'static>>() <= 64);
+    assert!(image.alt_content.is_none());
+    // One optional pointer retains alt provenance without allocating it by default.
+    assert!(std::mem::size_of::<ferromark::ast::Image<'static>>() <= 72);
 }
 
 #[test]

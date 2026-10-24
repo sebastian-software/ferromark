@@ -474,10 +474,7 @@ impl<'a> Parser<'a> {
     ) -> ParseResult<()> {
         #[cfg(feature = "jsx")]
         if self.options.mdx_compatible && content[*pos..].starts_with("</") {
-            return Err(super::mdx_compatible::invalid(
-                Span::new((offset + *pos) as u32, (offset + *pos + 2) as u32),
-                "unexpected JSX closing tag; no matching opening tag in this content",
-            ));
+            return Err(super::mdx_jsx::unexpected_closing(content, *pos, offset));
         }
         #[cfg(feature = "jsx")]
         if self.options.mdx_compatible
@@ -486,6 +483,7 @@ impl<'a> Parser<'a> {
         {
             return Err(super::mdx_compatible::invalid(
                 Span::new((offset + *pos) as u32, (offset + content.len()) as u32),
+                crate::parser::MdxDiagnosticKind::InvalidOpeningTag,
                 "unclosed JSX opening tag; expected > or />",
             ));
         }

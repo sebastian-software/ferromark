@@ -1,0 +1,62 @@
+{
+  "schema": 2,
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "worker_sha256": "6eac1453eae24bacc4fea54308715d77d73e5c6ac0f17356349bf2b74b635db1",
+  "lto": "fat",
+  "features": [
+    "jsx"
+  ],
+  "baseline_verification": null,
+  "engines": {
+    "baseline": {
+      "frozen_source": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/build-mdx/sources/baseline",
+      "frozen_source_sha256": "0d75bb3a4d16e0e8c5fc9a9c7295da85f562cce34aebf2f216b1548f88be3749",
+      "source": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/initial",
+      "source_revision": null,
+      "source_tree_sha256": "0d75bb3a4d16e0e8c5fc9a9c7295da85f562cce34aebf2f216b1548f88be3749",
+      "source_manifest_sha256": "d662161950a10ff08fc28ce4a0d55e6d0c90e21220188ac0e7b39e96acd02784",
+      "source_lock_sha256": "9d002e53e3cb8f0da8fee78e8a0bbae581e29e8c817c569dc8bdb1fe35f84c1a",
+      "worker_sha256": "6eac1453eae24bacc4fea54308715d77d73e5c6ac0f17356349bf2b74b635db1",
+      "lto": "fat",
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/build-mdx/baseline/target/release/optimization-round-worker",
+      "binary_sha256": "b8a7a8cf87826259f73921f1d69e035b2d419d758abd38a83b5755d47c783d23",
+      "lock_sha256": "025b990aab2202c0523e3b4269b61618932e0ce2113e17047c169b355fe65b41",
+      "retained_registry_packages": 61,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "built"
+    },
+    "candidate": {
+      "frozen_source": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/build-mdx/sources/candidate",
+      "frozen_source_sha256": "f1eff8829f76679cb9e69d3683d8b896ec22a38dbed6a67405b5484845847fd2",
+      "source": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/mdx-optimized",
+      "source_revision": null,
+      "source_tree_sha256": "f1eff8829f76679cb9e69d3683d8b896ec22a38dbed6a67405b5484845847fd2",
+      "source_manifest_sha256": "d662161950a10ff08fc28ce4a0d55e6d0c90e21220188ac0e7b39e96acd02784",
+      "source_lock_sha256": "9d002e53e3cb8f0da8fee78e8a0bbae581e29e8c817c569dc8bdb1fe35f84c1a",
+      "worker_sha256": "6eac1453eae24bacc4fea54308715d77d73e5c6ac0f17356349bf2b74b635db1",
+      "lto": "fat",
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/build-mdx/candidate/target/release/optimization-round-worker",
+      "binary_sha256": "302bf171dccacbec39d8bb766b43145e75a6aa647bcdc588d001f0512ebd0f7c",
+      "lock_sha256": "025b990aab2202c0523e3b4269b61618932e0ce2113e17047c169b355fe65b41",
+      "retained_registry_packages": 61,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "built"
+    }
+  }
+}

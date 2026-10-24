@@ -1,0 +1,62 @@
+{
+  "schema": 2,
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "worker_sha256": "6eac1453eae24bacc4fea54308715d77d73e5c6ac0f17356349bf2b74b635db1",
+  "lto": "fat",
+  "features": [
+    "jsx"
+  ],
+  "baseline_verification": null,
+  "engines": {
+    "baseline": {
+      "frozen_source": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/build-inline/sources/candidate",
+      "frozen_source_sha256": "a724df5b317ca12704e53819d573b11d2cd13fe9bcf19654f1845af968dc9aad",
+      "source": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/inline-optimized",
+      "source_revision": null,
+      "source_tree_sha256": "a724df5b317ca12704e53819d573b11d2cd13fe9bcf19654f1845af968dc9aad",
+      "source_manifest_sha256": "d662161950a10ff08fc28ce4a0d55e6d0c90e21220188ac0e7b39e96acd02784",
+      "source_lock_sha256": "9d002e53e3cb8f0da8fee78e8a0bbae581e29e8c817c569dc8bdb1fe35f84c1a",
+      "worker_sha256": "6eac1453eae24bacc4fea54308715d77d73e5c6ac0f17356349bf2b74b635db1",
+      "lto": "fat",
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/build-inline/candidate/target/release/optimization-round-worker",
+      "binary_sha256": "db5f63a861542e7bcd0ab0096c73378acb56cb283912817a74e340aa27be2e33",
+      "lock_sha256": "025b990aab2202c0523e3b4269b61618932e0ce2113e17047c169b355fe65b41",
+      "retained_registry_packages": 61,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "reused"
+    },
+    "candidate": {
+      "frozen_source": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/build-checks/sources/candidate",
+      "frozen_source_sha256": "c9beef870a274790a8aa8bab205f76a13854ba15e3662a91241ee7bf2e376ace",
+      "source": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/checks-optimized",
+      "source_revision": null,
+      "source_tree_sha256": "c9beef870a274790a8aa8bab205f76a13854ba15e3662a91241ee7bf2e376ace",
+      "source_manifest_sha256": "d662161950a10ff08fc28ce4a0d55e6d0c90e21220188ac0e7b39e96acd02784",
+      "source_lock_sha256": "9d002e53e3cb8f0da8fee78e8a0bbae581e29e8c817c569dc8bdb1fe35f84c1a",
+      "worker_sha256": "6eac1453eae24bacc4fea54308715d77d73e5c6ac0f17356349bf2b74b635db1",
+      "lto": "fat",
+      "rustflags": "-C target-cpu=generic",
+      "binary": "/private/tmp/ferromark-provenance-perf-4ipvbj0r/build-checks/candidate/target/release/optimization-round-worker",
+      "binary_sha256": "4cda02f3fa032f230bc9e58dfe87ed19b659250b88351f8aed854c414c2aa9a1",
+      "lock_sha256": "025b990aab2202c0523e3b4269b61618932e0ce2113e17047c169b355fe65b41",
+      "retained_registry_packages": 61,
+      "registry_versions_unchanged": true,
+      "command": [
+        "cargo",
+        "+1.95",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cache": "built"
+    }
+  }
+}

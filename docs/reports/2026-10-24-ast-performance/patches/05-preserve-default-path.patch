@@ -1,0 +1,74 @@
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index a79438b..3ab45b2 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -648,21 +648,8 @@ impl<'a> Parser<'a> {
+ 
+     /// Parses the source into a document AST.
+     pub fn parse(mut self) -> ParseResult<Document<'a>> {
+-        self.check_options()?;
+-
+-        let mut result = self.parse_document();
+-        match &mut result {
+-            Ok(document) => self.finish_document(document),
+-            Err(error) => {
+-                if let Some(map) = self.source_map {
+-                    error.remap_in_place(map);
+-                }
+-            }
+-        }
+-        result
+-    }
++        use spans::SpanMap;
+ 
+-    fn check_options(&self) -> ParseResult<()> {
+         if self.options.mdx_compatible && !self.options.mdx {
+             return Err(error::ParseErrorKind::InvalidMdx {
+                 span: Span::new(0, 0),
+@@ -679,6 +666,38 @@ impl<'a> Parser<'a> {
+             .into());
+         }
+ 
++        // Preserve the ordinary parse path's completion layout. Diagnostic
++        // collection uses separate helpers for its additional control flow.
++        let mut result = self.parse_document();
++        if let Some(map) = self.source_map {
++            match &mut result {
++                Ok(document) => {
++                    document.span = map.map_document_span(document.span);
++                    for node in &mut document.children {
++                        Self::remap_node_spans(node, map);
++                    }
++                }
++                Err(error) => error.remap_in_place(map),
++            }
++        }
++        if self.nesting_depth == 0
++            && self.inline_note_seen.is_some_and(std::cell::Cell::get)
++            && let Ok(document) = &mut result
++        {
++            self.lower_inline_footnotes(document);
++        }
++        result
++    }
++
++    #[cfg(feature = "jsx")]
++    fn check_options(&self) -> ParseResult<()> {
++        if self.options.mdx_compatible && !self.options.mdx {
++            return Err(error::ParseErrorKind::InvalidMdx {
++                span: Span::new(0, 0),
++                message: "mdx_compatible requires mdx: true".into(),
++            }
++            .into());
++        }
+         Ok(())
+     }
+ 
+@@ -752,6 +771,7 @@ impl<'a> Parser<'a> {
+         Ok(document)
+     }
+ 
++    #[cfg(feature = "jsx")]
+     fn finish_document(&self, document: &mut Document<'a>) {
+         use spans::SpanMap;
+         if let Some(map) = self.source_map {

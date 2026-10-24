@@ -39,7 +39,9 @@
 
 mod error;
 pub(crate) use self::inline::{EntityValue, scan_entity};
-pub use error::{ParseError, ParseErrorKind, ParseResult};
+pub use error::{
+    MdxDiagnostic, MdxDiagnosticKind, ParseDiagnostics, ParseError, ParseErrorKind, ParseResult,
+};
 
 use crate::allocator::Allocator;
 use crate::ast::{Document, Span};
@@ -664,6 +666,8 @@ impl<'a> Parser<'a> {
             .into());
         }
 
+        // Preserve the ordinary parse path's completion layout. Diagnostic
+        // collection uses separate helpers for its additional control flow.
         let mut result = self.parse_document();
         if let Some(map) = self.source_map {
             match &mut result {
@@ -673,10 +677,7 @@ impl<'a> Parser<'a> {
                         Self::remap_node_spans(node, map);
                     }
                 }
-                Err(error) => {
-                    let span = error.span_mut();
-                    *span = map.map_span(*span);
-                }
+                Err(error) => error.remap_in_place(map),
             }
         }
         if self.nesting_depth == 0
@@ -686,6 +687,102 @@ impl<'a> Parser<'a> {
             self.lower_inline_footnotes(document);
         }
         result
+    }
+
+    #[cfg(feature = "jsx")]
+    fn check_options(&self) -> ParseResult<()> {
+        if self.options.mdx_compatible && !self.options.mdx {
+            return Err(error::ParseErrorKind::InvalidMdx {
+                span: Span::new(0, 0),
+                message: "mdx_compatible requires mdx: true".into(),
+            }
+            .into());
+        }
+        Ok(())
+    }
+
+    /// Parses with bounded diagnostics, returning no AST after any failure.
+    ///
+    /// Recovery skips only complete, standalone unmatched closing tags at
+    /// this parser's root block boundary. Inline/container-local errors,
+    /// mismatches, unclosed constructs, invalid JavaScript and depth limits
+    /// stop collection: resynchronizing them could invent a different tree.
+    /// The normal [`Self::parse`] path remains fail-fast.
+    #[cfg(feature = "jsx")]
+    #[allow(clippy::disallowed_types)]
+    pub fn parse_with_diagnostics(
+        mut self,
+        max_errors: std::num::NonZeroUsize,
+    ) -> Result<Document<'a>, ParseDiagnostics> {
+        let mut errors = std::vec::Vec::new();
+        let mut stopped_early = false;
+        if let Err(error) = self.check_options() {
+            errors.push(error);
+            return Err(ParseDiagnostics {
+                errors,
+                stopped_early: true,
+            });
+        }
+        let mut children = self
+            .allocator
+            .new_vec_with_capacity(Self::document_children_capacity(self.source.len()));
+        while !self.is_at_end() {
+            let position = self.position;
+            match self.parse_block() {
+                Ok(Some(node)) => children.push(node),
+                Ok(None) => {}
+                Err(mut error) => {
+                    let recovery = error
+                        .mdx_diagnostic()
+                        .filter(|detail| detail.kind == MdxDiagnosticKind::UnexpectedClosingTag)
+                        .and_then(|detail| {
+                            mdx_jsx::recover_closing(self.source, position, detail.span)
+                        });
+                    if let Some(map) = self.source_map {
+                        error.remap_in_place(map);
+                    }
+                    errors.push(error);
+                    if let Some(next) = recovery {
+                        self.position = next;
+                        if self.is_at_end() {
+                            break;
+                        }
+                        if errors.len() < max_errors.get() {
+                            continue;
+                        }
+                    }
+                    stopped_early = true;
+                    break;
+                }
+            }
+        }
+        if !errors.is_empty() {
+            return Err(ParseDiagnostics {
+                errors,
+                stopped_early,
+            });
+        }
+        let mut document = Document {
+            front_matter: self.front_matter.take(),
+            children,
+            span: Span::new(0, self.source.len() as u32),
+        };
+        self.finish_document(&mut document);
+        Ok(document)
+    }
+
+    #[cfg(feature = "jsx")]
+    fn finish_document(&self, document: &mut Document<'a>) {
+        use spans::SpanMap;
+        if let Some(map) = self.source_map {
+            document.span = map.map_document_span(document.span);
+            for node in &mut document.children {
+                Self::remap_node_spans(node, map);
+            }
+        }
+        if self.nesting_depth == 0 && self.inline_note_seen.is_some_and(std::cell::Cell::get) {
+            self.lower_inline_footnotes(document);
+        }
     }
 
     fn parse_document(&mut self) -> ParseResult<Document<'a>> {

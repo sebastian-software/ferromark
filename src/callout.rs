@@ -6,16 +6,23 @@
 
 use crate::ast::{Node, Paragraph};
 
+/// GitHub-style callout kind shared by rendering and AST inspection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CalloutKind {
+    /// The `[!NOTE]` marker.
     Note,
+    /// The `[!TIP]` marker.
     Tip,
+    /// The `[!IMPORTANT]` marker.
     Important,
+    /// The `[!WARNING]` marker.
     Warning,
+    /// The `[!CAUTION]` marker.
     Caution,
 }
 
 impl CalloutKind {
+    /// Recognizes a marker name without ASCII case sensitivity.
     pub fn from_name(name: &str) -> Option<Self> {
         if name.eq_ignore_ascii_case("NOTE") {
             Some(Self::Note)
@@ -32,6 +39,7 @@ impl CalloutKind {
         }
     }
 
+    /// Parses a marker prefix and returns its trimmed remainder.
     pub fn parse_marker(value: &str) -> Option<(Self, &str)> {
         let marker = value
             .strip_prefix("[!")
@@ -50,6 +58,7 @@ impl CalloutKind {
         ))
     }
 
+    /// CSS class suffix used by the built-in renderers.
     pub fn class_name(self) -> &'static str {
         match self {
             Self::Note => "note",
@@ -60,6 +69,7 @@ impl CalloutKind {
         }
     }
 
+    /// English presentation label used by renderers and text extraction.
     pub fn label(self) -> &'static str {
         match self {
             Self::Note => "Note",
@@ -155,4 +165,100 @@ pub fn detect_callout(paragraph: &Paragraph<'_>) -> Option<(CalloutKind, usize)>
     }
 
     None
+}
+
+/// A recognized callout borrowed from a block quote. Recognition is identical
+/// to the HTML/JSX renderers when their `callouts` option is enabled.
+#[derive(Debug)]
+pub struct Callout<'tree, 'a> {
+    /// Recognized marker kind.
+    pub kind: CalloutKind,
+    /// Original source range of the marker, excluding following whitespace.
+    /// For multiline markers this bounding range includes container prefixes.
+    pub marker_span: crate::ast::Span,
+    /// Parsed body with the structural marker and leading whitespace excluded.
+    pub body: CalloutBody<'tree, 'a>,
+}
+
+/// The body of a callout without cloning or modifying its AST.
+#[derive(Debug)]
+pub struct CalloutBody<'tree, 'a> {
+    /// Remaining children of the marker paragraph. The first Text child, if
+    /// present, starts at `text_offset`; subsequent children are complete.
+    pub inlines: &'tree [Node<'a>],
+    /// UTF-8 byte offset into the first Text child's decoded `value`.
+    /// Zero when the first child is not Text or there are no inline children.
+    pub text_offset: usize,
+    /// Complete block children following the marker paragraph.
+    pub blocks: &'tree [Node<'a>],
+}
+
+impl<'a> crate::ast::BlockQuote<'a> {
+    /// Inspects a callout without rendering or allocating. Pass the original
+    /// source used to parse this tree so marker ranges include authored
+    /// entities and escapes. Ordinary quotes return `None`.
+    pub fn callout<'tree>(&'tree self, source: &str) -> Option<Callout<'tree, 'a>> {
+        let Node::Paragraph(paragraph) = self.children.first()? else {
+            return None;
+        };
+        let (kind, mut remaining) = detect_callout(paragraph)?;
+        let Node::Text(first) = paragraph.children.first()? else {
+            return None;
+        };
+        let mut marker_end = None;
+        for node in &paragraph.children {
+            let Node::Text(text) = node else {
+                break;
+            };
+            if let Some(close) = text.value.find(']') {
+                marker_end = decoded_boundary(text, close + 1, source);
+                break;
+            }
+        }
+        let mut index = 0;
+        let mut text_offset = 0;
+        for node in &paragraph.children {
+            let Node::Text(text) = node else {
+                break;
+            };
+            let skip = remaining.min(text.value.len());
+            remaining -= skip;
+            let rest = text.value.get(skip..)?;
+            let trimmed = rest.trim_start();
+            if !trimmed.is_empty() {
+                text_offset = text.value.len() - trimmed.len();
+                break;
+            }
+            index += 1;
+        }
+        Some(Callout {
+            kind,
+            marker_span: crate::ast::Span::new(first.span.start, marker_end?),
+            body: CalloutBody {
+                inlines: &paragraph.children[index..],
+                text_offset,
+                blocks: &self.children[1..],
+            },
+        })
+    }
+}
+
+// Mapping a prefix of an already parsed Text node is decoding, not another
+// Markdown recognition policy. Usually the source slice is exactly `value`;
+// entities and backslash escapes are isolated Text nodes by the inline parser.
+fn decoded_boundary(text: &crate::ast::Text<'_>, offset: usize, source: &str) -> Option<u32> {
+    let raw = source.get(text.span.start as usize..text.span.end as usize)?;
+    if offset == text.value.len() {
+        return Some(text.span.end);
+    }
+    if offset == 0 {
+        return Some(text.span.start);
+    }
+    if raw.starts_with(text.value.get(..offset)?) {
+        return Some(text.span.start + offset as u32);
+    }
+    // A coalesced Text run can span container prefixes and CRLF. An
+    // entity/escape is emitted as its own Text node (handled above); in a
+    // partial run the recognized marker's `]` is the first literal closer.
+    raw.find(']').map(|end| text.span.start + end as u32 + 1)
 }

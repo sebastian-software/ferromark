@@ -36,6 +36,7 @@ impl<'a> Parser<'a> {
             if self.options.mdx_compatible {
                 return Err(super::super::mdx_compatible::invalid(
                     Span::new(trimmed_start as u32, source.len() as u32),
+                    crate::parser::MdxDiagnosticKind::InvalidExpression,
                     "unclosed JavaScript expression; expected a closing }",
                 ));
             }
@@ -46,6 +47,7 @@ impl<'a> Parser<'a> {
             if self.options.mdx_compatible {
                 return Err(super::super::mdx_compatible::invalid(
                     Span::new(trimmed_start as u32, source.len() as u32),
+                    crate::parser::MdxDiagnosticKind::InvalidExpression,
                     "invalid JavaScript expression or missing closing }; MDX braces must contain a complete expression",
                 ));
             }
@@ -91,6 +93,7 @@ impl<'a> Parser<'a> {
             if self.options.mdx_compatible {
                 return Err(super::super::mdx_compatible::invalid(
                     Span::new((offset + pos) as u32, (offset + content.len()) as u32),
+                    crate::parser::MdxDiagnosticKind::InvalidExpression,
                     "unclosed JavaScript expression; expected a closing }",
                 ));
             }
@@ -101,6 +104,7 @@ impl<'a> Parser<'a> {
             if self.options.mdx_compatible {
                 return Err(super::super::mdx_compatible::invalid(
                     Span::new((offset + pos) as u32, (offset + content.len()) as u32),
+                    crate::parser::MdxDiagnosticKind::InvalidExpression,
                     "invalid JavaScript expression or missing closing }; MDX braces must contain a complete expression",
                 ));
             }

@@ -138,18 +138,40 @@ fn scan_jsx_open_mode<'a>(
 #[cfg(feature = "jsx")]
 pub(super) fn compatible_matching_close<'a>(
     source: &'a str,
+    opening_start: usize,
     from: usize,
     name: Option<&'a str>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
-) -> Result<Option<(usize, usize)>, usize> {
+) -> crate::parser::ParseResult<Option<(usize, usize)>> {
+    use super::super::mdx_compatible::invalid;
+    use crate::parser::{MdxDiagnostic, MdxDiagnosticKind as Kind};
+
     let bytes = source.as_bytes();
-    let mut names: SmallVec<[Option<&str>; 16]> = SmallVec::new();
-    names.push(name);
+    let failure = |span, kind, related_span, message| {
+        invalid(span, kind, message).with_mdx_diagnostic(MdxDiagnostic {
+            kind,
+            span,
+            related_span,
+        })
+    };
+    // Each name borrows its opening tag in this source. For a fragment,
+    // borrow an empty slice at the same position. Its address recovers the
+    // opener only on failure, keeping the successful stack name-sized.
+    let mut names: SmallVec<[&str; 16]> = SmallVec::new();
+    names.push(name.unwrap_or_else(|| &source[opening_start + 1..opening_start + 1]));
     let mut cursor = from;
     while cursor < bytes.len() {
         match bytes[cursor] {
             b'\\' => cursor = (cursor + 2).min(bytes.len()),
-            b'{' => cursor = skip_brace(cursor).ok_or(cursor)?,
+            b'{' => {
+                cursor = skip_brace(cursor).ok_or_else(|| {
+                    invalid(
+                        Span::new(cursor as u32, source.len() as u32),
+                        Kind::InvalidExpression,
+                        "invalid or unclosed JavaScript expression in JSX content",
+                    )
+                })?;
+            }
             b'`' | b'~' => {
                 cursor = compatible_fence_end(source, cursor)
                     .or_else(|| {
@@ -179,29 +201,89 @@ pub(super) fn compatible_matching_close<'a>(
                 let self_closing = if closing {
                     skip_ws(bytes, &mut end);
                     if bytes.get(end) != Some(&b'>') {
-                        return Err(start);
+                        return Err(invalid(
+                            Span::new(
+                                start as u32,
+                                (end + source[end..].chars().next().map_or(0, char::len_utf8))
+                                    as u32,
+                            ),
+                            Kind::InvalidClosingTag,
+                            "invalid JSX closing tag",
+                        ));
                     }
                     end += 1;
                     false
                 } else {
-                    skip_tag_rest(source, &mut end, skip_brace, true).ok_or(start)?
+                    skip_tag_rest(source, &mut end, skip_brace, true).ok_or_else(|| {
+                        invalid(
+                            Span::new(start as u32, source.len() as u32),
+                            Kind::InvalidOpeningTag,
+                            "invalid or unclosed JSX opening tag",
+                        )
+                    })?
                 };
                 if closing {
-                    if names.pop() != Some(tag_name) {
-                        return Err(start);
+                    let expected = names.pop();
+                    if expected != Some(tag_name.unwrap_or("")) {
+                        return Err(failure(
+                            Span::new(start as u32, end as u32),
+                            Kind::MismatchedClosingTag,
+                            expected.map(|name| opening_tag_span(source, name, skip_brace)),
+                            "invalid JSX nesting; closing tags must match the most recent opening tag",
+                        ));
                     }
                     if names.is_empty() {
                         return Ok(Some((start, end)));
                     }
                 } else if !self_closing {
-                    names.push(tag_name);
+                    names.push(tag_name.unwrap_or_else(|| &source[name_start..name_start]));
                 }
                 cursor = end;
             }
             _ => cursor += 1,
         }
     }
-    Ok(None)
+    Err(failure(
+        Span::new(source.len() as u32, source.len() as u32),
+        Kind::UnclosedElement,
+        names
+            .last()
+            .map(|name| opening_tag_span(source, name, skip_brace)),
+        "unclosed JSX element; expected its matching closing tag",
+    ))
+}
+
+/// Recover the range of a previously scanned opening tag on the error path.
+/// Empty names are source-backed slices immediately after a fragment's `<`.
+#[cfg(feature = "jsx")]
+fn opening_tag_span(
+    source: &str,
+    name: &str,
+    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+) -> Span {
+    let start = name.as_ptr() as usize - source.as_ptr() as usize - 1;
+    let mut end = start + 1 + name.len();
+    // This immutable tag was already scanned successfully before it entered
+    // the stack. Reuse that scanner and the caller's expression memo to find
+    // the end; `<` and `>` inside attributes are not tag boundaries.
+    let _ = skip_tag_rest(source, &mut end, skip_brace, true);
+    Span::new(start as u32, end as u32)
+}
+
+/// Scans only a complete closing tag; reused for diagnostics and safe recovery.
+#[cfg(feature = "jsx")]
+pub(in crate::parser) fn compatible_closing_end(source: &str, start: usize) -> Option<usize> {
+    let bytes = source.as_bytes();
+    if bytes.get(start..start + 2)? != b"</" {
+        return None;
+    }
+    let mut end = if bytes.get(start + 2) == Some(&b'>') {
+        start + 2
+    } else {
+        scan_compatible_name(source, start + 2)?
+    };
+    skip_ws(bytes, &mut end);
+    (bytes.get(end) == Some(&b'>')).then_some(end + 1)
 }
 
 #[cfg(feature = "jsx")]
