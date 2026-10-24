@@ -1,0 +1,12 @@
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index a79438b..bd53988 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -752,6 +752,7 @@ impl<'a> Parser<'a> {
+         Ok(document)
+     }
+ 
++    #[inline]
+     fn finish_document(&self, document: &mut Document<'a>) {
+         use spans::SpanMap;
+         if let Some(map) = self.source_map {

@@ -1,0 +1,86 @@
+{
+  "prose": {
+    "off": {
+      "input_bytes": 3264,
+      "time_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 6680.786879165086,
+          "upper_bound": 6718.162513768538
+        },
+        "point_estimate": 6697.457467240353,
+        "standard_error": 9.738720308545561
+      },
+      "arena_bytes": 40480
+    },
+    "on": {
+      "input_bytes": 3264,
+      "time_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 6680.406508484239,
+          "upper_bound": 6716.85039314992
+        },
+        "point_estimate": 6698.13808705856,
+        "standard_error": 9.426177444929916
+      },
+      "arena_bytes": 40480
+    }
+  },
+  "plain": {
+    "off": {
+      "input_bytes": 2624,
+      "time_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 4834.856838793512,
+          "upper_bound": 4859.548016814637
+        },
+        "point_estimate": 4846.165888533444,
+        "standard_error": 6.357012903494757
+      },
+      "arena_bytes": 17440
+    },
+    "on": {
+      "input_bytes": 2624,
+      "time_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 5428.546177617993,
+          "upper_bound": 5457.041789491563
+        },
+        "point_estimate": 5440.415212275781,
+        "standard_error": 7.4904586058174205
+      },
+      "arena_bytes": 22048
+    }
+  },
+  "rich": {
+    "off": {
+      "input_bytes": 3328,
+      "time_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 16857.887886894874,
+          "upper_bound": 16976.46623681996
+        },
+        "point_estimate": 16911.320932164206,
+        "standard_error": 30.40303163062606
+      },
+      "arena_bytes": 65632
+    },
+    "on": {
+      "input_bytes": 3328,
+      "time_ns": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 17023.23289406152,
+          "upper_bound": 17217.38112311996
+        },
+        "point_estimate": 17124.50638617308,
+        "standard_error": 49.54790156235585
+      },
+      "arena_bytes": 68192
+    }
+  }
+}

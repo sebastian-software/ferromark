@@ -335,3 +335,97 @@ The shape of the API still follows the
 
   A field-by-field literal stops compiling when a field is added or removed;
   the struct-update form survives a removal and needs no edit for an addition.
+
+## AST provenance for image alt text and callouts
+
+Set `ParserOptions::image_alt_content` to retain `Image::alt_content`. It is
+`None` in every preset by default; when enabled, `Some(ImageAlt)` contains the
+parsed inline children and the original bracket-content span. An empty alt has
+an empty children list. Text, code, formatting, entities, escapes, nested images,
+and enabled MDX expressions keep their normal AST node types. Child spans use
+original UTF-8 byte offsets through list, block quote, and MDX containers.
+Multiline bounding spans include intervening container prefixes.
+
+`Image::alt` and HTML/JSX output keep their existing flattened projection.
+Plain alt text remains borrowed, including syntax that the existing plain-alt
+fast path leaves literal. Retaining structure parses all alt content, so its
+syntax validation and nesting limits apply even where that fast path normally
+avoids inline parsing. `Visit::visit_image` remains a leaf; analysis consumers
+can explicitly walk `alt_content.children` without changing existing visitors.
+The optional pointer adds eight bytes to an image on 64-bit targets; the
+metadata allocation and retention are opt-in. Formatted alt still needs
+transient inline nodes for flattening when retention is off. The focused
+`image_alt_content` benchmark characterizes the extra parse and arena cost;
+see the [initial opt-in measurements](reports/2026-10-24-ast-provenance/README.md)
+and the subsequent [comparison with the previous parser](reports/2026-10-24-ast-performance/README.md).
+
+`BlockQuote::callout(source)` returns the recognized `CalloutKind`, original
+marker span, and borrowed body boundaries. Pass the original source for that
+tree. Recognition uses the same parsed-child policy as the renderers and text
+extraction; ordinary quotes return `None`. Renderer `callouts` settings remain
+independent of this inspection API. Inspection allocates nothing and does not
+change the AST. The marker span includes authored escapes/entities and excludes
+following whitespace; a multiline marker's bounding range includes container
+prefixes.
+
+`CalloutBody::inlines` is the remainder of the marker paragraph, with
+`text_offset` bytes skipped in its first Text child's decoded value. All later
+children are complete. `blocks` contains subsequent blocks. Both boundaries
+exclude the structural marker and follow the renderer's leading-whitespace
+policy. Traverse these nodes to apply a consumer's own extraction rules.
+
+The complete [AST metadata example](../examples/ast_metadata.rs) inspects inline
+code in an image and extracts callout prose while excluding its marker:
+
+```sh
+cargo run --locked --example ast_metadata
+```
+
+## Typed MDX diagnostics and bounded recovery
+
+With `mdx: true`, `mdx_compatible: true`, and the `jsx` Cargo feature,
+`ParseError::mdx_diagnostic()` provides a machine-readable `MdxDiagnosticKind`,
+a primary span, and an optional related opening-tag span. `ParseErrorKind`
+continues to report `InvalidMdx { span, message }`; consumers do not need to
+classify message strings. Configuration errors and `NestingTooDeep` have no
+MDX detail. The diagnostic-kind enum is non-exhaustive.
+
+A mismatched closer points to the complete closing tag and the most recent
+conflicting opener. An unclosed element points to the end of its parsed content and relates its
+innermost unclosed opening tag. Spans use original UTF-8 byte offsets, including inside
+containers and after Unicode, BOM/NUL normalization, and LF/CRLF line endings.
+These ranges intentionally differ from v1 and from older single-byte MDX error
+ranges.
+
+`Parser::parse()` remains fail-fast. `parse_with_diagnostics(max_errors)` is an
+opt-in entry point available with `jsx`. It returns a complete document on
+success or `ParseDiagnostics` on failure, never a renderable partial document.
+Its positive limit is a `NonZeroUsize`:
+
+```rust
+use std::num::NonZeroUsize;
+use ferromark::{Allocator, MdxDiagnosticKind, Parser, ParserOptions};
+
+let source = "</First>\n\n</Second>\n";
+let arena = Allocator::new();
+let result = Parser::with_options(&arena, source, ParserOptions {
+    mdx: true,
+    mdx_compatible: true,
+    ..ParserOptions::gfm()
+}).parse_with_diagnostics(NonZeroUsize::new(16).unwrap());
+let diagnostics = result.unwrap_err();
+assert_eq!(diagnostics.errors.len(), 2);
+assert!(!diagnostics.stopped_early);
+assert_eq!(diagnostics.errors[0].mdx_diagnostic().unwrap().kind,
+    MdxDiagnosticKind::UnexpectedClosingTag);
+```
+
+Recovery skips only a syntactically complete unmatched closing tag standing
+alone at a root block boundary. Collection stops on inline or container-local
+errors, crossed tags, unclosed constructs, malformed tags, invalid JavaScript,
+nesting limits, or the requested error count. `stopped_early` signals that later
+errors may be absent. This is deliberately narrower than v1 recovery: the
+parser does not infer which element a mismatched tag was intended to close.
+JavaScript grammar validation, including rejection of TypeScript module blocks,
+and parser nesting limits still apply. Successful default parsing does not
+collect diagnostics or allocate an error list.

@@ -131,9 +131,10 @@ impl<'a> Parser<'a> {
             b'<' => {
                 #[cfg(feature = "jsx")]
                 if self.options.mdx_compatible && self.source[trimmed_start..].starts_with("</") {
-                    return Err(super::mdx_compatible::invalid(
-                        Span::new(trimmed_start as u32, (trimmed_start + 2) as u32),
-                        "unexpected JSX closing tag; no matching opening tag in this content",
+                    return Err(super::mdx_jsx::unexpected_closing(
+                        self.source,
+                        trimmed_start,
+                        0,
                     ));
                 }
                 if self.options.mdx

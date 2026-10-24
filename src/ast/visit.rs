@@ -129,7 +129,8 @@ pub trait Visit<'a> {
         walk_link(self, link);
     }
 
-    /// Visits an image.
+    /// Visits an image as a leaf. Opt-in `alt_content` is analysis metadata;
+    /// override this method to traverse its children explicitly.
     fn visit_image(&mut self, _image: &Image<'a>) {}
 
     /// Visits highlighted text and its children.

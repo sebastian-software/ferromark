@@ -7,19 +7,27 @@
 
 use crate::ast::Span;
 
-use super::error::{ParseError, ParseErrorKind, ParseResult};
+use super::error::{MdxDiagnostic, MdxDiagnosticKind, ParseError, ParseErrorKind, ParseResult};
 use super::line_scan::{line_end, line_terminator_end};
 
 #[allow(
     clippy::disallowed_types,
     reason = "owned diagnostics cross the parser error API"
 )]
-pub(super) fn invalid(span: Span, message: impl Into<String>) -> ParseError {
-    ParseErrorKind::InvalidMdx {
+pub(super) fn invalid(
+    span: Span,
+    kind: MdxDiagnosticKind,
+    message: impl Into<String>,
+) -> ParseError {
+    ParseError::from(ParseErrorKind::InvalidMdx {
         span,
         message: message.into(),
-    }
-    .into()
+    })
+    .with_mdx_diagnostic(MdxDiagnostic {
+        kind,
+        span,
+        related_span: None,
+    })
 }
 
 /// The first closing brace whose interior is a complete JavaScript
@@ -59,6 +67,7 @@ pub(super) fn validate_child_expression(value: &str, span: Span) -> ParseResult<
     } else {
         Err(invalid(
             span,
+            MdxDiagnosticKind::InvalidExpression,
             "spread syntax is only valid in JSX attributes; children must contain an expression",
         ))
     }
@@ -107,11 +116,26 @@ pub(super) fn validate_open(source: &str, self_closing: bool, span: Span) -> Par
         Ok(_) => Ok(()),
         Err(diagnostics) => Err(invalid(
             span,
+            MdxDiagnosticKind::InvalidOpeningTag,
             diagnostics
                 .first()
                 .map_or("invalid JSX opening tag", |error| error.message.as_ref()),
         )),
     }
+}
+
+/// Reuse the JSX grammar for an unmatched closer before treating it as a
+/// synchronization point. The name scanner alone also accepts `A..B`.
+#[allow(clippy::disallowed_types)]
+pub(super) fn valid_closing(source: &str) -> bool {
+    if source == "</>" {
+        return true;
+    }
+    let mut opener = String::with_capacity(source.len());
+    opener.push('<');
+    opener.push_str(&source[2..source.len() - 1]);
+    opener.push_str("/>");
+    validate_open(&opener, true, Span::empty()).is_ok()
 }
 
 /// Whether text that is not valid JavaScript is a valid TypeScript module.
@@ -160,12 +184,14 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
                 }
                 return Err(invalid(
                     Span::new(start as u32, cursor as u32),
+                    MdxDiagnosticKind::InvalidModule,
                     "MDX module blocks may contain only import/export declarations; separate Markdown with a blank line",
                 ));
             }
             if first_error.is_none() {
                 first_error = Some(invalid(
                     Span::new(start as u32, cursor as u32),
+                    MdxDiagnosticKind::InvalidModule,
                     result
                         .diagnostics
                         .first()
@@ -180,6 +206,7 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
                 typescript = true;
                 first_error = Some(invalid(
                     Span::new(start as u32, cursor as u32),
+                    MdxDiagnosticKind::InvalidModule,
                     "TypeScript syntax is not supported in MDX module blocks; write JavaScript",
                 ));
             }
@@ -188,6 +215,7 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
             return Err(first_error.unwrap_or_else(|| {
                 invalid(
                     Span::new(start as u32, cursor as u32),
+                    MdxDiagnosticKind::InvalidModule,
                     "unterminated import/export declaration; separate Markdown with a blank line",
                 )
             }));

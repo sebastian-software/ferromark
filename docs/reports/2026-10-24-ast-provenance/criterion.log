@@ -1,0 +1,89 @@
+   Compiling serde_core v1.0.229
+   Compiling serde v1.0.229
+   Compiling num-traits v0.2.19
+   Compiling syn v3.0.4
+   Compiling syn v2.0.119
+   Compiling regex-automata v0.4.18
+   Compiling smallvec v1.16.0
+   Compiling plotters v0.3.7
+   Compiling regex v1.13.1
+   Compiling serde_json v1.0.151
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.20
+   Compiling thiserror v2.0.20
+   Compiling ferromark v3.5.1 (/Users/sebastian/Workspace/.codex/ios-c0ef3207-1226-48a0-9d86-7632b3e1b213/ferromark)
+   Compiling zerocopy-derive v0.8.56
+   Compiling tinytemplate v1.2.1
+   Compiling zerocopy v0.8.56
+   Compiling half v2.7.1
+   Compiling ciborium-ll v0.2.2
+   Compiling ciborium v0.2.2
+   Compiling criterion v0.8.2
+    Finished `bench` profile [optimized] target(s) in 45.39s
+     Running benches/image_alt_content.rs (target/release/deps/image_alt_content-6116283fa2a13f3d)
+Gnuplot not found, using plotters backend
+arena prose retain=false: 40480 bytes
+Benchmarking image_alt_content/prose/off
+Benchmarking image_alt_content/prose/off: Warming up for 1.0000 s
+Benchmarking image_alt_content/prose/off: Collecting 30 samples in estimated 3.0015 s (447k iterations)
+Benchmarking image_alt_content/prose/off: Analyzing
+image_alt_content/prose/off
+                        time:   [6.6808 µs 6.6975 µs 6.7182 µs]
+                        thrpt:  [463.34 MiB/s 464.77 MiB/s 465.93 MiB/s]
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high mild
+arena prose retain=true: 40480 bytes
+Benchmarking image_alt_content/prose/on
+Benchmarking image_alt_content/prose/on: Warming up for 1.0000 s
+Benchmarking image_alt_content/prose/on: Collecting 30 samples in estimated 3.0003 s (446k iterations)
+Benchmarking image_alt_content/prose/on: Analyzing
+image_alt_content/prose/on
+                        time:   [6.6804 µs 6.6981 µs 6.7169 µs]
+                        thrpt:  [463.43 MiB/s 464.73 MiB/s 465.96 MiB/s]
+Found 3 outliers among 30 measurements (10.00%)
+  1 (3.33%) high mild
+  2 (6.67%) high severe
+arena plain retain=false: 17440 bytes
+Benchmarking image_alt_content/plain/off
+Benchmarking image_alt_content/plain/off: Warming up for 1.0000 s
+Benchmarking image_alt_content/plain/off: Collecting 30 samples in estimated 3.0003 s (622k iterations)
+Benchmarking image_alt_content/plain/off: Analyzing
+image_alt_content/plain/off
+                        time:   [4.8349 µs 4.8462 µs 4.8595 µs]
+                        thrpt:  [514.95 MiB/s 516.38 MiB/s 517.58 MiB/s]
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high mild
+arena plain retain=true: 22048 bytes
+Benchmarking image_alt_content/plain/on
+Benchmarking image_alt_content/plain/on: Warming up for 1.0000 s
+Benchmarking image_alt_content/plain/on: Collecting 30 samples in estimated 3.0003 s (551k iterations)
+Benchmarking image_alt_content/plain/on: Analyzing
+image_alt_content/plain/on
+                        time:   [5.4285 µs 5.4404 µs 5.4570 µs]
+                        thrpt:  [458.57 MiB/s 459.97 MiB/s 460.98 MiB/s]
+Found 2 outliers among 30 measurements (6.67%)
+  1 (3.33%) high mild
+  1 (3.33%) high severe
+arena rich retain=false: 65632 bytes
+Benchmarking image_alt_content/rich/off
+Benchmarking image_alt_content/rich/off: Warming up for 1.0000 s
+Benchmarking image_alt_content/rich/off: Collecting 30 samples in estimated 3.0018 s (178k iterations)
+Benchmarking image_alt_content/rich/off: Analyzing
+image_alt_content/rich/off
+                        time:   [16.858 µs 16.911 µs 16.976 µs]
+                        thrpt:  [186.95 MiB/s 187.67 MiB/s 188.27 MiB/s]
+Found 2 outliers among 30 measurements (6.67%)
+  1 (3.33%) low mild
+  1 (3.33%) high mild
+arena rich retain=true: 68192 bytes
+Benchmarking image_alt_content/rich/on
+Benchmarking image_alt_content/rich/on: Warming up for 1.0000 s
+Benchmarking image_alt_content/rich/on: Collecting 30 samples in estimated 3.0032 s (176k iterations)
+Benchmarking image_alt_content/rich/on: Analyzing
+image_alt_content/rich/on
+                        time:   [17.023 µs 17.125 µs 17.217 µs]
+                        thrpt:  [184.34 MiB/s 185.34 MiB/s 186.44 MiB/s]
+Found 4 outliers among 30 measurements (13.33%)
+  3 (10.00%) high mild
+  1 (3.33%) high severe
+

@@ -76,3 +76,7 @@ without an ID or class. The existing `: Caption {#id .class}` and
 `: {#id .class}` forms remain available. `table_colgroup` and
 `table_column_names` still generate classes on `<col>` elements, not on the
 table or figure. See [table layout](table-layout.md) for those options.
+
+Rust consumers can retain parsed alt children and their original source spans
+with `ParserOptions::image_alt_content`; see [AST provenance](rust-api.md#ast-provenance-for-image-alt-text-and-callouts).
+This does not change flattened alt output or enable image captions.

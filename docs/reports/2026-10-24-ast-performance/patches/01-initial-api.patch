@@ -1,0 +1,1834 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index bf8c170..609133f 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -91,6 +91,10 @@ harness = false
+ name = "tables"
+ harness = false
+ 
++[[bench]]
++name = "image_alt_content"
++harness = false
++
+ [[bench]]
+ name = "image_captions"
+ harness = false
+diff --git a/benches/image_alt_content.rs b/benches/image_alt_content.rs
+new file mode 100644
+index 0000000..a95bdb5
+--- /dev/null
++++ b/benches/image_alt_content.rs
+@@ -0,0 +1,79 @@
++//! Characterize the opt-in cost of retaining image alternative content.
++
++use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
++use ferromark::{Allocator, HtmlRenderer, Parser, ParserOptions};
++use std::hint::black_box;
++
++fn options(retain: bool) -> ParserOptions {
++    ParserOptions {
++        image_alt_content: retain,
++        ..ParserOptions::gfm()
++    }
++}
++
++fn bench_image_alt_content(c: &mut Criterion) {
++    let mut group = c.benchmark_group("image_alt_content");
++    for (name, source) in [
++        (
++            "prose",
++            "A paragraph with **emphasis** and ordinary prose.\n\n".repeat(64),
++        ),
++        (
++            "plain",
++            "![A descriptive image label](image.png)\n\n".repeat(64),
++        ),
++        (
++            "rich",
++            "![Code `sample` and **é &amp; prose**](image.png)\n\n".repeat(64),
++        ),
++    ] {
++        let arena = Allocator::for_source_len(source.len());
++        let baseline = Parser::with_options(&arena, &source, options(false))
++            .parse()
++            .unwrap();
++        let candidate = Parser::with_options(&arena, &source, options(true))
++            .parse()
++            .unwrap();
++        assert_eq!(
++            HtmlRenderer::new().render(&baseline),
++            HtmlRenderer::new().render(&candidate)
++        );
++        group.throughput(Throughput::Bytes(source.len() as u64));
++        for retain in [false, true] {
++            // Keep all allocations in one pre-sized chunk, so consumed arena
++            // bytes are exactly initial capacity minus remaining capacity.
++            let arena = Allocator::with_capacity(source.len() * 128);
++            let capacity = arena.chunk_capacity();
++            let document = Parser::with_options(&arena, &source, options(retain))
++                .parse()
++                .unwrap();
++            assert_eq!(arena.allocated_bytes(), capacity);
++            #[allow(clippy::print_stderr)]
++            {
++                eprintln!(
++                    "arena {name} retain={retain}: {} bytes",
++                    capacity - arena.chunk_capacity()
++                );
++            }
++            black_box(document);
++            group.bench_with_input(
++                BenchmarkId::new(name, if retain { "on" } else { "off" }),
++                &source,
++                |b, source| {
++                    b.iter(|| {
++                        let arena = Allocator::for_source_len(source.len());
++                        black_box(
++                            Parser::with_options(&arena, black_box(source), options(retain))
++                                .parse()
++                                .unwrap(),
++                        );
++                    });
++                },
++            );
++        }
++    }
++    group.finish();
++}
++
++criterion_group!(benches, bench_image_alt_content);
++criterion_main!(benches);
+diff --git a/examples/ast_metadata.rs b/examples/ast_metadata.rs
+new file mode 100644
+index 0000000..e0fe030
+--- /dev/null
++++ b/examples/ast_metadata.rs
+@@ -0,0 +1,65 @@
++//! Inspect image provenance and extract callout prose without structural markers.
++
++use ferromark::ast::{InlineCode, Node, Text, Visit};
++use ferromark::{Allocator, CalloutKind, Parser, ParserOptions};
++
++#[derive(Default)]
++struct Prose(String);
++impl<'a> Visit<'a> for Prose {
++    fn visit_text(&mut self, text: &Text<'a>) {
++        self.0.push_str(text.value);
++    }
++    fn visit_inline_code(&mut self, code: &InlineCode<'a>) {
++        self.0.push_str(code.value);
++    }
++}
++
++fn main() -> Result<(), ferromark::ParseError> {
++    let source =
++        "![Code `sample`](sample.png)\n\n> [!NOTE]\n> Keep this **note**.\n>\n> Second paragraph.";
++    let arena = Allocator::new();
++    let document = Parser::with_options(
++        &arena,
++        source,
++        ParserOptions {
++            image_alt_content: true,
++            ..ParserOptions::gfm()
++        },
++    )
++    .parse()?;
++    let Node::Paragraph(paragraph) = &document.children[0] else {
++        unreachable!()
++    };
++    let Node::Image(image) = &paragraph.children[0] else {
++        unreachable!()
++    };
++    assert_eq!(image.alt, "Code sample");
++    let alt = image.alt_content.as_ref().unwrap();
++    let Node::InlineCode(code) = &alt.children[1] else {
++        unreachable!()
++    };
++    assert_eq!(code.span.source_text(source), "`sample`");
++
++    let Node::BlockQuote(quote) = &document.children[1] else {
++        unreachable!()
++    };
++    let callout = quote.callout(source).unwrap();
++    assert_eq!(callout.kind, CalloutKind::Note);
++    assert_eq!(callout.marker_span.source_text(source), "[!NOTE]");
++    let mut prose = Prose::default();
++    for (index, node) in callout.body.inlines.iter().enumerate() {
++        if index == 0
++            && let Node::Text(text) = node
++        {
++            prose.0.push_str(&text.value[callout.body.text_offset..]);
++        } else {
++            prose.visit_node(node);
++        }
++    }
++    for block in callout.body.blocks {
++        prose.0.push('\n');
++        prose.visit_node(block);
++    }
++    assert_eq!(prose.0, "Keep this note.\nSecond paragraph.");
++    Ok(())
++}
+diff --git a/src/ast/nodes.rs b/src/ast/nodes.rs
+index 2bc140b..99d3213 100644
+--- a/src/ast/nodes.rs
++++ b/src/ast/nodes.rs
+@@ -452,11 +452,14 @@ impl Link<'_> {
+ }
+ 
+ /// Image.
+-#[derive(Debug)]
+ pub struct Image<'a> {
+     /// Image URL.
+     pub url: &'a str,
+-    /// Alt text.
++    /// Parsed alternative content, retained only with
++    /// [`crate::ParserOptions::image_alt_content`]. `Some` with no children
++    /// distinguishes an empty alt from analysis that was not requested.
++    pub alt_content: Option<Box<'a, ImageAlt<'a>>>,
++    /// Flattened alt text used by renderers.
+     pub alt: &'a str,
+     /// Title.
+     pub title: Option<&'a str>,
+@@ -466,6 +469,31 @@ pub struct Image<'a> {
+     pub span: Span,
+ }
+ 
++/// Parsed image alternative content, including nested inline markup.
++#[derive(Debug)]
++pub struct ImageAlt<'a> {
++    /// Original bracket contents, excluding `![` and `]`.
++    /// A multiline range includes intervening container prefixes.
++    pub span: Span,
++    /// Inline nodes with original UTF-8 byte spans.
++    pub children: Vec<'a, Node<'a>>,
++}
++
++impl std::fmt::Debug for Image<'_> {
++    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        let mut image = formatter.debug_struct("Image");
++        image.field("url", &self.url).field("alt", &self.alt);
++        if let Some(content) = &self.alt_content {
++            image.field("alt_content", content);
++        }
++        image
++            .field("title", &self.title)
++            .field("attributes", &self.attributes)
++            .field("span", &self.span)
++            .finish()
++    }
++}
++
+ /// Authored metadata shared by elements with optional attribute suffixes.
+ /// A single optional pointer keeps ordinary image nodes compact.
+ #[derive(Debug)]
+diff --git a/src/ast/visit.rs b/src/ast/visit.rs
+index 2d7f0e6..6792ba9 100644
+--- a/src/ast/visit.rs
++++ b/src/ast/visit.rs
+@@ -129,7 +129,8 @@ pub trait Visit<'a> {
+         walk_link(self, link);
+     }
+ 
+-    /// Visits an image.
++    /// Visits an image as a leaf. Opt-in `alt_content` is analysis metadata;
++    /// override this method to traverse its children explicitly.
+     fn visit_image(&mut self, _image: &Image<'a>) {}
+ 
+     /// Visits highlighted text and its children.
+diff --git a/src/callout.rs b/src/callout.rs
+index 4fd4c98..043ee91 100644
+--- a/src/callout.rs
++++ b/src/callout.rs
+@@ -6,16 +6,23 @@
+ 
+ use crate::ast::{Node, Paragraph};
+ 
++/// GitHub-style callout kind shared by rendering and AST inspection.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub enum CalloutKind {
++    /// The `[!NOTE]` marker.
+     Note,
++    /// The `[!TIP]` marker.
+     Tip,
++    /// The `[!IMPORTANT]` marker.
+     Important,
++    /// The `[!WARNING]` marker.
+     Warning,
++    /// The `[!CAUTION]` marker.
+     Caution,
+ }
+ 
+ impl CalloutKind {
++    /// Recognizes a marker name without ASCII case sensitivity.
+     pub fn from_name(name: &str) -> Option<Self> {
+         if name.eq_ignore_ascii_case("NOTE") {
+             Some(Self::Note)
+@@ -32,6 +39,7 @@ impl CalloutKind {
+         }
+     }
+ 
++    /// Parses a marker prefix and returns its trimmed remainder.
+     pub fn parse_marker(value: &str) -> Option<(Self, &str)> {
+         let marker = value
+             .strip_prefix("[!")
+@@ -50,6 +58,7 @@ impl CalloutKind {
+         ))
+     }
+ 
++    /// CSS class suffix used by the built-in renderers.
+     pub fn class_name(self) -> &'static str {
+         match self {
+             Self::Note => "note",
+@@ -60,6 +69,7 @@ impl CalloutKind {
+         }
+     }
+ 
++    /// English presentation label used by renderers and text extraction.
+     pub fn label(self) -> &'static str {
+         match self {
+             Self::Note => "Note",
+@@ -156,3 +166,99 @@ pub fn detect_callout(paragraph: &Paragraph<'_>) -> Option<(CalloutKind, usize)>
+ 
+     None
+ }
++
++/// A recognized callout borrowed from a block quote. Recognition is identical
++/// to the HTML/JSX renderers when their `callouts` option is enabled.
++#[derive(Debug)]
++pub struct Callout<'tree, 'a> {
++    /// Recognized marker kind.
++    pub kind: CalloutKind,
++    /// Original source range of the marker, excluding following whitespace.
++    /// For multiline markers this bounding range includes container prefixes.
++    pub marker_span: crate::ast::Span,
++    /// Parsed body with the structural marker and leading whitespace excluded.
++    pub body: CalloutBody<'tree, 'a>,
++}
++
++/// The body of a callout without cloning or modifying its AST.
++#[derive(Debug)]
++pub struct CalloutBody<'tree, 'a> {
++    /// Remaining children of the marker paragraph. The first Text child, if
++    /// present, starts at `text_offset`; subsequent children are complete.
++    pub inlines: &'tree [Node<'a>],
++    /// UTF-8 byte offset into the first Text child's decoded `value`.
++    /// Zero when the first child is not Text or there are no inline children.
++    pub text_offset: usize,
++    /// Complete block children following the marker paragraph.
++    pub blocks: &'tree [Node<'a>],
++}
++
++impl<'a> crate::ast::BlockQuote<'a> {
++    /// Inspects a callout without rendering or allocating. Pass the original
++    /// source used to parse this tree so marker ranges include authored
++    /// entities and escapes. Ordinary quotes return `None`.
++    pub fn callout<'tree>(&'tree self, source: &str) -> Option<Callout<'tree, 'a>> {
++        let Node::Paragraph(paragraph) = self.children.first()? else {
++            return None;
++        };
++        let (kind, mut remaining) = detect_callout(paragraph)?;
++        let Node::Text(first) = paragraph.children.first()? else {
++            return None;
++        };
++        let mut marker_end = None;
++        for node in &paragraph.children {
++            let Node::Text(text) = node else {
++                break;
++            };
++            if let Some(close) = text.value.find(']') {
++                marker_end = decoded_boundary(text, close + 1, source);
++                break;
++            }
++        }
++        let mut index = 0;
++        let mut text_offset = 0;
++        for node in &paragraph.children {
++            let Node::Text(text) = node else {
++                break;
++            };
++            let skip = remaining.min(text.value.len());
++            remaining -= skip;
++            let rest = text.value.get(skip..)?;
++            let trimmed = rest.trim_start();
++            if !trimmed.is_empty() {
++                text_offset = text.value.len() - trimmed.len();
++                break;
++            }
++            index += 1;
++        }
++        Some(Callout {
++            kind,
++            marker_span: crate::ast::Span::new(first.span.start, marker_end?),
++            body: CalloutBody {
++                inlines: &paragraph.children[index..],
++                text_offset,
++                blocks: &self.children[1..],
++            },
++        })
++    }
++}
++
++// Mapping a prefix of an already parsed Text node is decoding, not another
++// Markdown recognition policy. Usually the source slice is exactly `value`;
++// entities and backslash escapes are isolated Text nodes by the inline parser.
++fn decoded_boundary(text: &crate::ast::Text<'_>, offset: usize, source: &str) -> Option<u32> {
++    let raw = source.get(text.span.start as usize..text.span.end as usize)?;
++    if offset == text.value.len() {
++        return Some(text.span.end);
++    }
++    if offset == 0 {
++        return Some(text.span.start);
++    }
++    if raw.starts_with(text.value.get(..offset)?) {
++        return Some(text.span.start + offset as u32);
++    }
++    // A coalesced Text run can span container prefixes and CRLF. An
++    // entity/escape is emitted as its own Text node (handled above); in a
++    // partial run the recognized marker's `]` is the first literal closer.
++    raw.find(']').map(|end| text.span.start + end as u32 + 1)
++}
+diff --git a/src/lib.rs b/src/lib.rs
+index a7b5cda..c539991 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -32,6 +32,7 @@ pub mod text;
+ pub use ferriki;
+ 
+ mod callout;
++pub use callout::{Callout, CalloutBody, CalloutKind};
+ mod convenience;
+ 
+ pub use allocator::Allocator;
+@@ -40,7 +41,10 @@ pub use convenience::{
+     to_html_with_options_and_abbreviations,
+ };
+ pub use outline::{OutlineEntry, OutlineOptions};
+-pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
++pub use parser::{
++    MdxDiagnostic, MdxDiagnosticKind, ParseDiagnostics, ParseError, ParseErrorKind, ParseResult,
++    Parser, ParserOptions, parse,
++};
+ pub use projection::{
+     MarkdownProjection, MarkdownProjectionDiagnostic, MarkdownProjectionDiagnosticKind,
+     MarkdownProjectionError, MarkdownProjectionOptions,
+diff --git a/src/parser/block.rs b/src/parser/block.rs
+index 23eff2d..62a8526 100644
+--- a/src/parser/block.rs
++++ b/src/parser/block.rs
+@@ -131,9 +131,10 @@ impl<'a> Parser<'a> {
+             b'<' => {
+                 #[cfg(feature = "jsx")]
+                 if self.options.mdx_compatible && self.source[trimmed_start..].starts_with("</") {
+-                    return Err(super::mdx_compatible::invalid(
+-                        Span::new(trimmed_start as u32, (trimmed_start + 2) as u32),
+-                        "unexpected JSX closing tag; no matching opening tag in this content",
++                    return Err(super::mdx_jsx::unexpected_closing(
++                        self.source,
++                        trimmed_start,
++                        0,
+                     ));
+                 }
+                 if self.options.mdx
+diff --git a/src/parser/error.rs b/src/parser/error.rs
+index 2a77802..2e64b72 100644
+--- a/src/parser/error.rs
++++ b/src/parser/error.rs
+@@ -17,7 +17,58 @@ pub type ParseResult<T> = Result<T, ParseError>;
+ #[derive(Debug, Error)]
+ #[error(transparent)]
+ #[allow(clippy::disallowed_types)]
+-pub struct ParseError(Box<ParseErrorKind>);
++pub struct ParseError(Box<ParseErrorData>);
++
++#[derive(Debug, Error)]
++#[error("{kind}")]
++struct ParseErrorData {
++    kind: ParseErrorKind,
++    mdx: Option<MdxDiagnostic>,
++}
++
++/// Machine-readable detail for strict MDX failures. Messages remain on
++/// [`ParseErrorKind::InvalidMdx`] and are not a stable classification API.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct MdxDiagnostic {
++    /// Structural or grammar category.
++    pub kind: MdxDiagnosticKind,
++    /// Offending construct in original UTF-8 source coordinates.
++    pub span: Span,
++    /// Conflicting or unclosed opening tag, when known.
++    pub related_span: Option<Span>,
++}
++
++/// Strict MDX failure categories. More categories may be added in the future.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++#[non_exhaustive]
++pub enum MdxDiagnosticKind {
++    /// Invalid or unclosed JavaScript child expression.
++    InvalidExpression,
++    /// Invalid or unclosed JSX opening tag or attributes.
++    InvalidOpeningTag,
++    /// An opening tag has no matching closer.
++    UnclosedElement,
++    /// A closing tag conflicts with the most recent opening tag.
++    MismatchedClosingTag,
++    /// A closing tag has no opening tag in this content.
++    UnexpectedClosingTag,
++    /// Malformed closing-tag syntax; recovery cannot skip it safely.
++    InvalidClosingTag,
++    /// Invalid JavaScript module block (including unsupported TypeScript).
++    InvalidModule,
++}
++
++/// Failed diagnostic-oriented parse. No partial AST can be rendered.
++#[derive(Debug, Error)]
++#[error("parse failed with {} diagnostic(s)", errors.len())]
++#[allow(clippy::disallowed_types)]
++pub struct ParseDiagnostics {
++    /// Errors in source order, limited to the requested maximum.
++    pub errors: Vec<ParseError>,
++    /// Parsing stopped at an ambiguous construct or the diagnostic limit.
++    /// Later independent errors may therefore be absent.
++    pub stopped_early: bool,
++}
+ 
+ /// The kinds of parse error.
+ ///
+@@ -51,29 +102,41 @@ impl ParseError {
+     #[cold]
+     #[allow(clippy::disallowed_types)]
+     pub fn new(kind: ParseErrorKind) -> Self {
+-        Self(Box::new(kind))
++        Self(Box::new(ParseErrorData { kind, mdx: None }))
+     }
+ 
+     /// Returns the kind of error.
+     #[must_use]
+     pub fn kind(&self) -> &ParseErrorKind {
+-        &self.0
++        &self.0.kind
+     }
+ 
+     /// Unwraps the kind of error.
+     #[must_use]
+     pub fn into_kind(self) -> ParseErrorKind {
+-        *self.0
++        self.0.kind
+     }
+ 
+     /// Returns the span where the error occurred.
+     #[must_use]
+     pub fn span(&self) -> Span {
+-        self.0.span()
++        self.0.kind.span()
++    }
++
++    /// Typed MDX detail, available for syntax failures in strict MDX mode.
++    /// Configuration and nesting-limit errors have no MDX detail.
++    pub fn mdx_diagnostic(&self) -> Option<&MdxDiagnostic> {
++        self.0.mdx.as_ref()
++    }
++
++    #[cfg(feature = "jsx")]
++    pub(in crate::parser) fn with_mdx_diagnostic(mut self, detail: MdxDiagnostic) -> Self {
++        self.0.mdx = Some(detail);
++        self
+     }
+ 
+     pub(in crate::parser) fn span_mut(&mut self) -> &mut Span {
+-        match &mut *self.0 {
++        match &mut self.0.kind {
+             ParseErrorKind::NestingTooDeep { span, .. } => span,
+             ParseErrorKind::InvalidMdx { span, .. } => span,
+         }
+@@ -89,10 +152,21 @@ impl ParseError {
+     /// reads points into the document it handed to the root parser.
+     #[must_use]
+     pub(in crate::parser) fn remapped(mut self, map: &impl super::spans::SpanMap) -> Self {
+-        let span = self.span_mut();
+-        *span = map.map_span(*span);
++        self.remap_in_place(map);
+         self
+     }
++
++    pub(in crate::parser) fn remap_in_place(&mut self, map: &impl super::spans::SpanMap) {
++        if let Some(detail) = &mut self.0.mdx {
++            detail.span = map.map_inline_span(detail.span);
++            detail.related_span = detail.related_span.map(|span| map.map_inline_span(span));
++            let span = detail.span;
++            *self.span_mut() = span;
++        } else {
++            let span = self.span_mut();
++            *span = map.map_span(*span);
++        }
++    }
+ }
+ 
+ impl From<ParseErrorKind> for ParseError {
+diff --git a/src/parser/inline/image.rs b/src/parser/inline/image.rs
+index ba90657..450c9eb 100644
+--- a/src/parser/inline/image.rs
++++ b/src/parser/inline/image.rs
+@@ -1,7 +1,7 @@
+ //! Inline images and their plain-text alternative content.
+ 
+ use crate::allocator::Vec;
+-use crate::ast::{Image, Node, Span};
++use crate::ast::{Image, ImageAlt, Node, Span};
+ 
+ use super::Parser;
+ use crate::parser::error::ParseResult;
+@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
+         if *pos < content.len() && bytes[*pos] == b']' {
+             let close = *pos;
+             let raw_alt = &content[alt_start..close];
+-            let alt = self.flatten_image_alt(raw_alt, offset + alt_start)?;
++            let (alt, alt_content) = self.image_alt(raw_alt, offset + alt_start)?;
+ 
+             if bytes.get(close + 1) == Some(&b'(')
+                 && let Some(target) = self.parse_link_target(content, close + 1)
+@@ -54,6 +54,7 @@ impl<'a> Parser<'a> {
+                 children.push(Node::Image(self.allocator.boxed(Image {
+                     url: target.url,
+                     alt,
++                    alt_content,
+                     title: target.title,
+                     attributes,
+                     span: Span::new((offset + image_start) as u32, (offset + end) as u32),
+@@ -86,6 +87,7 @@ impl<'a> Parser<'a> {
+                         children.push(Node::Image(self.allocator.boxed(Image {
+                             url: reference.url,
+                             alt,
++                            alt_content,
+                             title: reference.title,
+                             attributes,
+                             span: Span::new((offset + image_start) as u32, (offset + end) as u32),
+@@ -101,6 +103,7 @@ impl<'a> Parser<'a> {
+                 children.push(Node::Image(self.allocator.boxed(Image {
+                     url: reference.url,
+                     alt,
++                    alt_content,
+                     title: reference.title,
+                     attributes,
+                     span: Span::new((offset + image_start) as u32, (offset + end) as u32),
+@@ -125,20 +128,37 @@ impl<'a> Parser<'a> {
+     /// Builds an image's `alt` attribute: the bracket text parsed as
+     /// inlines and flattened to plain text (links contribute their text,
+     /// code its literal content). Plain text stays zero-copy.
+-    fn flatten_image_alt(&self, raw: &'a str, offset: usize) -> ParseResult<&'a str> {
++    fn image_alt(
++        &self,
++        raw: &'a str,
++        offset: usize,
++    ) -> ParseResult<(&'a str, Option<crate::allocator::Box<'a, ImageAlt<'a>>>)> {
+         // Alt text is usually a handful of words, so these three probes are
+         // short-slice searches (see `short_scan`) rather than vector ones.
+-        if short_scan::find3(b'[', b'*', b'_', raw.as_bytes()).is_none()
++        let plain = short_scan::find3(b'[', b'*', b'_', raw.as_bytes()).is_none()
+             && short_scan::find3(b'`', b'\\', b'&', raw.as_bytes()).is_none()
+             && short_scan::find(b'<', raw.as_bytes()).is_none()
+-            && (!self.options.insertions || short_scan::find(b'+', raw.as_bytes()).is_none())
+-        {
+-            return Ok(raw);
++            && (!self.options.insertions || short_scan::find(b'+', raw.as_bytes()).is_none());
++        if plain && !self.options.image_alt_content {
++            return Ok((raw, None));
+         }
+         let nodes = self.parse_inline(raw, offset)?;
+-        let mut out = self.allocator.new_string();
+-        flatten_inline_text(&nodes, &mut out);
+-        Ok(out.into_bump_str())
++        let alt = if plain {
++            // Preserve the existing projection even for syntax (such as MDX
++            // expressions) that the plain-alt fast path leaves literal.
++            raw
++        } else {
++            let mut out = self.allocator.new_string();
++            flatten_inline_text(&nodes, &mut out);
++            out.into_bump_str()
++        };
++        let content = self.options.image_alt_content.then(|| {
++            self.allocator.boxed(ImageAlt {
++                span: Span::new(offset as u32, (offset + raw.len()) as u32),
++                children: nodes,
++            })
++        });
++        Ok((alt, content))
+     }
+ }
+ 
+diff --git a/src/parser/inline.rs b/src/parser/inline.rs
+index 2d11b3f..50776d8 100644
+--- a/src/parser/inline.rs
++++ b/src/parser/inline.rs
+@@ -474,10 +474,7 @@ impl<'a> Parser<'a> {
+     ) -> ParseResult<()> {
+         #[cfg(feature = "jsx")]
+         if self.options.mdx_compatible && content[*pos..].starts_with("</") {
+-            return Err(super::mdx_compatible::invalid(
+-                Span::new((offset + *pos) as u32, (offset + *pos + 2) as u32),
+-                "unexpected JSX closing tag; no matching opening tag in this content",
+-            ));
++            return Err(super::mdx_jsx::unexpected_closing(content, *pos, offset));
+         }
+         #[cfg(feature = "jsx")]
+         if self.options.mdx_compatible
+@@ -486,6 +483,7 @@ impl<'a> Parser<'a> {
+         {
+             return Err(super::mdx_compatible::invalid(
+                 Span::new((offset + *pos) as u32, (offset + content.len()) as u32),
++                crate::parser::MdxDiagnosticKind::InvalidOpeningTag,
+                 "unclosed JSX opening tag; expected > or />",
+             ));
+         }
+diff --git a/src/parser/mdx_compatible.rs b/src/parser/mdx_compatible.rs
+index 6dfe1a0..4abc3e6 100644
+--- a/src/parser/mdx_compatible.rs
++++ b/src/parser/mdx_compatible.rs
+@@ -7,19 +7,27 @@
+ 
+ use crate::ast::Span;
+ 
+-use super::error::{ParseError, ParseErrorKind, ParseResult};
++use super::error::{MdxDiagnostic, MdxDiagnosticKind, ParseError, ParseErrorKind, ParseResult};
+ use super::line_scan::{line_end, line_terminator_end};
+ 
+ #[allow(
+     clippy::disallowed_types,
+     reason = "owned diagnostics cross the parser error API"
+ )]
+-pub(super) fn invalid(span: Span, message: impl Into<String>) -> ParseError {
+-    ParseErrorKind::InvalidMdx {
++pub(super) fn invalid(
++    span: Span,
++    kind: MdxDiagnosticKind,
++    message: impl Into<String>,
++) -> ParseError {
++    ParseError::from(ParseErrorKind::InvalidMdx {
+         span,
+         message: message.into(),
+-    }
+-    .into()
++    })
++    .with_mdx_diagnostic(MdxDiagnostic {
++        kind,
++        span,
++        related_span: None,
++    })
+ }
+ 
+ /// The first closing brace whose interior is a complete JavaScript
+@@ -59,6 +67,7 @@ pub(super) fn validate_child_expression(value: &str, span: Span) -> ParseResult<
+     } else {
+         Err(invalid(
+             span,
++            MdxDiagnosticKind::InvalidExpression,
+             "spread syntax is only valid in JSX attributes; children must contain an expression",
+         ))
+     }
+@@ -107,6 +116,7 @@ pub(super) fn validate_open(source: &str, self_closing: bool, span: Span) -> Par
+         Ok(_) => Ok(()),
+         Err(diagnostics) => Err(invalid(
+             span,
++            MdxDiagnosticKind::InvalidOpeningTag,
+             diagnostics
+                 .first()
+                 .map_or("invalid JSX opening tag", |error| error.message.as_ref()),
+@@ -114,6 +124,20 @@ pub(super) fn validate_open(source: &str, self_closing: bool, span: Span) -> Par
+     }
+ }
+ 
++/// Reuse the JSX grammar for an unmatched closer before treating it as a
++/// synchronization point. The name scanner alone also accepts `A..B`.
++#[allow(clippy::disallowed_types)]
++pub(super) fn valid_closing(source: &str) -> bool {
++    if source == "</>" {
++        return true;
++    }
++    let mut opener = String::with_capacity(source.len());
++    opener.push('<');
++    opener.push_str(&source[2..source.len() - 1]);
++    opener.push_str("/>");
++    validate_open(&opener, true, Span::empty()).is_ok()
++}
++
+ /// Whether text that is not valid JavaScript is a valid TypeScript module.
+ fn is_typescript(value: &str) -> bool {
+     let allocator = oxc_allocator::Allocator::default();
+@@ -160,12 +184,14 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
+                 }
+                 return Err(invalid(
+                     Span::new(start as u32, cursor as u32),
++                    MdxDiagnosticKind::InvalidModule,
+                     "MDX module blocks may contain only import/export declarations; separate Markdown with a blank line",
+                 ));
+             }
+             if first_error.is_none() {
+                 first_error = Some(invalid(
+                     Span::new(start as u32, cursor as u32),
++                    MdxDiagnosticKind::InvalidModule,
+                     result
+                         .diagnostics
+                         .first()
+@@ -180,6 +206,7 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
+                 typescript = true;
+                 first_error = Some(invalid(
+                     Span::new(start as u32, cursor as u32),
++                    MdxDiagnosticKind::InvalidModule,
+                     "TypeScript syntax is not supported in MDX module blocks; write JavaScript",
+                 ));
+             }
+@@ -188,6 +215,7 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
+             return Err(first_error.unwrap_or_else(|| {
+                 invalid(
+                     Span::new(start as u32, cursor as u32),
++                    MdxDiagnosticKind::InvalidModule,
+                     "unterminated import/export declaration; separate Markdown with a blank line",
+                 )
+             }));
+diff --git a/src/parser/mdx_jsx/expression.rs b/src/parser/mdx_jsx/expression.rs
+index 8707a84..c4f424d 100644
+--- a/src/parser/mdx_jsx/expression.rs
++++ b/src/parser/mdx_jsx/expression.rs
+@@ -36,6 +36,7 @@ impl<'a> Parser<'a> {
+             if self.options.mdx_compatible {
+                 return Err(super::super::mdx_compatible::invalid(
+                     Span::new(trimmed_start as u32, source.len() as u32),
++                    crate::parser::MdxDiagnosticKind::InvalidExpression,
+                     "unclosed JavaScript expression; expected a closing }",
+                 ));
+             }
+@@ -46,6 +47,7 @@ impl<'a> Parser<'a> {
+             if self.options.mdx_compatible {
+                 return Err(super::super::mdx_compatible::invalid(
+                     Span::new(trimmed_start as u32, source.len() as u32),
++                    crate::parser::MdxDiagnosticKind::InvalidExpression,
+                     "invalid JavaScript expression or missing closing }; MDX braces must contain a complete expression",
+                 ));
+             }
+@@ -91,6 +93,7 @@ impl<'a> Parser<'a> {
+             if self.options.mdx_compatible {
+                 return Err(super::super::mdx_compatible::invalid(
+                     Span::new((offset + pos) as u32, (offset + content.len()) as u32),
++                    crate::parser::MdxDiagnosticKind::InvalidExpression,
+                     "unclosed JavaScript expression; expected a closing }",
+                 ));
+             }
+@@ -101,6 +104,7 @@ impl<'a> Parser<'a> {
+             if self.options.mdx_compatible {
+                 return Err(super::super::mdx_compatible::invalid(
+                     Span::new((offset + pos) as u32, (offset + content.len()) as u32),
++                    crate::parser::MdxDiagnosticKind::InvalidExpression,
+                     "invalid JavaScript expression or missing closing }; MDX braces must contain a complete expression",
+                 ));
+             }
+diff --git a/src/parser/mdx_jsx/scan.rs b/src/parser/mdx_jsx/scan.rs
+index 1f1c080..872a1b1 100644
+--- a/src/parser/mdx_jsx/scan.rs
++++ b/src/parser/mdx_jsx/scan.rs
+@@ -138,18 +138,37 @@ fn scan_jsx_open_mode<'a>(
+ #[cfg(feature = "jsx")]
+ pub(super) fn compatible_matching_close<'a>(
+     source: &'a str,
++    opening_start: usize,
+     from: usize,
+     name: Option<&'a str>,
+     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
+-) -> Result<Option<(usize, usize)>, usize> {
++) -> crate::parser::ParseResult<Option<(usize, usize)>> {
++    use super::super::mdx_compatible::invalid;
++    use crate::parser::{MdxDiagnostic, MdxDiagnosticKind as Kind};
++
+     let bytes = source.as_bytes();
+-    let mut names: SmallVec<[Option<&str>; 16]> = SmallVec::new();
+-    names.push(name);
++    let failure = |span, kind, related_span, message| {
++        invalid(span, kind, message).with_mdx_diagnostic(MdxDiagnostic {
++            kind,
++            span,
++            related_span,
++        })
++    };
++    let mut names: SmallVec<[(Option<&str>, Span); 16]> = SmallVec::new();
++    names.push((name, Span::new(opening_start as u32, from as u32)));
+     let mut cursor = from;
+     while cursor < bytes.len() {
+         match bytes[cursor] {
+             b'\\' => cursor = (cursor + 2).min(bytes.len()),
+-            b'{' => cursor = skip_brace(cursor).ok_or(cursor)?,
++            b'{' => {
++                cursor = skip_brace(cursor).ok_or_else(|| {
++                    invalid(
++                        Span::new(cursor as u32, source.len() as u32),
++                        Kind::InvalidExpression,
++                        "invalid or unclosed JavaScript expression in JSX content",
++                    )
++                })?;
++            }
+             b'`' | b'~' => {
+                 cursor = compatible_fence_end(source, cursor)
+                     .or_else(|| {
+@@ -179,29 +198,70 @@ pub(super) fn compatible_matching_close<'a>(
+                 let self_closing = if closing {
+                     skip_ws(bytes, &mut end);
+                     if bytes.get(end) != Some(&b'>') {
+-                        return Err(start);
++                        return Err(invalid(
++                            Span::new(
++                                start as u32,
++                                (end + source[end..].chars().next().map_or(0, char::len_utf8))
++                                    as u32,
++                            ),
++                            Kind::InvalidClosingTag,
++                            "invalid JSX closing tag",
++                        ));
+                     }
+                     end += 1;
+                     false
+                 } else {
+-                    skip_tag_rest(source, &mut end, skip_brace, true).ok_or(start)?
++                    skip_tag_rest(source, &mut end, skip_brace, true).ok_or_else(|| {
++                        invalid(
++                            Span::new(start as u32, source.len() as u32),
++                            Kind::InvalidOpeningTag,
++                            "invalid or unclosed JSX opening tag",
++                        )
++                    })?
+                 };
+                 if closing {
+-                    if names.pop() != Some(tag_name) {
+-                        return Err(start);
++                    let expected = names.pop();
++                    if expected.map(|(name, _)| name) != Some(tag_name) {
++                        return Err(failure(
++                            Span::new(start as u32, end as u32),
++                            Kind::MismatchedClosingTag,
++                            expected.map(|(_, span)| span),
++                            "invalid JSX nesting; closing tags must match the most recent opening tag",
++                        ));
+                     }
+                     if names.is_empty() {
+                         return Ok(Some((start, end)));
+                     }
+                 } else if !self_closing {
+-                    names.push(tag_name);
++                    names.push((tag_name, Span::new(start as u32, end as u32)));
+                 }
+                 cursor = end;
+             }
+             _ => cursor += 1,
+         }
+     }
+-    Ok(None)
++    Err(failure(
++        Span::new(source.len() as u32, source.len() as u32),
++        Kind::UnclosedElement,
++        names.last().map(|(_, span)| *span),
++        "unclosed JSX element; expected its matching closing tag",
++    ))
++}
++
++/// Scans only a complete closing tag; reused for diagnostics and safe recovery.
++#[cfg(feature = "jsx")]
++pub(in crate::parser) fn compatible_closing_end(source: &str, start: usize) -> Option<usize> {
++    let bytes = source.as_bytes();
++    if bytes.get(start..start + 2)? != b"</" {
++        return None;
++    }
++    let mut end = if bytes.get(start + 2) == Some(&b'>') {
++        start + 2
++    } else {
++        scan_compatible_name(source, start + 2)?
++    };
++    skip_ws(bytes, &mut end);
++    (bytes.get(end) == Some(&b'>')).then_some(end + 1)
+ }
+ 
+ #[cfg(feature = "jsx")]
+diff --git a/src/parser/mdx_jsx.rs b/src/parser/mdx_jsx.rs
+index 4b0d2f8..78f3140 100644
+--- a/src/parser/mdx_jsx.rs
++++ b/src/parser/mdx_jsx.rs
+@@ -19,6 +19,49 @@ pub(super) fn looks_like_jsx_open(bytes: &[u8], at: usize, compatible: bool) ->
+     }
+ }
+ 
++#[cfg(feature = "jsx")]
++pub(in crate::parser) fn unexpected_closing(
++    source: &str,
++    start: usize,
++    offset: usize,
++) -> crate::parser::ParseError {
++    let close = scan::compatible_closing_end(source, start)
++        .filter(|&end| super::mdx_compatible::valid_closing(&source[start..end]));
++    let end = close.unwrap_or(start + 2);
++    super::mdx_compatible::invalid(
++        Span::new((offset + start) as u32, (offset + end) as u32),
++        if close.is_some() {
++            crate::parser::MdxDiagnosticKind::UnexpectedClosingTag
++        } else {
++            crate::parser::MdxDiagnosticKind::InvalidClosingTag
++        },
++        "unexpected JSX closing tag; no matching opening tag in this content",
++    )
++}
++
++/// Only a standalone, complete closer at the current root block boundary can
++/// be discarded safely. A child error, inline closer, or malformed tag stops.
++#[cfg(feature = "jsx")]
++pub(in crate::parser) fn recover_closing(
++    source: &str,
++    position: usize,
++    span: Span,
++) -> Option<usize> {
++    let start = span.start as usize;
++    if !source
++        .get(position..start)?
++        .chars()
++        .all(char::is_whitespace)
++    {
++        return None;
++    }
++    let end = scan::compatible_closing_end(source, start)?;
++    if end != span.end as usize || !scan::only_ws_until_eol(source.as_bytes(), end) {
++        return None;
++    }
++    Some(scan::after_trailing_line_ws(source.as_bytes(), end))
++}
++
+ impl<'a> Parser<'a> {
+     /// Parses a flow JSX element starting at the current line.
+     ///
+@@ -61,7 +104,7 @@ impl<'a> Parser<'a> {
+             (true, self.allocator.new_vec(), open.end)
+         } else {
+             let Some((close_start, close_end)) =
+-                self.mdx_jsx_close(self.source, open.end, open.name)?
++                self.mdx_jsx_close(self.source, trimmed_start, open.end, open.name)?
+             else {
+                 return Ok(None);
+             };
+@@ -114,9 +157,9 @@ impl<'a> Parser<'a> {
+         let (self_closing, children, end) = if open.self_closing {
+             (true, self.allocator.new_vec(), open.end)
+         } else {
+-            let Some((close_start, close_end)) =
+-                self.mdx_jsx_close(content, open.end, open.name)
+-                    .map_err(|error| error.remapped(&super::spans::OffsetMap(offset as u32)))?
++            let Some((close_start, close_end)) = self
++                .mdx_jsx_close(content, pos, open.end, open.name)
++                .map_err(|error| error.remapped(&super::spans::OffsetMap(offset as u32)))?
+             else {
+                 return Ok(None);
+             };
+@@ -147,25 +190,22 @@ impl<'a> Parser<'a> {
+     fn mdx_jsx_close(
+         &self,
+         content: &'a str,
++        opening_start: usize,
+         from: usize,
+         name: Option<&'a str>,
+     ) -> ParseResult<Option<(usize, usize)>> {
+         #[cfg(feature = "jsx")]
+         if self.options.mdx_compatible {
+-            return match scan::compatible_matching_close(content, from, name, &mut |at| {
+-                self.matching_brace_end(content, at)
+-            }) {
+-                Ok(Some(close)) => Ok(Some(close)),
+-                Ok(None) => Err(super::mdx_compatible::invalid(
+-                    Span::new(from as u32, content.len() as u32),
+-                    "unclosed JSX element; expected its matching closing tag",
+-                )),
+-                Err(at) => Err(super::mdx_compatible::invalid(
+-                    Span::new(at as u32, (at + 1) as u32),
+-                    "invalid JSX nesting or JavaScript expression; closing tags must match the most recent opening tag",
+-                )),
+-            };
++            return scan::compatible_matching_close(
++                content,
++                opening_start,
++                from,
++                name,
++                &mut |at| self.matching_brace_end(content, at),
++            );
+         }
++        #[cfg(not(feature = "jsx"))]
++        let _ = opening_start;
+         let slice = (content.as_ptr() as usize, content.len());
+         let cached = self
+             .extension_memos()
+@@ -225,6 +265,7 @@ impl<'a> Parser<'a> {
+             let open = scan::scan_compatible_jsx_open(content, pos, offset, attributes, skip_brace)
+                 .ok_or_else(|| super::mdx_compatible::invalid(
+                     Span::new((offset + pos) as u32, (offset + content.len()) as u32),
++                    crate::parser::MdxDiagnosticKind::InvalidOpeningTag,
+                     "invalid or unclosed JSX opening tag; quote attribute literals and close JavaScript expressions",
+                 ))?;
+             super::mdx_compatible::validate_open(
+@@ -440,6 +481,7 @@ impl<'a> Parser<'a> {
+                     } else {
+                         return Err(super::mdx_compatible::invalid(
+                             Span::new(cursor as u32, end as u32),
++                            crate::parser::MdxDiagnosticKind::InvalidExpression,
+                             "invalid or unclosed JavaScript expression in Markdown",
+                         ));
+                     }
+@@ -461,7 +503,7 @@ impl<'a> Parser<'a> {
+                         cursor = if open.self_closing {
+                             open.end
+                         } else {
+-                            self.mdx_jsx_close(self.source, open.end, open.name)?
++                            self.mdx_jsx_close(self.source, cursor, open.end, open.name)?
+                                 .map_or(open.end, |(_, close)| close)
+                         };
+                     }
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index ebfc0ca..a79438b 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -39,7 +39,9 @@
+ 
+ mod error;
+ pub(crate) use self::inline::{EntityValue, scan_entity};
+-pub use error::{ParseError, ParseErrorKind, ParseResult};
++pub use error::{
++    MdxDiagnostic, MdxDiagnosticKind, ParseDiagnostics, ParseError, ParseErrorKind, ParseResult,
++};
+ 
+ use crate::allocator::Allocator;
+ use crate::ast::{Document, Span};
+@@ -646,8 +648,21 @@ impl<'a> Parser<'a> {
+ 
+     /// Parses the source into a document AST.
+     pub fn parse(mut self) -> ParseResult<Document<'a>> {
+-        use spans::SpanMap;
++        self.check_options()?;
+ 
++        let mut result = self.parse_document();
++        match &mut result {
++            Ok(document) => self.finish_document(document),
++            Err(error) => {
++                if let Some(map) = self.source_map {
++                    error.remap_in_place(map);
++                }
++            }
++        }
++        result
++    }
++
++    fn check_options(&self) -> ParseResult<()> {
+         if self.options.mdx_compatible && !self.options.mdx {
+             return Err(error::ParseErrorKind::InvalidMdx {
+                 span: Span::new(0, 0),
+@@ -664,28 +679,90 @@ impl<'a> Parser<'a> {
+             .into());
+         }
+ 
+-        let mut result = self.parse_document();
+-        if let Some(map) = self.source_map {
+-            match &mut result {
+-                Ok(document) => {
+-                    document.span = map.map_document_span(document.span);
+-                    for node in &mut document.children {
+-                        Self::remap_node_spans(node, map);
++        Ok(())
++    }
++
++    /// Parses with bounded diagnostics, returning no AST after any failure.
++    ///
++    /// Recovery skips only complete, standalone unmatched closing tags at
++    /// this parser's root block boundary. Inline/container-local errors,
++    /// mismatches, unclosed constructs, invalid JavaScript and depth limits
++    /// stop collection: resynchronizing them could invent a different tree.
++    /// The normal [`Self::parse`] path remains fail-fast.
++    #[cfg(feature = "jsx")]
++    #[allow(clippy::disallowed_types)]
++    pub fn parse_with_diagnostics(
++        mut self,
++        max_errors: std::num::NonZeroUsize,
++    ) -> Result<Document<'a>, ParseDiagnostics> {
++        let mut errors = std::vec::Vec::new();
++        let mut stopped_early = false;
++        if let Err(error) = self.check_options() {
++            errors.push(error);
++            return Err(ParseDiagnostics {
++                errors,
++                stopped_early: true,
++            });
++        }
++        let mut children = self
++            .allocator
++            .new_vec_with_capacity(Self::document_children_capacity(self.source.len()));
++        while !self.is_at_end() {
++            let position = self.position;
++            match self.parse_block() {
++                Ok(Some(node)) => children.push(node),
++                Ok(None) => {}
++                Err(mut error) => {
++                    let recovery = error
++                        .mdx_diagnostic()
++                        .filter(|detail| detail.kind == MdxDiagnosticKind::UnexpectedClosingTag)
++                        .and_then(|detail| {
++                            mdx_jsx::recover_closing(self.source, position, detail.span)
++                        });
++                    if let Some(map) = self.source_map {
++                        error.remap_in_place(map);
+                     }
+-                }
+-                Err(error) => {
+-                    let span = error.span_mut();
+-                    *span = map.map_span(*span);
++                    errors.push(error);
++                    if let Some(next) = recovery {
++                        self.position = next;
++                        if self.is_at_end() {
++                            break;
++                        }
++                        if errors.len() < max_errors.get() {
++                            continue;
++                        }
++                    }
++                    stopped_early = true;
++                    break;
+                 }
+             }
+         }
+-        if self.nesting_depth == 0
+-            && self.inline_note_seen.is_some_and(std::cell::Cell::get)
+-            && let Ok(document) = &mut result
+-        {
++        if !errors.is_empty() {
++            return Err(ParseDiagnostics {
++                errors,
++                stopped_early,
++            });
++        }
++        let mut document = Document {
++            front_matter: self.front_matter.take(),
++            children,
++            span: Span::new(0, self.source.len() as u32),
++        };
++        self.finish_document(&mut document);
++        Ok(document)
++    }
++
++    fn finish_document(&self, document: &mut Document<'a>) {
++        use spans::SpanMap;
++        if let Some(map) = self.source_map {
++            document.span = map.map_document_span(document.span);
++            for node in &mut document.children {
++                Self::remap_node_spans(node, map);
++            }
++        }
++        if self.nesting_depth == 0 && self.inline_note_seen.is_some_and(std::cell::Cell::get) {
+             self.lower_inline_footnotes(document);
+         }
+-        result
+     }
+ 
+     fn parse_document(&mut self) -> ParseResult<Document<'a>> {
+diff --git a/src/parser/options.rs b/src/parser/options.rs
+index a313e19..258c60f 100644
+--- a/src/parser/options.rs
++++ b/src/parser/options.rs
+@@ -50,6 +50,11 @@ pub struct ParserOptions {
+     /// Independent of image captions. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
+     pub image_attributes: bool,
+ 
++    /// Retain parsed image alt children and their original source spans in
++    /// [`crate::ast::Image::alt_content`]. Default: `false` in all profiles.
++    /// Renderers continue to use the existing flattened `alt` value.
++    pub image_alt_content: bool,
++
+     /// Attach one `: Caption` line to a standalone image as a figure.
+     /// Independent of image attributes. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
+     pub image_captions: bool,
+@@ -216,6 +221,7 @@ impl Default for ParserOptions {
+             merged_table_cells: false,
+             table_attributes: false,
+             image_attributes: false,
++            image_alt_content: false,
+             image_captions: false,
+             blockquote_attributions: false,
+             line_comments: false,
+@@ -274,6 +280,7 @@ impl ParserOptions {
+             merged_table_cells: false,
+             table_attributes: false,
+             image_attributes: false,
++            image_alt_content: false,
+             image_captions: false,
+             blockquote_attributions: false,
+             line_comments: false,
+diff --git a/src/parser/spans/remap.rs b/src/parser/spans/remap.rs
+index 3d780ce..9382529 100644
+--- a/src/parser/spans/remap.rs
++++ b/src/parser/spans/remap.rs
+@@ -107,7 +107,15 @@ impl<'a> Parser<'a> {
+                     Self::remap_node_spans(child, source_map);
+                 }
+             }
+-            Node::Image(node) => Self::remap_inline_span(&mut node.span, source_map),
++            Node::Image(node) => {
++                Self::remap_inline_span(&mut node.span, source_map);
++                if let Some(content) = &mut node.alt_content {
++                    Self::remap_inline_span(&mut content.span, source_map);
++                    for child in &mut content.children {
++                        Self::remap_node_spans(child, source_map);
++                    }
++                }
++            }
+             Node::Highlight(node) => {
+                 Self::remap_inline_span(&mut node.span, source_map);
+                 for child in &mut node.children {
+diff --git a/tests/callout_metadata.rs b/tests/callout_metadata.rs
+new file mode 100644
+index 0000000..5c4d0dc
+--- /dev/null
++++ b/tests/callout_metadata.rs
+@@ -0,0 +1,175 @@
++#[cfg(feature = "jsx")]
++use ferromark::ParserOptions;
++use ferromark::ast::{BlockQuote, Node};
++use ferromark::{Allocator, CalloutKind, HtmlRenderer, Parser};
++
++fn quote<'tree, 'a>(nodes: &'tree [Node<'a>]) -> &'tree BlockQuote<'a> {
++    match &nodes[0] {
++        Node::BlockQuote(quote) if matches!(&quote.children[0], Node::Paragraph(_)) => quote,
++        Node::BlockQuote(value) => quote(&value.children),
++        Node::List(value) => quote(&value.children[0].children),
++        Node::MdxJsxFlowElement(value) => quote(&value.children),
++        other => panic!("expected quote, got {other:?}"),
++    }
++}
++
++#[test]
++fn exposes_decoded_marker_and_ast_body_boundaries() {
++    for marker in [
++        "[!NOTE]",
++        "\\[!NOTE]",
++        "&#91;!NOTE]",
++        "&lbrack;!NOTE]",
++        "[!&#78;OTE]",
++        "[!NOTE&#93;",
++        "[! note ]",
++    ] {
++        for source in [
++            format!("> {marker}\n> Keep this **note**.\n>\n> Second block."),
++            format!("- > {marker}\r\n  > Keep this **note**.\r\n  >\r\n  > Second block."),
++            format!("> > {marker} \tKeep this **note**.\n> >\n> > Second block."),
++        ] {
++            let arena = Allocator::new();
++            let document = Parser::new(&arena, &source).parse().unwrap();
++            let callout = quote(&document.children)
++                .callout(&source)
++                .unwrap_or_else(|| panic!("{source:?}: {document:#?}"));
++            assert_eq!(callout.kind, CalloutKind::Note);
++            assert_eq!(
++                callout.marker_span.source_text(&source),
++                marker,
++                "{source:?}"
++            );
++            let Node::Text(first) = &callout.body.inlines[0] else {
++                panic!("expected body text")
++            };
++            assert_eq!(&first.value[callout.body.text_offset..], "Keep this ");
++            assert!(matches!(callout.body.inlines[1], Node::Strong(_)));
++            assert_eq!(callout.body.blocks.len(), 1, "{source:?}");
++            assert!(
++                HtmlRenderer::new()
++                    .render(&document)
++                    .contains("ox-callout--note")
++            );
++        }
++    }
++}
++
++#[test]
++fn recognizes_all_kinds_and_empty_or_formatted_body() {
++    for (name, kind) in [
++        ("NOTE", CalloutKind::Note),
++        ("TIP", CalloutKind::Tip),
++        ("IMPORTANT", CalloutKind::Important),
++        ("WARNING", CalloutKind::Warning),
++        ("CAUTION", CalloutKind::Caution),
++    ] {
++        let source = format!("> [!{name}]");
++        let arena = Allocator::new();
++        let document = Parser::new(&arena, &source).parse().unwrap();
++        let result = quote(&document.children)
++            .callout(&source)
++            .unwrap_or_else(|| panic!("{source:?}: {document:#?}"));
++        assert_eq!(result.kind, kind);
++        assert!(result.body.inlines.is_empty());
++        assert!(result.body.blocks.is_empty());
++    }
++    let source = "é前\r\n\r\n> [!TIP]\r\n> **body**";
++    let arena = Allocator::new();
++    let document = Parser::new(&arena, source).parse().unwrap();
++    let result = quote(&document.children[1..])
++        .callout(source)
++        .unwrap_or_else(|| panic!("{source:?}: {document:#?}"));
++    assert_eq!(result.marker_span.source_text(source), "[!TIP]");
++    assert_eq!(result.body.text_offset, 0);
++    assert!(matches!(result.body.inlines[0], Node::Strong(_)));
++}
++
++#[test]
++fn ordinary_quotes_agree_with_renderer_recognition() {
++    for source in [
++        "> ordinary",
++        "> [!UNKNOWN]\n> body",
++        "> `[!NOTE]`\n> body",
++        "> [!NOTE]: /u\n> body",
++        "> [!NOTE]\n> ===",
++        "[!note]: /u\n\n> [!NOTE]\n> body",
++    ] {
++        let arena = Allocator::new();
++        let document = Parser::new(&arena, source).parse().unwrap();
++        let Node::BlockQuote(value) = document
++            .children
++            .iter()
++            .find(|node| matches!(node, Node::BlockQuote(_)))
++            .unwrap()
++        else {
++            panic!("expected quote")
++        };
++        assert!(value.callout(source).is_none(), "{source:?}");
++        assert!(
++            !HtmlRenderer::new()
++                .render(&document)
++                .contains("ox-callout--")
++        );
++    }
++}
++
++#[cfg(feature = "jsx")]
++#[test]
++fn callout_ranges_survive_mdx_indentation_and_root_normalization() {
++    let source = "\u{feff}\0\r\n\r\n<Card>\r\n  - > &#91;!TIP]\r\n    > 日本語\r\n</Card>\r\n";
++    let arena = Allocator::new();
++    let document = Parser::with_options(
++        &arena,
++        source,
++        ParserOptions {
++            mdx: true,
++            mdx_compatible: true,
++            ..ParserOptions::gfm()
++        },
++    )
++    .parse()
++    .unwrap();
++    let callout = quote(&document.children[1..])
++        .callout(source)
++        .unwrap_or_else(|| panic!("{source:?}: {document:#?}"));
++    assert_eq!(callout.marker_span.source_text(source), "&#91;!TIP]");
++    let Node::Text(first) = &callout.body.inlines[0] else {
++        panic!("expected text")
++    };
++    assert_eq!(&first.value[callout.body.text_offset..], "日本語");
++}
++
++#[test]
++fn multiline_markers_keep_original_bounding_ranges() {
++    for source in [
++        "> [!\n> NOTE] body",
++        "> [!NOTE\r\n> ] body",
++        "> [!NOTE]\u{2003}日本語",
++    ] {
++        let arena = Allocator::new();
++        let document = Parser::new(&arena, source).parse().unwrap();
++        let callout = quote(&document.children).callout(source).unwrap();
++        assert_eq!(callout.marker_span.start, 2);
++        assert_eq!(
++            callout.marker_span.end as usize,
++            source.find(']').unwrap() + 1
++        );
++        let Node::Text(text) = &callout.body.inlines[0] else {
++            panic!("expected text")
++        };
++        assert_eq!(
++            &text.value[callout.body.text_offset..],
++            if source.contains("日本語") {
++                "日本語"
++            } else {
++                "body"
++            }
++        );
++        assert!(
++            HtmlRenderer::new()
++                .render(&document)
++                .contains("ox-callout--note")
++        );
++    }
++}
+diff --git a/tests/image_alt_content.rs b/tests/image_alt_content.rs
+new file mode 100644
+index 0000000..43bb2a1
+--- /dev/null
++++ b/tests/image_alt_content.rs
+@@ -0,0 +1,187 @@
++use ferromark::ast::{Image, Node};
++use ferromark::{Allocator, HtmlRenderer, JsxRenderer, Parser, ParserOptions};
++
++fn image<'tree, 'a>(nodes: &'tree [Node<'a>]) -> &'tree Image<'a> {
++    match &nodes[0] {
++        Node::Image(value) => value,
++        Node::Paragraph(value) => image(&value.children),
++        Node::BlockQuote(value) => image(&value.children),
++        Node::List(value) => image(&value.children[0].children),
++        Node::MdxJsxFlowElement(value) => image(&value.children),
++        other => panic!("expected image container, got {other:?}"),
++    }
++}
++
++#[test]
++fn retains_authored_markup_without_changing_flattening_or_output() {
++    for (alt, expected) in [
++        ("Code `sample`", "Code sample"),
++        ("Code sample", "Code sample"),
++        ("é **bold *deep*** &amp; \\*", "é bold deep & *"),
++        ("", ""),
++    ] {
++        for source in [
++            format!("![{alt}](./sample.png)"),
++            format!("![{alt}][ref]\n\n[ref]: ./sample.png"),
++            format!("![{alt}][]\n\n[{alt}]: ./sample.png"),
++            format!("![{alt}]\n\n[{alt}]: ./sample.png"),
++        ] {
++            // Empty shortcut/collapsed reference labels cannot define images.
++            if alt.is_empty() && !source.contains("](./") && !source.contains("][ref]") {
++                continue;
++            }
++            let arena = Allocator::new();
++            let ordinary = Parser::new(&arena, &source).parse().unwrap();
++            let analyzed = Parser::with_options(
++                &arena,
++                &source,
++                ParserOptions {
++                    image_alt_content: true,
++                    ..ParserOptions::default()
++                },
++            )
++            .parse()
++            .unwrap();
++            let before = image(&ordinary.children);
++            let after = image(&analyzed.children);
++            assert_eq!(before.alt, expected, "{source}");
++            assert_eq!(after.alt, before.alt);
++            assert!(before.alt_content.is_none());
++            let content = after.alt_content.as_ref().unwrap();
++            assert_eq!(content.span.source_text(&source), alt);
++            assert_eq!(content.children.is_empty(), alt.is_empty());
++            if alt == "Code `sample`" {
++                let Node::InlineCode(code) = &content.children[1] else {
++                    panic!("expected code")
++                };
++                assert_eq!(code.value, "sample");
++                assert_eq!(code.span.source_text(&source), "`sample`");
++            }
++            if alt.starts_with('é') {
++                let Node::Strong(strong) = &content.children[1] else {
++                    panic!("expected strong")
++                };
++                assert_eq!(strong.span.source_text(&source), "**bold *deep***");
++                assert!(
++                    strong
++                        .children
++                        .iter()
++                        .any(|node| matches!(node, Node::Emphasis(_)))
++                );
++                assert!(content.children.iter().any(|node| matches!(node, Node::Text(text) if text.value == "&" && text.span.source_text(&source) == "&amp;")));
++                assert!(content.children.iter().any(|node| matches!(node, Node::Text(text) if text.value == "*" && text.span.source_text(&source) == "\\*")));
++            }
++            assert_eq!(
++                HtmlRenderer::new().render(&ordinary),
++                HtmlRenderer::new().render(&analyzed)
++            );
++            assert_eq!(
++                JsxRenderer::new().render(&ordinary, &source).body,
++                JsxRenderer::new().render(&analyzed, &source).body
++            );
++        }
++    }
++}
++
++#[test]
++fn maps_alt_children_through_containers_and_line_endings() {
++    for source in [
++        "- ![é `sample`](u)",
++        "> ![é `sample`](u)",
++        "> - ![é `sample`](u)",
++        "> ![é\n> `sample`](u)",
++        "> ![é\r\n> `sample`](u)",
++        "\u{feff}> ![é `sample`](u)",
++        "\0\n\n> ![é `sample`](u)",
++    ] {
++        let arena = Allocator::new();
++        let document = Parser::with_options(
++            &arena,
++            source,
++            ParserOptions {
++                image_alt_content: true,
++                ..ParserOptions::default()
++            },
++        )
++        .parse()
++        .unwrap();
++        let nodes = if source.starts_with('\0') {
++            &document.children[1..]
++        } else {
++            &document.children[..]
++        };
++        let content = image(nodes).alt_content.as_ref().unwrap();
++        let code = content
++            .children
++            .iter()
++            .find_map(|node| match node {
++                Node::InlineCode(code) => Some(code),
++                _ => None,
++            })
++            .unwrap();
++        assert_eq!(code.span.source_text(source), "`sample`", "{source:?}");
++        assert_eq!(content.span.start as usize, source.find("é").unwrap());
++        assert_eq!(content.span.end as usize, source.find("](u)").unwrap());
++    }
++}
++
++#[cfg(feature = "jsx")]
++#[test]
++fn retains_expressions_and_spans_inside_mdx_containers() {
++    let source = "<Card>\r\n  > ![é `code` {label} <Badge />](u)\r\n</Card>\r\n";
++    let arena = Allocator::new();
++    let options = ParserOptions {
++        mdx: true,
++        mdx_compatible: true,
++        ..ParserOptions::gfm()
++    };
++    let ordinary = Parser::with_options(&arena, source, options.clone())
++        .parse()
++        .unwrap();
++    let analyzed = Parser::with_options(
++        &arena,
++        source,
++        ParserOptions {
++            image_alt_content: true,
++            ..options
++        },
++    )
++    .parse()
++    .unwrap();
++    let value = image(&analyzed.children);
++    let content = value.alt_content.as_ref().unwrap();
++    assert!(content.children.iter().any(|node| matches!(node, Node::MdxTextExpression(expr) if expr.span.source_text(source) == "{label}")));
++    assert!(content.children.iter().any(|node| matches!(node, Node::MdxJsxTextElement(element) if element.span.source_text(source) == "<Badge />")));
++    assert_eq!(value.alt, image(&ordinary.children).alt);
++    assert_eq!(
++        JsxRenderer::new().render(&ordinary, source).body,
++        JsxRenderer::new().render(&analyzed, source).body
++    );
++}
++
++#[test]
++fn nested_image_metadata_is_remapped_with_the_outer_alt() {
++    let source = "> ![outer ![inner `code`](inner.png)](outer.png)";
++    let arena = Allocator::new();
++    let document = Parser::with_options(
++        &arena,
++        source,
++        ParserOptions {
++            image_alt_content: true,
++            ..ParserOptions::default()
++        },
++    )
++    .parse()
++    .unwrap();
++    let outer = image(&document.children);
++    assert_eq!(outer.alt, "outer inner code");
++    let content = outer.alt_content.as_ref().unwrap();
++    let Node::Image(inner) = &content.children[1] else {
++        panic!("expected nested image")
++    };
++    assert_eq!(inner.span.source_text(source), "![inner `code`](inner.png)");
++    let Node::InlineCode(code) = &inner.alt_content.as_ref().unwrap().children[1] else {
++        panic!("expected code")
++    };
++    assert_eq!(code.span.source_text(source), "`code`");
++}
+diff --git a/tests/image_captions.rs b/tests/image_captions.rs
+index 9e99ef4..a58a1e4 100644
+--- a/tests/image_captions.rs
++++ b/tests/image_captions.rs
+@@ -62,7 +62,9 @@ fn ordinary_image_nodes_keep_attributes_unallocated() {
+         panic!("expected image");
+     };
+     assert!(image.attributes.is_none());
+-    assert!(std::mem::size_of::<ferromark::ast::Image<'static>>() <= 64);
++    assert!(image.alt_content.is_none());
++    // One optional pointer retains alt provenance without allocating it by default.
++    assert!(std::mem::size_of::<ferromark::ast::Image<'static>>() <= 72);
+ }
+ 
+ #[test]
+diff --git a/tests/mdx_diagnostics.rs b/tests/mdx_diagnostics.rs
+new file mode 100644
+index 0000000..a819e21
+--- /dev/null
++++ b/tests/mdx_diagnostics.rs
+@@ -0,0 +1,157 @@
++#![cfg(feature = "jsx")]
++
++use ferromark::{Allocator, MdxDiagnosticKind as Kind, ParseErrorKind, Parser, ParserOptions};
++use std::num::NonZeroUsize;
++
++fn options() -> ParserOptions {
++    ParserOptions {
++        mdx: true,
++        mdx_compatible: true,
++        ..ParserOptions::gfm()
++    }
++}
++
++#[test]
++fn mismatches_report_complete_tags_and_related_openers() {
++    for source in [
++        "<Card>\n<Badge>\n</Card>\n",
++        "é前\n\n<Card>\r\n<Badge>\r\n</Card>\r\n",
++        "> <Card>\n> <Badge>\n> </Card>\n",
++        "- <Card>\r\n  <Badge>\r\n  </Card>\r\n",
++        "> - <Card>\n>   <Badge>\n>   </Card>\n",
++        "<Outer>\n  > <Card>\n  > <Badge>\n  > </Card>\n</Outer>\n",
++        "é <Card><Badge></Card>",
++        "\u{feff}\0\n\n> <Card>\n> <Badge>\n> </Card>\n",
++    ] {
++        let arena = Allocator::new();
++        let error = Parser::with_options(&arena, source, options())
++            .parse()
++            .unwrap_err();
++        assert!(matches!(error.kind(), ParseErrorKind::InvalidMdx { .. }));
++        let detail = error.mdx_diagnostic().unwrap();
++        assert_eq!(
++            detail.kind,
++            Kind::MismatchedClosingTag,
++            "{source:?}: {error}"
++        );
++        assert_eq!(detail.span, error.span());
++        assert_eq!(detail.span.source_text(source), "</Card>", "{source:?}");
++        assert_eq!(
++            detail.related_span.unwrap().source_text(source),
++            "<Badge>",
++            "{source:?}"
++        );
++    }
++}
++
++#[test]
++fn collects_only_independent_standalone_unmatched_closers() {
++    for source in [
++        "</First>\n\n</Second>\n",
++        "é\n\n</First>\r\n\r\n</Second>\r\n",
++        "\u{feff}\0\n\n</First>\n\n</Second>\n",
++    ] {
++        let arena = Allocator::new();
++        let failed = Parser::with_options(&arena, source, options())
++            .parse_with_diagnostics(NonZeroUsize::new(8).unwrap())
++            .unwrap_err();
++        assert!(!failed.stopped_early, "{failed:?}");
++        assert_eq!(failed.errors.len(), 2);
++        for (error, tag) in failed.errors.iter().zip(["</First>", "</Second>"]) {
++            let detail = error.mdx_diagnostic().unwrap();
++            assert_eq!(detail.kind, Kind::UnexpectedClosingTag);
++            assert_eq!(detail.span.source_text(source), tag);
++            assert_eq!(error.span(), detail.span);
++            assert!(detail.related_span.is_none());
++        }
++        let first = Parser::with_options(&arena, source, options())
++            .parse()
++            .unwrap_err();
++        assert_eq!(first.span(), failed.errors[0].span());
++    }
++}
++
++#[test]
++fn recovery_stops_at_ambiguity_and_respects_the_limit() {
++    for (source, kind) in [
++        ("x </First>\n\n</Second>", Kind::UnexpectedClosingTag),
++        ("> </First>\n\n</Second>", Kind::UnexpectedClosingTag),
++        ("- </First>\n\n</Second>", Kind::UnexpectedClosingTag),
++        ("</First bad>\n\n</Second>", Kind::InvalidClosingTag),
++        ("</A..B>\n\n</Second>", Kind::InvalidClosingTag),
++        (
++            "<Card><Badge></Card>\n\n</Second>",
++            Kind::MismatchedClosingTag,
++        ),
++        ("<Card>\ntext", Kind::UnclosedElement),
++        ("{x +}\n\n</Second>", Kind::InvalidExpression),
++        ("<Card bad={x +} />\n\n</Second>", Kind::InvalidOpeningTag),
++        (
++            "export const value: string = 'x'\n\n</Second>",
++            Kind::InvalidModule,
++        ),
++    ] {
++        let arena = Allocator::new();
++        let failed = Parser::with_options(&arena, source, options())
++            .parse_with_diagnostics(NonZeroUsize::new(8).unwrap())
++            .unwrap_err();
++        assert_eq!(failed.errors.len(), 1, "{source:?}");
++        assert!(failed.stopped_early, "{source:?}");
++        assert_eq!(
++            failed.errors[0].mdx_diagnostic().unwrap().kind,
++            kind,
++            "{source:?}"
++        );
++        if kind == Kind::UnclosedElement {
++            assert_eq!(
++                failed.errors[0]
++                    .mdx_diagnostic()
++                    .unwrap()
++                    .related_span
++                    .unwrap()
++                    .source_text(source),
++                "<Card>"
++            );
++        }
++    }
++    let arena = Allocator::new();
++    let fragments = Parser::with_options(&arena, "</>\n\n</Å名>", options())
++        .parse_with_diagnostics(NonZeroUsize::new(4).unwrap())
++        .unwrap_err();
++    assert_eq!(fragments.errors.len(), 2);
++    assert!(!fragments.stopped_early);
++    let failed = Parser::with_options(&arena, "</First>\n\n</Second>", options())
++        .parse_with_diagnostics(NonZeroUsize::new(1).unwrap())
++        .unwrap_err();
++    assert_eq!(failed.errors.len(), 1);
++    assert!(failed.stopped_early);
++}
++
++#[test]
++fn collection_keeps_successful_ast_validation_and_nesting_contracts() {
++    let source = "\u{feff}<Card>\r\n  > é **body** {value}\r\n</Card>\r\n";
++    let arena = Allocator::new();
++    let plain = Parser::with_options(&arena, source, options())
++        .parse()
++        .unwrap();
++    let collected = Parser::with_options(&arena, source, options())
++        .parse_with_diagnostics(NonZeroUsize::new(4).unwrap())
++        .unwrap();
++    assert_eq!(format!("{plain:?}"), format!("{collected:?}"));
++    let failed = Parser::with_options(
++        &arena,
++        "> > > body",
++        ParserOptions {
++            max_nesting_depth: 2,
++            ..options()
++        },
++    )
++    .parse_with_diagnostics(NonZeroUsize::new(4).unwrap())
++    .unwrap_err();
++    assert!(failed.stopped_early);
++    assert!(matches!(
++        failed.errors[0].kind(),
++        ParseErrorKind::NestingTooDeep { .. }
++    ));
++    assert!(failed.errors[0].mdx_diagnostic().is_none());
++}

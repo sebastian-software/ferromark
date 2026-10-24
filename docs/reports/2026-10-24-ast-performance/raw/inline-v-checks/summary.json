@@ -1,0 +1,206 @@
+[
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 140.23200863809737,
+    "candidate_ns_per_document": 140.79688203955666,
+    "baseline_over_candidate_median": 0.9964550687536785,
+    "baseline_over_candidate_min": 0.9878468547524877,
+    "baseline_over_candidate_max": 1.0105094464721578,
+    "pairs": 15,
+    "round_medians": [
+      0.9957280244617016,
+      0.9968847766304562,
+      0.9964550687536785
+    ]
+  },
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 298.21647163374365,
+    "candidate_ns_per_document": 300.09532240253503,
+    "baseline_over_candidate_median": 0.9931990756825311,
+    "baseline_over_candidate_min": 0.978464665462697,
+    "baseline_over_candidate_max": 1.017441218791982,
+    "pairs": 15,
+    "round_medians": [
+      0.9917301947334962,
+      0.9981040873749306,
+      0.9920658939906181
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 170.54271720148438,
+    "candidate_ns_per_document": 170.11913786064235,
+    "baseline_over_candidate_median": 1.002480632463244,
+    "baseline_over_candidate_min": 0.9922682879326133,
+    "baseline_over_candidate_max": 1.0258215876041845,
+    "pairs": 15,
+    "round_medians": [
+      1.0049076154471508,
+      1.001520987766439,
+      1.0018500600833506
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 304.63876230626767,
+    "candidate_ns_per_document": 303.4119629854369,
+    "baseline_over_candidate_median": 1.0034000321989305,
+    "baseline_over_candidate_min": 0.9726025604681686,
+    "baseline_over_candidate_max": 1.0300918435446802,
+    "pairs": 15,
+    "round_medians": [
+      1.0039010619368383,
+      1.022659181976204,
+      0.9968494805775063
+    ]
+  },
+  {
+    "case": "wiki-tea-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "parse",
+    "baseline_ns_per_document": 32825.141276041664,
+    "candidate_ns_per_document": 33241.21414473684,
+    "baseline_over_candidate_median": 0.9855615138655793,
+    "baseline_over_candidate_min": 0.9658758451996513,
+    "baseline_over_candidate_max": 1.0264588897126203,
+    "pairs": 15,
+    "round_medians": [
+      0.9837895951663318,
+      0.9969342961621678,
+      0.9855615138655793
+    ]
+  },
+  {
+    "case": "wiki-tea-article-body",
+    "profile": "commonmark",
+    "category": "encyclopedia",
+    "mode": "fresh",
+    "baseline_ns_per_document": 57907.74537037037,
+    "candidate_ns_per_document": 58117.1875,
+    "baseline_over_candidate_median": 1.0001912102866168,
+    "baseline_over_candidate_min": 0.9570613717654266,
+    "baseline_over_candidate_max": 1.029317989562677,
+    "pairs": 15,
+    "round_medians": [
+      1.0046770039226378,
+      0.9880747855712687,
+      0.9940967464074344
+    ]
+  },
+  {
+    "case": "target-prose",
+    "profile": "commonmark",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 6196.929146039604,
+    "candidate_ns_per_document": 6183.995182806324,
+    "baseline_over_candidate_median": 1.000180261220509,
+    "baseline_over_candidate_min": 0.9652686758020458,
+    "baseline_over_candidate_max": 1.0118041820111103,
+    "pairs": 15,
+    "round_medians": [
+      0.9952963220362055,
+      1.004132109186709,
+      0.9855926753512804
+    ]
+  },
+  {
+    "case": "target-prose",
+    "profile": "commonmark",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 8214.467847769029,
+    "candidate_ns_per_document": 8117.366801948052,
+    "baseline_over_candidate_median": 1.0116421604693795,
+    "baseline_over_candidate_min": 0.9933236809153052,
+    "baseline_over_candidate_max": 1.0299630686258556,
+    "pairs": 15,
+    "round_medians": [
+      1.0094091896025252,
+      1.014026992453063,
+      1.0116421604693795
+    ]
+  },
+  {
+    "case": "target-rich-images",
+    "profile": "gfm",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 16127.953125,
+    "candidate_ns_per_document": 16268.579987046633,
+    "baseline_over_candidate_median": 0.9910898534427368,
+    "baseline_over_candidate_min": 0.9683282724351632,
+    "baseline_over_candidate_max": 0.996257584443033,
+    "pairs": 15,
+    "round_medians": [
+      0.9910767995109233,
+      0.9924154755392203,
+      0.9876127937295925
+    ]
+  },
+  {
+    "case": "target-rich-images",
+    "profile": "gfm",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 18776.743450598802,
+    "candidate_ns_per_document": 18921.576995481926,
+    "baseline_over_candidate_median": 0.9952030253126473,
+    "baseline_over_candidate_min": 0.9781470599318837,
+    "baseline_over_candidate_max": 1.0188434960571404,
+    "pairs": 15,
+    "round_medians": [
+      0.9896462558963327,
+      0.9966894170787277,
+      0.9933666734804447
+    ]
+  },
+  {
+    "case": "target-strict-mdx",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 76365.28201219512,
+    "candidate_ns_per_document": 76533.53658536586,
+    "baseline_over_candidate_median": 0.9969633245806363,
+    "baseline_over_candidate_min": 0.9781728251767075,
+    "baseline_over_candidate_max": 1.0268187882438773,
+    "pairs": 15,
+    "round_medians": [
+      1.0024334276913247,
+      0.9969633245806363,
+      0.9913513412169613
+    ]
+  },
+  {
+    "case": "target-strict-mdx",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 98643.2294921875,
+    "candidate_ns_per_document": 99467.8955078125,
+    "baseline_over_candidate_median": 0.992460587964449,
+    "baseline_over_candidate_min": 0.9866310235746921,
+    "baseline_over_candidate_max": 1.0058374657970346,
+    "pairs": 15,
+    "round_medians": [
+      0.9946635774502249,
+      0.9892743317182808,
+      0.9963245916299502
+    ]
+  }
+]

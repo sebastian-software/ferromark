@@ -32,6 +32,7 @@ pub mod text;
 pub use ferriki;
 
 mod callout;
+pub use callout::{Callout, CalloutBody, CalloutKind};
 mod convenience;
 
 pub use allocator::Allocator;
@@ -40,7 +41,10 @@ pub use convenience::{
     to_html_with_options_and_abbreviations,
 };
 pub use outline::{OutlineEntry, OutlineOptions};
-pub use parser::{ParseError, ParseErrorKind, ParseResult, Parser, ParserOptions, parse};
+pub use parser::{
+    MdxDiagnostic, MdxDiagnosticKind, ParseDiagnostics, ParseError, ParseErrorKind, ParseResult,
+    Parser, ParserOptions, parse,
+};
 pub use projection::{
     MarkdownProjection, MarkdownProjectionDiagnostic, MarkdownProjectionDiagnosticKind,
     MarkdownProjectionError, MarkdownProjectionOptions,

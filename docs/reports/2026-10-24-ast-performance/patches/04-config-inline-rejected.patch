@@ -1,0 +1,12 @@
+diff --git a/src/parser/mod.rs b/src/parser/mod.rs
+index bd53988..97582fa 100644
+--- a/src/parser/mod.rs
++++ b/src/parser/mod.rs
+@@ -662,6 +662,7 @@ impl<'a> Parser<'a> {
+         result
+     }
+ 
++    #[inline]
+     fn check_options(&self) -> ParseResult<()> {
+         if self.options.mdx_compatible && !self.options.mdx {
+             return Err(error::ParseErrorKind::InvalidMdx {

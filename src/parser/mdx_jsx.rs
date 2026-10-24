@@ -19,6 +19,49 @@ pub(super) fn looks_like_jsx_open(bytes: &[u8], at: usize, compatible: bool) -> 
     }
 }
 
+#[cfg(feature = "jsx")]
+pub(in crate::parser) fn unexpected_closing(
+    source: &str,
+    start: usize,
+    offset: usize,
+) -> crate::parser::ParseError {
+    let close = scan::compatible_closing_end(source, start)
+        .filter(|&end| super::mdx_compatible::valid_closing(&source[start..end]));
+    let end = close.unwrap_or(start + 2);
+    super::mdx_compatible::invalid(
+        Span::new((offset + start) as u32, (offset + end) as u32),
+        if close.is_some() {
+            crate::parser::MdxDiagnosticKind::UnexpectedClosingTag
+        } else {
+            crate::parser::MdxDiagnosticKind::InvalidClosingTag
+        },
+        "unexpected JSX closing tag; no matching opening tag in this content",
+    )
+}
+
+/// Only a standalone, complete closer at the current root block boundary can
+/// be discarded safely. A child error, inline closer, or malformed tag stops.
+#[cfg(feature = "jsx")]
+pub(in crate::parser) fn recover_closing(
+    source: &str,
+    position: usize,
+    span: Span,
+) -> Option<usize> {
+    let start = span.start as usize;
+    if !source
+        .get(position..start)?
+        .chars()
+        .all(char::is_whitespace)
+    {
+        return None;
+    }
+    let end = scan::compatible_closing_end(source, start)?;
+    if end != span.end as usize || !scan::only_ws_until_eol(source.as_bytes(), end) {
+        return None;
+    }
+    Some(scan::after_trailing_line_ws(source.as_bytes(), end))
+}
+
 impl<'a> Parser<'a> {
     /// Parses a flow JSX element starting at the current line.
     ///
@@ -61,7 +104,7 @@ impl<'a> Parser<'a> {
             (true, self.allocator.new_vec(), open.end)
         } else {
             let Some((close_start, close_end)) =
-                self.mdx_jsx_close(self.source, open.end, open.name)?
+                self.mdx_jsx_close(self.source, trimmed_start, open.end, open.name)?
             else {
                 return Ok(None);
             };
@@ -114,9 +157,9 @@ impl<'a> Parser<'a> {
         let (self_closing, children, end) = if open.self_closing {
             (true, self.allocator.new_vec(), open.end)
         } else {
-            let Some((close_start, close_end)) =
-                self.mdx_jsx_close(content, open.end, open.name)
-                    .map_err(|error| error.remapped(&super::spans::OffsetMap(offset as u32)))?
+            let Some((close_start, close_end)) = self
+                .mdx_jsx_close(content, pos, open.end, open.name)
+                .map_err(|error| error.remapped(&super::spans::OffsetMap(offset as u32)))?
             else {
                 return Ok(None);
             };
@@ -147,25 +190,22 @@ impl<'a> Parser<'a> {
     fn mdx_jsx_close(
         &self,
         content: &'a str,
+        opening_start: usize,
         from: usize,
         name: Option<&'a str>,
     ) -> ParseResult<Option<(usize, usize)>> {
         #[cfg(feature = "jsx")]
         if self.options.mdx_compatible {
-            return match scan::compatible_matching_close(content, from, name, &mut |at| {
-                self.matching_brace_end(content, at)
-            }) {
-                Ok(Some(close)) => Ok(Some(close)),
-                Ok(None) => Err(super::mdx_compatible::invalid(
-                    Span::new(from as u32, content.len() as u32),
-                    "unclosed JSX element; expected its matching closing tag",
-                )),
-                Err(at) => Err(super::mdx_compatible::invalid(
-                    Span::new(at as u32, (at + 1) as u32),
-                    "invalid JSX nesting or JavaScript expression; closing tags must match the most recent opening tag",
-                )),
-            };
+            return scan::compatible_matching_close(
+                content,
+                opening_start,
+                from,
+                name,
+                &mut |at| self.matching_brace_end(content, at),
+            );
         }
+        #[cfg(not(feature = "jsx"))]
+        let _ = opening_start;
         let slice = (content.as_ptr() as usize, content.len());
         let cached = self
             .extension_memos()
@@ -225,6 +265,7 @@ impl<'a> Parser<'a> {
             let open = scan::scan_compatible_jsx_open(content, pos, offset, attributes, skip_brace)
                 .ok_or_else(|| super::mdx_compatible::invalid(
                     Span::new((offset + pos) as u32, (offset + content.len()) as u32),
+                    crate::parser::MdxDiagnosticKind::InvalidOpeningTag,
                     "invalid or unclosed JSX opening tag; quote attribute literals and close JavaScript expressions",
                 ))?;
             super::mdx_compatible::validate_open(
@@ -440,6 +481,7 @@ impl<'a> Parser<'a> {
                     } else {
                         return Err(super::mdx_compatible::invalid(
                             Span::new(cursor as u32, end as u32),
+                            crate::parser::MdxDiagnosticKind::InvalidExpression,
                             "invalid or unclosed JavaScript expression in Markdown",
                         ));
                     }
@@ -461,7 +503,7 @@ impl<'a> Parser<'a> {
                         cursor = if open.self_closing {
                             open.end
                         } else {
-                            self.mdx_jsx_close(self.source, open.end, open.name)?
+                            self.mdx_jsx_close(self.source, cursor, open.end, open.name)?
                                 .map_or(open.end, |(_, close)| close)
                         };
                     }

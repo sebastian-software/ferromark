@@ -107,7 +107,15 @@ impl<'a> Parser<'a> {
                     Self::remap_node_spans(child, source_map);
                 }
             }
-            Node::Image(node) => Self::remap_inline_span(&mut node.span, source_map),
+            Node::Image(node) => {
+                Self::remap_inline_span(&mut node.span, source_map);
+                if let Some(content) = &mut node.alt_content {
+                    Self::remap_inline_span(&mut content.span, source_map);
+                    for child in &mut content.children {
+                        Self::remap_node_spans(child, source_map);
+                    }
+                }
+            }
             Node::Highlight(node) => {
                 Self::remap_inline_span(&mut node.span, source_map);
                 for child in &mut node.children {

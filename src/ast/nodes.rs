@@ -452,11 +452,14 @@ impl Link<'_> {
 }
 
 /// Image.
-#[derive(Debug)]
 pub struct Image<'a> {
     /// Image URL.
     pub url: &'a str,
-    /// Alt text.
+    /// Parsed alternative content, retained only with
+    /// [`crate::ParserOptions::image_alt_content`]. `Some` with no children
+    /// distinguishes an empty alt from analysis that was not requested.
+    pub alt_content: Option<Box<'a, ImageAlt<'a>>>,
+    /// Flattened alt text used by renderers.
     pub alt: &'a str,
     /// Title.
     pub title: Option<&'a str>,
@@ -464,6 +467,31 @@ pub struct Image<'a> {
     pub attributes: Option<Box<'a, ElementAttributes<'a>>>,
     /// Source span.
     pub span: Span,
+}
+
+/// Parsed image alternative content, including nested inline markup.
+#[derive(Debug)]
+pub struct ImageAlt<'a> {
+    /// Original bracket contents, excluding `![` and `]`.
+    /// A multiline range includes intervening container prefixes.
+    pub span: Span,
+    /// Inline nodes with original UTF-8 byte spans.
+    pub children: Vec<'a, Node<'a>>,
+}
+
+impl std::fmt::Debug for Image<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut image = formatter.debug_struct("Image");
+        image.field("url", &self.url).field("alt", &self.alt);
+        if let Some(content) = &self.alt_content {
+            image.field("alt_content", content);
+        }
+        image
+            .field("title", &self.title)
+            .field("attributes", &self.attributes)
+            .field("span", &self.span)
+            .finish()
+    }
 }
 
 /// Authored metadata shared by elements with optional attribute suffixes.

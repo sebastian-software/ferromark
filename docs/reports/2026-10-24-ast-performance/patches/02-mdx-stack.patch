@@ -1,0 +1,116 @@
+diff --git a/src/parser/mdx_jsx/scan.rs b/src/parser/mdx_jsx/scan.rs
+index 872a1b1..8cae825 100644
+--- a/src/parser/mdx_jsx/scan.rs
++++ b/src/parser/mdx_jsx/scan.rs
+@@ -154,8 +154,11 @@ pub(super) fn compatible_matching_close<'a>(
+             related_span,
+         })
+     };
+-    let mut names: SmallVec<[(Option<&str>, Span); 16]> = SmallVec::new();
+-    names.push((name, Span::new(opening_start as u32, from as u32)));
++    // Each name borrows its opening tag in this source. For a fragment,
++    // borrow an empty slice at the same position. Its address recovers the
++    // opener only on failure, keeping the successful stack name-sized.
++    let mut names: SmallVec<[&str; 16]> = SmallVec::new();
++    names.push(name.unwrap_or_else(|| &source[opening_start + 1..opening_start + 1]));
+     let mut cursor = from;
+     while cursor < bytes.len() {
+         match bytes[cursor] {
+@@ -221,11 +224,11 @@ pub(super) fn compatible_matching_close<'a>(
+                 };
+                 if closing {
+                     let expected = names.pop();
+-                    if expected.map(|(name, _)| name) != Some(tag_name) {
++                    if expected != Some(tag_name.unwrap_or("")) {
+                         return Err(failure(
+                             Span::new(start as u32, end as u32),
+                             Kind::MismatchedClosingTag,
+-                            expected.map(|(_, span)| span),
++                            expected.map(|name| opening_tag_span(source, name, skip_brace)),
+                             "invalid JSX nesting; closing tags must match the most recent opening tag",
+                         ));
+                     }
+@@ -233,7 +236,7 @@ pub(super) fn compatible_matching_close<'a>(
+                         return Ok(Some((start, end)));
+                     }
+                 } else if !self_closing {
+-                    names.push((tag_name, Span::new(start as u32, end as u32)));
++                    names.push(tag_name.unwrap_or_else(|| &source[name_start..name_start]));
+                 }
+                 cursor = end;
+             }
+@@ -243,11 +246,30 @@ pub(super) fn compatible_matching_close<'a>(
+     Err(failure(
+         Span::new(source.len() as u32, source.len() as u32),
+         Kind::UnclosedElement,
+-        names.last().map(|(_, span)| *span),
++        names
++            .last()
++            .map(|name| opening_tag_span(source, name, skip_brace)),
+         "unclosed JSX element; expected its matching closing tag",
+     ))
+ }
+ 
++/// Recover the range of a previously scanned opening tag on the error path.
++/// Empty names are source-backed slices immediately after a fragment's `<`.
++#[cfg(feature = "jsx")]
++fn opening_tag_span(
++    source: &str,
++    name: &str,
++    skip_brace: &mut impl FnMut(usize) -> Option<usize>,
++) -> Span {
++    let start = name.as_ptr() as usize - source.as_ptr() as usize - 1;
++    let mut end = start + 1 + name.len();
++    // This immutable tag was already scanned successfully before it entered
++    // the stack. Reuse that scanner and the caller's expression memo to find
++    // the end; `<` and `>` inside attributes are not tag boundaries.
++    let _ = skip_tag_rest(source, &mut end, skip_brace, true);
++    Span::new(start as u32, end as u32)
++}
++
+ /// Scans only a complete closing tag; reused for diagnostics and safe recovery.
+ #[cfg(feature = "jsx")]
+ pub(in crate::parser) fn compatible_closing_end(source: &str, start: usize) -> Option<usize> {
+diff --git a/tests/mdx_diagnostics.rs b/tests/mdx_diagnostics.rs
+index a819e21..52db9d3 100644
+--- a/tests/mdx_diagnostics.rs
++++ b/tests/mdx_diagnostics.rs
+@@ -155,3 +155,38 @@ fn collection_keeps_successful_ast_validation_and_nesting_contracts() {
+     ));
+     assert!(failed.errors[0].mdx_diagnostic().is_none());
+ }
++
++#[test]
++fn related_openers_include_fragment_and_javascript_attribute_boundaries() {
++    for (source, expected) in [
++        ("<Card><></Card>", "<>"),
++        ("<>", "<>"),
++        (
++            r#"<Card><Badge label=">" check={a < b ? a : b}></Card>"#,
++            r#"<Badge label=">" check={a < b ? a : b}>"#,
++        ),
++        (
++            "<Card title={a < b ? a : b}>",
++            "<Card title={a < b ? a : b}>",
++        ),
++        (
++            "<Card>\n<Badge\n label=\"<inside>\"\n>\n</Card>",
++            "<Badge\n label=\"<inside>\"\n>",
++        ),
++    ] {
++        let arena = Allocator::new();
++        let error = Parser::with_options(&arena, source, options())
++            .parse()
++            .unwrap_err();
++        assert_eq!(
++            error
++                .mdx_diagnostic()
++                .unwrap()
++                .related_span
++                .unwrap()
++                .source_text(source),
++            expected,
++            "{source:?}: {error}"
++        );
++    }
++}

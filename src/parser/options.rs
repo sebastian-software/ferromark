@@ -50,6 +50,11 @@ pub struct ParserOptions {
     /// Independent of image captions. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub image_attributes: bool,
 
+    /// Retain parsed image alt children and their original source spans in
+    /// [`crate::ast::Image::alt_content`]. Default: `false` in all profiles.
+    /// Renderers continue to use the existing flattened `alt` value.
+    pub image_alt_content: bool,
+
     /// Attach one `: Caption` line to a standalone image as a figure.
     /// Independent of image attributes. Default: `false`; [`ParserOptions::ffm`] sets this to `true`.
     pub image_captions: bool,
@@ -216,6 +221,7 @@ impl Default for ParserOptions {
             merged_table_cells: false,
             table_attributes: false,
             image_attributes: false,
+            image_alt_content: false,
             image_captions: false,
             blockquote_attributions: false,
             line_comments: false,
@@ -274,6 +280,7 @@ impl ParserOptions {
             merged_table_cells: false,
             table_attributes: false,
             image_attributes: false,
+            image_alt_content: false,
             image_captions: false,
             blockquote_attributions: false,
             line_comments: false,

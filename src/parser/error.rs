@@ -17,7 +17,58 @@ pub type ParseResult<T> = Result<T, ParseError>;
 #[derive(Debug, Error)]
 #[error(transparent)]
 #[allow(clippy::disallowed_types)]
-pub struct ParseError(Box<ParseErrorKind>);
+pub struct ParseError(Box<ParseErrorData>);
+
+#[derive(Debug, Error)]
+#[error("{kind}")]
+struct ParseErrorData {
+    kind: ParseErrorKind,
+    mdx: Option<MdxDiagnostic>,
+}
+
+/// Machine-readable detail for strict MDX failures. Messages remain on
+/// [`ParseErrorKind::InvalidMdx`] and are not a stable classification API.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MdxDiagnostic {
+    /// Structural or grammar category.
+    pub kind: MdxDiagnosticKind,
+    /// Offending construct in original UTF-8 source coordinates.
+    pub span: Span,
+    /// Conflicting or unclosed opening tag, when known.
+    pub related_span: Option<Span>,
+}
+
+/// Strict MDX failure categories. More categories may be added in the future.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MdxDiagnosticKind {
+    /// Invalid or unclosed JavaScript child expression.
+    InvalidExpression,
+    /// Invalid or unclosed JSX opening tag or attributes.
+    InvalidOpeningTag,
+    /// An opening tag has no matching closer.
+    UnclosedElement,
+    /// A closing tag conflicts with the most recent opening tag.
+    MismatchedClosingTag,
+    /// A closing tag has no opening tag in this content.
+    UnexpectedClosingTag,
+    /// Malformed closing-tag syntax; recovery cannot skip it safely.
+    InvalidClosingTag,
+    /// Invalid JavaScript module block (including unsupported TypeScript).
+    InvalidModule,
+}
+
+/// Failed diagnostic-oriented parse. No partial AST can be rendered.
+#[derive(Debug, Error)]
+#[error("parse failed with {} diagnostic(s)", errors.len())]
+#[allow(clippy::disallowed_types)]
+pub struct ParseDiagnostics {
+    /// Errors in source order, limited to the requested maximum.
+    pub errors: Vec<ParseError>,
+    /// Parsing stopped at an ambiguous construct or the diagnostic limit.
+    /// Later independent errors may therefore be absent.
+    pub stopped_early: bool,
+}
 
 /// The kinds of parse error.
 ///
@@ -51,29 +102,41 @@ impl ParseError {
     #[cold]
     #[allow(clippy::disallowed_types)]
     pub fn new(kind: ParseErrorKind) -> Self {
-        Self(Box::new(kind))
+        Self(Box::new(ParseErrorData { kind, mdx: None }))
     }
 
     /// Returns the kind of error.
     #[must_use]
     pub fn kind(&self) -> &ParseErrorKind {
-        &self.0
+        &self.0.kind
     }
 
     /// Unwraps the kind of error.
     #[must_use]
     pub fn into_kind(self) -> ParseErrorKind {
-        *self.0
+        self.0.kind
     }
 
     /// Returns the span where the error occurred.
     #[must_use]
     pub fn span(&self) -> Span {
-        self.0.span()
+        self.0.kind.span()
+    }
+
+    /// Typed MDX detail, available for syntax failures in strict MDX mode.
+    /// Configuration and nesting-limit errors have no MDX detail.
+    pub fn mdx_diagnostic(&self) -> Option<&MdxDiagnostic> {
+        self.0.mdx.as_ref()
+    }
+
+    #[cfg(feature = "jsx")]
+    pub(in crate::parser) fn with_mdx_diagnostic(mut self, detail: MdxDiagnostic) -> Self {
+        self.0.mdx = Some(detail);
+        self
     }
 
     pub(in crate::parser) fn span_mut(&mut self) -> &mut Span {
-        match &mut *self.0 {
+        match &mut self.0.kind {
             ParseErrorKind::NestingTooDeep { span, .. } => span,
             ParseErrorKind::InvalidMdx { span, .. } => span,
         }
@@ -89,9 +152,20 @@ impl ParseError {
     /// reads points into the document it handed to the root parser.
     #[must_use]
     pub(in crate::parser) fn remapped(mut self, map: &impl super::spans::SpanMap) -> Self {
-        let span = self.span_mut();
-        *span = map.map_span(*span);
+        self.remap_in_place(map);
         self
+    }
+
+    pub(in crate::parser) fn remap_in_place(&mut self, map: &impl super::spans::SpanMap) {
+        if let Some(detail) = &mut self.0.mdx {
+            detail.span = map.map_inline_span(detail.span);
+            detail.related_span = detail.related_span.map(|span| map.map_inline_span(span));
+            let span = detail.span;
+            *self.span_mut() = span;
+        } else {
+            let span = self.span_mut();
+            *span = map.map_span(*span);
+        }
     }
 }
 

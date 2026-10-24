@@ -1,0 +1,138 @@
+[
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 137.03105268350433,
+    "candidate_ns_per_document": 137.21799255730218,
+    "baseline_over_candidate_median": 1.0002754995161267,
+    "baseline_over_candidate_min": 0.9953828171783837,
+    "baseline_over_candidate_max": 1.0051180748855166,
+    "pairs": 9,
+    "round_medians": [
+      1.0013897815414943,
+      0.9961436578536939,
+      1.0002754995161267
+    ]
+  },
+  {
+    "case": "comment-inline-code",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 293.07424512378094,
+    "candidate_ns_per_document": 292.9912103881493,
+    "baseline_over_candidate_median": 1.0032119158994108,
+    "baseline_over_candidate_min": 0.993603726278948,
+    "baseline_over_candidate_max": 1.0325141888148783,
+    "pairs": 9,
+    "round_medians": [
+      1.0249843472855154,
+      1.0032119158994108,
+      0.9955295535648474
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "parse",
+    "baseline_ns_per_document": 165.42537185051873,
+    "candidate_ns_per_document": 165.64741797413336,
+    "baseline_over_candidate_median": 0.998142009216601,
+    "baseline_over_candidate_min": 0.9867188963756146,
+    "baseline_over_candidate_max": 1.0042164165691647,
+    "pairs": 9,
+    "round_medians": [
+      0.9996828617296019,
+      0.9992409338523418,
+      0.9868247582969308
+    ]
+  },
+  {
+    "case": "comment-reproduction",
+    "profile": "gfm",
+    "category": "comments",
+    "mode": "fresh",
+    "baseline_ns_per_document": 301.2674956622325,
+    "candidate_ns_per_document": 300.5643573283324,
+    "baseline_over_candidate_median": 0.9967349970123722,
+    "baseline_over_candidate_min": 0.982562324682504,
+    "baseline_over_candidate_max": 1.026878300898996,
+    "pairs": 9,
+    "round_medians": [
+      0.9947378168362944,
+      1.001812072964703,
+      1.0022475154326966
+    ]
+  },
+  {
+    "case": "target-rich-images",
+    "profile": "gfm",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 16801.59307795699,
+    "candidate_ns_per_document": 16805.96135752688,
+    "baseline_over_candidate_median": 1.0039221993459864,
+    "baseline_over_candidate_min": 0.9832944986564232,
+    "baseline_over_candidate_max": 1.0300900011071132,
+    "pairs": 9,
+    "round_medians": [
+      0.9961266435208413,
+      1.0042713091613167,
+      1.0039221993459864
+    ]
+  },
+  {
+    "case": "target-rich-images",
+    "profile": "gfm",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 18427.435661764706,
+    "candidate_ns_per_document": 18419.209558823528,
+    "baseline_over_candidate_median": 0.9986547026251841,
+    "baseline_over_candidate_min": 0.9702463407594696,
+    "baseline_over_candidate_max": 1.0109672499495654,
+    "pairs": 9,
+    "round_medians": [
+      1.0018650662928277,
+      0.996726314972617,
+      0.9885993526012224
+    ]
+  },
+  {
+    "case": "target-strict-mdx",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "parse",
+    "baseline_ns_per_document": 76406.37351190476,
+    "candidate_ns_per_document": 76808.15922619047,
+    "baseline_over_candidate_median": 0.991796238849994,
+    "baseline_over_candidate_min": 0.9838459622354961,
+    "baseline_over_candidate_max": 1.0015223294713291,
+    "pairs": 9,
+    "round_medians": [
+      0.990380336924565,
+      0.991796238849994,
+      0.9926706285757073
+    ]
+  },
+  {
+    "case": "target-strict-mdx",
+    "profile": "strict-mdx",
+    "category": "ast-provenance",
+    "mode": "fresh",
+    "baseline_ns_per_document": 98495.443359375,
+    "candidate_ns_per_document": 98569.904296875,
+    "baseline_over_candidate_median": 0.995265368852459,
+    "baseline_over_candidate_min": 0.9893870345724027,
+    "baseline_over_candidate_max": 1.0017997497108766,
+    "pairs": 9,
+    "round_medians": [
+      0.9939102895010333,
+      1.001227532606527,
+      0.9938883257277695
+    ]
+  }
+]
