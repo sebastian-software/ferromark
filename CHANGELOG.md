@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.6.0](https://github.com/sebastian-software/ferromark/compare/v3.5.1...v3.6.0) (2026-10-24)
+
+
+### Features
+
+* expose AST metadata and typed MDX diagnostics ([#566](https://github.com/sebastian-software/ferromark/issues/566)) ([40f67b3](https://github.com/sebastian-software/ferromark/commit/40f67b3e30e064b58876b5a0e5b8e28ef79732f4))
+
+
+### Bug Fixes
+
+* bind release jobs and artifacts to one source commit ([a686a6d](https://github.com/sebastian-software/ferromark/commit/a686a6d439e460ce1e1248255e0af863d6bdef34))
+* drop parser memos and bound decoded byte input ([f8128eb](https://github.com/sebastian-software/ferromark/commit/f8128ebef89963c27deae33f075cc951e231a575))
+* **homepage:** remove sprintf-js production advisory ([903b231](https://github.com/sebastian-software/ferromark/commit/903b2315509191e8499f495a712ccf832548fcfc))
+* **homepage:** remove unused Mermaid dependency ([c5a8d1a](https://github.com/sebastian-software/ferromark/commit/c5a8d1a6fa4148358489116105dc0b5216341b51))
+* **release:** pass ESLint checks ([d5bea37](https://github.com/sebastian-software/ferromark/commit/d5bea372dcb96372d35da075993f9c319d2fd494))
+* **release:** satisfy Node lint rules ([b147605](https://github.com/sebastian-software/ferromark/commit/b147605e5a2cc1f487122b772957bbaa3c88f673))
+* sanitize custom autolink destinations ([717b182](https://github.com/sebastian-software/ferromark/commit/717b18279e69957886a6662365ef4b2a09144e87))
+* update vulnerable homepage dependencies ([8c253b6](https://github.com/sebastian-software/ferromark/commit/8c253b6635fa22f7b384ed422f517f297b56779b))
+* update vulnerable TLS dependencies ([caee7dd](https://github.com/sebastian-software/ferromark/commit/caee7dddc11014c3f591a623ff2a3ff6c3f794f8))
+
 ## [3.5.1](https://github.com/sebastian-software/ferromark/compare/v3.5.0...v3.5.1) (2026-10-20)
 
 
