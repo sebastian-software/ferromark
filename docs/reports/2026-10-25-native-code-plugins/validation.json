@@ -1,0 +1,110 @@
+{
+  "date_utc": "2026-10-25T08:34:52.206824+00:00",
+  "base": "38b6f64ffca0da0675921a52abacb62d148ecaab",
+  "state": "Uncommitted candidate identified by source hashes; no release or publication.",
+  "target": "aarch64-apple-darwin",
+  "node": "24.19.0",
+  "rust": "1.95.0",
+  "native_profile": "release-node; PGO disabled",
+  "rust_tests": {
+    "passed": 1424,
+    "failed": 0,
+    "ignored": 0,
+    "suites": 100
+  },
+  "node_tests": {
+    "passed": 221,
+    "failed": 0,
+    "ignored": 0
+  },
+  "checks_passed": [
+    "pnpm typecheck; pnpm format:check; pnpm lint (node/)",
+    "pnpm test (node/), including panic-unwind, input-conversion, and fixture-only native plugin verification",
+    "RUST_TEST_THREADS=1 cargo test --workspace --all-features --locked",
+    "cargo fmt --all --check",
+    "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+    "cargo clippy -p ferromark-node --no-default-features --locked -- -D warnings",
+    "cargo check -p ferromark --no-default-features --locked",
+    "cargo bench --workspace --no-run --locked",
+    "RUSTDOCFLAGS='-D warnings' cargo doc --workspace --no-deps --all-features --locked",
+    "pnpm pack:check (node/)",
+    "pnpm smoke:clean (node/): clean darwin-arm64 installation passed",
+    "pnpm audit --audit-level high (node/): 0 high/critical; 1 existing moderate",
+    "python3 -m unittest scripts/test_release_package.py: 16 passed"
+  ],
+  "package": {
+    "main": {
+      "filename": "ferromark-3.6.0.tgz",
+      "files": [
+        "LICENSE",
+        "LICENSE-MIT",
+        "README.md",
+        "index.d.mts",
+        "index.mjs",
+        "native-target.mjs",
+        "native.d.ts",
+        "package.json"
+      ],
+      "unpackedSize": 130447
+    },
+    "platforms": [
+      {
+        "filename": "ferromark-darwin-arm64-3.6.0.tgz",
+        "files": [
+          "LICENSE",
+          "LICENSE-MIT",
+          "README.md",
+          "ferromark.darwin-arm64.node",
+          "package.json"
+        ],
+        "unpackedSize": 5851059
+      }
+    ]
+  },
+  "source_sha256": {
+    ".github/workflows/ci.yml": "dfabb0786f8c1d91d3cd6231c7a691ec6347032f7e3f8a072a65d187891d2038",
+    "Cargo.lock": "a89dd2b14a69cb4a0108520e8b177679547e74da4830829c238c75ec1dc427a7",
+    "Cargo.toml": "a82adf3b1457a18adb5903cc36a384f167f5d1dc1884e81cf4b9e432f1b00d38",
+    "benches/code_block_hooks.rs": "353dd88f53ec73e56bed93ad48c141297f89567a24cc7bc9c9b532da721df153",
+    "node/eslint.config.ts": "0d48715e963f5613c05db6699d63e51157123c851744d703f3db4403eb1b93ba",
+    "node/ferromark/index.d.mts": "f878f81b8af23835e3569abdff304ff059109eedd8e7d29bab0662786e80cbf8",
+    "node/ferromark/index.mjs": "600355c4a74600f4d42fe0834083210f6b78afc58919faf68dd429183a387354",
+    "node/ferromark/native.d.ts": "7f4d156c2ad481b794f8e5dfec8e23299c6c3cfcac5f7815464a25847c22fffa",
+    "node/ferromark/package.json": "92905fad13178e8a30d4b4f0701315af1ce10958fe418304ab23b1a432e63a96",
+    "node/ferromark/scripts/build-native.mjs": "2ab240818c1d9c7e03e3b17dac9468c811f79994d8fe8f13cbc9ab74250ff045",
+    "node/ferromark/scripts/verify-native-plugins-worker.mjs": "4debdd5a9d07e40723a5aa2a5baa9fb1320f5381277253de15a41485da9cfcd7",
+    "node/ferromark/scripts/verify-native-plugins.mjs": "905d9b10828665944df06c3d1590456bafdd041311bbef7ba490dd22db172c02",
+    "node/ferromark/scripts/verify-package.mjs": "ee969d12b09696b99403c96f279da35927ea57cc9a979dafbd2db3051ff3ebef",
+    "node/ferromark/test/code-renderers.test.mjs": "100aab1e57310087d4c6deb14afaece484d0b59d9e707149058aabe5efbd2803",
+    "node/ferromark/test/native-plugins.test.mjs": "75bbc9c188dd82364979357a63ad3bb9ef2b0201a8fa165e2b10b0b3be2d0304",
+    "node/ferromark/test/types.test.mts": "a726fa3e270d5bdcd7e0f99581b9a91fa992343e33c042c1caf6117cdadcf277",
+    "node/native/Cargo.toml": "9aaaa1a6c6ed98ff20dddbe134dd3e484dd2c9a368024f6ea3cc870f9da35f49",
+    "node/native/src/jsx.rs": "e933f0f904868e112cb0bc0d39e569a4b180ab8111d810d0d847f0ff3718c025",
+    "node/native/src/jsx_compiler.rs": "2e08278b4ceb0681eb557785a1a98c0e8015fb96f0d16ff8e1e15e1d47040db9",
+    "node/native/src/lib.rs": "682a6d50fda9e394e9140e1086fa99a2411ee071cbf2f713ff88c2953c90f7d8",
+    "node/native/src/plugins.rs": "c35081922261862e14afc79cab856f00bf6359b915b3b8935b675e8f98afbebd",
+    "node/native/src/plugins/ferriki.rs": "02e1377af50c3a52c88a10d5d42f15f59915776fdbb01c05e9dad9c5f5aba9bb",
+    "node/oxlint.config.ts": "2478ccf7c45f79e37414625a96646f65834f9b6157f44ad46de282a8ff4f9427",
+    "node/plugin-fixture/Cargo.toml": "efde01c91298424159739afb75a69732152c973a8a2263dcab8c27f20ef64fa8",
+    "node/plugin-fixture/src/lib.rs": "5eacf1626621bad501b4e08c6f83a71c06549e367982caa0195c4518667a43e8",
+    "node/scripts/verify-pack.mjs": "8ae61a3dbd0d45122b880c6af17ca974a2733cb7fa8a7229e09fab4f8d11c9ee",
+    "src/lib.rs": "f04ae1805a12ea7b29d903c68f1d18e502599246c3245c0c6d6e551ca22417c6",
+    "src/renderer/html.rs": "8d2210d5a5ac58d7d23ec20b744d7e08403d8f315cd68e06a638df1656d8cf10",
+    "src/renderer/html/renderer.rs": "75a2f72abfd9d99d2f8603e1f75efedd950c86a7e58aad26a9e0184d35fcfc4c",
+    "src/renderer/html/renderer/code_block.rs": "0d9e2fd6e617f4551e0d27ce8e29e3e476e6199dee2a55b5ea8c31269cf8bf24",
+    "src/renderer/html/renderer/hooks.rs": "112318b49f22e4cdac585b29c04a6708b8bcfabd55578ce768ec6bcddca8d332",
+    "src/renderer/html/renderer/incremental.rs": "2b2913e21234393346bce020852a7a886041d28b33bd00b67308649fb7b8043e",
+    "src/renderer/jsx.rs": "981b6a9e79a36fe8947c3927c366def79f58e05f8753e16ca40f0c39ccac63fc",
+    "src/renderer/mod.rs": "af34fcc3f8c1f3986017c26a484014b404b00934d1501b3acd37dd1c2916355b",
+    "tests/code_block_renderers.rs": "ed79df705af3db1bd5801bde4a16d61ebc8aa1353ce30de8db6c243ae05fbbbc",
+    "tests/edge_render_hooks.rs": "4b00ba6cb94c415707bb2ed20588dd07d0d4cee6cbfc736c84daf56e65fc7880",
+    "tests/ferriki_integration.rs": "ae04764cdc821cb3638f416e753625f46deb72dc38ec566fc60c359ccdebfbc4",
+    "tests/jsx_ferriki.rs": "d92f1e23ca752386c9e00655d013c900c5c6d774e45046042fef518eac60a26e"
+  },
+  "limits": [
+    "Local macOS arm64 validation; no published PGO or other-platform execution.",
+    "No native-host performance measurement; dependency counts are not latency, memory, or binary-size measurements.",
+    "The standard 3.x addon still includes Ferriki for compatibility.",
+    "No external Ferriki/Ferrigura adapter packages or Ferrigura factory are published by this step."
+  ]
+}

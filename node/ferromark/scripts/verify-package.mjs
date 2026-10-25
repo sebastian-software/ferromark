@@ -12,16 +12,23 @@ const [declarations, packageJson, releaseConfig, buildNative] = await Promise.al
   ),
   readFile(new URL("build-native.mjs", import.meta.url), "utf8"),
 ]);
-for (const name of ["Options", "toHtml", "toHtmlBuffer", "toHtmlWithRenderer"]) {
+for (const name of [
+  "Options",
+  "toHtml",
+  "toHtmlBuffer",
+  "toHtmlWithRenderer",
+  "CodeCompiler",
+  "availableCodePlugins",
+]) {
   if (!declarations.includes(name)) {
     throw new Error(`Generated native declarations are missing ${name}`);
   }
 }
-// The `panic-test` and `boundary-bench` Cargo features add diagnostic exports
+// The `panic-test`, `plugin-test`, and `boundary-bench` Cargo features add diagnostic exports
 // that no published addon or declaration file may carry.
 assert.doesNotMatch(
   declarations,
-  /\b(?:testPanicUnwind|boundary[A-Z]\w*|BoundaryProbe)\b/,
+  /\b(?:testPanicUnwind|boundary[A-Z]\w*|BoundaryProbe|FixturePlugin)\b/,
   "the package declarations must not include diagnostic exports",
 );
 

@@ -454,6 +454,20 @@ Unsupported languages and highlighter exceptions fall back to Ferromark's escape
 Highlighter HTML is otherwise written verbatim, so only pass an implementation that escapes untrusted code and metadata.
 Fence meta text after the language (e.g. ` ```ts {1-3} title="…" `) reaches the highlighter as Shiki-style `meta.__raw`, so meta-driven transformers (line highlighting, titles) work unchanged.
 
+## Code-block renderer plugins
+
+`CodeCompiler` selects Rust plugins once for native HTML and JSX rendering.
+See the [native plugin guide](../../docs/native-code-plugins.md) for configuration
+and custom builds. The 3.x default addon retains Ferriki for compatibility;
+`new CodeCompiler()` initializes no plugins but uses that same binary.
+The optional [Ferrigura adapter](../../docs/ferrigura.md) adds native Mermaid
+rendering to custom builds; it is excluded from the standard addon.
+
+Compose diagram renderers and highlighters with `composeCodeRenderers()`.
+`toHtmlWithCodeRenderer()` and `transformWithCodeRenderer()` accept the result.
+See the [plugin guide](../../docs/code-block-renderers.md) for Rust and Node
+usage, fallbacks, JSX, and output trust.
+
 ## Document metadata for docs pipelines
 
 `transform()` returns HTML together with the data documentation tooling needs — headings for application-owned navigation and the raw front matter block:

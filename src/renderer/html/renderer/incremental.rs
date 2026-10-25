@@ -116,6 +116,7 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
+        self.node_hooks_enabled = true;
         self.output.clear();
         self.in_link = false;
         self.reserve_output_for(document);

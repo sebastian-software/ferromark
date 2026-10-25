@@ -429,3 +429,6 @@ parser does not infer which element a mismatched tag was intended to close.
 JavaScript grammar validation, including rejection of TypeScript module blocks,
 and parser nesting limits still apply. Successful default parsing does not
 collect diagnostics or allocate an error list.
+
+See [code-block renderer plugins](code-block-renderers.md) for whole-block overrides,
+ordered composition, and the HTML code-only entry points.

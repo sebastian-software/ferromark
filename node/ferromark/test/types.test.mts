@@ -1,4 +1,5 @@
 import type {
+  CodeBlockRenderer,
   CodeHighlighter,
   DocumentReference,
   JsxPreparedMetadata,
@@ -7,13 +8,19 @@ import type {
 } from "../index.mjs";
 
 import {
+  availableCodePlugins,
+  CodeCompiler,
   compileJsx,
+  composeCodeRenderers,
+  createHighlighterCodeRenderer,
   JsxCompiler,
   prepareDocument,
   Renderer,
   toHtml,
   toHtmlBuffer,
+  toHtmlWithCodeRenderer,
   toHtmlWithHighlighter,
+  transformWithCodeRenderer,
 } from "../index.mjs";
 
 const options: Options = {
@@ -179,3 +186,35 @@ preparedJsx.extractText({ passes: [] });
 preparedJsx.extractText({ renderCode: () => "trusted JSX" });
 // @ts-expect-error -- extraction results are immutable
 extractedText.sections = [];
+
+const codeRenderer: CodeBlockRenderer = (_code, language) =>
+  language === "mermaid" ? "<svg />" : null;
+const codeRenderers = composeCodeRenderers(
+  codeRenderer,
+  createHighlighterCodeRenderer(highlighter, { theme: "test" }),
+);
+const renderedCodeHtml: string = toHtmlWithCodeRenderer(
+  "```mermaid\nA --> B\n```",
+  codeRenderers,
+  options,
+);
+const _codeHeadings = transformWithCodeRenderer(renderedCodeHtml, codeRenderers).headings;
+compileJsx("```mermaid\nA --> B\n```", {}, composeCodeRenderers(codeRenderer));
+// @ts-expect-error -- asynchronous plugins do not fit the synchronous renderer contract
+composeCodeRenderers(async () => {
+  await Promise.resolve();
+  return "<svg />";
+});
+
+const nativePluginNames: string[] = availableCodePlugins();
+const nativeCodeCompiler = new CodeCompiler({
+  plugins: nativePluginNames.map((name) => ({ name, options: {} })),
+  lineNumbers: true,
+});
+export const nativeHtml: string = nativeCodeCompiler.toHtml("# Demo");
+export const nativeModuleCode: string = nativeCodeCompiler.compile("# Demo", {
+  output: "module",
+}).code;
+export const nativeBody: string = nativeCodeCompiler.prepare("# Demo").render().body;
+// @ts-expect-error Native plugin names must be strings.
+export const invalidNativePlugin = new CodeCompiler({ plugins: [{ name: 42 }] });

@@ -77,6 +77,10 @@ Trusted Publishing can be configured for subsequent releases. See [ADR-0022](ADR
 
 ## Amendment (2026-09-29): optional Ferriki integration
 
+The long-term adapter placement described in this amendment is partially
+superseded by [ADR-0024](ADR-0024-native-code-plugins.md). The optional root
+feature remains supported during the documented migration.
+
 Expose the Ferriki code-highlighting adapter as the additive `ferriki` feature of
 the root `ferromark` crate. Ferriki already publishes a reusable Rust highlighter
 without grammar or theme payloads; the default feature set retains no Ferriki

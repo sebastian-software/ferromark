@@ -1,0 +1,21 @@
+{
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "architecture": "arm64",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+  "base": "38b6f64ffca0da0675921a52abacb62d148ecaab",
+  "command": "cargo bench --locked --bench code_block_hooks -- --sample-size 30 --warm-up-time 1 --measurement-time 2 --noplot",
+  "profile": "Repository bench profile: opt-level=3, fat LTO, codegen-units=1, generic CPU",
+  "measurement": "Rendering only, reused renderer and parsed AST, borrowed output; no actual highlighter or diagram engine. Each fixture checks byte-identical default, general-hook and code-only output before timing.",
+  "limitations": [
+    "Local arm64 characterization; no cross-platform or end-to-end speed claim",
+    "Criterion runs lanes sequentially; host load and thermal state are not controlled",
+    "Initial run may overlap Node formatting, typecheck and lint subprocesses"
+  ],
+  "source_sha256": {
+    "Cargo.toml": "45ed4e9315fa94fcc4027d7692b246c0c93b27479c7bce1ddd58188ddc012fd9",
+    "benches/code_block_hooks.rs": "353dd88f53ec73e56bed93ad48c141297f89567a24cc7bc9c9b532da721df153",
+    "src/renderer/html/renderer.rs": "75a2f72abfd9d99d2f8603e1f75efedd950c86a7e58aad26a9e0184d35fcfc4c",
+    "src/renderer/html/renderer/hooks.rs": "112318b49f22e4cdac585b29c04a6708b8bcfabd55578ce768ec6bcddca8d332",
+    "src/renderer/html/renderer/code_block.rs": "0d9e2fd6e617f4551e0d27ce8e29e3e476e6199dee2a55b5ea8c31269cf8bf24"
+  }
+}

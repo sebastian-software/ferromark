@@ -12,8 +12,8 @@ config.overrides = [
     rules: {
       // Keep public interfaces for declaration merging and the structure contract.
       "typescript/consistent-type-definitions": "off",
-      // Keep the additive prepared-document APIs in the public declaration entry.
-      "eslint/max-lines": ["error", { max: 400, skipBlankLines: true, skipComments: true }],
+      // Keep the additive prepared-document and native-plugin APIs in the public declaration entry.
+      "eslint/max-lines": ["error", { max: 420, skipBlankLines: true, skipComments: true }],
     },
   },
   {

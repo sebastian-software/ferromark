@@ -21,11 +21,13 @@ cargo bench --workspace --no-run --locked
 ```
 
 `ferromark` is the workspace root package: its `src/`, `tests/`, `benches/`
-and `examples/` sit at the top level. The workspace members are `node/native`,
-which contains the Node.js native bindings, and `transforms`, which contains
-the optional Rust AST transform passes. Workspace checks cover the root package
-and both members. A Cargo `include` list decides what the published archive
-contains, so compare `cargo package --list` whenever you change it.
+and `examples/` sit at the top level. The workspace members are `node/native`
+(private Node.js bindings), `transforms` (optional Rust AST passes),
+`node/plugin-fixture` (an unpublished native plugin test crate), and
+`plugins/ferrigura` (a private optional Mermaid adapter). Workspace
+checks cover the root package and all members. A Cargo `include` list decides
+what the published archive contains, so compare `cargo package --list` whenever
+you change it.
 
 Releases are automatic. Every push to `main` updates one release pull request,
 and **merging that pull request tags the version and publishes both

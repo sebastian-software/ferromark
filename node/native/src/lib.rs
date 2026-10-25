@@ -7,6 +7,7 @@ pub mod jsx;
 pub mod jsx_compiler;
 mod options;
 pub mod packed;
+pub mod plugins;
 pub mod projection;
 pub mod text;
 
@@ -15,8 +16,8 @@ use std::collections::HashMap;
 use crate::input::Utf8Input;
 use crate::options::{CoreOptions, addon_defaults};
 use ferromark::{
-    AbbreviationOptions, Allocator, HeadingIdPlanner, HtmlRenderContext, HtmlRenderControl,
-    HtmlRenderHooks, HtmlRenderer, Parser, ParserOptions,
+    AbbreviationOptions, Allocator, HeadingIdPlanner, HtmlCodeBlockInput, HtmlRenderHooks,
+    HtmlRenderer, Parser, ParserOptions,
     ast::{Node, Visit},
 };
 use ferromark_transforms::{
@@ -653,36 +654,45 @@ struct CallbackRenderer<'a> {
 }
 
 impl HtmlRenderHooks for CallbackRenderer<'_> {
-    fn render_node(
-        &mut self,
-        node: &Node<'_>,
-        cx: &mut HtmlRenderContext<'_>,
-    ) -> HtmlRenderControl {
-        if self.error.is_none()
-            && let Node::CodeBlock(block) = node
-        {
-            // V2 hooks receive both fenced and indented code blocks.
+    fn render_code_block(&mut self, input: HtmlCodeBlockInput<'_>) -> Option<String> {
+        if self.error.is_none() {
             match self.callback.call(FnArgs::from((
-                block.value.to_owned(),
-                block.lang.map(str::to_owned),
-                block.meta.map(str::to_owned),
+                input.code.to_owned(),
+                input.language.map(str::to_owned),
+                input.meta.map(str::to_owned),
             ))) {
-                Ok(Some(html)) => {
-                    cx.write(&html);
-                    return HtmlRenderControl::Handled;
-                }
-                Ok(None) => {}
+                Ok(html) => return html,
                 Err(error) => self.error = Some(error),
             }
         }
-        HtmlRenderControl::Default
+        None
     }
 }
 
 fn render_document(
     markdown: &str,
-    mut options: CoreOptions,
+    options: CoreOptions,
     callback: Option<CodeCallback<'_>>,
+) -> Result<TransformResult> {
+    if let Some(callback) = callback {
+        let mut hooks = CallbackRenderer {
+            callback,
+            error: None,
+        };
+        let output = render_document_with_hooks(markdown, options, Some(&mut hooks))?;
+        if let Some(error) = hooks.error {
+            return Err(error);
+        }
+        Ok(output)
+    } else {
+        render_document_with_hooks::<ferromark::NoHtmlRenderHooks>(markdown, options, None)
+    }
+}
+
+pub(crate) fn render_document_with_hooks<H: HtmlRenderHooks>(
+    markdown: &str,
+    mut options: CoreOptions,
+    hooks: Option<&mut H>,
 ) -> Result<TransformResult> {
     let allocator = Allocator::for_source_len(markdown.len());
     let mut document = Parser::with_options(&allocator, markdown, options.parser)
@@ -718,18 +728,9 @@ fn render_document(
     .with_heading_level_offset(options.heading_level_offset)
     .try_with_heading_id_prefix(options.heading_id_prefix)
     .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-    let html = if let Some(callback) = callback {
-        let mut hooks = CallbackRenderer {
-            callback,
-            error: None,
-        };
-        let html = renderer.render_with_hooks(&document, &mut hooks);
-        if let Some(error) = hooks.error {
-            return Err(error);
-        }
-        html
-    } else {
-        renderer.render(&document)
+    let html = match hooks {
+        Some(hooks) => renderer.render_with_code_hooks(&document, hooks),
+        None => renderer.render(&document),
     };
     Ok(TransformResult {
         html,

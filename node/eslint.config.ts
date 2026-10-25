@@ -48,8 +48,8 @@ config.push({
     "@typescript-eslint/consistent-type-definitions": "off",
     "perfectionist/sort-union-types": "off",
     "node/prefer-global/buffer": "off",
-    // Keep the additive prepared-document APIs in the public declaration entry.
-    "max-lines": ["error", { max: 400, skipBlankLines: true, skipComments: true }],
+    // Keep the additive prepared-document and native-plugin APIs in the public declaration entry.
+    "max-lines": ["error", { max: 420, skipBlankLines: true, skipComments: true }],
   },
 });
 

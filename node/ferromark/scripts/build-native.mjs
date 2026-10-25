@@ -11,6 +11,11 @@ const outputDir = process.env.FERROMARK_NATIVE_OUTPUT_DIR ?? ".";
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repoRoot = path.resolve(packageDir, "..", "..");
 const buildOutputDir = outputDir === "." ? ".napi-artifacts" : outputDir;
+const relativeOutput = path.relative(packageDir, path.resolve(packageDir, outputDir));
+const isolatedOutput =
+  relativeOutput === ".." ||
+  relativeOutput.startsWith(`..${path.sep}`) ||
+  path.isAbsolute(relativeOutput);
 
 // The frozen benchmark corpus: 57 real documents plus link-scan diagnostics.
 const corpusArchive = path.join(
@@ -54,17 +59,24 @@ if (process.env.FERROMARK_RUST_TARGET) {
   }
 }
 
-if (process.env.FERROMARK_NAPI_FEATURES) {
-  // Diagnostic features add exports that must never reach the package: a
-  // package build copies its declarations into native.d.ts and its addon into
-  // the platform package, so they only build into an isolated directory.
-  const diagnostic = process.env.FERROMARK_NAPI_FEATURES.split(/[\s,]+/).filter((feature) =>
-    ["boundary-bench", "panic-test"].includes(feature),
-  );
-  if (diagnostic.length > 0 && outputDir === ".") {
+if (process.env.FERROMARK_NAPI_NO_DEFAULT_FEATURES === "1") {
+  if (!isolatedOutput || process.env.FERROMARK_PGO === "1") {
     throw new Error(
-      `The diagnostic feature(s) ${diagnostic.join(", ")} build only with FERROMARK_NATIVE_OUTPUT_DIR ` +
-        "set to a directory outside the package, so neither native.d.ts nor a platform package carries them.",
+      "Engine-free builds require an isolated FERROMARK_NATIVE_OUTPUT_DIR and FERROMARK_PGO disabled",
+    );
+  }
+  args.push("--no-default-features");
+}
+
+if (process.env.FERROMARK_NAPI_FEATURES) {
+  // Custom engines and diagnostic exports must stay outside package artifacts.
+  const isolated = process.env.FERROMARK_NAPI_FEATURES.split(/[\s,]+/).filter((feature) =>
+    ["boundary-bench", "panic-test", "plugin-test", "ferrigura"].includes(feature),
+  );
+  if (isolated.length > 0 && (!isolatedOutput || process.env.FERROMARK_PGO === "1")) {
+    throw new Error(
+      `The custom or diagnostic feature(s) ${isolated.join(", ")} build only with FERROMARK_NATIVE_OUTPUT_DIR ` +
+        "set to a directory outside the package and FERROMARK_PGO disabled, so neither native.d.ts nor a platform package carries them.",
     );
   }
   args.push("--features", process.env.FERROMARK_NAPI_FEATURES);

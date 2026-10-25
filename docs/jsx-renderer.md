@@ -221,3 +221,6 @@ in the Node guide.
 For typed parser error categories, related opening-tag ranges, and bounded
 collection of independent errors, see [MDX diagnostics](rust-api.md#typed-mdx-diagnostics-and-bounded-recovery).
 AST consumers can also inspect [image alt structure and callout bodies](rust-api.md#ast-provenance-for-image-alt-text-and-callouts) before rendering.
+
+See [code-block renderer plugins](code-block-renderers.md) for whole-block overrides,
+ordered composition, and the HTML code-only entry points.

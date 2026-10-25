@@ -1,12 +1,12 @@
-//! Reusable Ferriki ownership for the native JSX compiler.
+//! Reusable native plugin ownership and immutable prepared JSX documents.
 
-use std::path::Path;
 use std::{cell::RefCell, rc::Rc};
 
-use ferromark::ferriki::{Highlighter, RemoteAssets, StandardAssetCatalogs};
-use napi::bindgen_prelude::{Error, Result, Status};
+use napi::bindgen_prelude::Result;
 use napi_derive::napi;
-use serde_json::{Map, Value};
+use serde_json::Value;
+
+use crate::plugins::{NativePlugins, boolean, known_keys, object, usage};
 
 use crate::jsx::{
     Compiled, JsxModuleResult, JsxOptions, JsxPreparedMetadata, JsxResult, NativeHighlighting,
@@ -24,54 +24,62 @@ pub struct PreparationOptions {
     pub track_references: Option<bool>,
 }
 
-/// Owns a Ferriki highlighter, asset catalogs, and theme registrations across documents.
+/// Owns a selected set of native code plugins across HTML and JSX documents.
 #[napi]
-pub struct JsxCompiler {
-    highlighter: Rc<RefCell<Highlighter>>,
-    light_theme: String,
-    dark_theme: Option<String>,
+pub struct CodeCompiler {
+    plugins: Rc<RefCell<NativePlugins>>,
     line_numbers: bool,
 }
 
 #[napi]
-impl JsxCompiler {
+impl CodeCompiler {
     #[napi(constructor, catch_unwind)]
     pub fn new(settings: String) -> Result<Self> {
         let value: Value = serde_json::from_str(&settings).map_err(usage)?;
-        let settings = object(&value, "JSX compiler options")?;
-        known_keys(
-            settings,
-            &["theme", "lineNumbers", "languages", "assets"],
-            "JSX compiler",
-        )?;
+        let settings = object(&value, "code compiler options")?;
+        known_keys(settings, &["plugins", "lineNumbers"], "code compiler")?;
         let line_numbers = boolean(settings, "lineNumbers")?.unwrap_or(false);
-        let mut highlighter = Highlighter::builder()
-            .with_assets(asset_catalogs(settings.get("assets"))?)
-            .build()
-            .map_err(engine_error)?;
-        if let Some(languages) = settings.get("languages") {
-            let languages = languages
-                .as_array()
-                .ok_or_else(|| usage("languages must be an array of grammar registrations"))?;
-            for language in languages {
-                object(language, "language registration")?;
-                highlighter
-                    .register_language_json(&language.to_string())
-                    .map_err(engine_error)?;
-            }
-        }
-        let (light, dark) = theme_values(settings.get("theme"))?;
-        let light_theme = register_theme(&mut highlighter, &light)?;
-        let dark_theme = dark
-            .as_ref()
-            .map(|theme| register_theme(&mut highlighter, theme))
-            .transpose()?;
         Ok(Self {
-            highlighter: Rc::new(RefCell::new(highlighter)),
-            light_theme,
-            dark_theme,
+            plugins: Rc::new(RefCell::new(NativePlugins::from_config(
+                settings.get("plugins"),
+            )?)),
             line_numbers,
         })
+    }
+
+    /// Renders HTML without calling JavaScript for any code block.
+    #[napi(catch_unwind)]
+    pub fn to_html(
+        &self,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+        options: Option<Options>,
+    ) -> Result<String> {
+        Ok(self.transform(markdown, options)?.html)
+    }
+
+    /// Renders HTML and extracts the same metadata as the one-shot transform.
+    #[napi(catch_unwind)]
+    pub fn transform(
+        &self,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+        options: Option<Options>,
+    ) -> Result<crate::TransformResult> {
+        let mut plugins = self.plugins.try_borrow_mut().map_err(|_| {
+            usage("A code compiler cannot be used recursively from its code callback")
+        })?;
+        let mut options = crate::core_options(options)?;
+        if self.line_numbers {
+            options.html.code_annotations = true;
+            options.html.code_fence_metadata = true;
+            options.html.code_annotation_syntax = ferromark::CodeAnnotationSyntax::VitePress;
+        }
+        options.html.code_annotation_default_line_numbers = self.line_numbers;
+        let result =
+            crate::render_document_with_hooks(markdown.try_as_str()?, options, Some(&mut *plugins));
+        if let Some(error) = plugins.take_error() {
+            return Err(error);
+        }
+        result
     }
 
     /// Parses source and runs native transforms once, returning an owned document handle.
@@ -94,16 +102,14 @@ impl JsxCompiler {
         Ok(PreparedJsxDocument {
             parsed,
             highlighting: Some(PreparedHighlighting {
-                highlighter: Rc::clone(&self.highlighter),
-                light_theme: self.light_theme.clone(),
-                dark_theme: self.dark_theme.clone(),
+                plugins: Rc::clone(&self.plugins),
                 line_numbers: self.line_numbers,
             }),
             metadata,
         })
     }
 
-    /// Compiles source and reuses the loaded native grammars and themes.
+    /// Compiles source and reuses the initialized native plugins.
     #[napi(catch_unwind)]
     pub fn compile(
         &self,
@@ -135,18 +141,16 @@ impl JsxCompiler {
             .module()
     }
 
-    /// Renders one standalone code block with the compiler's native highlighter.
+    /// Renders one standalone code block with the compiler's native highlighting plugins.
     #[napi(catch_unwind)]
     pub fn render_code_block(&self, input: RenderCodeBlockInput) -> Result<RenderCodeBlockResult> {
-        let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {
+        let mut plugins = self.plugins.try_borrow_mut().map_err(|_| {
             usage("A JSX compiler cannot be used recursively from its code callback")
         })?;
         render_code_block_with_highlighter(
             input,
             NativeHighlighting {
-                highlighter: &mut highlighter,
-                light_theme: &self.light_theme,
-                dark_theme: self.dark_theme.as_deref(),
+                plugins: &mut plugins,
                 line_numbers: self.line_numbers,
             },
         )
@@ -160,7 +164,7 @@ impl JsxCompiler {
         render_code: Option<CodeCallback<'_>>,
         module: bool,
     ) -> Result<Compiled> {
-        let mut highlighter = self.highlighter.try_borrow_mut().map_err(|_| {
+        let mut plugins = self.plugins.try_borrow_mut().map_err(|_| {
             usage("A JSX compiler cannot be used recursively from its code callback")
         })?;
         compile_jsx_with_highlighter(
@@ -169,9 +173,7 @@ impl JsxCompiler {
             jsx_options,
             render_code,
             Some(NativeHighlighting {
-                highlighter: &mut highlighter,
-                light_theme: &self.light_theme,
-                dark_theme: self.dark_theme.as_deref(),
+                plugins: &mut plugins,
                 line_numbers: self.line_numbers,
             }),
             module,
@@ -188,9 +190,7 @@ pub struct PreparedJsxDocument {
 }
 
 struct PreparedHighlighting {
-    highlighter: Rc<RefCell<Highlighter>>,
-    light_theme: String,
-    dark_theme: Option<String>,
+    plugins: Rc<RefCell<NativePlugins>>,
     line_numbers: bool,
 }
 
@@ -244,16 +244,14 @@ impl PreparedJsxDocument {
         let Some(settings) = &self.highlighting else {
             return self.parsed.render_body(options, render_code, None);
         };
-        let mut highlighter = settings.highlighter.try_borrow_mut().map_err(|_| {
+        let mut plugins = settings.plugins.try_borrow_mut().map_err(|_| {
             usage("A JSX compiler cannot be used recursively from its code callback")
         })?;
         self.parsed.render_body(
             options,
             render_code,
             Some(NativeHighlighting {
-                highlighter: &mut highlighter,
-                light_theme: &settings.light_theme,
-                dark_theme: settings.dark_theme.as_deref(),
+                plugins: &mut plugins,
                 line_numbers: settings.line_numbers,
             }),
         )
@@ -272,133 +270,18 @@ impl PreparedJsxDocument {
         let Some(settings) = &self.highlighting else {
             return self.parsed.render_module(options, render_code, None);
         };
-        let mut highlighter = settings.highlighter.try_borrow_mut().map_err(|_| {
+        let mut plugins = settings.plugins.try_borrow_mut().map_err(|_| {
             usage("A JSX compiler cannot be used recursively from its code callback")
         })?;
         self.parsed.render_module(
             options,
             render_code,
             Some(NativeHighlighting {
-                highlighter: &mut highlighter,
-                light_theme: &settings.light_theme,
-                dark_theme: settings.dark_theme.as_deref(),
+                plugins: &mut plugins,
                 line_numbers: settings.line_numbers,
             }),
         )
     }
-}
-
-fn asset_catalogs(value: Option<&Value>) -> Result<StandardAssetCatalogs> {
-    let empty = Map::new();
-    let options = value
-        .map(|value| object(value, "assets"))
-        .transpose()?
-        .unwrap_or(&empty);
-    known_keys(
-        options,
-        &["assetRoot", "remote", "baseUrl", "cacheDir", "commit"],
-        "assets",
-    )?;
-    if let Some(root) = string(options, "assetRoot")? {
-        if options.len() != 1 {
-            return Err(usage(
-                "assets.assetRoot cannot be combined with CDN/cache settings",
-            ));
-        }
-        return StandardAssetCatalogs::load_from_root(Path::new(root)).map_err(engine_error);
-    }
-    let remote = RemoteAssets::default()
-        .with_remote(boolean(options, "remote")?)
-        .with_base_url(string(options, "baseUrl")?.map(str::to_owned))
-        .with_cache_dir(string(options, "cacheDir")?.map(Into::into))
-        .with_commit(string(options, "commit")?.map(str::to_owned));
-    StandardAssetCatalogs::remote(remote).map_err(engine_error)
-}
-
-fn theme_values(theme: Option<&Value>) -> Result<(Value, Option<Value>)> {
-    let Some(theme) = theme else {
-        return Ok((
-            Value::String("github-light-default".to_owned()),
-            Some(Value::String("github-dark-default".to_owned())),
-        ));
-    };
-    if let Some(pair) = theme.as_object()
-        && (pair.contains_key("light") || pair.contains_key("dark"))
-    {
-        known_keys(pair, &["light", "dark"], "theme pair")?;
-        return Ok((
-            pair.get("light")
-                .ok_or_else(|| usage("theme.light is required"))?
-                .clone(),
-            Some(
-                pair.get("dark")
-                    .ok_or_else(|| usage("theme.dark is required"))?
-                    .clone(),
-            ),
-        ));
-    }
-    Ok((theme.clone(), None))
-}
-
-fn register_theme(highlighter: &mut Highlighter, theme: &Value) -> Result<String> {
-    if let Some(name) = theme.as_str() {
-        if !highlighter.load_theme(name).map_err(engine_error)? {
-            return Err(usage(format!("Unknown Ferriki theme '{name}'")));
-        }
-        return Ok(name.to_owned());
-    }
-    let theme_object = object(theme, "theme registration")?;
-    let name =
-        string(theme_object, "name")?.ok_or_else(|| usage("A custom theme requires a name"))?;
-    if let Some(include) = string(theme_object, "include")? {
-        highlighter.load_theme(include).map_err(engine_error)?;
-    }
-    highlighter
-        .register_theme_json(&theme.to_string())
-        .map_err(engine_error)?;
-    Ok(name.to_owned())
-}
-
-fn object<'a>(value: &'a Value, name: &str) -> Result<&'a Map<String, Value>> {
-    value
-        .as_object()
-        .ok_or_else(|| usage(format!("{name} must be an object")))
-}
-
-fn known_keys(value: &Map<String, Value>, keys: &[&str], context: &str) -> Result<()> {
-    for key in value.keys() {
-        if !keys.contains(&key.as_str()) {
-            return Err(usage(format!("Unknown {context} option '{key}'")));
-        }
-    }
-    Ok(())
-}
-
-fn boolean(value: &Map<String, Value>, key: &str) -> Result<Option<bool>> {
-    value
-        .get(key)
-        .map(|value| {
-            value
-                .as_bool()
-                .ok_or_else(|| usage(format!("{key} must be a boolean")))
-        })
-        .transpose()
-}
-
-fn string<'a>(value: &'a Map<String, Value>, key: &str) -> Result<Option<&'a str>> {
-    value
-        .get(key)
-        .map(|value| {
-            value
-                .as_str()
-                .filter(|value| !value.is_empty())
-                .ok_or_else(|| usage(format!("{key} must be a nonempty string")))
-        })
-        .transpose()
-}
-
-fn usage(message: impl ToString) -> Error {
-    Error::new(Status::InvalidArg, message.to_string())
 }
 
 pub(crate) fn validate_preparation_options(options: Option<&Options>) -> Result<()> {
@@ -432,9 +315,77 @@ pub(crate) fn validate_preparation_options(options: Option<&Options>) -> Result<
     Ok(())
 }
 
-pub(crate) fn engine_error(error: ferromark::ferriki::Error) -> Error {
-    Error::new(
-        Status::GenericFailure,
-        format!("Ferriki JSX highlighting: {error}"),
-    )
+/// Compatibility compiler for existing Ferriki-specific 3.x settings.
+#[cfg(feature = "ferriki")]
+#[napi]
+pub struct JsxCompiler {
+    compiler: CodeCompiler,
+}
+
+#[cfg(feature = "ferriki")]
+#[napi]
+impl JsxCompiler {
+    #[napi(constructor, catch_unwind)]
+    pub fn new(settings: String) -> Result<Self> {
+        let value: Value = serde_json::from_str(&settings).map_err(usage)?;
+        let settings = object(&value, "JSX compiler options")?;
+        known_keys(
+            settings,
+            &["theme", "lineNumbers", "languages", "assets"],
+            "JSX compiler",
+        )?;
+        let line_numbers = boolean(settings, "lineNumbers")?.unwrap_or(false);
+        let mut options = settings.clone();
+        options.remove("lineNumbers");
+        let config = serde_json::json!({"plugins": [{"name": "ferriki", "options": options}], "lineNumbers": line_numbers});
+        Ok(Self {
+            compiler: CodeCompiler::new(config.to_string())?,
+        })
+    }
+
+    #[napi(catch_unwind)]
+    pub fn prepare(
+        &self,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+        options: Option<Options>,
+        preparation_options: Option<PreparationOptions>,
+    ) -> Result<PreparedJsxDocument> {
+        self.compiler
+            .prepare(markdown, options, preparation_options)
+    }
+
+    #[napi(catch_unwind)]
+    pub fn compile(
+        &self,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+        options: Option<Options>,
+        jsx_options: Option<JsxOptions>,
+        #[napi(
+            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+        )]
+        render_code: Option<CodeCallback<'_>>,
+    ) -> Result<JsxResult> {
+        self.compiler
+            .compile(markdown, options, jsx_options, render_code)
+    }
+
+    #[napi(catch_unwind)]
+    pub fn compile_module(
+        &self,
+        #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
+        options: Option<Options>,
+        jsx_options: Option<JsxOptions>,
+        #[napi(
+            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+        )]
+        render_code: Option<CodeCallback<'_>>,
+    ) -> Result<JsxModuleResult> {
+        self.compiler
+            .compile_module(markdown, options, jsx_options, render_code)
+    }
+
+    #[napi(catch_unwind)]
+    pub fn render_code_block(&self, input: RenderCodeBlockInput) -> Result<RenderCodeBlockResult> {
+        self.compiler.render_code_block(input)
+    }
 }

@@ -142,6 +142,42 @@ export interface CodeHighlighter {
   ): string;
 }
 
+/**
+ * Trusted synchronous replacement of a whole code block. Return HTML for HTML
+ * entry points or JSX for JSX entry points. Null/undefined uses the next renderer
+ * or the built-in output; an empty string removes the block. Exceptions propagate.
+ */
+export type CodeBlockRenderer = (
+  code: string,
+  language?: string | null,
+  meta?: string | null,
+) => string | null | undefined;
+
+/** Try callbacks in order until one returns a string. Promise results are rejected. */
+export declare function composeCodeRenderers(
+  ...renderers: readonly CodeBlockRenderer[]
+): CodeBlockRenderer;
+
+/** Adapt a highlighter to a whole-block HTML callback, preserving highlight error fallback. */
+export declare function createHighlighterCodeRenderer(
+  highlighter: CodeHighlighter,
+  highlightOptions: HighlightOptions,
+): CodeBlockRenderer;
+
+/** Replace code blocks with trusted HTML. Escape untrusted values inside the callback. */
+export declare function toHtmlWithCodeRenderer(
+  markdown: string | Uint8Array,
+  renderCode: CodeBlockRenderer,
+  options?: Options,
+): string;
+
+/** Whole-block HTML rendering with the same metadata as `transform()`. */
+export declare function transformWithCodeRenderer(
+  markdown: string | Uint8Array,
+  renderCode: CodeBlockRenderer,
+  options?: Options,
+): TransformResult;
+
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
 export interface HighlightOptions {
   theme: string;
@@ -281,11 +317,7 @@ export type CompileJsxModuleOptions = {
 } & Omit<CompileJsxOptions, "output" | "componentPrefix">;
 
 /** A trusted hook may replace an entire code block with JSX. Exceptions propagate. */
-export type JsxCodeRenderer = (
-  code: string,
-  language?: string | null,
-  meta?: string | null,
-) => string | null | undefined;
+export type JsxCodeRenderer = CodeBlockRenderer;
 
 /** Heading metadata with its original UTF-8 byte range, including heading syntax. */
 export type JsxHeading = {
@@ -527,6 +559,46 @@ export type JsxTheme =
       semanticHighlighting?: boolean;
       semanticTokenColors?: Readonly<Record<string, string>>;
     };
+
+/** Selects an initialized Rust plugin from this addon's compiled factory set. */
+export type NativeCodePluginConfig = {
+  name: string;
+  /** Engine-specific, JSON-serializable settings passed once to the Rust factory. */
+  options?: Readonly<Record<string, unknown>>;
+};
+
+export type CodeCompilerOptions = {
+  /** Ordered plugins. Empty by default; no engine or assets are initialized. */
+  plugins?: readonly NativeCodePluginConfig[];
+  /** Enable line numbers; HTML also enables VitePress-compatible code annotations. */
+  lineNumbers?: boolean;
+};
+
+/** Names compiled into this addon. Installing an npm package does not extend this set. */
+export declare function availableCodePlugins(): string[];
+
+/** Reusable native HTML/JSX compiler. Rust plugins run without per-block JavaScript calls. */
+export declare class CodeCompiler {
+  constructor(options?: CodeCompilerOptions);
+  toHtml(markdown: string | Uint8Array, options?: Options): string;
+  transform(markdown: string | Uint8Array, options?: Options): TransformResult;
+  prepare(
+    markdown: string | Uint8Array,
+    preparationOptions?: JsxPreparationOptions,
+  ): PreparedJsxDocument;
+  /** Standalone intrinsic code output consults highlighting plugins only. */
+  renderCodeBlock(input: JsxCodeBlockRenderInput): JsxCodeBlockRenderResult;
+  compile(
+    markdown: string | Uint8Array,
+    options: CompileJsxModuleOptions,
+    renderCode?: JsxCodeRenderer,
+  ): JsxModuleResult;
+  compile(
+    markdown: string | Uint8Array,
+    options?: CompileJsxOptions,
+    renderCode?: JsxCodeRenderer,
+  ): JsxResult;
+}
 
 export type JsxCompilerOptions = {
   /** A single theme or a light/dark pair. Defaults to the GitHub default pair. */
