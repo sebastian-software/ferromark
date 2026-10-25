@@ -41,7 +41,14 @@ workflow runs `scripts/preserve-exact-transform-pin.mjs` on that branch and
 pushes a small correction only when needed. The release rehearsal applies and
 checks the same correction.
 
-Nothing else publishes. Merging ordinary source still only opens or updates the
+That correction also preserves registry identities in `Cargo.lock`. Ferrigura
+0.2.0 uses registry Ferromark alongside the workspace package, and the upstream
+updater matches both by name. The workflow reads the release branch's merge-base
+lockfile, keeps registry blocks unchanged, and updates only local package
+versions and their qualified local references. The real updater rehearsal
+checks registry equality and validates the resulting lockfile with Cargo.
+
+Nothing else publishes to registries. Merging ordinary source still only opens or updates the
 release pull request.
 
 The release pull request is opened with the `RELEASE_PLEASE_TOKEN` organization
@@ -59,6 +66,7 @@ component. The strategy updates natively, with no template to keep in step:
   the workflow then restores the exact `=…` requirement,
 - `node/native/Cargo.toml`'s version and its explicit
   `ferromark = { version = "…", path = "../.." }` requirement,
+- the private plugin fixture and Ferrigura adapter versions and local requirements,
 - all local entries in `Cargo.lock`,
 - `CHANGELOG.md` and `.release-please-manifest.json`.
 
@@ -198,6 +206,13 @@ normalizes that to its exact registry dependency in the package archive. The
 rehearsal applies a temporary Cargo patch to the local core because its current
 version is not published yet; the package manifest itself still targets the
 crates.io version.
+
+The patch is resolved in a disposable source workspace with copied manifests
+and borrowed sources. `cargo update --workspace --offline` prepares that
+workspace's lockfile before the locked package check. This accommodates the
+registry Ferromark used by optional engines without changing the checkout's
+lockfile or weakening the unpatched core archive check. Failed commands print
+their retained log tail so CI reports Cargo's actual error.
 
 The rehearsal checks both packages' metadata, upstream MIT notices and absence
 of repository-only paths, then builds and runs an isolated consumer from both

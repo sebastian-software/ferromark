@@ -8,7 +8,9 @@ JavaScript callback is required.
 
 The core crate and standard npm addon do not depend on this adapter. The Node
 factory is available only in custom builds with the `ferrigura` Cargo feature.
-The adapter and custom binaries are not published packages yet.
+The adapter crate remains private. The [plugin bundle workflow](plugin-bundles.md)
+produces installable custom npm tarballs; these are workflow artifacts, not
+registry releases.
 
 ## Node.js
 

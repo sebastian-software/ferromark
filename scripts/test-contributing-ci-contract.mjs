@@ -364,7 +364,12 @@ test("the core and transform packages are public with release-managed path depen
   // `release-type: rust` updates the root `[package]`, the members below it and
   // their explicit path requirements, so `ferromark` is the root package.
   assert.equal(root.package.name, "ferromark");
-  assert.deepEqual(workspace.members, ["node/native", "transforms"]);
+  assert.deepEqual(workspace.members, [
+    "node/native",
+    "node/plugin-fixture",
+    "plugins/ferrigura",
+    "transforms",
+  ]);
   const publicMembers = workspace.members
     .map((member) => [member, TOML.parse(read(`${member}/Cargo.toml`))])
     .filter(([, manifest]) => manifest.package.publish !== false)

@@ -57,6 +57,11 @@ distribution before removing the compatibility feature in a breaking release.
 Ferrigura must use the same optional factory/adapter boundary. Neither external
 adapter package nor a Ferrigura factory is delivered by this first step.
 
+Implementation update (2026-10-25): #567 also added the optional Ferrigura
+factory and private Rust adapter. The [plugin bundle workflow](../plugin-bundles.md)
+now produces installable custom builds using this same static composition
+boundary. It does not change the standard 3.x package or add a runtime loader.
+
 ## Alternatives and consequences
 
 - Separate npm addons connected by callbacks remain useful when installation

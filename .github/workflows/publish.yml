@@ -58,6 +58,7 @@ jobs:
         if: ${{ steps.release.outputs.prs_created == 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           ref: ${{ fromJSON(steps.release.outputs.pr || '{}').headBranchName }}
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -66,12 +67,14 @@ jobs:
         env:
           RELEASE_BRANCH: ${{ fromJSON(steps.release.outputs.pr || '{}').headBranchName }}
         run: |
-          node scripts/preserve-exact-transform-pin.mjs
-          if ! git diff --quiet -- transforms/Cargo.toml; then
+          release_base=$(git merge-base HEAD origin/main)
+          git show "$release_base:Cargo.lock" > "$RUNNER_TEMP/release-base-Cargo.lock"
+          node scripts/preserve-exact-transform-pin.mjs "$RUNNER_TEMP/release-base-Cargo.lock"
+          if ! git diff --quiet -- transforms/Cargo.toml Cargo.lock; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add transforms/Cargo.toml
-            git commit -m "chore: preserve exact transform dependency pin"
+            git add transforms/Cargo.toml Cargo.lock
+            git commit -m "chore: preserve release dependency identities"
             git push origin "HEAD:refs/heads/$RELEASE_BRANCH"
           fi
 

@@ -97,10 +97,10 @@ be disabled. Diagnostic features cannot be copied into package artifacts.
 engine-free graph and loads a fixture-only addon. Default package binaries and
 declarations stay untouched.
 
-Remaining distribution work: move the compatibility Ferriki adapter into an
-independently installable package and
-publish supported plugin bundles or a custom-addon build workflow. Switch the
-standard package to the engine-free build at a breaking version boundary.
+The [plugin bundle workflow](plugin-bundles.md) distributes installable custom
+builds with the selected factories and required notices. Moving the compatibility
+Ferriki adapter into a separate crate and switching the standard package to an
+engine-free build remain breaking-version migration work.
 Existing settings migrate to
 `new CodeCompiler({ plugins: [{ name: "ferriki", options: settings }] })`, with
 `lineNumbers` moved to the outer compiler options.

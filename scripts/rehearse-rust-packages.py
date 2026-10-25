@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tarfile
 import tomllib
 
@@ -14,7 +15,40 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def run(args, log):
     with log.open('w') as stream:
-        subprocess.run(args, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, check=True)
+        try:
+            subprocess.run(args, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, check=True)
+        except subprocess.CalledProcessError:
+            stream.flush()
+            print(log.read_text()[-12000:], file=sys.stderr)
+            raise
+
+
+def patched_workspace(output, root_manifest):
+    """Resolve the unpublished core patch in a disposable workspace.
+
+    A global crates.io patch also replaces Ferrigura's registry Ferromark and
+    necessarily changes that graph. Re-lock only this source mirror, never the
+    checkout or the unpatched core archive. Keep all registry versions pinned
+    with `cargo update --workspace`, then package with `--locked` as usual.
+    """
+    stage = output / 'source'
+    stage.mkdir()
+    for name in ['Cargo.toml', 'Cargo.lock']:
+        shutil.copyfile(ROOT / name, stage / name)
+    for name in ['src', 'tests', 'benches', 'examples', 'docs', 'benchmarks',
+                 'README.md', 'LICENSE', 'LICENSE-MIT', 'UPSTREAM.md']:
+        (stage / name).symlink_to(ROOT / name, target_is_directory=(ROOT / name).is_dir())
+    for member in root_manifest['workspace']['members']:
+        target = stage / member
+        target.mkdir(parents=True)
+        shutil.copyfile(ROOT / member / 'Cargo.toml', target / 'Cargo.toml')
+        for source in (ROOT / member).iterdir():
+            if source.name not in ['Cargo.toml', 'target']:
+                (target / source.name).symlink_to(source, target_is_directory=source.is_dir())
+    patch = f'patch.crates-io.ferromark.path={json.dumps(str(stage))}'
+    run(['cargo', 'update', '--workspace', '--offline', '--manifest-path', str(stage / 'Cargo.toml'),
+         '--config', patch], output / 'patched-workspace.log')
+    return stage, patch
 
 
 def packaged_targets_command(package, patched_core=None):
@@ -76,6 +110,7 @@ def main():
             assert dependency['version'] == f'={version}', f'{member}: exact core version'
             assert dependency['path'] == '..', f'{member}: local development path'
     assert names == ['ferromark', 'ferromark-transforms']
+    stage, patch = patched_workspace(output, root)
     for name in names:
         command = [
             'cargo', 'package', '-p', name, '--locked', '--offline', '--allow-dirty',
@@ -83,8 +118,9 @@ def main():
         ]
         if name == 'ferromark-transforms':
             command.extend([
+                '--manifest-path', str(stage / 'Cargo.toml'),
                 '--config',
-                f'patch.crates-io.ferromark.path={json.dumps(str(ROOT))}',
+                patch,
             ])
         run(command, output / f'{name}-package.log')
     unpacked = output / 'unpacked'

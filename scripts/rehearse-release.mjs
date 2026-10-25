@@ -20,7 +20,12 @@ const results = [];
 // Cargo resolves the candidate manifests against the candidate lockfile, and
 // pnpm re-locks the candidate manifests and must produce no change.
 function run(command, args, cwd) {
-  const result = spawnSync(command, args, { cwd, encoding: "utf8" });
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+    timeout: 60000,
+  });
   if (result.error) throw result.error;
   return result;
 }
@@ -42,15 +47,14 @@ function proveCargo(directory) {
     const target = resolve(transforms, entry);
     if (!existsSync(target)) symlinkSync(resolve(root, "transforms", entry), target);
   }
-  cpSync(resolve(root, "node/native"), resolve(directory, "node/native"), {
-    recursive: true,
-    filter: (source) => !source.includes("/target"),
-  });
-  // The generated member manifest wins over the copied one.
-  writeFileSync(
-    resolve(directory, "node/native/Cargo.toml"),
-    readFileSync(resolve(directory, "node/native/Cargo.toml.generated"), "utf8"),
-  );
+  for (const member of ["node/native", "node/plugin-fixture", "plugins/ferrigura"]) {
+    const manifest = readFileSync(resolve(directory, member, "Cargo.toml"), "utf8");
+    cpSync(resolve(root, member), resolve(directory, member), {
+      recursive: true,
+      filter: (source) => !source.includes("/target"),
+    });
+    writeFileSync(resolve(directory, member, "Cargo.toml"), manifest);
+  }
   const result = run(
     "cargo",
     [
@@ -80,7 +84,11 @@ function provePnpmLockfile(directory) {
   cpSync(resolve(root, "node/pnpm-workspace.yaml"), resolve(node, "pnpm-workspace.yaml"));
   cpSync(resolve(root, "node/package.json"), resolve(node, "package.json"));
   const before = readFileSync(resolve(node, "pnpm-lock.yaml"), "utf8");
-  const install = run("pnpm", ["install", "--lockfile-only", "--ignore-scripts"], node);
+  const install = run(
+    "pnpm",
+    ["install", "--offline", "--lockfile-only", "--ignore-scripts"],
+    node,
+  );
   if (install.status !== 0) {
     throw new Error(`pnpm install --lockfile-only failed on the candidate:\n${install.stderr}`);
   }
@@ -100,8 +108,7 @@ function record(label, version, proposal) {
   for (const [file, content] of proposal.files) {
     const target = resolve(directory, file);
     mkdirSync(dirname(target), { recursive: true });
-    // node/native/Cargo.toml is restored after the real crate is copied in.
-    writeFileSync(file === "node/native/Cargo.toml" ? `${target}.generated` : target, content);
+    writeFileSync(target, content);
   }
   writeFileSync(resolve(directory, "release-pr.md"), `# ${proposal.title}\n\n${proposal.body}\n`);
   results.push({

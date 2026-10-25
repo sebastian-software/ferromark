@@ -1,0 +1,23 @@
+{
+  "version": "3.6.0",
+  "packages": [
+    {
+      "name": "ferromark",
+      "version": "3.6.0",
+      "archive": "target/package/ferromark-3.6.0.crate",
+      "bytes": 744576,
+      "sha256": "d42329c71776a56c4f99c5c90de78d7c712d9273021b424ff8f4526aff761ef6"
+    },
+    {
+      "name": "ferromark-transforms",
+      "version": "3.6.0",
+      "archive": "target/package/ferromark-transforms-3.6.0.crate",
+      "bytes": 64215,
+      "sha256": "adac6f721c8859063ee1746add6991d4518b3bb00d543b186d2eacffa18935cc"
+    }
+  ],
+  "packaged_consumer": "passed",
+  "packaged_targets": "passed",
+  "method": "Full cargo package --locked in dependency order, including packaged builds; an isolated consumer links both unpacked archives, and each unpacked archive compiles its own test, bench and example targets.",
+  "limits": "No registry upload or publishing credentials were tested."
+}

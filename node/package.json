@@ -12,7 +12,9 @@
     "smoke:clean": "node ./scripts/clean-install-smoke.mjs",
     "format": "oxfmt --write --ignore-path=.prettierignore .",
     "format:check": "oxfmt --check --ignore-path=.prettierignore .",
-    "test:ferrigura": "node ./ferromark/scripts/verify-ferrigura.mjs"
+    "test:ferrigura": "node ./ferromark/scripts/verify-ferrigura.mjs",
+    "bundle:plugins": "node ./scripts/build-plugin-bundle.mjs",
+    "verify:plugin-bundle": "node ./scripts/verify-plugin-bundle.mjs"
   },
   "devDependencies": {
     "@napi-rs/cli": "3.7.4",

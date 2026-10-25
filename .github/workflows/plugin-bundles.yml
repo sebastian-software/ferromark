@@ -1,0 +1,114 @@
+name: Native plugin bundles
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/plugin-bundles.yml
+      - node/scripts/*plugin*.mjs
+      - plugins/**
+      - Cargo.lock
+  workflow_dispatch:
+    inputs:
+      plugins:
+        description: Native plugins to include in the installable custom build
+        required: true
+        default: ferrigura
+        type: choice
+        options: [none, ferriki, ferrigura, all]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, rust_target: aarch64-apple-darwin, artifact: darwin-arm64, runtime_test: true }
+          - { os: ubuntu-24.04-arm, rust_target: aarch64-unknown-linux-gnu, artifact: linux-arm64-gnu, runtime_test: true }
+          - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-gnu, artifact: linux-x64-gnu, runtime_test: true }
+          - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-musl, artifact: linux-x64-musl, runtime_test: false }
+          - { os: ubuntu-latest, rust_target: aarch64-unknown-linux-musl, artifact: linux-arm64-musl, runtime_test: false }
+          - { os: windows-latest, rust_target: x86_64-pc-windows-msvc, artifact: win32-x64-msvc, runtime_test: true }
+          - { os: windows-11-arm, rust_target: aarch64-pc-windows-msvc, artifact: win32-arm64-msvc, runtime_test: true }
+    runs-on: ${{ matrix.os }}
+    name: plugin bundle (${{ matrix.rust_target }})
+    defaults:
+      run:
+        working-directory: node
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: runner.os != 'Windows'
+      # NUL is a reserved Windows device name. Preserve the frozen report in
+      # Git and omit only this historical input from Windows working trees.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: runner.os == 'Windows'
+        # Git validates even sparse-excluded paths. Permit this index entry
+        # only for checkout; sparse rules prevent writing the device name.
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: core.protectNTFS
+          GIT_CONFIG_VALUE_0: "false"
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/reports/2026-09-14-ox-regression/normalization-guards/nul.md
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: node/pnpm-lock.yaml
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: "1.95"
+          targets: ${{ matrix.rust_target }}
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        if: ${{ contains(matrix.rust_target, '-musl') }}
+        with:
+          version: 0.15.2
+      - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
+        if: ${{ contains(matrix.rust_target, '-musl') }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tool: cargo-zigbuild
+      - run: pnpm install --frozen-lockfile
+      - name: Build an installable plugin bundle
+        run: node scripts/build-plugin-bundle.mjs --plugins "$BUNDLE_PLUGINS" --output "$RUNNER_TEMP/plugin-bundle"
+        env:
+          BUNDLE_PLUGINS: ${{ inputs.plugins || 'all' }}
+          FERROMARK_RUST_TARGET: ${{ matrix.rust_target }}
+      - name: Install and test the bundle
+        if: ${{ matrix.runtime_test }}
+        run: node scripts/verify-plugin-bundle.mjs "$RUNNER_TEMP/plugin-bundle/bundle.json"
+      - name: Upload the custom package and evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: plugin-${{ inputs.plugins || 'all' }}-${{ matrix.rust_target }}
+          path: ${{ runner.temp }}/plugin-bundle/*
+          if-no-files-found: error
+          retention-days: 30
+
+  musl-runtime:
+    timeout-minutes: 15
+    needs: build
+    runs-on: ubuntu-latest
+    container: node:24-alpine
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - run: apk add --no-cache git
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: plugin-${{ inputs.plugins || 'all' }}-x86_64-unknown-linux-musl
+          path: /tmp/plugin-bundle
+      - run: node node/scripts/verify-plugin-bundle.mjs /tmp/plugin-bundle/bundle.json
