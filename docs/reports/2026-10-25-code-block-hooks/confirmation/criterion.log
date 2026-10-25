@@ -1,0 +1,102 @@
+    Finished `bench` profile [optimized] target(s) in 0.09s
+     Running benches/code_block_hooks.rs (target/release/deps/code_block_hooks-15b9f304cd149706)
+Gnuplot not found, using plotters backend
+Benchmarking code_block_hooks/short-prose/default
+Benchmarking code_block_hooks/short-prose/default: Warming up for 1.0000 s
+Benchmarking code_block_hooks/short-prose/default: Collecting 30 samples in estimated 2.0000 s (22M iterations)
+Benchmarking code_block_hooks/short-prose/default: Analyzing
+code_block_hooks/short-prose/default
+                        time:   [89.133 ns 89.242 ns 89.370 ns]
+                        change: [−0.4632% −0.0033% +0.4729%] (p = 0.99 > 0.05)
+                        No change in performance detected.
+Found 3 outliers among 30 measurements (10.00%)
+  1 (3.33%) high mild
+  2 (6.67%) high severe
+Benchmarking code_block_hooks/short-prose/node-hooks
+Benchmarking code_block_hooks/short-prose/node-hooks: Warming up for 1.0000 s
+Benchmarking code_block_hooks/short-prose/node-hooks: Collecting 30 samples in estimated 2.0000 s (21M iterations)
+Benchmarking code_block_hooks/short-prose/node-hooks: Analyzing
+code_block_hooks/short-prose/node-hooks
+                        time:   [94.186 ns 94.587 ns 94.979 ns]
+                        change: [−1.1402% −0.2877% +0.5285%] (p = 0.52 > 0.05)
+                        No change in performance detected.
+Benchmarking code_block_hooks/short-prose/code-hooks
+Benchmarking code_block_hooks/short-prose/code-hooks: Warming up for 1.0000 s
+Benchmarking code_block_hooks/short-prose/code-hooks: Collecting 30 samples in estimated 2.0000 s (23M iterations)
+Benchmarking code_block_hooks/short-prose/code-hooks: Analyzing
+code_block_hooks/short-prose/code-hooks
+                        time:   [87.197 ns 87.569 ns 88.078 ns]
+                        change: [−2.5205% −1.9630% −1.3923%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 2 outliers among 30 measurements (6.67%)
+  1 (3.33%) low mild
+  1 (3.33%) high severe
+Benchmarking code_block_hooks/long-prose/default
+Benchmarking code_block_hooks/long-prose/default: Warming up for 1.0000 s
+Benchmarking code_block_hooks/long-prose/default: Collecting 30 samples in estimated 2.0026 s (114k iterations)
+Benchmarking code_block_hooks/long-prose/default: Analyzing
+code_block_hooks/long-prose/default
+                        time:   [17.570 µs 17.646 µs 17.726 µs]
+                        change: [−0.5928% −0.2399% +0.1059%] (p = 0.19 > 0.05)
+                        No change in performance detected.
+Found 4 outliers among 30 measurements (13.33%)
+  1 (3.33%) high mild
+  3 (10.00%) high severe
+Benchmarking code_block_hooks/long-prose/node-hooks
+Benchmarking code_block_hooks/long-prose/node-hooks: Warming up for 1.0000 s
+Benchmarking code_block_hooks/long-prose/node-hooks: Collecting 30 samples in estimated 2.0046 s (102k iterations)
+Benchmarking code_block_hooks/long-prose/node-hooks: Analyzing
+code_block_hooks/long-prose/node-hooks
+                        time:   [19.257 µs 19.295 µs 19.347 µs]
+                        change: [−1.2826% −0.8500% −0.3969%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 4 outliers among 30 measurements (13.33%)
+  1 (3.33%) low mild
+  1 (3.33%) high mild
+  2 (6.67%) high severe
+Benchmarking code_block_hooks/long-prose/code-hooks
+Benchmarking code_block_hooks/long-prose/code-hooks: Warming up for 1.0000 s
+Benchmarking code_block_hooks/long-prose/code-hooks: Collecting 30 samples in estimated 2.0075 s (105k iterations)
+Benchmarking code_block_hooks/long-prose/code-hooks: Analyzing
+code_block_hooks/long-prose/code-hooks
+                        time:   [19.022 µs 19.059 µs 19.101 µs]
+                        change: [−0.3280% −0.1182% +0.0848%] (p = 0.28 > 0.05)
+                        No change in performance detected.
+Found 3 outliers among 30 measurements (10.00%)
+  1 (3.33%) low mild
+  2 (6.67%) high mild
+Benchmarking code_block_hooks/code-fences/default
+Benchmarking code_block_hooks/code-fences/default: Warming up for 1.0000 s
+Benchmarking code_block_hooks/code-fences/default: Collecting 30 samples in estimated 2.0003 s (620k iterations)
+Benchmarking code_block_hooks/code-fences/default: Analyzing
+code_block_hooks/code-fences/default
+                        time:   [3.2168 µs 3.2295 µs 3.2424 µs]
+                        change: [−0.4961% −0.0806% +0.3432%] (p = 0.71 > 0.05)
+                        No change in performance detected.
+Found 4 outliers among 30 measurements (13.33%)
+  3 (10.00%) high mild
+  1 (3.33%) high severe
+Benchmarking code_block_hooks/code-fences/node-hooks
+Benchmarking code_block_hooks/code-fences/node-hooks: Warming up for 1.0000 s
+Benchmarking code_block_hooks/code-fences/node-hooks: Collecting 30 samples in estimated 2.0007 s (493k iterations)
+Benchmarking code_block_hooks/code-fences/node-hooks: Analyzing
+code_block_hooks/code-fences/node-hooks
+                        time:   [3.9896 µs 3.9981 µs 4.0100 µs]
+                        change: [−0.0956% +0.1276% +0.3991%] (p = 0.31 > 0.05)
+                        No change in performance detected.
+Found 5 outliers among 30 measurements (16.67%)
+  1 (3.33%) low mild
+  1 (3.33%) high mild
+  3 (10.00%) high severe
+Benchmarking code_block_hooks/code-fences/code-hooks
+Benchmarking code_block_hooks/code-fences/code-hooks: Warming up for 1.0000 s
+Benchmarking code_block_hooks/code-fences/code-hooks: Collecting 30 samples in estimated 2.0002 s (506k iterations)
+Benchmarking code_block_hooks/code-fences/code-hooks: Analyzing
+code_block_hooks/code-fences/code-hooks
+                        time:   [3.9405 µs 3.9549 µs 3.9704 µs]
+                        change: [−2.2416% −1.7309% −1.2410%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 2 outliers among 30 measurements (6.67%)
+  1 (3.33%) low mild
+  1 (3.33%) high mild
+

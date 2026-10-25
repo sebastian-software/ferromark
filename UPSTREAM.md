@@ -32,8 +32,9 @@ also derive from upstream. See [the cleanup record](docs/fork.md) for local chan
 has the same version and checksum as upstream; no dependency upgrades were mixed
 into the import. At import, the workspace packages were renamed, carried `2.0.0-dev.0`,
 and all set `publish = false`. Today the root `ferromark` package is published to
-crates.io (`publish = ["crates-io"]`) and `node/native` is the only workspace
-package that keeps `publish = false`.
+crates.io (`publish = ["crates-io"]`). The native Node binding, its plugin
+test fixture, and the optional Ferrigura adapter remain unpublished workspace
+packages (`publish = false`).
 
 CommonMark and GFM specification text has separate CC-BY-SA 4.0 attribution in
 [the fixture README](tests/spec_fixtures/README.md).

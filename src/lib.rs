@@ -52,12 +52,12 @@ pub use projection::{
 pub use references::{DocumentReference, ReferenceKind, ReferenceProvenance, ReferenceSnapshot};
 pub use renderer::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
-    HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlRenderContext,
-    HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
-    JsxCodeBlock, JsxCodeBlockInput, JsxCodeBlockRenderOutput, JsxHighlightedCodeBlock,
-    JsxModuleSource, JsxOutput, JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping,
-    NoHtmlRenderHooks, NoJsxRenderHooks, collect_heading_text, find_autolink_ranges,
-    map_heading_level, slugify_heading,
+    HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlCodeBlockInput,
+    HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions,
+    InvalidHeadingIdPrefix, JsxCodeBlock, JsxCodeBlockInput, JsxCodeBlockRenderOutput,
+    JsxHighlightedCodeBlock, JsxModuleSource, JsxOutput, JsxRenderHooks, JsxRenderer,
+    JsxRendererOptions, JsxSourceMapping, NoHtmlRenderHooks, NoJsxRenderHooks,
+    collect_heading_text, find_autolink_ranges, map_heading_level, slugify_heading,
 };
 pub use text::{TextExtraction, TextExtractionOptions, TextRange, TextSection};
 

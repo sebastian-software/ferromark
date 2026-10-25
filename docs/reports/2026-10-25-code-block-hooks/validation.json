@@ -1,0 +1,26 @@
+{
+  "rust_workspace": {
+    "command": "RUST_TEST_THREADS=1 cargo test --workspace --all-features --locked",
+    "passed": 1424,
+    "failed": 0,
+    "ignored": 0,
+    "suites": 98
+  },
+  "checks_passed": [
+    "cargo fmt --all --check",
+    "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+    "cargo bench --workspace --no-run --locked",
+    "cargo check -p ferromark --no-default-features --locked",
+    "RUSTDOCFLAGS='-D warnings' cargo doc --workspace --no-deps --all-features --locked",
+    "pnpm build (node/)",
+    "pnpm test (node/): 217 Node tests plus panic-unwind and input-conversion verification",
+    "pnpm typecheck (node/)",
+    "pnpm format:check (node/)",
+    "pnpm lint (node/)",
+    "pnpm audit --audit-level high (node/): no high/critical findings; one existing moderate finding",
+    "pnpm pack:check (node/): main package 125016 bytes unpacked; cap raised from 124000 to 126000 for the additive public renderer API",
+    "pnpm smoke:clean (node/): packed archives installed and loaded on darwin-arm64"
+  ],
+  "scope": "Ferromark adapter interfaces and callback composition; no Ferrigura engine or engine adapter is bundled.",
+  "platform_limits": "Local macOS arm64 validation. Published PGO artifacts and other platforms were not exercised."
+}

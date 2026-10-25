@@ -11,7 +11,8 @@
     "pack:check": "node ./scripts/verify-pack.mjs",
     "smoke:clean": "node ./scripts/clean-install-smoke.mjs",
     "format": "oxfmt --write --ignore-path=.prettierignore .",
-    "format:check": "oxfmt --check --ignore-path=.prettierignore ."
+    "format:check": "oxfmt --check --ignore-path=.prettierignore .",
+    "test:ferrigura": "node ./ferromark/scripts/verify-ferrigura.mjs"
   },
   "devDependencies": {
     "@napi-rs/cli": "3.7.4",

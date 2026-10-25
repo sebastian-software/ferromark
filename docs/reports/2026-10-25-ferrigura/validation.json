@@ -1,0 +1,132 @@
+{
+  "date_utc": "2026-10-25T09:42:21.836834+00:00",
+  "base": "38b6f64ffca0da0675921a52abacb62d148ecaab",
+  "state": "Uncommitted candidate; no release, publication, or current-feature merge.",
+  "engine": "Published Ferrigura 0.2.0, pinned exactly; no existing registry entries replaced.",
+  "target": "aarch64-apple-darwin",
+  "rust": "1.95.0",
+  "node": "24.19.0",
+  "native_profile": "release-node; PGO disabled",
+  "rust_tests": {
+    "passed": 1429,
+    "failed": 0,
+    "ignored": 0,
+    "suites": 103
+  },
+  "node_tests": {
+    "passed": 221,
+    "failed": 0,
+    "ignored": 0
+  },
+  "ferrigura_native_verification": {
+    "command": "pnpm test:ferrigura (node/)",
+    "variants": [
+      "combined",
+      "diagrams"
+    ],
+    "exit_code": 0,
+    "note": "Successful child-process output is captured by the runner; both variants completed. Status/size printing was added after this run."
+  },
+  "checks_passed": [
+    "cargo fmt --all --check",
+    "RUST_TEST_THREADS=1 cargo test --workspace --all-features --locked",
+    "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+    "cargo bench --workspace --no-run --locked",
+    "cargo check -p ferromark-ferrigura --no-default-features --locked",
+    "cargo clippy -p ferromark-node --no-default-features --features ferrigura --locked -- -D warnings",
+    "cargo check --no-default-features --locked",
+    "cargo clippy -p ferromark-node --no-default-features --locked -- -D warnings",
+    "RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked",
+    "pnpm build; pnpm test (node/), including isolated panic, input-conversion, fixture-plugin builds",
+    "pnpm test:ferrigura (node/): combined and Mermaid-only addons",
+    "pnpm lint; pnpm typecheck; pnpm format:check (node/)",
+    "pnpm pack:check; pnpm smoke:clean (node/)",
+    "pnpm audit --audit-level high: no high/critical; one existing moderate",
+    "python3 -m unittest scripts/test_release_package.py: 16 passed",
+    "Custom build guards: reject ., ./, npm/custom output and PGO-enabled Ferrigura build",
+    "Compatibility/engine-free normal+build package lists equal preceding report; 59 registry entries added, zero old entries removed/replaced"
+  ],
+  "package": {
+    "main": {
+      "filename": "ferromark-3.6.0.tgz",
+      "files": [
+        "LICENSE",
+        "LICENSE-MIT",
+        "README.md",
+        "index.d.mts",
+        "index.mjs",
+        "native-target.mjs",
+        "native.d.ts",
+        "package.json"
+      ],
+      "unpackedSize": 130593
+    },
+    "platforms": [
+      {
+        "filename": "ferromark-darwin-arm64-3.6.0.tgz",
+        "files": [
+          "LICENSE",
+          "LICENSE-MIT",
+          "README.md",
+          "ferromark.darwin-arm64.node",
+          "package.json"
+        ],
+        "unpackedSize": 5851059
+      }
+    ]
+  },
+  "source_sha256": {
+    ".github/workflows/ci.yml": "423ef88e203cb88b2902b825244be9c38963158711d31cc44a5b480b4b5350f4",
+    "Cargo.lock": "073c4acc9c42396a0c354bbf76a607b74a056652708a5b209823b943faf86ddc",
+    "Cargo.toml": "bb4f224180d350fbb68dd4961eb444af31c2d37061a38b4ea1151a7fd39e11e6",
+    "benches/code_block_hooks.rs": "353dd88f53ec73e56bed93ad48c141297f89567a24cc7bc9c9b532da721df153",
+    "node/cspell.json": "3dafa9ed5034f43d0ffd5a25ba98a82ae43b2d0db2837db1c4247397f47616bf",
+    "node/eslint.config.ts": "0d48715e963f5613c05db6699d63e51157123c851744d703f3db4403eb1b93ba",
+    "node/ferromark/index.d.mts": "f878f81b8af23835e3569abdff304ff059109eedd8e7d29bab0662786e80cbf8",
+    "node/ferromark/index.mjs": "600355c4a74600f4d42fe0834083210f6b78afc58919faf68dd429183a387354",
+    "node/ferromark/native.d.ts": "7f4d156c2ad481b794f8e5dfec8e23299c6c3cfcac5f7815464a25847c22fffa",
+    "node/ferromark/package.json": "92905fad13178e8a30d4b4f0701315af1ce10958fe418304ab23b1a432e63a96",
+    "node/ferromark/scripts/build-native.mjs": "15a1841e46eb9c125b9b45bf191a5821d3b2c2e0620d4163aa4011c3b4209292",
+    "node/ferromark/scripts/verify-ferrigura-worker.mjs": "5191c4d7e8cff10cdd3c0ef8a986c44b3c0b875e844ab537796366c88088affa",
+    "node/ferromark/scripts/verify-ferrigura.mjs": "0f51e4132e4ba5874775be3ff3184d8cac6aa21fef45e4063ee4b544fa1483be",
+    "node/ferromark/scripts/verify-native-plugins-worker.mjs": "4debdd5a9d07e40723a5aa2a5baa9fb1320f5381277253de15a41485da9cfcd7",
+    "node/ferromark/scripts/verify-native-plugins.mjs": "986449a194127323c1285eb3da7afe8c765f814db4c2c808283b791b262bbe1b",
+    "node/ferromark/scripts/verify-package.mjs": "ee969d12b09696b99403c96f279da35927ea57cc9a979dafbd2db3051ff3ebef",
+    "node/ferromark/test/code-renderers.test.mjs": "100aab1e57310087d4c6deb14afaece484d0b59d9e707149058aabe5efbd2803",
+    "node/ferromark/test/native-plugins.test.mjs": "75bbc9c188dd82364979357a63ad3bb9ef2b0201a8fa165e2b10b0b3be2d0304",
+    "node/ferromark/test/types.test.mts": "a726fa3e270d5bdcd7e0f99581b9a91fa992343e33c042c1caf6117cdadcf277",
+    "node/native/Cargo.toml": "94593d497c0ef5e8d82993dd1261debe9ccee933ded3ccfa2ecdd7ff74f15525",
+    "node/native/src/jsx.rs": "e933f0f904868e112cb0bc0d39e569a4b180ab8111d810d0d847f0ff3718c025",
+    "node/native/src/jsx_compiler.rs": "2e08278b4ceb0681eb557785a1a98c0e8015fb96f0d16ff8e1e15e1d47040db9",
+    "node/native/src/lib.rs": "682a6d50fda9e394e9140e1086fa99a2411ee071cbf2f713ff88c2953c90f7d8",
+    "node/native/src/plugins.rs": "9f6af36df966554d4cc8534e79f873e78535ad7d20699193bd414305f981d5e7",
+    "node/native/src/plugins/ferrigura.rs": "37053f883e57247f7c2766430af6a00d8b6cc9adc198d5f1320c7f0a32a6dedf",
+    "node/native/src/plugins/ferriki.rs": "02e1377af50c3a52c88a10d5d42f15f59915776fdbb01c05e9dad9c5f5aba9bb",
+    "node/oxlint.config.ts": "2478ccf7c45f79e37414625a96646f65834f9b6157f44ad46de282a8ff4f9427",
+    "node/package.json": "418ed27f1a203ed9733b57c950d0f31afd5933ff51e315c549a3f1081c89926c",
+    "node/plugin-fixture/Cargo.toml": "efde01c91298424159739afb75a69732152c973a8a2263dcab8c27f20ef64fa8",
+    "node/plugin-fixture/src/lib.rs": "5eacf1626621bad501b4e08c6f83a71c06549e367982caa0195c4518667a43e8",
+    "node/scripts/verify-pack.mjs": "8ae61a3dbd0d45122b880c6af17ca974a2733cb7fa8a7229e09fab4f8d11c9ee",
+    "plugins/ferrigura/Cargo.toml": "03e3c4b49ee23317b8f7d4722640001f14910c5b259d620e23c9b2758a8eb87e",
+    "plugins/ferrigura/src/jsx.rs": "cc103687ee22b19cdbcfb639ae07252f814bda0f80149db238e066d17e306f73",
+    "plugins/ferrigura/src/lib.rs": "76ae284b384dece5ffca9b7f08881c0eaf97aa609ee27d90a734e34902850140",
+    "plugins/ferrigura/tests/render.rs": "4e42e3c6d52c20ec581c7e979d79466e685cc9a8ab8860dfb83b8946bbe430b5",
+    "src/lib.rs": "f04ae1805a12ea7b29d903c68f1d18e502599246c3245c0c6d6e551ca22417c6",
+    "src/renderer/html.rs": "8d2210d5a5ac58d7d23ec20b744d7e08403d8f315cd68e06a638df1656d8cf10",
+    "src/renderer/html/renderer.rs": "75a2f72abfd9d99d2f8603e1f75efedd950c86a7e58aad26a9e0184d35fcfc4c",
+    "src/renderer/html/renderer/code_block.rs": "0d9e2fd6e617f4551e0d27ce8e29e3e476e6199dee2a55b5ea8c31269cf8bf24",
+    "src/renderer/html/renderer/hooks.rs": "112318b49f22e4cdac585b29c04a6708b8bcfabd55578ce768ec6bcddca8d332",
+    "src/renderer/html/renderer/incremental.rs": "2b2913e21234393346bce020852a7a886041d28b33bd00b67308649fb7b8043e",
+    "src/renderer/jsx.rs": "981b6a9e79a36fe8947c3927c366def79f58e05f8753e16ca40f0c39ccac63fc",
+    "src/renderer/mod.rs": "af34fcc3f8c1f3986017c26a484014b404b00934d1501b3acd37dd1c2916355b",
+    "tests/code_block_renderers.rs": "ed79df705af3db1bd5801bde4a16d61ebc8aa1353ce30de8db6c243ae05fbbbc",
+    "tests/edge_render_hooks.rs": "4b00ba6cb94c415707bb2ed20588dd07d0d4cee6cbfc736c84daf56e65fc7880",
+    "tests/ferriki_integration.rs": "ae04764cdc821cb3638f416e753625f46deb72dc38ec566fc60c359ccdebfbc4",
+    "tests/jsx_ferriki.rs": "d92f1e23ca752386c9e00655d013c900c5c6d774e45046042fef518eac60a26e"
+  },
+  "limits": [
+    "No diagram latency or memory measurement.",
+    "Local macOS arm64 only; no other-platform or PGO verification.",
+    "Private adapter and local feature integration; no independently installable plugin package or dynamic loader."
+  ]
+}

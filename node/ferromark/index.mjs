@@ -935,23 +935,14 @@ export function compileJsx(markdown, options, renderCode) {
     : addon.compileJsx(markdown, options, options, renderCode);
 }
 
-/** Reusable compiler whose Ferriki highlighter lives in the native addon. */
-export class JsxCompiler {
+/** Shared facade for immutable preparation and native JSX rendering. */
+class CompilerFacade {
   /** @type {NativeJsxCompilerSession} */
   #native;
 
-  /** @param {import('./index.mjs').JsxCompilerOptions} [options] Native highlighting and asset settings. */
-  constructor(options = {}) {
-    if (options == null || typeof options !== "object" || Array.isArray(options)) {
-      throw new TypeError("JSX compiler options must be an object");
-    }
-    for (const key of Reflect.ownKeys(options)) {
-      if (!["theme", "lineNumbers", "languages", "assets"].includes(String(key))) {
-        throw new TypeError(`unknown JSX compiler option "${String(key)}"`);
-      }
-    }
-    const NativeCompiler = loadNative().JsxCompiler;
-    this.#native = new NativeCompiler(JSON.stringify(options));
+  /** @param {NativeJsxCompilerSession} native Native compiler handle. */
+  constructor(native) {
+    this.#native = native;
   }
 
   /**
@@ -992,11 +983,72 @@ export class JsxCompiler {
   }
 }
 
+/** Compatibility facade for the existing Ferriki-specific compiler settings. */
+export class JsxCompiler extends CompilerFacade {
+  /** @param {import('./index.mjs').JsxCompilerOptions} [options] Native highlighting and asset settings. */
+  constructor(options = {}) {
+    if (options == null || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("JSX compiler options must be an object");
+    }
+    for (const key of Reflect.ownKeys(options)) {
+      if (!["theme", "lineNumbers", "languages", "assets"].includes(String(key))) {
+        throw new TypeError(`unknown JSX compiler option "${String(key)}"`);
+      }
+    }
+    const NativeCompiler = loadNative().JsxCompiler;
+    if (typeof NativeCompiler !== "function") {
+      throw new TypeError(
+        "This addon build does not include Ferriki; use CodeCompiler with its available plugins",
+      );
+    }
+    super(new NativeCompiler(JSON.stringify(options)));
+  }
+}
+
+/** Names of code plugin factories compiled into the loaded addon. */
+export function availableCodePlugins() {
+  return loadNative().availableCodePlugins();
+}
+
+/** Reusable HTML and JSX compiler with explicitly selected Rust plugins. */
+export class CodeCompiler extends CompilerFacade {
+  /** @type {NativeCodeCompilerSession} */
+  #compiler;
+
+  /** @param {import('./index.mjs').CodeCompilerOptions} [options] Native plugin configuration. */
+  constructor(options = {}) {
+    if (options == null || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("code compiler options must be an object");
+    }
+    const compiler = new (loadNative().CodeCompiler)(JSON.stringify(options));
+    super(compiler);
+    this.#compiler = compiler;
+  }
+
+  /**
+   * @param {string | Uint8Array} markdown Authored Markdown source.
+   * @param {import('./index.mjs').Options} [options] Parser and rendering settings.
+   */
+  toHtml(markdown, options) {
+    validateOptions(options);
+    return this.#compiler.toHtml(markdown, options);
+  }
+
+  /**
+   * @param {string | Uint8Array} markdown Authored Markdown source.
+   * @param {import('./index.mjs').Options} [options] Parser and rendering settings.
+   */
+  transform(markdown, options) {
+    validateOptions(options);
+    return this.#compiler.transform(markdown, options);
+  }
+}
+
 /**
  * @param {import('./index.mjs').CodeHighlighter} highlighter Synchronous code highlighter.
  * @param {import('./index.mjs').HighlightOptions} highlightOptions Highlighter options.
  */
-function highlighterRenderer(highlighter, highlightOptions) {
+export function createHighlighterCodeRenderer(highlighter, highlightOptions) {
   if (!highlighter || typeof highlighter.codeToHtml !== "function") {
     throw new TypeError("highlighter must provide a synchronous codeToHtml method");
   }
@@ -1033,6 +1085,68 @@ function highlighterRenderer(highlighter, highlightOptions) {
 }
 
 /**
+ * Compose synchronous whole-code-block renderers in priority order.
+ * A string handles the block (including an empty string); null or undefined declines it.
+ * @param {...import('./index.mjs').CodeBlockRenderer} renderers Trusted render callbacks.
+ * @returns {NativeFencedCodeRenderer} A reusable callback for HTML or JSX entry points.
+ */
+export function composeCodeRenderers(...renderers) {
+  for (const renderer of renderers) {
+    if (typeof renderer !== "function") {
+      throw new TypeError("code renderers must be synchronous functions");
+    }
+  }
+  return (code, language, meta) => {
+    for (const renderer of renderers) {
+      const output = renderer(code, language, meta);
+      if (output != null) {
+        if (typeof output !== "string") {
+          throw new TypeError(
+            "code renderers must return a string, null, or undefined synchronously",
+          );
+        }
+        return output;
+      }
+    }
+    return null;
+  };
+}
+
+/**
+ * Replace code blocks with trusted HTML through a synchronous renderer.
+ * @param {string | Uint8Array} markdown Markdown source.
+ * @param {import('./index.mjs').CodeBlockRenderer} renderCode Trusted HTML callback.
+ * @param {import('./index.mjs').Options} [options] Rendering options.
+ * @returns {string} Rendered HTML.
+ */
+export function toHtmlWithCodeRenderer(markdown, renderCode, options) {
+  validateOptions(options);
+  const render = composeCodeRenderers(renderCode);
+  const addon = loadNative();
+  const packed = isMarkdown(markdown) ? packOptions(options) : options;
+  return Array.isArray(packed)
+    ? addon.toHtmlWithRendererPacked(markdown, ...packed, render)
+    : addon.toHtmlWithRenderer(markdown, packed, render);
+}
+
+/**
+ * Replace code blocks with trusted HTML and retain document metadata.
+ * @param {string | Uint8Array} markdown Markdown source.
+ * @param {import('./index.mjs').CodeBlockRenderer} renderCode Trusted HTML callback.
+ * @param {import('./index.mjs').Options} [options] Rendering options.
+ * @returns {import('./index.mjs').TransformResult} HTML, headings, and front matter.
+ */
+export function transformWithCodeRenderer(markdown, renderCode, options) {
+  validateOptions(options);
+  const render = composeCodeRenderers(renderCode);
+  const addon = loadNative();
+  const packed = isMarkdown(markdown) ? packOptions(options) : options;
+  return Array.isArray(packed)
+    ? addon.transformWithRendererPacked(markdown, ...packed, render)
+    : addon.transformWithRenderer(markdown, packed, render);
+}
+
+/**
  * @param {string | Uint8Array} markdown Markdown source to render.
  * @param {import('./index.mjs').CodeHighlighter} highlighter Synchronous code highlighter.
  * @param {import('./index.mjs').HighlightOptions} highlightOptions Highlighter options.
@@ -1042,7 +1156,7 @@ function highlighterRenderer(highlighter, highlightOptions) {
 // eslint-disable-next-line max-params
 export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, options) {
   validateOptions(options);
-  const render = highlighterRenderer(highlighter, highlightOptions);
+  const render = createHighlighterCodeRenderer(highlighter, highlightOptions);
   const addon = loadNative();
   const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
@@ -1060,7 +1174,7 @@ export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, o
 // eslint-disable-next-line max-params
 export function transformWithHighlighter(markdown, highlighter, highlightOptions, options) {
   validateOptions(options);
-  const render = highlighterRenderer(highlighter, highlightOptions);
+  const render = createHighlighterCodeRenderer(highlighter, highlightOptions);
   const addon = loadNative();
   const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
@@ -1096,6 +1210,10 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxModuleResult
  *   renderCodeBlock(input: import('./index.mjs').JsxCodeBlockRenderInput): import('./index.mjs').JsxCodeBlockRenderResult
  * }} NativeJsxCompilerSession
+ * @typedef {NativeJsxCompilerSession & {
+ *   toHtml(markdown: string | Uint8Array, options?: import('./index.mjs').Options): string
+ *   transform(markdown: string | Uint8Array, options?: import('./index.mjs').Options): import('./index.mjs').TransformResult
+ * }} NativeCodeCompilerSession
  * @typedef {import('./index.mjs').Options | null | undefined} NativeOptions
  * @typedef {[
  *   set: number,
@@ -1121,7 +1239,9 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     new (options?: NativeOptions): NativeRendererSession
  *     withPackedOptions(...options: NativePackedOptions): NativeRendererSession
  *   }
- *   JsxCompiler: { new (settings: string): NativeJsxCompilerSession }
+ *   JsxCompiler?: { new (settings: string): NativeJsxCompilerSession }
+ *   CodeCompiler: { new (settings: string): NativeCodeCompilerSession }
+ *   availableCodePlugins(): string[]
  *   prepareDocument(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,
  *     preparationOptions?: Pick<import('./index.mjs').JsxPreparationOptions, 'format' | 'trackReferences'>): NativePreparedJsxDocument
  *   compileJsx(

@@ -7,7 +7,7 @@
 use std::fmt::Display;
 
 use crate::allocator::Vec as ArenaVec;
-use crate::ast::{Document, Node};
+use crate::ast::{Document, Node, Span};
 
 use super::HtmlRenderer;
 
@@ -44,6 +44,16 @@ pub trait HtmlRenderHooks {
         HtmlRenderControl::Default
     }
 
+    /// Replaces an entire code block with trusted HTML, or returns `None` to
+    /// continue with highlighting and the built-in code-block renderer.
+    ///
+    /// Receives the original parsed code, language, and metadata before inline
+    /// annotation processing. The replacement owns its wrappers and spacing;
+    /// Ferromark inserts it verbatim. Escape untrusted values in the output.
+    fn render_code_block(&mut self, _input: HtmlCodeBlockInput<'_>) -> Option<String> {
+        None
+    }
+
     /// Supplies trusted, tag-balanced inner HTML for each normalized code line.
     ///
     /// `input.code` is the text Ferromark will display, after any enabled inline
@@ -61,6 +71,49 @@ pub trait HtmlRenderHooks {
     ) -> Option<HighlightedCodeBlock> {
         let _ = input;
         None
+    }
+}
+
+/// Original parsed code and fence fields offered to a whole-block renderer.
+#[derive(Clone, Copy, Debug)]
+pub struct HtmlCodeBlockInput<'a> {
+    /// Code inside the block, before annotation directives are removed.
+    pub code: &'a str,
+    /// Parsed language/info token, including any metadata suffix.
+    pub language: Option<&'a str>,
+    /// Parsed metadata after the language/info token.
+    pub meta: Option<&'a str>,
+    /// Original UTF-8 source range of the complete block.
+    pub span: Span,
+}
+
+/// Combines hooks in order. Whole-block replacements precede highlighting;
+/// the first non-`None` result within either stage wins, including an empty string.
+impl<A: HtmlRenderHooks, B: HtmlRenderHooks> HtmlRenderHooks for (A, B) {
+    fn render_node(
+        &mut self,
+        node: &Node<'_>,
+        cx: &mut HtmlRenderContext<'_>,
+    ) -> HtmlRenderControl {
+        match self.0.render_node(node, cx) {
+            HtmlRenderControl::Handled => HtmlRenderControl::Handled,
+            HtmlRenderControl::Default => self.1.render_node(node, cx),
+        }
+    }
+
+    fn render_code_block(&mut self, input: HtmlCodeBlockInput<'_>) -> Option<String> {
+        self.0
+            .render_code_block(input)
+            .or_else(|| self.1.render_code_block(input))
+    }
+
+    fn highlight_code_block(
+        &mut self,
+        input: CodeHighlightInput<'_>,
+    ) -> Option<HighlightedCodeBlock> {
+        self.0
+            .highlight_code_block(input)
+            .or_else(|| self.1.highlight_code_block(input))
     }
 }
 
@@ -211,6 +264,7 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
+        self.node_hooks_enabled = true;
         self.prepare_render(document);
         self.render_document_with_hooks(document, hooks);
         self.finish_render();
@@ -226,6 +280,40 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> &str {
+        self.node_hooks_enabled = true;
+        self.prepare_render(document);
+        self.render_document_with_hooks(document, hooks);
+        self.finish_render();
+        &self.output
+    }
+
+    /// Renders with whole-block and highlighting hooks only.
+    ///
+    /// Ignores [`HtmlRenderHooks::render_node`]. Inline content uses the normal
+    /// renderer, so code plugins do not need a callback for every inline node.
+    #[must_use]
+    pub fn render_with_code_hooks<H: HtmlRenderHooks>(
+        &mut self,
+        document: &Document<'_>,
+        hooks: &mut H,
+    ) -> String {
+        self.node_hooks_enabled = false;
+        self.prepare_render(document);
+        self.render_document_with_hooks(document, hooks);
+        self.finish_render();
+        std::mem::take(&mut self.output)
+    }
+
+    /// Renders with code hooks and retains the output buffer for reuse.
+    ///
+    /// Has the same callback contract as [`Self::render_with_code_hooks`].
+    #[must_use]
+    pub fn render_borrowed_with_code_hooks<H: HtmlRenderHooks>(
+        &mut self,
+        document: &Document<'_>,
+        hooks: &mut H,
+    ) -> &str {
+        self.node_hooks_enabled = false;
         self.prepare_render(document);
         self.render_document_with_hooks(document, hooks);
         self.finish_render();
@@ -247,12 +335,14 @@ impl HtmlRenderer {
         node: &Node<'_>,
         hooks: &mut H,
     ) {
-        let control = {
+        let control = if self.node_hooks_enabled {
             let mut cx = HtmlRenderContext {
                 renderer: self,
                 children_inline: node_children_are_inline(node),
             };
             hooks.render_node(node, &mut cx)
+        } else {
+            HtmlRenderControl::Default
         };
         if control == HtmlRenderControl::Default {
             self.render_node_default_with_hooks(node, hooks);
@@ -274,6 +364,14 @@ impl HtmlRenderer {
         before: Option<char>,
         after: Option<char>,
     ) {
+        if !self.node_hooks_enabled {
+            if let Node::Text(text) = node {
+                self.write_inline_text_with_boundaries(text.value, before, after);
+            } else {
+                self.visit_inline_node(node);
+            }
+            return;
+        }
         let control = {
             let mut cx = HtmlRenderContext {
                 renderer: self,
@@ -298,6 +396,10 @@ impl HtmlRenderer {
         children: &[Node<'_>],
         hooks: &mut H,
     ) {
+        if !self.node_hooks_enabled {
+            self.render_inline_children(children);
+            return;
+        }
         if self.options.abbreviations {
             self.render_inline_children_with_hooks_and_abbreviations(children, hooks);
             return;

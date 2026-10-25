@@ -80,6 +80,10 @@ name = "ferriki_contract"
 required-features = ["ferriki"]
 
 [[bench]]
+name = "code_block_hooks"
+harness = false
+
+[[bench]]
 name = "parser"
 harness = false
 
@@ -143,7 +147,7 @@ required-features = ["jsx"]
 
 [workspace]
 resolver = "2"
-members = ["node/native", "transforms"]
+members = ["node/native", "node/plugin-fixture", "plugins/ferrigura", "transforms"]
 
 # Package versions are deliberately not inherited: Release Please cannot replace
 # an inherited `version.workspace = true` with a concrete version, so the root

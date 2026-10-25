@@ -24,6 +24,12 @@ path = "src/bin/pgo_train.rs"
 required-features = ["pgo-train"]
 
 [features]
+# Retain the existing npm compiler during the 3.x migration. Custom builds can
+# omit all engines with --no-default-features.
+default = ["ferriki"]
+ferriki = ["ferromark/ferriki-remote"]
+ferrigura = ["dep:ferromark-ferrigura"]
+plugin-test = ["dep:ferromark-plugin-fixture"]
 # Diagnostic N-API exports for `node/ferromark/bench/boundary.mjs`. Like
 # `panic-test`, never part of a published addon: `build-native.mjs` builds it
 # only into an isolated output directory. `napi10` adds the external-string
@@ -35,8 +41,12 @@ pgo-train = []
 [dependencies]
 # Explicit `version` next to `path`: Release Please updates published internal
 # requirements written this way and deliberately skips a bare path dependency.
-ferromark = { version = "3.6.0", path = "../..", features = ["jsx", "ferriki-remote"] }
+ferromark = { version = "3.6.0", path = "../..", features = ["jsx"] }
 ferromark-transforms = { version = "3.6.0", path = "../../transforms" }
+ferromark-plugin-fixture = { version = "3.6.0", path = "../plugin-fixture", optional = true }
+ferromark-ferrigura = { version = "3.6.0", path = "../../plugins/ferrigura", optional = true, features = [
+  "jsx",
+] }
 napi = { version = "=3.11.0", default-features = false, features = ["dyn-symbols", "napi8"] }
 napi-derive = "=3.6.0"
 serde_json.workspace = true

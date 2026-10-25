@@ -30,6 +30,6 @@ pub use heading::{
 };
 pub use options::{AbbreviationOptions, CodeAnnotationSyntax, HtmlRendererOptions};
 pub use renderer::{
-    CodeHighlightInput, HighlightedCodeBlock, HtmlRenderContext, HtmlRenderControl,
-    HtmlRenderHooks, HtmlRenderer, NoHtmlRenderHooks,
+    CodeHighlightInput, HighlightedCodeBlock, HtmlCodeBlockInput, HtmlRenderContext,
+    HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, NoHtmlRenderHooks,
 };

@@ -193,6 +193,25 @@ pub trait JsxRenderHooks {
     }
 }
 
+/// Combines code hooks in order. The first replacement wins; highlighting runs
+/// only when no whole-block hook handles the fence.
+impl<A: JsxRenderHooks, B: JsxRenderHooks> JsxRenderHooks for (A, B) {
+    fn render_code_block(&mut self, input: JsxCodeBlockInput<'_>) -> Option<String> {
+        self.0
+            .render_code_block(input)
+            .or_else(|| self.1.render_code_block(input))
+    }
+
+    fn highlight_code_block(
+        &mut self,
+        input: JsxCodeBlockInput<'_>,
+    ) -> Option<JsxHighlightedCodeBlock> {
+        self.0
+            .highlight_code_block(input)
+            .or_else(|| self.1.highlight_code_block(input))
+    }
+}
+
 /// Trusted highlighted HTML fragments and optional theme colors for JSX.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]

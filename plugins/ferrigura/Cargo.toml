@@ -1,0 +1,23 @@
+[package]
+name = "ferromark-ferrigura"
+version = "3.6.0"
+edition = "2024"
+rust-version.workspace = true
+license = "MIT"
+description = "Optional Rust code-block adapter for Ferrigura Mermaid diagrams"
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = []
+jsx = ["ferromark/jsx", "dep:roxmltree"]
+
+[dependencies]
+ferromark = { version = "3.6.0", path = "../.." }
+ferrigura = "=0.2.0"
+thiserror.workspace = true
+serde_json.workspace = true
+roxmltree = { version = "=0.21.1", optional = true, default-features = false, features = ["std"] }

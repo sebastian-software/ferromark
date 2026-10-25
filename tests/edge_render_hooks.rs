@@ -361,8 +361,15 @@ fn highlighter_fallback_preserves_the_complete_spec_corpus() {
                     HtmlRendererOptions::default(),
                 ] {
                     let expected = HtmlRenderer::with_options(options.clone()).render(&document);
-                    let actual = HtmlRenderer::with_options(options)
-                        .render_with_hooks(&document, &mut NoHtmlRenderHooks);
+                    let mut renderer = HtmlRenderer::with_options(options);
+                    let actual = renderer.render_with_hooks(&document, &mut NoHtmlRenderHooks);
+                    assert_eq!(
+                        renderer.render_with_code_hooks(&document, &mut NoHtmlRenderHooks),
+                        expected,
+                        "code-only hooks: {} example {}",
+                        example.section,
+                        example.number
+                    );
                     assert_eq!(
                         actual, expected,
                         "{} example {}; reference HTML: {:?}",

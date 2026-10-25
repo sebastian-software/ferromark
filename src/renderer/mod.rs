@@ -41,10 +41,10 @@ pub use jsx::FerrikiJsxHooks;
 
 pub use html::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
-    HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlRenderContext,
-    HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions, InvalidHeadingIdPrefix,
-    NoHtmlRenderHooks, collect_heading_text, find_autolink_ranges, map_heading_level,
-    slugify_heading,
+    HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlCodeBlockInput,
+    HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks, HtmlRenderer, HtmlRendererOptions,
+    InvalidHeadingIdPrefix, NoHtmlRenderHooks, collect_heading_text, find_autolink_ranges,
+    map_heading_level, slugify_heading,
 };
 
 #[cfg(feature = "jsx")]

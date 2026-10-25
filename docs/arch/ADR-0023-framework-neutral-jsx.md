@@ -3,6 +3,10 @@
 - Status: Accepted
 - Date: 2026-10-01
 
+The Ferriki-specific Node compiler direction is partially superseded by
+[ADR-0024](ADR-0024-native-code-plugins.md), which introduces explicit native
+plugins and retains `JsxCompiler` during the compatibility migration.
+
 ## Context
 
 Ardo needs one native Markdown and MDX engine for its documentation pages.

@@ -139,7 +139,8 @@ jobs:
           tool: cargo-llvm-cov
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       # Serialize instrumented tests so timing guards do not compete for CPU.
-      - run: cargo llvm-cov --workspace --exclude ferromark-node --all-features --locked --no-report -- --test-threads=1
+      # The native addon and its plugin fixture are exercised by the Node lane.
+      - run: cargo llvm-cov --workspace --exclude ferromark-node --exclude ferromark-plugin-fixture --all-features --locked --no-report -- --test-threads=1
       - name: Generate LCOV coverage report
         run: |
           cargo llvm-cov report --lcov --output-path lcov.info
@@ -291,6 +292,8 @@ jobs:
       - run: pnpm audit --audit-level high
       - run: pnpm build
       - run: pnpm test
+      - run: pnpm test:ferrigura
+        if: matrix.node == '24'
       - run: pnpm typecheck
       - run: pnpm format:check
       - run: pnpm lint
@@ -324,7 +327,7 @@ jobs:
         with:
           node-version: "22.12.0"
       - name: Test minimum supported Node.js
-        run: node --test ferromark/test/index.test.mjs ferromark/test/bytes.test.mjs ferromark/test/jsx.test.mjs ferromark/test/jsx-title.test.mjs ferromark/test/jsx-highlighting.test.mjs ferromark/test/jsx-module.test.mjs
+        run: node --test ferromark/test/index.test.mjs ferromark/test/bytes.test.mjs ferromark/test/jsx.test.mjs ferromark/test/jsx-title.test.mjs ferromark/test/jsx-highlighting.test.mjs ferromark/test/jsx-module.test.mjs ferromark/test/native-plugins.test.mjs
 
   native:
     # Each target is built on a runner with the same architecture. GNU targets

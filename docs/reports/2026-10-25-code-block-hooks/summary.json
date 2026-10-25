@@ -1,0 +1,68 @@
+[
+  {
+    "run": "initial",
+    "fixture": "short-prose",
+    "median_ns": {
+      "default": 89.3880998700206,
+      "node-hooks": 95.03781111111111,
+      "code-hooks": 88.95789617088946
+    },
+    "node_hooks_vs_default_percent": 6.320428837066427,
+    "code_hooks_vs_default_percent": -0.4812762546208105
+  },
+  {
+    "run": "initial",
+    "fixture": "long-prose",
+    "median_ns": {
+      "default": 17618.53934631324,
+      "node-hooks": 19391.279147982063,
+      "code-hooks": 19077.136947637293
+    },
+    "node_hooks_vs_default_percent": 10.061786433162956,
+    "code_hooks_vs_default_percent": 8.278765751539297
+  },
+  {
+    "run": "initial",
+    "fixture": "code-fences",
+    "median_ns": {
+      "default": 3217.10619156424,
+      "node-hooks": 3989.3247985780454,
+      "code-hooks": 4021.989041794088
+    },
+    "node_hooks_vs_default_percent": 24.003516235761335,
+    "code_hooks_vs_default_percent": 25.018846202229117
+  },
+  {
+    "run": "confirmation",
+    "fixture": "short-prose",
+    "median_ns": {
+      "default": 89.44899565407249,
+      "node-hooks": 95.09593988701334,
+      "code-hooks": 87.14499688978626
+    },
+    "node_hooks_vs_default_percent": 6.3130325742050575,
+    "code_hooks_vs_default_percent": -2.5757681765332774
+  },
+  {
+    "run": "confirmation",
+    "fixture": "long-prose",
+    "median_ns": {
+      "default": 17573.780333951763,
+      "node-hooks": 19274.114935064936,
+      "code-hooks": 19040.03650442478
+    },
+    "node_hooks_vs_default_percent": 9.675406024213263,
+    "code_hooks_vs_default_percent": 8.343430625682036
+  },
+  {
+    "run": "confirmation",
+    "fixture": "code-fences",
+    "median_ns": {
+      "default": 3215.625406351588,
+      "node-hooks": 3991.9679547596606,
+      "code-hooks": 3940.592116450702
+    },
+    "node_hooks_vs_default_percent": 24.142816724691272,
+    "code_hooks_vs_default_percent": 22.545123218243667
+  }
+]

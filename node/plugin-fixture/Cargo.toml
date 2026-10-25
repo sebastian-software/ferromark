@@ -1,0 +1,16 @@
+[package]
+name = "ferromark-plugin-fixture"
+version = "3.6.0"
+edition = "2024"
+rust-version.workspace = true
+license = "MIT"
+description = "Unpublished external-crate fixture for native code plugins"
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+ferromark = { version = "3.6.0", path = "../..", features = ["jsx"] }
+serde_json.workspace = true

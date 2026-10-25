@@ -34,8 +34,8 @@ use super::options::{
 };
 
 pub use hooks::{
-    CodeHighlightInput, HighlightedCodeBlock, HtmlRenderContext, HtmlRenderControl,
-    HtmlRenderHooks, NoHtmlRenderHooks,
+    CodeHighlightInput, HighlightedCodeBlock, HtmlCodeBlockInput, HtmlRenderContext,
+    HtmlRenderControl, HtmlRenderHooks, NoHtmlRenderHooks,
 };
 
 /// Stateful HTML renderer for Markdown AST documents.
@@ -99,6 +99,8 @@ pub struct HtmlRenderer {
     /// metadata uses this only when a block has no filename/title to derive a
     /// human-readable fragment prefix from.
     code_block_index: usize,
+    /// Set by hook entry points; code-only plugins skip per-node callbacks.
+    node_hooks_enabled: bool,
     /// Suppresses URL auto-linking while we're already inside an `<a>` so
     /// the builtin can't nest anchors. Tracked manually rather than via
     /// the AST because `visit_text` can be reached through many parents
@@ -311,6 +313,7 @@ impl HtmlRenderer {
             heading_id: PlannedId::default(),
             heading_id_is_explicit: false,
             code_block_index: 0,
+            node_hooks_enabled: true,
             in_link: false,
             in_mdx_island_children: false,
             autolink_index,

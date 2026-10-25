@@ -111,3 +111,28 @@ fn reuses_highlighter_and_renderer_across_documents() {
         assert!(html.contains("background-color:#101820"), "{html}");
     }
 }
+
+#[test]
+fn whole_block_plugins_compose_with_the_existing_ferriki_adapter() {
+    struct Diagram;
+    impl ferromark::HtmlRenderHooks for Diagram {
+        fn render_code_block(
+            &mut self,
+            input: ferromark::HtmlCodeBlockInput<'_>,
+        ) -> Option<String> {
+            (input.language == Some("mermaid")).then(|| "<svg></svg>\n".to_owned())
+        }
+    }
+    let source = "API **HTTP**\n\n```mermaid\nA --> B\n```\n\n```rust\nlet x = 1;\n```\n";
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, source).parse().unwrap();
+    let mut highlighter = highlighter();
+    let mut hooks = (
+        Diagram,
+        FerrikiHighlightHooks::new(&mut highlighter, "test-dark"),
+    );
+    let html = HtmlRenderer::new().render_with_code_hooks(&document, &mut hooks);
+    assert!(html.contains("<svg></svg>"), "{html}");
+    assert!(html.to_ascii_lowercase().contains("#ff0000"), "{html}");
+    assert!(!html.contains("A --"), "{html}");
+}

@@ -1,5 +1,9 @@
 # Compile JSX and MDX in Node.js
 
+For an explicit set of native Rust code plugins, see
+[`CodeCompiler`](native-code-plugins.md). `JsxCompiler` below retains its
+Ferriki-specific settings for compatibility.
+
 Use Ferromark to turn trusted authored Markdown or MDX into JSX for your
 application's build pipeline. It parses the document, applies selected native
 passes, and emits JSX plus metadata. Your JSX transform compiles that output;

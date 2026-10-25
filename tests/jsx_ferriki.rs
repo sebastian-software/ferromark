@@ -435,3 +435,29 @@ fn dual_theme_errors_keep_plain_fallback_and_observer_categories() {
         assert_eq!(errors, expected.into_iter().collect::<Vec<_>>());
     }
 }
+
+#[test]
+fn whole_block_plugins_compose_with_native_jsx_highlighting() {
+    struct Diagram;
+    impl JsxRenderHooks for Diagram {
+        fn render_code_block(&mut self, input: JsxCodeBlockInput<'_>) -> Option<String> {
+            (input.language == Some("mermaid")).then(|| "<Diagram />".to_owned())
+        }
+    }
+    let source = "```mermaid\nA --> B\n```\n\n```rust\nlet x = 1;\n```\n";
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, source).parse().unwrap();
+    let mut highlighter = highlighter();
+    let mut hooks = (
+        Diagram,
+        FerrikiJsxHooks::new(&mut highlighter, "test-light"),
+    );
+    let output = JsxRenderer::new().render_with_hooks(&document, source, &mut hooks);
+    assert!(output.body.contains("<Diagram />"), "{}", output.body);
+    assert!(
+        output.body.to_ascii_lowercase().contains("#0055aa"),
+        "{}",
+        output.body
+    );
+    assert_eq!(output.code_blocks.len(), 2);
+}

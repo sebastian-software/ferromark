@@ -3,16 +3,16 @@
 use std::collections::{BTreeMap, HashMap};
 
 use ferromark::ast::{CodeBlock, Document, Node, Span, Visit};
-use ferromark::ferriki::Highlighter;
 use ferromark::{
-    Allocator, FerrikiJsxHooks, HtmlRenderer, JsxCodeBlockInput, JsxCodeBlockRenderOutput,
-    JsxHighlightedCodeBlock, JsxModuleOptions, JsxRenderHooks, JsxRenderer, JsxRendererOptions,
-    OutlineOptions, Parser,
+    Allocator, HtmlRenderer, JsxCodeBlockInput, JsxCodeBlockRenderOutput, JsxHighlightedCodeBlock,
+    JsxModuleOptions, JsxRenderHooks, JsxRenderer, JsxRendererOptions, OutlineOptions, Parser,
 };
 use ferromark_transforms::TransformContext;
 use napi::bindgen_prelude::{Error, FnArgs, Result, Status};
 use napi_derive::napi;
 use self_cell::self_cell;
+
+use crate::plugins::NativePlugins;
 
 use crate::{
     CodeCallback, Options, core_options, input::Utf8Input, options::CoreOptions, parse_error,
@@ -193,18 +193,24 @@ impl JsxRenderHooks for CodeHook<'_, '_> {
         if self.error.is_some() {
             return None;
         }
-        let callback = self.callback.as_ref()?;
-        match callback.call(FnArgs::from((
-            input.code.to_owned(),
-            input.language.map(str::to_owned),
-            input.meta.map(str::to_owned),
-        ))) {
-            Ok(output) => output,
-            Err(error) => {
-                self.error = Some(error);
-                None
+        if let Some(callback) = self.callback.as_ref() {
+            match callback.call(FnArgs::from((
+                input.code.to_owned(),
+                input.language.map(str::to_owned),
+                input.meta.map(str::to_owned),
+            ))) {
+                Ok(Some(output)) => return Some(output),
+                Ok(None) => {}
+                Err(error) => {
+                    self.error = Some(error);
+                    return None;
+                }
             }
         }
+        let settings = self.highlighting.as_mut()?;
+        let output = JsxRenderHooks::render_code_block(settings.plugins, input);
+        self.error = settings.plugins.take_error();
+        output
     }
 
     fn highlight_code_block(
@@ -215,32 +221,14 @@ impl JsxRenderHooks for CodeHook<'_, '_> {
             return None;
         }
         let settings = self.highlighting.as_mut()?;
-        let mut error = None;
-        let mut on_error = |cause: &ferromark::ferriki::Error| {
-            error = Some(Error::new(
-                Status::GenericFailure,
-                format!("Ferriki JSX highlighting: {cause}"),
-            ));
-        };
-        let mut adapter = match settings.dark_theme {
-            Some(dark) => FerrikiJsxHooks::with_light_dark_themes(
-                settings.highlighter,
-                settings.light_theme,
-                dark,
-            ),
-            None => FerrikiJsxHooks::new(settings.highlighter, settings.light_theme),
-        }
-        .with_error_handler(&mut on_error);
-        let result = adapter.highlight_code_block(input);
-        self.error = error;
-        result
+        let output = JsxRenderHooks::highlight_code_block(settings.plugins, input);
+        self.error = settings.plugins.take_error();
+        output
     }
 }
 
 pub(crate) struct NativeHighlighting<'a> {
-    pub highlighter: &'a mut Highlighter,
-    pub light_theme: &'a str,
-    pub dark_theme: Option<&'a str>,
+    pub plugins: &'a mut NativePlugins,
     pub line_numbers: bool,
 }
 
@@ -483,24 +471,13 @@ pub(crate) fn render_code_block_with_highlighter(
     input: RenderCodeBlockInput,
     highlighting: NativeHighlighting<'_>,
 ) -> Result<RenderCodeBlockResult> {
-    let NativeHighlighting {
-        highlighter,
-        light_theme,
-        dark_theme,
-        line_numbers,
-    } = highlighting;
     let renderer = JsxRenderer::with_options(JsxRendererOptions {
-        show_line_numbers: line_numbers,
+        show_line_numbers: highlighting.line_numbers,
         ..JsxRendererOptions::default()
     });
     let mut hook = CodeHook {
         callback: None,
-        highlighting: Some(NativeHighlighting {
-            highlighter,
-            light_theme,
-            dark_theme,
-            line_numbers,
-        }),
+        highlighting: Some(highlighting),
         error: None,
     };
     let JsxCodeBlockRenderOutput {

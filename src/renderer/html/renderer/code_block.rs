@@ -16,7 +16,7 @@ use super::super::code_annotations::{
 };
 use super::super::heading::slugify_heading_into;
 use super::HtmlRenderer;
-use super::hooks::{CodeHighlightInput, HighlightedCodeBlock, HtmlRenderHooks};
+use super::hooks::{CodeHighlightInput, HighlightedCodeBlock, HtmlCodeBlockInput, HtmlRenderHooks};
 
 impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn render_code_block_with_hooks<H: HtmlRenderHooks>(
@@ -24,6 +24,15 @@ impl HtmlRenderer {
         code_block: &CodeBlock<'_>,
         hooks: &mut H,
     ) {
+        if let Some(html) = hooks.render_code_block(HtmlCodeBlockInput {
+            code: code_block.value,
+            language: code_block.lang,
+            meta: code_block.meta,
+            span: code_block.span,
+        }) {
+            self.write(&html);
+            return;
+        }
         if !self.options.code_annotations || !self.options.code_fence_metadata {
             let language = if self.options.code_fence_metadata {
                 super::super::code_annotations::normalize_code_block_language(code_block.lang)
