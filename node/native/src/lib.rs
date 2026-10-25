@@ -679,13 +679,13 @@ fn render_document(
             callback,
             error: None,
         };
-        let output = render_document_with_hooks(markdown, options, Some(&mut hooks))?;
+        let output = render_document_with_hooks(markdown, options, Some(&mut hooks), true)?;
         if let Some(error) = hooks.error {
             return Err(error);
         }
         Ok(output)
     } else {
-        render_document_with_hooks::<ferromark::NoHtmlRenderHooks>(markdown, options, None)
+        render_document_with_hooks::<ferromark::NoHtmlRenderHooks>(markdown, options, None, true)
     }
 }
 
@@ -693,6 +693,7 @@ pub(crate) fn render_document_with_hooks<H: HtmlRenderHooks>(
     markdown: &str,
     mut options: CoreOptions,
     hooks: Option<&mut H>,
+    collect_metadata: bool,
 ) -> Result<TransformResult> {
     let allocator = Allocator::for_source_len(markdown.len());
     let mut document = Parser::with_options(&allocator, markdown, options.parser)
@@ -715,11 +716,17 @@ pub(crate) fn render_document_with_hooks<H: HtmlRenderHooks>(
         heading_level_offset: options.heading_level_offset,
         heading_id_prefix: options.heading_id_prefix.clone(),
     };
-    metadata.visit_document(&document);
-    let front_matter = document
-        .front_matter
-        .as_ref()
-        .map(|front| front.value.to_owned());
+    if collect_metadata {
+        metadata.visit_document(&document);
+    }
+    let front_matter = if collect_metadata {
+        document
+            .front_matter
+            .as_ref()
+            .map(|front| front.value.to_owned())
+    } else {
+        None
+    };
     let mut renderer = build_html_renderer(
         options.html,
         options.auto_abbreviations,

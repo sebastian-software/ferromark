@@ -5,6 +5,7 @@ import TOML from "@iarna/toml";
 import { Manifest, setLogger } from "release-please";
 import { parse as parseYaml } from "yaml";
 import { preserveExactTransformPin } from "./exact-transform-pin.mjs";
+import { preserveRegistryLockfile } from "./release-lockfile.mjs";
 
 export const root = resolve(import.meta.dirname, "../..");
 const quiet = Object.fromEntries(
@@ -126,6 +127,10 @@ export async function proposeRelease(files, history) {
     updated.get(transformManifest),
   );
   updated.set(transformManifest, exactPin.content);
+  updated.set(
+    "Cargo.lock",
+    preserveRegistryLockfile(files.get("Cargo.lock"), updated.get("Cargo.lock")),
+  );
   return {
     files: updated,
     title: proposal.title.toString(),
