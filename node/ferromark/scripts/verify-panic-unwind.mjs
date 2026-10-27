@@ -56,6 +56,7 @@ try {
     encoding: "utf8",
     env: {
       ...process.env,
+      FERROMARK_PGO: "0",
       FERROMARK_NAPI_FEATURES: "panic-test",
       FERROMARK_NATIVE_OUTPUT_DIR: outputDir,
     },

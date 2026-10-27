@@ -29,8 +29,8 @@ importers:
         specifier: 0.4.0
         version: 0.4.0(@types/estree@1.0.9)(@typescript-eslint/eslint-plugin@8.70.0(@typescript-eslint/parser@8.70.0(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript-eslint/utils@8.70.0(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(jsonc-eslint-parser@3.3.0)(oxlint@1.83.0)(supports-color@9.4.0)
       ferramenta-native:
-        specifier: github:sebastian-software/ferramenta#4c173d74927a8186f16962e03a11309b49ed622d&path:/packages/native
-        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/4c173d74927a8186f16962e03a11309b49ed622d#path:/packages/native
+        specifier: github:sebastian-software/ferramenta#7996529affaf835c959db0cd2ef64022ba4c17e0&path:/packages/native
+        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/7996529affaf835c959db0cd2ef64022ba4c17e0#path:/packages/native
       jiti:
         specifier: 2.7.0
         version: 2.7.0
@@ -2495,8 +2495,8 @@ packages:
       picomatch:
         optional: true
 
-  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/4c173d74927a8186f16962e03a11309b49ed622d#path:/packages/native:
-    resolution: {gitHosted: true, integrity: sha512-4We3NRo2Jm03IXGzPcYA6vWpM/jVY3ErxWLImDE4DQlUrztdRC5buXwMbrWY1MLxw6/kc+BECrTJmzqxSpZl8w==, path: /packages/native, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/4c173d74927a8186f16962e03a11309b49ed622d}
+  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/7996529affaf835c959db0cd2ef64022ba4c17e0#path:/packages/native:
+    resolution: {gitHosted: true, integrity: sha512-gVtlfU6sHyE+jaylY2ZjtLA/GHcY205LZHRwU+JQty+71FkIihE4nQKEXz6TH6zKhwwO/RYmLm3bwF9UhlP6pw==, path: /packages/native, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/7996529affaf835c959db0cd2ef64022ba4c17e0}
     version: 0.1.0
     engines: {node: '>=22.13.0'}
     hasBin: true
@@ -6215,7 +6215,7 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/4c173d74927a8186f16962e03a11309b49ed622d#path:/packages/native:
+  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/7996529affaf835c959db0cd2ef64022ba4c17e0#path:/packages/native:
     dependencies:
       cross-spawn: 7.0.6
 

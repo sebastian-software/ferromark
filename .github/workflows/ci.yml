@@ -217,7 +217,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # The audit tool has its own MSRV; keep its build independent of the
@@ -225,18 +224,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
           toolchain: stable
-      - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2
-        env:
-          RUSTUP_TOOLCHAIN: stable
+      # Run the audit directly: warnings must not depend on a second Check API update.
+      - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tool: cargo-audit@0.22.2
+      - run: cargo audit --file Cargo.lock
 
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Licenses, duplicate versions, sources, and yanked crates come from
-      # deny.toml; rustsec above keeps reporting advisories as a check run.
+      # deny.toml; rustsec above reports advisories through the audit job.
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
         with:
           command: check

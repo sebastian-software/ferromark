@@ -37,6 +37,7 @@ async function buildAndCompare() {
       encoding: "utf8",
       env: {
         ...process.env,
+        FERROMARK_PGO: "0",
         FERROMARK_NAPI_FEATURES: "boundary-bench",
         FERROMARK_NATIVE_OUTPUT_DIR: outputDir,
       },
