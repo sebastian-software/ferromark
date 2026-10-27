@@ -64,6 +64,25 @@ test("Ferriki is selected through the native factory contract for HTML and JSX",
   assert.match(compiler.prepare(source).render().body, /#bb1100/i);
 });
 
+test("HTML-only plugin rendering preserves transform output without collecting its metadata", () => {
+  const compiler = new CodeCompiler();
+  const source =
+    '---\ntitle: Example\n---\n\n# Same\n\nA "quote" and a footnote[^n].\n\n# Same\n\n[^n]: Footnote text.\n';
+  const options = {
+    frontMatter: true,
+    footnotes: true,
+    headingIdPrefix: "page-",
+    headingOffset: 1,
+    typography: { language: "en" },
+  };
+  const expected = transform(source, options);
+  assert.equal(compiler.toHtml(source, options), expected.html);
+  assert.deepEqual(compiler.transform(source, options), expected);
+  assert.equal(expected.headings.length, 2);
+  assert.match(expected.frontMatter, /title: Example/);
+  assert.match(expected.html, /page-same-1/);
+});
+
 test("native configuration rejects unavailable plugins and invalid settings", () => {
   assert.throws(
     () => new CodeCompiler({ plugins: [{ name: "not-linked" }] }),

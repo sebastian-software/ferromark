@@ -1,0 +1,611 @@
+{
+  "before": {
+    "environment": {
+      "node": "v24.19.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "os": "27.0.0",
+      "cpu": "Apple M1 Ultra",
+      "logicalCpus": 20,
+      "totalMemoryBytes": 68719476736,
+      "rust": "rustc 1.95.0 (59807616e 2026-04-14)",
+      "profile": "release-node; PGO disabled"
+    },
+    "method": {
+      "independentProcessesPerCase": 3,
+      "warmupRenders": 5,
+      "batchesPerProcess": 11,
+      "minimumBatchMs": 20,
+      "gc": "before load and after warmup/measurement, never inside timed batches",
+      "memory": "whole-process RSS and high-water RSS, includes Node/V8, output allocation and native caches",
+      "limits": "Local shared developer host; no controlled thermals, Node startup timing, allocator attribution, cross-platform or PGO claim. Ordinary output is checked equal; diagram cases characterize different work."
+    },
+    "fixtureSha256": {
+      "ordinary": "44af838bef9b1a090f9c9ba323c8f80b339693989d934c4ee7022b0232944ed4",
+      "small": "dfd1f568043e9359f7746f8bce2b024343442aac632c9152e88ebbb9938111e8",
+      "medium": "c038e4294729c283abe4d7387589bb4be754f74f1966160b059c27a35db7f937",
+      "mixed": "ce7f0c5e89e1165725e49025475c111531bf1a2b626a05f479e65aea8ed6a3af"
+    },
+    "summary": [
+      {
+        "fixture": "ordinary",
+        "format": "html",
+        "lane": "plain",
+        "inputBytes": 2498,
+        "outputBytes": 4190,
+        "warmMs": {
+          "median": 0.008787565905096656,
+          "min": 0.008456607776838555,
+          "max": 0.009011199909950468
+        },
+        "loadMs": 8.426917000000003,
+        "initMs": 0.0002500000000011937,
+        "firstRenderMs": 0.13633300000000048,
+        "retainedRssBytes": 61833216,
+        "peakRssBytes": 61833216,
+        "rssIncreaseBytes": 11714560
+      },
+      {
+        "fixture": "ordinary",
+        "format": "html",
+        "lane": "empty",
+        "inputBytes": 2498,
+        "outputBytes": 4190,
+        "warmMs": {
+          "median": 0.013679653451811359,
+          "min": 0.013408540214477205,
+          "max": 0.014589624361779723
+        },
+        "loadMs": 8.679999999999996,
+        "initMs": 0.10625000000000284,
+        "firstRenderMs": 0.12549999999999528,
+        "retainedRssBytes": 60981248,
+        "peakRssBytes": 60981248,
+        "rssIncreaseBytes": 10797056
+      },
+      {
+        "fixture": "ordinary",
+        "format": "html",
+        "lane": "ferrigura",
+        "inputBytes": 2498,
+        "outputBytes": 4190,
+        "warmMs": {
+          "median": 0.014057477863668311,
+          "min": 0.013561723389830506,
+          "max": 0.014870975482912335
+        },
+        "loadMs": 8.692,
+        "initMs": 1.2654169999999993,
+        "firstRenderMs": 0.13145899999999955,
+        "retainedRssBytes": 63242240,
+        "peakRssBytes": 63242240,
+        "rssIncreaseBytes": 13041664
+      },
+      {
+        "fixture": "small",
+        "format": "html",
+        "lane": "ferrigura",
+        "inputBytes": 81,
+        "outputBytes": 20298,
+        "warmMs": {
+          "median": 0.26793666666666666,
+          "min": 0.26214989610389605,
+          "max": 0.2924094202898548
+        },
+        "loadMs": 8.287458999999998,
+        "initMs": 1.1046670000000027,
+        "firstRenderMs": 1.3594170000000005,
+        "retainedRssBytes": 63356928,
+        "peakRssBytes": 63373312,
+        "rssIncreaseBytes": 13336576
+      },
+      {
+        "fixture": "medium",
+        "format": "html",
+        "lane": "ferrigura",
+        "inputBytes": 892,
+        "outputBytes": 50229,
+        "warmMs": {
+          "median": 1.4901100714285715,
+          "min": 1.4416636428571425,
+          "max": 1.601006384615385
+        },
+        "loadMs": 8.288042,
+        "initMs": 1.0935829999999989,
+        "firstRenderMs": 2.827708000000001,
+        "retainedRssBytes": 63668224,
+        "peakRssBytes": 63684608,
+        "rssIncreaseBytes": 13434880
+      },
+      {
+        "fixture": "mixed",
+        "format": "html",
+        "lane": "ferrigura",
+        "inputBytes": 2707,
+        "outputBytes": 52215,
+        "warmMs": {
+          "median": 0.6689444333333332,
+          "min": 0.6611465161290323,
+          "max": 0.710758620689654
+        },
+        "loadMs": 8.398125,
+        "initMs": 1.1340830000000004,
+        "firstRenderMs": 2.5372500000000002,
+        "retainedRssBytes": 63782912,
+        "peakRssBytes": 63782912,
+        "rssIncreaseBytes": 13467648
+      },
+      {
+        "fixture": "ordinary",
+        "format": "jsx",
+        "lane": "plain",
+        "inputBytes": 2498,
+        "outputBytes": 4976,
+        "warmMs": {
+          "median": 0.13842528275862065,
+          "min": 0.13797097931034472,
+          "max": 0.14758118382352942
+        },
+        "loadMs": 8.45475,
+        "initMs": 0.0002500000000011937,
+        "firstRenderMs": 0.32729100000000244,
+        "retainedRssBytes": 56901632,
+        "peakRssBytes": 56901632,
+        "rssIncreaseBytes": 6504448
+      },
+      {
+        "fixture": "ordinary",
+        "format": "jsx",
+        "lane": "empty",
+        "inputBytes": 2498,
+        "outputBytes": 4976,
+        "warmMs": {
+          "median": 0.13674433333333333,
+          "min": 0.13651219047619054,
+          "max": 0.14506732608695638
+        },
+        "loadMs": 8.734500000000004,
+        "initMs": 0.07133400000000023,
+        "firstRenderMs": 0.29104199999999736,
+        "retainedRssBytes": 56934400,
+        "peakRssBytes": 56934400,
+        "rssIncreaseBytes": 6815744
+      },
+      {
+        "fixture": "ordinary",
+        "format": "jsx",
+        "lane": "ferrigura",
+        "inputBytes": 2498,
+        "outputBytes": 4976,
+        "warmMs": {
+          "median": 0.1404251188811188,
+          "min": 0.13760188356164382,
+          "max": 0.14632147445255475
+        },
+        "loadMs": 8.481625000000001,
+        "initMs": 1.0986660000000015,
+        "firstRenderMs": 0.3046250000000015,
+        "retainedRssBytes": 59162624,
+        "peakRssBytes": 59162624,
+        "rssIncreaseBytes": 8880128
+      },
+      {
+        "fixture": "small",
+        "format": "jsx",
+        "lane": "ferrigura",
+        "inputBytes": 81,
+        "outputBytes": 21559,
+        "warmMs": {
+          "median": 0.38050235849056596,
+          "min": 0.38045596226415085,
+          "max": 0.3858814038461543
+        },
+        "loadMs": 8.742542,
+        "initMs": 1.2015829999999994,
+        "firstRenderMs": 1.559083000000001,
+        "retainedRssBytes": 63504384,
+        "peakRssBytes": 63504384,
+        "rssIncreaseBytes": 13352960
+      },
+      {
+        "fixture": "medium",
+        "format": "jsx",
+        "lane": "ferrigura",
+        "inputBytes": 892,
+        "outputBytes": 55029,
+        "warmMs": {
+          "median": 1.8051770833333336,
+          "min": 1.7941979166666673,
+          "max": 1.8081145833333327
+        },
+        "loadMs": 8.510541999999997,
+        "initMs": 1.1397080000000024,
+        "firstRenderMs": 3.1397499999999994,
+        "retainedRssBytes": 63864832,
+        "peakRssBytes": 63881216,
+        "rssIncreaseBytes": 13828096
+      },
+      {
+        "fixture": "mixed",
+        "format": "jsx",
+        "lane": "ferrigura",
+        "inputBytes": 2707,
+        "outputBytes": 55716,
+        "warmMs": {
+          "median": 1.0903925263157892,
+          "min": 1.069568,
+          "max": 1.1030482631578937
+        },
+        "loadMs": 8.380666000000002,
+        "initMs": 1.0792500000000018,
+        "firstRenderMs": 2.902458000000003,
+        "retainedRssBytes": 63897600,
+        "peakRssBytes": 63897600,
+        "rssIncreaseBytes": 13860864
+      }
+    ],
+    "binary": {
+      "file": "ferromark.darwin-arm64.node",
+      "bytes": 15434624,
+      "sha256": "e536144569a3405f5176ea246a40a269db34b7e753e0788b3dd3c1f2f9e85eec"
+    }
+  },
+  "engine-free": {
+    "environment": {
+      "node": "v24.19.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "os": "27.0.0",
+      "cpu": "Apple M1 Ultra",
+      "logicalCpus": 20,
+      "totalMemoryBytes": 68719476736,
+      "rust": "rustc 1.95.0 (59807616e 2026-04-14)",
+      "profile": "release-node; PGO disabled"
+    },
+    "method": {
+      "independentProcessesPerCase": 3,
+      "warmupRenders": 5,
+      "batchesPerProcess": 11,
+      "minimumBatchMs": 20,
+      "gc": "before load and after warmup/measurement, never inside timed batches",
+      "memory": "whole-process RSS and high-water RSS, includes Node/V8, output allocation and native caches",
+      "limits": "Local shared developer host; no controlled thermals, Node startup timing, allocator attribution, cross-platform or PGO claim. Ordinary output is checked equal; diagram cases characterize different work."
+    },
+    "fixtureSha256": {
+      "ordinary": "44af838bef9b1a090f9c9ba323c8f80b339693989d934c4ee7022b0232944ed4",
+      "small": "dfd1f568043e9359f7746f8bce2b024343442aac632c9152e88ebbb9938111e8",
+      "medium": "c038e4294729c283abe4d7387589bb4be754f74f1966160b059c27a35db7f937",
+      "mixed": "ce7f0c5e89e1165725e49025475c111531bf1a2b626a05f479e65aea8ed6a3af"
+    },
+    "summary": [
+      {
+        "fixture": "ordinary",
+        "format": "html",
+        "lane": "plain",
+        "inputBytes": 2498,
+        "outputBytes": 4190,
+        "warmMs": {
+          "median": 0.00842630202190396,
+          "min": 0.008403939075630251,
+          "max": 0.008582242814242831
+        },
+        "loadMs": 8.27675,
+        "initMs": 0.0002500000000011937,
+        "firstRenderMs": 0.13599999999999923,
+        "retainedRssBytes": 61095936,
+        "peakRssBytes": 61095936,
+        "rssIncreaseBytes": 10797056
+      },
+      {
+        "fixture": "ordinary",
+        "format": "html",
+        "lane": "empty",
+        "inputBytes": 2498,
+        "outputBytes": 4190,
+        "warmMs": {
+          "median": 0.0095728066985646,
+          "min": 0.009570028680688335,
+          "max": 0.009583053639846737
+        },
+        "loadMs": 8.307708999999996,
+        "initMs": 0.08716600000000341,
+        "firstRenderMs": 0.12162500000000165,
+        "retainedRssBytes": 60784640,
+        "peakRssBytes": 60866560,
+        "rssIncreaseBytes": 10567680
+      },
+      {
+        "fixture": "ordinary",
+        "format": "jsx",
+        "lane": "plain",
+        "inputBytes": 2498,
+        "outputBytes": 4976,
+        "warmMs": {
+          "median": 0.13867068965517237,
+          "min": 0.13797557931034488,
+          "max": 0.14494784172661873
+        },
+        "loadMs": 8.215917000000001,
+        "initMs": 0.00016700000000469117,
+        "firstRenderMs": 0.30783300000000224,
+        "retainedRssBytes": 55951360,
+        "peakRssBytes": 55951360,
+        "rssIncreaseBytes": 5750784
+      },
+      {
+        "fixture": "ordinary",
+        "format": "jsx",
+        "lane": "empty",
+        "inputBytes": 2498,
+        "outputBytes": 4976,
+        "warmMs": {
+          "median": 0.13945196527777773,
+          "min": 0.13818477241379304,
+          "max": 0.14686435766423356
+        },
+        "loadMs": 8.045417,
+        "initMs": 0.07025000000000148,
+        "firstRenderMs": 0.27500000000000213,
+        "retainedRssBytes": 56164352,
+        "peakRssBytes": 56164352,
+        "rssIncreaseBytes": 5947392
+      }
+    ],
+    "binary": {
+      "file": "ferromark.darwin-arm64.node",
+      "bytes": 2436208,
+      "sha256": "df81216c52c261d8fab77c1e0d806364fbd243e89b98bef7c344fd6a681ea0c0"
+    }
+  },
+  "ferrigura": {
+    "environment": {
+      "node": "v24.19.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "os": "27.0.0",
+      "cpu": "Apple M1 Ultra",
+      "logicalCpus": 20,
+      "totalMemoryBytes": 68719476736,
+      "rust": "rustc 1.95.0 (59807616e 2026-04-14)",
+      "profile": "release-node; PGO disabled"
+    },
+    "method": {
+      "independentProcessesPerCase": 3,
+      "warmupRenders": 5,
+      "batchesPerProcess": 11,
+      "minimumBatchMs": 20,
+      "gc": "before load and after warmup/measurement, never inside timed batches",
+      "memory": "whole-process RSS and high-water RSS, includes Node/V8, output allocation and native caches",
+      "limits": "Local shared developer host; no controlled thermals, Node startup timing, allocator attribution, cross-platform or PGO claim. Ordinary output is checked equal; diagram cases characterize different work."
+    },
+    "fixtureSha256": {
+      "ordinary": "44af838bef9b1a090f9c9ba323c8f80b339693989d934c4ee7022b0232944ed4",
+      "small": "dfd1f568043e9359f7746f8bce2b024343442aac632c9152e88ebbb9938111e8",
+      "medium": "c038e4294729c283abe4d7387589bb4be754f74f1966160b059c27a35db7f937",
+      "mixed": "ce7f0c5e89e1165725e49025475c111531bf1a2b626a05f479e65aea8ed6a3af"
+    },
+    "summary": [
+      {
+        "fixture": "ordinary",
+        "format": "html",
+        "lane": "plain",
+        "inputBytes": 2498,
+        "outputBytes": 4190,
+        "warmMs": {
+          "median": 0.008514976180348788,
+          "min": 0.008511467035304124,
+          "max": 0.008566488222698069
+        },
+        "loadMs": 8.71425,
+        "initMs": 0.0002919999999981826,
+        "firstRenderMs": 0.13366700000000264,
+        "retainedRssBytes": 61882368,
+        "peakRssBytes": 61882368,
+        "rssIncreaseBytes": 11534336
+      },
+      {
+        "fixture": "ordinary",
+        "format": "html",
+        "lane": "empty",
+        "inputBytes": 2498,
+        "outputBytes": 4190,
+        "warmMs": {
+          "median": 0.009608189241114312,
+          "min": 0.009556398471094123,
+          "max": 0.009961736553784855
+        },
+        "loadMs": 8.775125,
+        "initMs": 0.07679100000000005,
+        "firstRenderMs": 0.10112500000000324,
+        "retainedRssBytes": 61702144,
+        "peakRssBytes": 61702144,
+        "rssIncreaseBytes": 11419648
+      },
+      {
+        "fixture": "ordinary",
+        "format": "html",
+        "lane": "ferrigura",
+        "inputBytes": 2498,
+        "outputBytes": 4190,
+        "warmMs": {
+          "median": 0.009714930063137443,
+          "min": 0.00965769338483824,
+          "max": 0.009813327611574297
+        },
+        "loadMs": 8.323084000000001,
+        "initMs": 1.1443750000000037,
+        "firstRenderMs": 0.10812499999999758,
+        "retainedRssBytes": 63750144,
+        "peakRssBytes": 63766528,
+        "rssIncreaseBytes": 13549568
+      },
+      {
+        "fixture": "small",
+        "format": "html",
+        "lane": "ferrigura",
+        "inputBytes": 81,
+        "outputBytes": 20298,
+        "warmMs": {
+          "median": 0.26979222666666675,
+          "min": 0.26103031168831176,
+          "max": 0.27413469863013695
+        },
+        "loadMs": 8.504124999999998,
+        "initMs": 1.1532499999999999,
+        "firstRenderMs": 1.3100420000000028,
+        "retainedRssBytes": 63225856,
+        "peakRssBytes": 63242240,
+        "rssIncreaseBytes": 13123584
+      },
+      {
+        "fixture": "medium",
+        "format": "html",
+        "lane": "ferrigura",
+        "inputBytes": 892,
+        "outputBytes": 50229,
+        "warmMs": {
+          "median": 1.4410982142857145,
+          "min": 1.4380773571428571,
+          "max": 1.4516458571428572
+        },
+        "loadMs": 8.393290999999998,
+        "initMs": 1.1179169999999985,
+        "firstRenderMs": 2.6869999999999976,
+        "retainedRssBytes": 63651840,
+        "peakRssBytes": 63668224,
+        "rssIncreaseBytes": 13516800
+      },
+      {
+        "fixture": "mixed",
+        "format": "html",
+        "lane": "ferrigura",
+        "inputBytes": 2707,
+        "outputBytes": 52215,
+        "warmMs": {
+          "median": 0.6512110322580648,
+          "min": 0.648840032258065,
+          "max": 0.65528764516129
+        },
+        "loadMs": 8.515374999999999,
+        "initMs": 1.1522080000000017,
+        "firstRenderMs": 2.4033329999999964,
+        "retainedRssBytes": 63553536,
+        "peakRssBytes": 63553536,
+        "rssIncreaseBytes": 13369344
+      },
+      {
+        "fixture": "ordinary",
+        "format": "jsx",
+        "lane": "plain",
+        "inputBytes": 2498,
+        "outputBytes": 4976,
+        "warmMs": {
+          "median": 0.1390025862068965,
+          "min": 0.13749800684931507,
+          "max": 0.14040646853146854
+        },
+        "loadMs": 8.508416,
+        "initMs": 0.00029100000000070736,
+        "firstRenderMs": 0.3157500000000013,
+        "retainedRssBytes": 56623104,
+        "peakRssBytes": 56623104,
+        "rssIncreaseBytes": 6504448
+      },
+      {
+        "fixture": "ordinary",
+        "format": "jsx",
+        "lane": "empty",
+        "inputBytes": 2498,
+        "outputBytes": 4976,
+        "warmMs": {
+          "median": 0.1388477034482758,
+          "min": 0.13785359589041088,
+          "max": 0.14240602836879435
+        },
+        "loadMs": 8.830874999999999,
+        "initMs": 0.07124999999999915,
+        "firstRenderMs": 0.2875829999999979,
+        "retainedRssBytes": 57081856,
+        "peakRssBytes": 57081856,
+        "rssIncreaseBytes": 6832128
+      },
+      {
+        "fixture": "ordinary",
+        "format": "jsx",
+        "lane": "ferrigura",
+        "inputBytes": 2498,
+        "outputBytes": 4976,
+        "warmMs": {
+          "median": 0.13879827586206894,
+          "min": 0.13845746896551717,
+          "max": 0.13919733333333337
+        },
+        "loadMs": 8.378291,
+        "initMs": 1.125625000000003,
+        "firstRenderMs": 0.2792090000000016,
+        "retainedRssBytes": 59244544,
+        "peakRssBytes": 59244544,
+        "rssIncreaseBytes": 8978432
+      },
+      {
+        "fixture": "small",
+        "format": "jsx",
+        "lane": "ferrigura",
+        "inputBytes": 81,
+        "outputBytes": 21559,
+        "warmMs": {
+          "median": 0.3844960754716982,
+          "min": 0.38072641509433963,
+          "max": 0.4017483199999998
+        },
+        "loadMs": 8.422707999999997,
+        "initMs": 1.137749999999997,
+        "firstRenderMs": 1.5144170000000017,
+        "retainedRssBytes": 63258624,
+        "peakRssBytes": 63258624,
+        "rssIncreaseBytes": 13107200
+      },
+      {
+        "fixture": "medium",
+        "format": "jsx",
+        "lane": "ferrigura",
+        "inputBytes": 892,
+        "outputBytes": 55029,
+        "warmMs": {
+          "median": 1.7864617499999997,
+          "min": 1.7811145833333342,
+          "max": 1.790548583333333
+        },
+        "loadMs": 8.631292000000002,
+        "initMs": 1.1243340000000046,
+        "firstRenderMs": 3.272874999999999,
+        "retainedRssBytes": 63700992,
+        "peakRssBytes": 63717376,
+        "rssIncreaseBytes": 13631488
+      },
+      {
+        "fixture": "mixed",
+        "format": "jsx",
+        "lane": "ferrigura",
+        "inputBytes": 2707,
+        "outputBytes": 55716,
+        "warmMs": {
+          "median": 1.0722499999999997,
+          "min": 1.0688531052631582,
+          "max": 1.1481296111111101
+        },
+        "loadMs": 8.369916,
+        "initMs": 1.1404160000000019,
+        "firstRenderMs": 2.944124999999996,
+        "retainedRssBytes": 63913984,
+        "peakRssBytes": 63913984,
+        "rssIncreaseBytes": 13844480
+      }
+    ],
+    "binary": {
+      "file": "ferromark.darwin-arm64.node",
+      "bytes": 15434624,
+      "sha256": "3521c093dbb6e34ae35d487b16d51117df9604b4d7e75d0366e49e21c32423a2"
+    }
+  }
+}

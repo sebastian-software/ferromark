@@ -445,7 +445,13 @@ impl<'a> Parser<'a> {
             Err(error) if matches!(error.kind(), ParseErrorKind::NestingTooDeep { .. }) => {
                 return Err(error);
             }
-            Err(_) => return Ok(false),
+            Err(_) => {
+                // The fallback still parses these bytes in their surrounding
+                // context and reports any real error. Remember the failed probe
+                // too, or every outer bracket repeats the same failing parse.
+                self.remember_probe_verdict(link_text, false);
+                return Ok(false);
+            }
         };
         let verdict = contains_link(&parsed);
         self.remember_probe_verdict(link_text, verdict);

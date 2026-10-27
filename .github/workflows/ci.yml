@@ -294,6 +294,12 @@ jobs:
       - run: pnpm test
       - run: pnpm test:ferrigura
         if: matrix.node == '24'
+      - name: Build an installable native plugin bundle
+        if: matrix.node == '24'
+        run: pnpm bundle:plugins --plugins all --output "$RUNNER_TEMP/plugin-bundle"
+      - name: Verify the installed native plugin bundle
+        if: matrix.node == '24'
+        run: pnpm verify:plugin-bundle "$RUNNER_TEMP/plugin-bundle/bundle.json"
       - run: pnpm typecheck
       - run: pnpm format:check
       - run: pnpm lint

@@ -54,7 +54,7 @@ impl CodeCompiler {
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
         options: Option<Options>,
     ) -> Result<String> {
-        Ok(self.transform(markdown, options)?.html)
+        Ok(self.render_html(markdown, options, false)?.html)
     }
 
     /// Renders HTML and extracts the same metadata as the one-shot transform.
@@ -63,6 +63,15 @@ impl CodeCompiler {
         &self,
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
         options: Option<Options>,
+    ) -> Result<crate::TransformResult> {
+        self.render_html(markdown, options, true)
+    }
+
+    fn render_html(
+        &self,
+        markdown: Utf8Input,
+        options: Option<Options>,
+        collect_metadata: bool,
     ) -> Result<crate::TransformResult> {
         let mut plugins = self.plugins.try_borrow_mut().map_err(|_| {
             usage("A code compiler cannot be used recursively from its code callback")
@@ -74,8 +83,12 @@ impl CodeCompiler {
             options.html.code_annotation_syntax = ferromark::CodeAnnotationSyntax::VitePress;
         }
         options.html.code_annotation_default_line_numbers = self.line_numbers;
-        let result =
-            crate::render_document_with_hooks(markdown.try_as_str()?, options, Some(&mut *plugins));
+        let result = crate::render_document_with_hooks(
+            markdown.try_as_str()?,
+            options,
+            Some(&mut *plugins),
+            collect_metadata,
+        );
         if let Some(error) = plugins.take_error() {
             return Err(error);
         }

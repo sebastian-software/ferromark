@@ -12,6 +12,33 @@ fn options() -> ParserOptions {
 }
 
 #[test]
+fn failed_link_probes_keep_the_original_mdx_diagnostic() {
+    for depth in [1, 8, 64] {
+        let source = "[".repeat(depth) + "</A>" + &"]".repeat(depth);
+        let arena = Allocator::new();
+        let failed = Parser::with_options(&arena, &source, options())
+            .parse_with_diagnostics(NonZeroUsize::new(8).unwrap())
+            .unwrap_err();
+        assert_eq!(failed.errors.len(), 1);
+        assert!(failed.stopped_early);
+        let detail = failed.errors[0].mdx_diagnostic().unwrap();
+        assert_eq!(detail.kind, Kind::UnexpectedClosingTag);
+        assert_eq!(detail.span.source_text(&source), "</A>");
+        assert_eq!(detail.span.start as usize, depth);
+    }
+}
+
+#[test]
+fn failed_link_probes_do_not_reject_elements_closing_outside_brackets() {
+    for source in ["[[<Card>]]</Card>", "[[<Card>text]]</Card>"] {
+        let arena = Allocator::new();
+        Parser::with_options(&arena, source, options())
+            .parse()
+            .expect("the surrounding inline context supplies the closing tag");
+    }
+}
+
+#[test]
 fn mismatches_report_complete_tags_and_related_openers() {
     for source in [
         "<Card>\n<Badge>\n</Card>\n",

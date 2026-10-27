@@ -1,0 +1,109 @@
+{
+  "none": {
+    "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "nodeVersion": "v24.19.0",
+    "plugins": [],
+    "target": "darwin-arm64",
+    "rustTarget": "aarch64-apple-darwin",
+    "version": "3.6.0-custom.none.darwin-arm64.ga38a23d57d30.dirty",
+    "commit": "a38a23d57d308cc969d0308edad3561172cf7a58",
+    "dirty": true,
+    "pgo": false,
+    "binary": {
+      "file": "ferromark.darwin-arm64.node",
+      "bytes": 2436208,
+      "sha256": "df81216c52c261d8fab77c1e0d806364fbd243e89b98bef7c344fd6a681ea0c0"
+    },
+    "cargoLockSha256": "073c4acc9c42396a0c354bbf76a607b74a056652708a5b209823b943faf86ddc",
+    "archive": {
+      "file": "ferromark-3.6.0-custom.none.darwin-arm64.ga38a23d57d30.dirty.tgz",
+      "bytes": 1238668,
+      "unpackedBytes": 3248490,
+      "sha256": "9a736c4d560ee30d798be0dfea9619fb056125bcacb5c6778f003f2be8486fb3"
+    },
+    "noticePackageCount": 86,
+    "noticeIndexSha256": "6bacbf5f3c3a71c5f49b83dcc9bfbdfb0165f341d648189041d2aba7274ac84b"
+  },
+  "ferriki": {
+    "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "nodeVersion": "v24.19.0",
+    "plugins": [
+      "ferriki"
+    ],
+    "target": "darwin-arm64",
+    "rustTarget": "aarch64-apple-darwin",
+    "version": "3.6.0-custom.ferriki.darwin-arm64.ga38a23d57d30.dirty",
+    "commit": "a38a23d57d308cc969d0308edad3561172cf7a58",
+    "dirty": true,
+    "pgo": false,
+    "binary": {
+      "file": "ferromark.darwin-arm64.node",
+      "bytes": 5848144,
+      "sha256": "186b910c2d34a0659e5ee140d920051d2b8d5d56a76e6bf851008ac4beba0508"
+    },
+    "cargoLockSha256": "073c4acc9c42396a0c354bbf76a607b74a056652708a5b209823b943faf86ddc",
+    "archive": {
+      "file": "ferromark-3.6.0-custom.ferriki.darwin-arm64.ga38a23d57d30.dirty.tgz",
+      "bytes": 3046074,
+      "unpackedBytes": 7212143,
+      "sha256": "df955a70fdaa085dd6856ccc2c2721399cef98adb04baea688949703b997a6b6"
+    },
+    "noticePackageCount": 137,
+    "noticeIndexSha256": "2576d9eb027d8e7265dcd5a2474e205eaba214a53e6fa7e30aca792ac6f25b3c"
+  },
+  "ferrigura": {
+    "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "nodeVersion": "v24.19.0",
+    "plugins": [
+      "ferrigura"
+    ],
+    "target": "darwin-arm64",
+    "rustTarget": "aarch64-apple-darwin",
+    "version": "3.6.0-custom.ferrigura.darwin-arm64.ga38a23d57d30.dirty",
+    "commit": "a38a23d57d308cc969d0308edad3561172cf7a58",
+    "dirty": true,
+    "pgo": false,
+    "binary": {
+      "file": "ferromark.darwin-arm64.node",
+      "bytes": 15434624,
+      "sha256": "3521c093dbb6e34ae35d487b16d51117df9604b4d7e75d0366e49e21c32423a2"
+    },
+    "cargoLockSha256": "073c4acc9c42396a0c354bbf76a607b74a056652708a5b209823b943faf86ddc",
+    "archive": {
+      "file": "ferromark-3.6.0-custom.ferrigura.darwin-arm64.ga38a23d57d30.dirty.tgz",
+      "bytes": 7773867,
+      "unpackedBytes": 16807965,
+      "sha256": "a2503235678b7381418cf1e2a667600b9da65f692c0839a9c7bfa4377b737c1f"
+    },
+    "noticePackageCount": 154,
+    "noticeIndexSha256": "efae4a5f3c01216e73fae7e7d1bd5ad5154bad2d4302d87b2d309115468b762b"
+  },
+  "all": {
+    "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "nodeVersion": "v24.19.0",
+    "plugins": [
+      "ferriki",
+      "ferrigura"
+    ],
+    "target": "darwin-arm64",
+    "rustTarget": "aarch64-apple-darwin",
+    "version": "3.6.0-custom.all.darwin-arm64.ga38a23d57d30.dirty",
+    "commit": "a38a23d57d308cc969d0308edad3561172cf7a58",
+    "dirty": true,
+    "pgo": false,
+    "binary": {
+      "file": "ferromark.darwin-arm64.node",
+      "bytes": 18531856,
+      "sha256": "81a7238986cbc4254836006df8ff5d8979f8c62ddfa8e4f38c30cba824d126e0"
+    },
+    "cargoLockSha256": "073c4acc9c42396a0c354bbf76a607b74a056652708a5b209823b943faf86ddc",
+    "archive": {
+      "file": "ferromark-3.6.0-custom.all.darwin-arm64.ga38a23d57d30.dirty.tgz",
+      "bytes": 9427833,
+      "unpackedBytes": 20391619,
+      "sha256": "91fcabf9920f987cfc7adf58201e33bd5a271dac0ed8ca3185b2f9ad97c5f3b8"
+    },
+    "noticePackageCount": 199,
+    "noticeIndexSha256": "d18876d320f9c932434e5a3d845ae91e343c3b07850ba991216777d3b1639905"
+  }
+}

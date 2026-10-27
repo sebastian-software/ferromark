@@ -20,6 +20,21 @@ cargo fmt --all --check
 cargo bench --workspace --no-run --locked
 ```
 
+Changes to workspace structure, Node packaging, or release tooling also require
+the repository contracts and real Rust package rehearsal:
+
+```sh
+pnpm --dir scripts install --frozen-lockfile
+pnpm --dir scripts test
+python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 scripts/rehearse-rust-packages.py /tmp/ferromark-rust-packages-check
+```
+
+Use a new output directory for each rehearsal. These checks complement the
+library and Node tests; they verify release versioning, workspace contracts,
+archive contents, and an isolated consumer. Custom plugin distributions also
+require the [bundle installation checks](docs/plugin-bundles.md).
+
 `ferromark` is the workspace root package: its `src/`, `tests/`, `benches/`
 and `examples/` sit at the top level. The workspace members are `node/native`
 (private Node.js bindings), `transforms` (optional Rust AST passes),
