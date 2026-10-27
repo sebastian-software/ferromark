@@ -1,3 +1,4 @@
+import { packPackage } from "ferramenta-native/pack";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -115,25 +116,15 @@ try {
     path.join(directory, "plugin-build.json"),
     `${JSON.stringify(provenance, null, 2)}\n`,
   );
-  const pack = JSON.parse(
-    run(
-      process.platform === "win32" ? "npm.cmd" : "npm",
-      ["pack", "--ignore-scripts", "--json", "--pack-destination", output],
-      {
-        cwd: directory,
-        shell: process.platform === "win32",
-        env: { ...process.env, npm_config_cache: path.join(temporary, "npm-cache") },
-      },
-    ),
-  )[0];
-  const archive = await readFile(path.join(output, pack.filename));
+  const pack = packPackage(directory, output);
+  const archive = await readFile(pack.filename);
   await writeFile(
     path.join(output, "bundle.json"),
     `${JSON.stringify(
       {
         ...provenance,
         archive: {
-          file: pack.filename,
+          file: path.basename(pack.filename),
           bytes: archive.length,
           unpackedBytes: pack.unpackedSize,
           sha256: hash(archive),
@@ -143,7 +134,7 @@ try {
       2,
     )}\n`,
   );
-  process.stdout.write(`${path.join(output, pack.filename)}\n`);
+  process.stdout.write(`${pack.filename}\n`);
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }
