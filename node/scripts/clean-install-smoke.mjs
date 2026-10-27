@@ -1,5 +1,5 @@
-import { fileURLToPath } from "node:url";
 import { runNativeCommand } from "ferramenta-native/cli";
+import { fileURLToPath } from "node:url";
 
 import config from "../native-npm.config.mjs";
 await runNativeCommand(config, [
