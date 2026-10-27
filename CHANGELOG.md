@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.7.0](https://github.com/sebastian-software/ferromark/compare/v3.6.0...v3.7.0) (2026-10-27)
+
+
+### Features
+
+* add native code plugins and optional Mermaid rendering ([a38a23d](https://github.com/sebastian-software/ferromark/commit/a38a23d57d308cc969d0308edad3561172cf7a58))
+* finish native plugin distribution and release validation ([2fc2102](https://github.com/sebastian-software/ferromark/commit/2fc210273e9b0dd7f171e6a5abf9f8b03c209dfe))
+
+
+### Bug Fixes
+
+* **ci:** repair native package and diagnostic checks ([928fcf5](https://github.com/sebastian-software/ferromark/commit/928fcf55c0fced53f14a61f8d2d33595dd47b096))
+* **node:** use symlink-safe shared native CLI ([752f9ab](https://github.com/sebastian-software/ferromark/commit/752f9abe6ef94e68118322d6e569c7075135b292))
+* **parser:** memoize failed MDX link probes ([86d0e80](https://github.com/sebastian-software/ferromark/commit/86d0e80ba3011c3b49cb728fb1fff47e15aee64f))
+
 ## [3.6.0](https://github.com/sebastian-software/ferromark/compare/v3.5.1...v3.6.0) (2026-10-24)
 
 
