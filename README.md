@@ -115,6 +115,19 @@ the same native fence metadata and highlighting. Start with the
 [Node JSX guide](docs/jsx-node.md) for API choices and runnable examples, or the
 [Rust renderer contract](docs/jsx-renderer.md) for core output.
 
+### Syntax highlighting and Mermaid diagrams
+
+Connect Ferriki through the Rust hooks or Node.js highlighter API. The source
+checkout also provides `CodeCompiler` for native HTML/JSX plugins: select Ferriki,
+Ferrigura, both engines, or neither in a custom build. Ferrigura renders Mermaid
+fences to static SVG. Installing another npm package does not add a factory to
+an existing Ferromark binary.
+
+The plugin APIs are newer than the published `ferromark@3.6.0` package;
+use a custom Node.js bundle for Mermaid support today. The
+[code-rendering guide](https://ferromark.dev/guide/code-rendering) explains
+the supported paths, release availability, and remaining Mermaid limitations.
+
 ### Document analysis
 
 Rust and Node offer
@@ -128,7 +141,7 @@ Rust and Node offer
 - [Configuration](https://ferromark.dev/guide/configuration) — syntax and output policies.
 - [Content pipelines](https://ferromark.dev/guide/pipelines) — document metadata, navigation, and presentation.
 - [Rendering and trust](https://ferromark.dev/guide/rendering) — defaults and input boundaries.
-- [Native code highlighting](https://github.com/sebastian-software/ferromark/blob/main/docs/native-code-highlighting.md) — Rust hook contract and Ferriki integration status.
+- [Code rendering](https://ferromark.dev/guide/code-rendering) — optional Ferriki highlighting, Ferrigura diagrams, and native plugin bundles.
 - [Architecture](https://ferromark.dev/guide/architecture) — arena AST, modules, and integration points.
 - [MDX boundaries](https://ferromark.dev/guide/mdx) — HTML syntax capture and JSX compilation.
 

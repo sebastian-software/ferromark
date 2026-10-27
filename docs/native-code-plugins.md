@@ -3,6 +3,13 @@
 `CodeCompiler` initializes plugins once in Rust. HTML and JSX rendering do not
 need a JavaScript callback for each block.
 
+These APIs are available on repository `main` and in custom plugin bundles.
+The published `ferromark@3.6.0` facade does not export `CodeCompiler`,
+`availableCodePlugins`, or the new callback-composition helpers. Build from
+source or install a [plugin bundle](plugin-bundles.md) for the examples below.
+For the existing published highlighter API and a comparison of the integration
+paths, start with the [code-rendering guide](https://ferromark.dev/guide/code-rendering).
+
 ```js
 import { availableCodePlugins, CodeCompiler } from "ferromark";
 

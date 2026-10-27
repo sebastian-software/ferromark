@@ -9,6 +9,7 @@ const expectedPages = [
   "guide/benchmark-explorer/index.html",
   "guide/benchmarks/index.html",
   "guide/cli/index.html",
+  "guide/code-rendering/index.html",
   "guide/configuration/index.html",
   "guide/correctness/index.html",
   "guide/document-analysis/index.html",

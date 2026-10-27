@@ -456,12 +456,23 @@ Fence meta text after the language (e.g. ` ```ts {1-3} title="…" `) reaches th
 
 ## Code-block renderer plugins
 
+The APIs in this section are available on repository `main` and in custom
+plugin bundles. The published `ferromark@3.6.0` package does not export them;
+check your installed declarations or use the source build described above.
+
 `CodeCompiler` selects Rust plugins once for native HTML and JSX rendering.
 See the [native plugin guide](../../docs/native-code-plugins.md) for configuration
 and custom builds. The 3.x default addon retains Ferriki for compatibility;
 `new CodeCompiler()` initializes no plugins but uses that same binary.
 The optional [Ferrigura adapter](../../docs/ferrigura.md) adds native Mermaid
 rendering to custom builds; it is excluded from the standard addon.
+
+Use an [installable plugin bundle](../../docs/plugin-bundles.md) to choose
+`none`, `ferriki`, `ferrigura`, or `all` without compiling Rust in the consuming
+application. Installing `@ferriki/core` separately works through the highlighter
+API above; installing a package does not extend an existing binary's factory
+list. The [code-rendering guide](https://ferromark.dev/guide/code-rendering)
+compares these paths and their release availability.
 
 Compose diagram renderers and highlighters with `composeCodeRenderers()`.
 `toHtmlWithCodeRenderer()` and `transformWithCodeRenderer()` accept the result.

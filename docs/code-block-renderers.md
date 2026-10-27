@@ -67,6 +67,10 @@ only the highlighting stage.
 
 ## Node.js
 
+The callback-composition APIs below are available on repository `main`; they
+are not exported by the published `ferromark@3.6.0` facade. Use a source build
+or custom bundle. See [release availability](https://ferromark.dev/guide/code-rendering).
+
 For Rust plugins without per-block JavaScript calls, use
 [`CodeCompiler`](native-code-plugins.md). The callbacks below remain available
 for application code and separately installed addons. The current 3.x addon

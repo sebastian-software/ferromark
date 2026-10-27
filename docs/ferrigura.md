@@ -106,6 +106,31 @@ hooks with Ferriki hooks; the adapter itself has no Node dependency.
 
 ## Engine version and validation
 
+### Remaining requirements from issue #531
+
+The adapter supplies the native HTML/JSX integration, explicit activation,
+theme selection, observable errors, optional code fallback, and distinct IDs.
+[Issue #531](https://github.com/sebastian-software/ferromark/issues/531) remains
+open with these remaining acceptance criteria:
+
+- IDs use a counter retained across renders, so repeated output is not
+  byte-identical. Default namespaces also depend on compiler construction order.
+- Engine errors are exposed, but there is no structured diagnostic mapped to
+  the original Markdown fence's source span. Node defaults to throwing; plain
+  code fallback requires `errorPolicy: "code"`.
+- SVG is trusted engine output. The adapter does not establish the issue's
+  dedicated SVG policy forbidding scripts, event attributes, external references,
+  and `foreignObject` HTML.
+- The adapter fixtures cover flowcharts, pie diagrams, errors, and HTML/JSX
+  behavior. The requested sequence, state, class, and ER fixture matrix and
+  cross-platform deterministic-output guarantee remain to be completed.
+
+Custom bundles make the current implementation installable. The adapter is
+still private, and the standard addon excludes Ferrigura. `@ferrigura/core` is
+not yet publicly available on npm.
+
+### Pinned engine
+
 The adapter pins published Ferrigura **0.2.0**. That release still uses a registry
 Ferromark internally for Markdown labels. The optional adapter sits outside the
 core, so the dependency graph remains acyclic. Ferrigura's separate

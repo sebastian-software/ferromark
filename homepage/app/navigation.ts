@@ -37,6 +37,7 @@ export const documentationSections = [
       ["Ferromark Flavored Markdown", "/guide/ffm"],
       ["Pipeline concepts", "/guide/pipelines"],
       ["Document analysis", "/guide/document-analysis"],
+      ["Highlighting and diagrams", "/guide/code-rendering"],
       ["Rendering and trust", "/guide/rendering"],
       ["MDX boundaries", "/guide/mdx"],
       ["Command line", "/guide/cli"],
