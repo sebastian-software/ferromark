@@ -1,6 +1,6 @@
 [package]
 name = "ferromark-ferrigura"
-version = "3.6.0"
+version = "3.7.0"
 edition = "2024"
 rust-version.workspace = true
 license = "MIT"
@@ -16,7 +16,7 @@ default = []
 jsx = ["ferromark/jsx", "dep:roxmltree"]
 
 [dependencies]
-ferromark = { version = "3.6.0", path = "../.." }
+ferromark = { version = "3.7.0", path = "../.." }
 ferrigura = "=0.2.0"
 thiserror.workspace = true
 serde_json.workspace = true

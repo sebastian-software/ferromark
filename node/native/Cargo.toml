@@ -1,6 +1,6 @@
 [package]
 name = "ferromark-node"
-version = "3.6.0"
+version = "3.7.0"
 edition = "2024"
 rust-version.workspace = true
 license = "MIT"
@@ -41,10 +41,10 @@ pgo-train = []
 [dependencies]
 # Explicit `version` next to `path`: Release Please updates published internal
 # requirements written this way and deliberately skips a bare path dependency.
-ferromark = { version = "3.6.0", path = "../..", features = ["jsx"] }
-ferromark-transforms = { version = "3.6.0", path = "../../transforms" }
-ferromark-plugin-fixture = { version = "3.6.0", path = "../plugin-fixture", optional = true }
-ferromark-ferrigura = { version = "3.6.0", path = "../../plugins/ferrigura", optional = true, features = [
+ferromark = { version = "3.7.0", path = "../..", features = ["jsx"] }
+ferromark-transforms = { version = "3.7.0", path = "../../transforms" }
+ferromark-plugin-fixture = { version = "3.7.0", path = "../plugin-fixture", optional = true }
+ferromark-ferrigura = { version = "3.7.0", path = "../../plugins/ferrigura", optional = true, features = [
   "jsx",
 ] }
 napi = { version = "=3.11.0", default-features = false, features = ["dyn-symbols", "napi8"] }
