@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { JsxCompiler } from "../index.mjs";
+import { CodeCompiler } from "../../index.mjs";
 
 const language = {
   name: "native-fixture",
@@ -32,12 +32,20 @@ const dark = {
   ],
 };
 
-function compiler(options = {}) {
-  return new JsxCompiler({
-    theme: { light, dark },
-    languages: [language],
-    assets: { remote: false },
-    ...options,
+function compiler({ lineNumbers, ...options } = {}) {
+  return new CodeCompiler({
+    lineNumbers,
+    plugins: [
+      {
+        name: "ferriki",
+        options: {
+          theme: { light, dark },
+          languages: [language],
+          assets: { remote: false },
+          ...options,
+        },
+      },
+    ],
   });
 }
 
@@ -104,7 +112,7 @@ test("component mappings and callbacks override native highlighting", () => {
 });
 
 test("native JSX compiler rejects invalid asset and registration settings", () => {
-  assert.throws(() => compiler({ surprise: true }), /unknown JSX compiler option/i);
+  assert.throws(() => compiler({ surprise: true }), /Unknown Ferriki option/i);
   assert.throws(() => compiler({ lineNumbers: "yes" }), /boolean/);
   assert.throws(() => compiler({ theme: { light } }), /theme.dark/);
   assert.throws(() => compiler({ theme: { settings: [] } }), /name/);

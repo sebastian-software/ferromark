@@ -84,7 +84,7 @@ through the [Rust transform API](/rust/transforms).
 
 ## Reuse a prepared document for analysis
 
-Use `prepareDocument()` or `JsxCompiler.prepare()` to parse once, then request
+Use `prepareDocument()` or `CodeCompiler.prepare()` to parse once, then request
 `collectReferences()` for link and image inventories, `extractText()` for plain
 text and final heading sections, or `projectMarkdown()` for a static Markdown
 export. These operations leave the handle available for JSX rendering and do

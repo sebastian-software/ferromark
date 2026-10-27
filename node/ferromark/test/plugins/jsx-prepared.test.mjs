@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { compileJsx, JsxCompiler } from "../index.mjs";
+import { CodeCompiler, compileJsx } from "../../index.mjs";
 
 const language = {
   name: "prepared-fixture",
@@ -20,12 +20,20 @@ const theme = {
   ],
 };
 
-function compiler(options = {}) {
-  return new JsxCompiler({
-    theme,
-    languages: [language],
-    assets: { remote: false },
-    ...options,
+function compiler({ lineNumbers, ...options } = {}) {
+  return new CodeCompiler({
+    lineNumbers,
+    plugins: [
+      {
+        name: "ferriki",
+        options: {
+          theme,
+          languages: [language],
+          assets: { remote: false },
+          ...options,
+        },
+      },
+    ],
   });
 }
 

@@ -50,8 +50,7 @@ const compiler = new addon.CodeCompiler(JSON.stringify({
 const html = compiler.toHtml("```mermaid\npie\n\"A\" : 1\n```");
 ```
 
-Omit `FERROMARK_NAPI_NO_DEFAULT_FEATURES` to include the compatibility Ferriki
-factory as well. Use both entries in `plugins` to render diagrams and highlight
+Set `FERROMARK_NAPI_FEATURES=ferriki,ferrigura` to include both factories. Use both entries in `plugins` to render diagrams and highlight
 ordinary code. Whole-block replacements precede all highlighting plugins.
 Custom Ferrigura builds require an isolated output directory so they cannot
 overwrite standard package artifacts.

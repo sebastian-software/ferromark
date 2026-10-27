@@ -8,7 +8,7 @@ order: 6
 Reuse the document you parsed for a link inventory, search indexing, or a static
 Markdown export. Rust exposes these operations on `Document`; Node.js exposes
 them on the immutable handle returned by `prepareDocument()` or
-`JsxCompiler.prepare()`. Each analysis runs only when called and leaves the
+`CodeCompiler.prepare()`. Each analysis runs only when called and leaves the
 document available for rendering.
 
 These additive APIs are available on repository `main`. Check your installed
@@ -43,7 +43,7 @@ const rendered = prepared.render(); // The same document remains available.
 
 `prepareDocument()` parses once and runs configured native passes once without
 constructing a highlighter or loading themes and grammars. Use
-`JsxCompiler.prepare()` when later rendering should reuse the compiler's native
+`CodeCompiler.prepare()` when later rendering should reuse the compiler's native
 highlighting. Analysis never highlights code, renders JSX, or reruns passes.
 
 ## Parse once in Rust

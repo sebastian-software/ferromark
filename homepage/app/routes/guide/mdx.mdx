@@ -29,13 +29,14 @@ The Node `compileJsx` API returns a JSX fragment and metadata. Set
 still contains JSX: your application's JSX transform compiles it and your
 application supplies components. Module blocks accept JavaScript, not TypeScript.
 
-Reuse `JsxCompiler` for native highlighting across documents. Its `prepare`
+Reuse `CodeCompiler` with explicitly selected plugins for native highlighting. Its `prepare`
 method separates parsing and native passes from later rendering decisions.
 The immutable handle exposes metadata without highlighting and can render a
 body or module repeatedly. Its preparation-time outline can differ from the
 final output after title omission or heading changes; use final result
 `headings` for navigation. `renderCodeBlock` uses the same compiler to render
-code outside a Markdown document.
+code outside a Markdown document. Native plugins require an engine-enabled
+bundle; see [code rendering and release availability](/guide/code-rendering).
 
 JSX compilation treats authored content as a program. The HTML API's untrusted
 render policy does not apply to that output. Choose HTML when you need raw HTML

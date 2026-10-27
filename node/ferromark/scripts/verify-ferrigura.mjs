@@ -21,8 +21,8 @@ try {
         ...process.env,
         FERROMARK_PGO: "0",
         FERROMARK_NATIVE_OUTPUT_DIR: directory,
-        FERROMARK_NAPI_NO_DEFAULT_FEATURES: variant === "diagrams" ? "1" : "0",
-        FERROMARK_NAPI_FEATURES: "ferrigura",
+        FERROMARK_NAPI_NO_DEFAULT_FEATURES: "1",
+        FERROMARK_NAPI_FEATURES: variant === "combined" ? "ferriki,ferrigura" : "ferrigura",
       },
     });
     const files = await readdir(directory);

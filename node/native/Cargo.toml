@@ -24,9 +24,8 @@ path = "src/bin/pgo_train.rs"
 required-features = ["pgo-train"]
 
 [features]
-# Retain the existing npm compiler during the 3.x migration. Custom builds can
-# omit all engines with --no-default-features.
-default = ["ferriki"]
+# Engines are opt-in and only included in isolated custom bundles.
+default = []
 ferriki = ["ferromark/ferriki-remote"]
 ferrigura = ["dep:ferromark-ferrigura"]
 plugin-test = ["dep:ferromark-plugin-fixture"]

@@ -64,9 +64,9 @@ contains that factory; initialize its languages, themes, and verified assets
 before rendering. Whole-block diagram replacements run before highlighting.
 `new CodeCompiler()` selects no plugins and initializes no engine assets.
 
-The standard 3.x addon still contains Ferriki for `JsxCompiler` compatibility.
-An empty plugin list avoids initialization but does not remove that binary
-dependency. An engine-free custom bundle removes both engine factories.
+The standard addon includes neither engine and reports `[]` from
+`availableCodePlugins()`. Use `CodeCompiler` with an explicit plugin list in an
+engine-enabled bundle; both engines follow the same opt-in build boundary.
 
 ## Compose separately installed engines
 

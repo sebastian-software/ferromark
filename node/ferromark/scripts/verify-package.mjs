@@ -28,8 +28,8 @@ for (const name of [
 // that no published addon or declaration file may carry.
 assert.doesNotMatch(
   declarations,
-  /\b(?:testPanicUnwind|boundary[A-Z]\w*|BoundaryProbe|FixturePlugin)\b/,
-  "the package declarations must not include diagnostic exports",
+  /\b(?:testPanicUnwind|boundary[A-Z]\w*|BoundaryProbe|FixturePlugin|JsxCompiler)\b/,
+  "the package declarations must not include diagnostic or legacy compiler exports",
 );
 
 assert.ok(

@@ -16,9 +16,10 @@ JSX renderer. It supports a single theme or a light/dark pair and preserves
 fence titles, labels, highlighted lines, and line numbers as JSX props and
 children. See the [JSX renderer contract](jsx-renderer.md#native-ferriki-highlighting).
 
-The Node `JsxCompiler` owns that highlighter and loads verified standard assets
-itself; reuse it across documents. Rust applications can enable
-`ferriki-remote` to make Ferriki's CDN/cache source available through Ferromark's
+In a [Ferriki-enabled Node bundle](plugin-bundles.md), `CodeCompiler` owns the
+explicitly selected Ferriki plugin and loads verified standard assets; reuse it
+across documents. The standard addon includes no engines. Rust applications can
+enable `ferriki-remote` to make Ferriki's CDN/cache source available through Ferromark's
 re-export, or keep `ferriki` for custom/local asset sources. The core's default
 dependency graph remains free of Ferriki, remote-loading code, and Oxc.
 

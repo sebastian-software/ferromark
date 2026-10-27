@@ -13,7 +13,6 @@ import {
   compileJsx,
   composeCodeRenderers,
   createHighlighterCodeRenderer,
-  JsxCompiler,
   prepareDocument,
   Renderer,
   toHtml,
@@ -84,10 +83,8 @@ toHtml(new ArrayBuffer(8));
 const jsx = compileJsx("# Typed", { format: "mdx", componentPrefix: "_components" }, () => null);
 const jsxBody: string = jsx.body;
 compileJsx(jsxBody);
-const jsxCompiler = new JsxCompiler({
-  theme: { name: "custom", settings: [{ settings: { foreground: "#000000" } }] },
-  languages: [{ name: "custom", scopeName: "source.custom", patterns: [] }],
-  assets: { remote: false },
+const jsxCompiler = new CodeCompiler({
+  plugins: [{ name: "ferriki", options: { assets: { remote: false } } }],
 });
 const highlightedJsx: string = jsxCompiler.compile("# Typed", {
   codeBlockComponent: "CodeBlock",

@@ -98,29 +98,21 @@ covers metadata, Buffers, reusable renderers, and highlighters.
 
 `compileJsx(source, { format: "mdx" })` returns a JSX body and metadata.
 With `output: "module"` it returns a complete MDX module and source map instead.
-Your application compiles the JSX through its normal toolchain and supplies
-components. Ferromark adds no React runtime imports; JSX source is a trusted
-program, while existing HTML APIs keep their own trust and syntax policies.
+Your application compiles JSX and supplies components. Ferromark adds no React
+imports. JSX is a trusted program; HTML APIs keep their existing trust policies.
 
-Reuse `JsxCompiler` for native Ferriki highlighting. Its `prepare` method parses
-and runs native passes once, exposes metadata, and lets you render the same
-document with different options. `renderCodeBlock` renders standalone code with
-the same native fence metadata and highlighting. Start with the
-[Node JSX guide](docs/jsx-node.md) for API choices and runnable examples, or the
-[Rust renderer contract](docs/jsx-renderer.md) for core output.
+`CodeCompiler` reuses selected native plugins and prepared documents, with
+standalone code rendering. See the [Node JSX guide](docs/jsx-node.md) and
+[Rust renderer contract](docs/jsx-renderer.md).
 
 ### Syntax highlighting and Mermaid diagrams
 
-Connect Ferriki through the Rust hooks or Node.js highlighter API. The source
-checkout also provides `CodeCompiler` for native HTML/JSX plugins: select Ferriki,
-Ferrigura, both engines, or neither in a custom build. Ferrigura renders Mermaid
-fences to static SVG. Installing another npm package does not add a factory to
-an existing Ferromark binary.
+Ferriki and Ferrigura use optional code-rendering hooks. The standard Node addon
+includes neither engine; custom bundles select either or both. The plugin API
+requires a source build or custom bundle.
 
-The plugin APIs are newer than the published `ferromark@3.6.0` package;
-use a custom Node.js bundle for Mermaid support today. The
-[code-rendering guide](https://ferromark.dev/guide/code-rendering) explains
-the supported paths, release availability, and remaining Mermaid limitations.
+[Integration guide](https://ferromark.dev/guide/code-rendering): Rust hooks, Node
+callbacks, native bundles, release availability, and remaining Mermaid limitations.
 
 ### Document analysis
 

@@ -1,8 +1,10 @@
 # Compile JSX and MDX in Node.js
 
 For an explicit set of native Rust code plugins, see
-[`CodeCompiler`](native-code-plugins.md). `JsxCompiler` below retains its
-Ferriki-specific settings for compatibility.
+[`CodeCompiler`](native-code-plugins.md). The standard addon includes no engines;
+native highlighting requires a Ferriki-enabled custom bundle. `CodeCompiler`
+is newer than published `ferromark@3.6.0`; build this checkout or install a
+[custom bundle](plugin-bundles.md) to use it.
 
 Use Ferromark to turn trusted authored Markdown or MDX into JSX for your
 application's build pipeline. It parses the document, applies selected native
@@ -28,8 +30,9 @@ original Markdown and code and reports discarded MDX constructs.
 | Read metadata, then choose rendering options | `compiler.prepare(source, preparationOptions?)`        | Immutable document with metadata and repeatable render methods |
 | Render code outside a Markdown document      | `compiler.renderCodeBlock({ code, language?, meta? })` | Intrinsic JSX and parsed fence metadata                        |
 
-Create the compiler with `new JsxCompiler(compilerOptions?)`. Reusing it retains
-loaded themes and grammars. Preparing a document also retains its parsed tree;
+Create the compiler with `new CodeCompiler(compilerOptions?)`. When native
+plugins are selected, reusing it retains their loaded themes and grammars.
+Preparing a document also retains its parsed tree;
 use that path when you need metadata before rendering or more than one output
 from the same source. A single `compile` call remains the shorter path when all
 options are already known. Preparation does not cache rendered JSX: highlighting
@@ -68,19 +71,12 @@ and URL filtering for untrusted Markdown.
 
 ## Prepare once and choose output later
 
-The following example uses a small JSON theme so it runs without downloading
-standard assets. Standard themes and native highlighting are covered below.
+Preparation and plain rendering work in the standard addon without engine assets.
 
 ```js
-import { JsxCompiler } from "ferromark";
+import { CodeCompiler } from "ferromark";
 
-const compiler = new JsxCompiler({
-  theme: {
-    name: "guide-theme",
-    settings: [{ settings: { foreground: "#222222", background: "#ffffff" } }],
-  },
-  assets: { remote: false },
-});
+const compiler = new CodeCompiler();
 const source = "---\ntitle: Guide\n---\n\n# Guide\n\n## Usage\n\nReady :rocket:\n";
 const prepared = compiler.prepare(source, {
   format: "mdx",
@@ -196,11 +192,16 @@ JavaScript string indexes.
 
 ## Highlight fences and standalone code
 
-```js
-import { JsxCompiler } from "ferromark";
+Install a [Ferriki-enabled bundle](plugin-bundles.md) before running this example.
 
-const compiler = new JsxCompiler({
-  theme: { light: "github-light-default", dark: "github-dark-default" },
+```js
+import { CodeCompiler } from "ferromark";
+
+const compiler = new CodeCompiler({
+  plugins: [{
+    name: "ferriki",
+    options: { theme: { light: "github-light-default", dark: "github-dark-default" } },
+  }],
   lineNumbers: true,
 });
 const code = "const ready = true;\n";

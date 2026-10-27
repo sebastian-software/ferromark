@@ -939,14 +939,22 @@ export function compileJsx(markdown, options, renderCode) {
     : addon.compileJsx(markdown, options, options, renderCode);
 }
 
-/** Shared facade for immutable preparation and native JSX rendering. */
-class CompilerFacade {
-  /** @type {NativeJsxCompilerSession} */
+/** Names of code plugin factories compiled into the loaded addon. */
+export function availableCodePlugins() {
+  return loadNative().availableCodePlugins();
+}
+
+/** Reusable HTML and JSX compiler with explicitly selected Rust plugins. */
+export class CodeCompiler {
+  /** @type {NativeCodeCompilerSession} */
   #native;
 
-  /** @param {NativeJsxCompilerSession} native Native compiler handle. */
-  constructor(native) {
-    this.#native = native;
+  /** @param {import('./index.mjs').CodeCompilerOptions} [options] Native plugin configuration. */
+  constructor(options = {}) {
+    if (options == null || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("code compiler options must be an object");
+    }
+    this.#native = new (loadNative().CodeCompiler)(JSON.stringify(options));
   }
 
   /**
@@ -985,49 +993,6 @@ class CompilerFacade {
       ? this.#native.compileModule(markdown, options, options, renderCode)
       : this.#native.compile(markdown, options, options, renderCode);
   }
-}
-
-/** Compatibility facade for the existing Ferriki-specific compiler settings. */
-export class JsxCompiler extends CompilerFacade {
-  /** @param {import('./index.mjs').JsxCompilerOptions} [options] Native highlighting and asset settings. */
-  constructor(options = {}) {
-    if (options == null || typeof options !== "object" || Array.isArray(options)) {
-      throw new TypeError("JSX compiler options must be an object");
-    }
-    for (const key of Reflect.ownKeys(options)) {
-      if (!["theme", "lineNumbers", "languages", "assets"].includes(String(key))) {
-        throw new TypeError(`unknown JSX compiler option "${String(key)}"`);
-      }
-    }
-    const NativeCompiler = loadNative().JsxCompiler;
-    if (typeof NativeCompiler !== "function") {
-      throw new TypeError(
-        "This addon build does not include Ferriki; use CodeCompiler with its available plugins",
-      );
-    }
-    super(new NativeCompiler(JSON.stringify(options)));
-  }
-}
-
-/** Names of code plugin factories compiled into the loaded addon. */
-export function availableCodePlugins() {
-  return loadNative().availableCodePlugins();
-}
-
-/** Reusable HTML and JSX compiler with explicitly selected Rust plugins. */
-export class CodeCompiler extends CompilerFacade {
-  /** @type {NativeCodeCompilerSession} */
-  #compiler;
-
-  /** @param {import('./index.mjs').CodeCompilerOptions} [options] Native plugin configuration. */
-  constructor(options = {}) {
-    if (options == null || typeof options !== "object" || Array.isArray(options)) {
-      throw new TypeError("code compiler options must be an object");
-    }
-    const compiler = new (loadNative().CodeCompiler)(JSON.stringify(options));
-    super(compiler);
-    this.#compiler = compiler;
-  }
 
   /**
    * @param {string | Uint8Array} markdown Authored Markdown source.
@@ -1035,7 +1000,7 @@ export class CodeCompiler extends CompilerFacade {
    */
   toHtml(markdown, options) {
     validateOptions(options);
-    return this.#compiler.toHtml(markdown, options);
+    return this.#native.toHtml(markdown, options);
   }
 
   /**
@@ -1044,7 +1009,7 @@ export class CodeCompiler extends CompilerFacade {
    */
   transform(markdown, options) {
     validateOptions(options);
-    return this.#compiler.transform(markdown, options);
+    return this.#native.transform(markdown, options);
   }
 }
 
@@ -1213,8 +1178,6 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     jsxOptions?: NativeJsxOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxModuleResult
  *   renderCodeBlock(input: import('./index.mjs').JsxCodeBlockRenderInput): import('./index.mjs').JsxCodeBlockRenderResult
- * }} NativeJsxCompilerSession
- * @typedef {NativeJsxCompilerSession & {
  *   toHtml(markdown: string | Uint8Array, options?: import('./index.mjs').Options): string
  *   transform(markdown: string | Uint8Array, options?: import('./index.mjs').Options): import('./index.mjs').TransformResult
  * }} NativeCodeCompilerSession
@@ -1243,7 +1206,6 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     new (options?: NativeOptions): NativeRendererSession
  *     withPackedOptions(...options: NativePackedOptions): NativeRendererSession
  *   }
- *   JsxCompiler?: { new (settings: string): NativeJsxCompilerSession }
  *   CodeCompiler: { new (settings: string): NativeCodeCompilerSession }
  *   availableCodePlugins(): string[]
  *   prepareDocument(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,

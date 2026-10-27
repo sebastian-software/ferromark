@@ -201,7 +201,7 @@ newline. NUL becomes U+FFFD, and CR/CRLF becomes LF, matching fence parsing.
 
 ## Prepared documents in Node.js
 
-`JsxCompiler.prepare` fixes parser options and native passes for a document,
+`CodeCompiler.prepare` fixes parser options and native passes for a document,
 exposes frozen metadata, and supports repeated body or module rendering.
 The [Node JSX guide](jsx-node.md) covers API selection, preparation and repeated
 rendering, standalone code blocks, module output, highlighting, and recovery.
@@ -213,7 +213,7 @@ binding's source and arena ownership contract.
 
 ### Rendering a standalone code block
 
-Use `JsxCompiler.renderCodeBlock` to share a compiler's native highlighting
+Use `CodeCompiler.renderCodeBlock` to share a compiler's native highlighting
 with code outside a Markdown document. See the
 [standalone example and fence metadata](jsx-node.md#highlight-fences-and-standalone-code)
 in the Node guide.

@@ -38,10 +38,9 @@ const html = compiler.toHtml(markdown);
 const jsx = compiler.compile(markdown);
 ```
 
-A Ferriki-only or empty bundle does not include the Ferrigura factory. A
-Ferrigura-only or empty bundle omits the legacy native `JsxCompiler`; use
-`CodeCompiler` for these builds. The standard 3.x package keeps its existing
-Ferriki compatibility behavior.
+All variants use `CodeCompiler`. The standard package includes no engine
+factories; a custom bundle includes only the selected engines. Selecting no
+plugins at runtime does not initialize the engines compiled into a custom bundle.
 
 Each artifact includes:
 

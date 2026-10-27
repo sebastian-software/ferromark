@@ -27,13 +27,12 @@ export default {
     maxUnpackedSize: 131_000,
   },
   consumer: {
-    smoke: `import { toHtml } from "ferromark"; if (toHtml("# Native") !== '<h1 id="native">Native</h1>\\n') throw new Error("HTML mismatch");`,
+    smoke: `import { availableCodePlugins, toHtml } from "ferromark"; if (availableCodePlugins().length !== 0) throw new Error("Standard addon must be engine-free"); if (toHtml("# Native") !== '<h1 id="native">Native</h1>\\n') throw new Error("HTML mismatch");`,
     tests: [
       "index.test.mjs",
-      "jsx-highlighting.test.mjs",
+      "native-plugins.test.mjs",
+      "references.test.mjs",
       "jsx-module.test.mjs",
-      "jsx-prepared.test.mjs",
-      "jsx-render-code-block.test.mjs",
       "jsx-title.test.mjs",
       "jsx.test.mjs",
     ].map((file) => `test/${file}`),

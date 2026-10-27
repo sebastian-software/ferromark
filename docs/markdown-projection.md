@@ -7,7 +7,7 @@ unwrapped construct. This capability is additive source on `main`; build the
 [Node package from source](../node/ferromark/README.md#install) until it is released.
 
 Prepare once with the grammar and parser features your source needs. The
-asset-free `prepareDocument` entry and `JsxCompiler.prepare` return the same
+asset-free `prepareDocument` entry and `CodeCompiler.prepare` return the same
 immutable handle; projection works with either. It reuses the owned original
 source and prepared tree without reparsing, rendering, executing JavaScript,
 loading highlighting assets, or changing a later render.

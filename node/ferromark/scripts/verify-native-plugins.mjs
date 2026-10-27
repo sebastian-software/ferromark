@@ -21,7 +21,6 @@ try {
     "--locked",
     "-p",
     "ferromark-node",
-    "--no-default-features",
     "--edges",
     "normal,build",
     "--prefix",
@@ -44,7 +43,6 @@ try {
       ...process.env,
       FERROMARK_PGO: "0",
       FERROMARK_NATIVE_OUTPUT_DIR: output,
-      FERROMARK_NAPI_NO_DEFAULT_FEATURES: "1",
       FERROMARK_NAPI_FEATURES: "plugin-test",
     },
   });
