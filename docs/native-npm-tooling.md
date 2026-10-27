@@ -14,13 +14,24 @@ release, submodule setup, sibling checkout or build approval is needed.
 The manifest and lockfile own the exact source pin. To adopt a toolkit fix,
 update that pin and regenerate the lockfile and generated files.
 
-The same dependency provides the composite CI action for Rust target setup,
-musl toolchains and the product build command. Ferromark passes `llvm-tools`
-and the matrix's `FERROMARK_PGO` flag, preserving its existing training and the
-Windows ARM64 exception. Tests, artifacts and release source gates stay in
-Ferromark; historical release retries retain their original toolchain setup.
-The end-user facade contains the generated loader and has no dependency on the
-tooling package.
+The same dependency owns archive checks, clean-consumer installation, artifact
+receipts, release metadata checks, exact-commit CI decisions and npm release
+ordering and verification. Local scripts are entry points; product policy lives
+in `node/native-npm.config.mjs`. CI calls the package-local build and release
+Actions after installing the pinned dependency. The same release Action rehearses
+all packages before merge and publishes only with `publish: "true"`.
+
+Native artifacts include the checked-out source commit and SHA-256 digest. All
+seven receipts are verified before any binary is promoted. Packed consumers run
+with install scripts disabled and must fail after their native binary is removed.
+The release also exercises the x64 musl archives on Alpine. `llvm-tools` and
+`FERROMARK_PGO` still train six targets; Windows ARM64 keeps its plain build.
+
+Release retry tooling and configuration come from the immutable workflow commit,
+with package paths rebased to the release source. Existing releases through the
+configured legacy cutoff retain main-dispatched recovery. Later releases require
+tag-dispatched recovery so npm provenance identifies the release commit. Product
+OIDC permissions, Rust publishing and functional tests remain in this repository.
 
 ## Verification of this migration
 

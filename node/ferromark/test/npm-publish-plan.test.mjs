@@ -213,18 +213,9 @@ test("workflow uses the validated release source and pins retry helpers to the w
 
   assert.match(
     workflow,
-    /node \.\.\/release-tools\/node\/scripts\/npm-publish-plan\.mjs \.\/artifacts/,
+    /uses: \.\/release-tools\/node\/node_modules\/ferramenta-native\/actions\/release-native/,
   );
-  assert.match(
-    workflow,
-    /if: \$\{\{ steps\.npm-publish-plan\.outputs\.publish_required == 'true' \}\}/,
-  );
-  assert.match(workflow, /packages: \$\{\{ steps\.npm-publish-plan\.outputs\.packages \}\}/);
-  assert.match(
-    workflow,
-    /uses: sebastian-software\/standards\/\.github\/actions\/publish-npm@a840766444dbb0e421f1f1868c48bee315ead769/,
-  );
-
+  assert.match(workflow, /publish: "true"/);
   const publishNpmJob = workflow.match(
     /\x20{2}publish-npm:\n([\s\S]*?)(?=\n\x20{2}[a-z][a-z0-9-]*:\n|$)/,
   )?.[1];

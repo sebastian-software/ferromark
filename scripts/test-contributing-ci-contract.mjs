@@ -44,7 +44,9 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
   assert.equal(ci.jobs["npm-packages"].needs, "native");
   assert.ok(
     ci.jobs["npm-packages"].steps.some(
-      (step) => step.run === "node ./scripts/verify-pack.mjs --all-targets",
+      (step) =>
+        step.uses === "./node/node_modules/ferramenta-native/actions/release-native" &&
+        step.with["source-sha"] === "${{ github.sha }}",
     ),
   );
   assert.ok(
@@ -152,8 +154,8 @@ test("publication validates one immutable release source before publishing", () 
   assert.equal(source.env.RELEASE_TAG, gha("inputs.tag || needs.release-please.outputs.tag_name"));
   assert.match(releaseRecord.run, /verify-github-release\.mjs/);
   assert.ok(steps.indexOf(source) < steps.indexOf(releaseRecord));
-  assert.match(read("scripts/resolve-release-source.mjs"), /refs\/heads\/main/);
-  assert.match(read("scripts/resolve-release-source.mjs"), /merge-base/);
+  assert.match(read("scripts/resolve-release-source.mjs"), /resolveReleaseSource/);
+  assert.match(read("node/scripts/release-source.mjs"), /ferramenta-native\/release-source/);
   assert.match(read("scripts/verify-github-release.mjs"), /isDraft/);
 
   const versionGate = publisher.jobs["validate-release-version"];
@@ -250,7 +252,7 @@ test("publication validates one immutable release source before publishing", () 
   const uses = Object.values(publisher.jobs).flatMap((job) =>
     job.steps.map((step) => step.uses).filter(Boolean),
   );
-  for (const action of ["publish-crates", "publish-npm"]) {
+  for (const action of ["publish-crates"]) {
     assert.ok(
       uses.some(
         (entry) =>
@@ -267,21 +269,21 @@ test("publication validates one immutable release source before publishing", () 
 
   assert.equal(publisher.jobs["build-native"].strategy.matrix.include, undefined);
   const build = publisher.jobs["build-native"];
-  const stage = build.steps.find(
-    (step) => step.name === "Bind the native artifact to the validated source SHA",
+  const buildAction = build.steps.find((step) => step.uses?.endsWith("/actions/build-native"));
+  assert.equal(buildAction.with["source-sha"], sourceCheckoutRef);
+  assert.equal(buildAction.with["platform-id"], "${{ matrix.id }}");
+  assert.equal(buildAction.with["rust-components"], "llvm-tools");
+  assert.equal(buildAction.env.FERROMARK_PGO, "${{ matrix.pgo && '1' || '0' }}");
+  const releaseAction = publisher.jobs["publish-npm"].steps.find((step) =>
+    step.uses?.endsWith("/actions/release-native"),
   );
-  const upload = build.steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
-  assert.equal(stage.env.SOURCE_SHA, sourceCheckoutRef);
-  assert.match(upload.with.path, /ferromark-source-/);
-
-  const publishSteps = publisher.jobs["publish-npm"].steps;
-  const provenance = publishSteps.findIndex(
-    (step) => step.name === "Verify native artifact source identities",
+  assert.equal(
+    releaseAction.uses,
+    "./release-tools/node/node_modules/ferramenta-native/actions/release-native",
   );
-  const assemble = publishSteps.findIndex((step) => step.name === "Assemble all platform packages");
-  const publish = publishSteps.findIndex((step) => step.uses?.includes("/publish-npm@"));
-  assert.ok(provenance >= 0 && provenance < assemble);
-  assert.ok(assemble < publish);
+  assert.equal(releaseAction.with["source-sha"], sourceCheckoutRef);
+  assert.equal(releaseAction.with.tag, "${{ needs.validate-release.outputs.tag_name }}");
+  assert.equal(releaseAction.with.publish, "true");
 });
 
 test("the release native matrix matches supported packages and CI targets", () => {
@@ -338,12 +340,10 @@ test("the packed musl addon is loaded on Alpine before merge and before publishi
   assert.equal(download.with.path, "node/artifacts");
   assert.ok(musl.steps.some((step) => step.run === smoke));
 
-  // The release runs the same check before the first registry call.
   const steps = parse(read(".github/workflows/publish.yml")).jobs["publish-npm"].steps;
-  const alpine = steps.findIndex((step) => step.run?.includes(smoke));
-  const publish = steps.findIndex((step) => step.uses?.includes("/publish-npm@"));
-  assert.ok(alpine !== -1, "the release must load the musl addon on Alpine");
-  assert.ok(alpine < publish, "the Alpine check must precede the npm publish");
+  const release = steps.find((step) => step.uses?.endsWith("/actions/release-native"));
+  assert.equal(release.with["musl-package-tests"], "true");
+  assert.notEqual(release.with["test-musl"], "false");
 });
 
 test("Node native declarations follow the v2 option surface", () => {

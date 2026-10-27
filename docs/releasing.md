@@ -274,16 +274,14 @@ that runner; the two cross-compiled musl targets cannot use the host profile
 because a Cargo unit hash covers the target triple. The crates.io crate is
 unaffected. See [ADR-0019](arch/ADR-0019-profile-guided-native-addon.md).
 
-`publish.yml` repeats the assembly checks on the release tag —
-`verify-release.mjs`, `verify-pack.mjs --all-targets`, `pnpm smoke:clean`, the
-same Alpine musl runtime test through `docker run node:22-alpine` on the runner,
-and `release-archives.mjs` — before the first registry call, and
-`verify-npm-publish.mjs` confirms all eight versions and their release-channel
-dist-tags on the registry afterwards. npm can accept a publication before its
-asynchronous processing makes the version available, so verification retries
-each package up to 24 times at 15-second intervals. Missing versions and stale
-dist-tags still fail when those attempts are exhausted; the verification job
-has a 20-minute timeout.
+`publish.yml` invokes the same Ferramenta native release Action as the assembly
+rehearsal. It verifies commit/digest receipts, package versions and archive
+contents, exercises clean host and Alpine musl installations, then publishes the
+exact validated tarballs. Registry verification checks all eight versions,
+source provenance, channel dist-tags and a public installation. It observes
+packages concurrently for up to 80 attempts at 15-second intervals; a failed
+publishing job gets one diagnostic observation. The npm publishing job allows
+60 minutes for preparation, checks and propagation.
 
 ## Registry authorization
 
@@ -304,36 +302,33 @@ configured.
 
 ## Retry a failed publish
 
-Dispatch the current workflow from `main`, and pass the immutable release tag
-as its `tag` input. For example, retrying `v3.1.0`:
+New releases must be retried from their exact tag ref, supplying the same tag:
 
 ```sh
-gh workflow run publish.yml --repo sebastian-software/ferromark --ref main -f tag=v3.1.0
+gh workflow run publish.yml --repo sebastian-software/ferromark --ref v<version> -f tag=v<version>
 ```
 
-The dispatch must run from main. Before any publication job receives OIDC
-permissions, the source validation job accepts only a stable or RC version tag
-with a published, non-draft GitHub release. It fetches the current main branch
-and tag, then requires the tag commit to be on main. A separate version
-validation job checks that the tag version matches the Cargo, npm, and platform
-package versions at that commit. A branch name, raw commit SHA, missing tag,
-draft release, tag outside main, or version mismatch fails validation.
+The workflow validates the published, non-draft GitHub release, main ancestry
+and matching Cargo/npm versions. New releases also require successful push/main
+CI, including the configured jobs, for the exact commit.
+Every source checkout uses the resolved SHA. Native artifacts carry that SHA and
+a SHA-256 digest; all seven are verified before package promotion. Existing npm
+versions are reused only when provenance matches the repository, workflow,
+release commit and tarball digest. Missing versions publish sidecars first and
+the facade last. npm versions remain immutable.
 
-The validation job resolves the tag once to a full commit SHA. Every release
-source checkout uses that SHA, so a tag move during a run cannot make the jobs
-publish different commits. Native build jobs store the SHA in each platform
-artifact; npm promotion verifies all seven artifact records against the same
-SHA before assembling packages. Older releases can still be retried while
-their tag remains on main and their published GitHub release remains available.
-The retry helper is loaded from the commit that defined the current workflow,
-so later retry fixes remain available.
+Releases through the legacy cutoff in `node/native-npm.config.mjs` retain their
+previous recovery contract: dispatch the current workflow from `main` and pass
+the old immutable tag, for example `--ref main -f tag=v3.1.0`. Tooling and
+configuration come from the immutable workflow commit; package paths point at
+the old release source. This compatibility path accepts only exact registry
+identities and retains the historical CI contract; older tags do not need job
+names introduced later. It cannot be enabled for subsequent versions. It preserves older
+retry behavior without claiming that historical npm provenance identifies a
+separately checked-out source commit.
 
-The crate publisher skips a version that is already in the crates.io sparse
-index, and an index lookup that fails outright stops the job instead of
-guessing. The npm preflight skips only exact package versions confirmed by the
-registry and fails closed on other responses. npm versions are immutable: a
-version that was already published cannot be replaced, and a conflict requires
-a new candidate rather than a forced upload.
+The crate publisher retains its existing sparse-index checks and skips already
+published versions. Neither registry retries by replacing an existing version.
 
 The active repository ruleset `Ferromark v* release tag protection` (ID
 `25623547`) targets `refs/tags/v*` and restricts tag updates and deletion. Its

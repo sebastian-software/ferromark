@@ -78,7 +78,10 @@ test("rejects a packed facade whose sidecar references were not resolved", (t) =
         }
       : manifest,
   );
-  assert.throws(() => releaseArchives(directory, facade), /pin every sidecar/);
+  assert.throws(
+    () => releaseArchives(directory, facade),
+    /pin every sidecar|Unresolved dependency protocol/,
+  );
 });
 
 test("rejects an archive set that is missing a platform", (t) => {

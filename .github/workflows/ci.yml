@@ -188,6 +188,7 @@ jobs:
       - run: pnpm format:check
         working-directory: scripts
       - run: cargo fmt --all --check
+      - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       - run: node --test scripts/test-*.mjs
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
       # The org-wide pin checker replaces this repository's own copy: a moved
@@ -408,21 +409,12 @@ jobs:
           libc: ${{ matrix.libc }}
           rust-toolchain: "1.95"
           rust-components: llvm-tools
+          platform-id: ${{ matrix.id }}
+          source-sha: ${{ github.sha }}
+          test-command: ${{ matrix.native && 'pnpm test' || '' }}
         env:
           FERROMARK_RUST_TARGET: ${{ matrix.target }}
           FERROMARK_PGO: ${{ matrix.pgo && '1' || '0' }}
-      - name: Test native package
-        if: ${{ matrix.native }}
-        run: pnpm test
-      - name: Verify platform package
-        run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.id }}
-      - name: Upload verified native binary
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: native-${{ matrix.id }}
-          path: node/ferromark/npm/${{ matrix.id }}/ferromark.${{ matrix.id }}.node
-          if-no-files-found: error
-          retention-days: 7
 
   npm-packages:
     name: Assemble all npm packages
@@ -444,16 +436,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: node/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Rehearse the shared native npm release
+        uses: ./node/node_modules/ferramenta-native/actions/release-native
         with:
-          pattern: native-*
-          merge-multiple: true
-          path: node/ferromark/.napi-artifacts
-      - name: Assemble all platform packages
-        run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm
-      - run: node ./scripts/verify-release.mjs
-      - run: node ./scripts/verify-pack.mjs --all-targets
-      - run: pnpm smoke:clean
+          source-sha: ${{ github.sha }}
+          test-musl: "false" # The dependent node-musl job exercises these exact archives.
       - name: Upload verified npm archives
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -498,6 +485,10 @@ jobs:
         with:
           name: npm-package-rehearsal
           path: node/artifacts
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       # `--target` fails the job if this container is not the musl host the
       # sidecar is built for, so the check cannot pass against a glibc addon.
       - name: Install the packed archives and run the package tests on musl
