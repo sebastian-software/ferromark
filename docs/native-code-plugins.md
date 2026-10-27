@@ -53,8 +53,11 @@ block. Enabling `lineNumbers` also enables VitePress-compatible annotations for
 HTML. Standalone `renderCodeBlock` produces intrinsic code and consults only
 highlighting plugins, as the existing standalone API does.
 
-Engine errors propagate without trying another plugin unless an adapter offers
-an explicit fallback policy. Later independent
+Engine errors propagate unless an adapter offers a fallback policy. Ferrigura
+defaults to escaped-code fallback and records a fence diagnostic; its explicit
+`errorPolicy: "throw"` rejects the render. Drain `compiler.takeDiagnostics()` or
+`prepared.takeDiagnostics()` to obtain `{ plugin, message, start, end }` failures.
+Both handles share a queue; offsets count original UTF-8 bytes. Later independent
 documents can still use the compiler. Recursive rendering on the same compiler
 or a prepared handle sharing its plugins is rejected. Compilers belong to their
 Node environment and cannot be transferred to workers.

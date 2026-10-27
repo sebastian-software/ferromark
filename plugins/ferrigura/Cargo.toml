@@ -13,11 +13,15 @@ workspace = true
 
 [features]
 default = []
-jsx = ["ferromark/jsx", "dep:roxmltree"]
+jsx = ["ferromark/jsx"]
 
 [dependencies]
 ferromark = { version = "3.6.0", path = "../.." }
 ferrigura = "=0.2.0"
+cssparser = { version = "=0.37.0", default-features = false }
 thiserror.workspace = true
 serde_json.workspace = true
-roxmltree = { version = "=0.21.1", optional = true, default-features = false, features = ["std"] }
+roxmltree = { version = "=0.21.1", default-features = false, features = ["std"] }
+
+[dev-dependencies]
+sha2 = "=0.10.9"

@@ -18,10 +18,23 @@ mod ferrigura;
 #[cfg(feature = "ferriki")]
 mod ferriki;
 
+/// A native plugin failure with the original fence's UTF-8 source range.
+#[napi(object)]
+pub struct CodePluginDiagnostic {
+    pub plugin: String,
+    pub message: String,
+    pub start: u32,
+    pub end: u32,
+}
+
 /// Addon-local error reporting, separate from the engine-neutral render traits.
 pub(crate) trait NativeCodePlugin: HtmlRenderHooks + JsxRenderHooks {
     fn take_error(&mut self) -> Option<Error> {
         None
+    }
+
+    fn take_diagnostics(&mut self) -> Vec<CodePluginDiagnostic> {
+        Vec::new()
     }
 }
 
@@ -33,6 +46,7 @@ impl NativeCodePlugin for ferromark_plugin_fixture::FixturePlugin {}
 pub(crate) struct NativePlugins {
     plugins: Vec<Box<dyn NativeCodePlugin>>,
     error: Option<Error>,
+    diagnostics: Vec<CodePluginDiagnostic>,
 }
 
 impl NativePlugins {
@@ -61,6 +75,10 @@ impl NativePlugins {
         self.error.take()
     }
 
+    pub(crate) fn take_diagnostics(&mut self) -> Vec<CodePluginDiagnostic> {
+        std::mem::take(&mut self.diagnostics)
+    }
+
     fn first<T>(
         &mut self,
         mut render: impl FnMut(&mut dyn NativeCodePlugin) -> Option<T>,
@@ -70,6 +88,7 @@ impl NativePlugins {
         }
         for plugin in &mut self.plugins {
             let output = render(plugin.as_mut());
+            self.diagnostics.extend(plugin.take_diagnostics());
             self.error = plugin.take_error();
             if self.error.is_some() || output.is_some() {
                 return output;

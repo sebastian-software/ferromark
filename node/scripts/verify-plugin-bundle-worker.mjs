@@ -2,6 +2,7 @@
 import { availableCodePlugins, CodeCompiler, toHtml } from "ferromark";
 import pkg from "ferromark/package.json" with { type: "json" };
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 const names = availableCodePlugins();
@@ -43,6 +44,23 @@ if (names.includes("ferrigura")) {
   assert.match(jsx, /<svg /);
   assert.match(jsx, /className=/);
   assert.doesNotMatch(jsx, /dangerouslySetInnerHTML/);
+  const fixtures = JSON.parse(
+    readFileSync(new URL("mermaid-fixtures.json", import.meta.url), "utf8"),
+  );
+  const diagrams = new CodeCompiler({
+    plugins: [{ name: "ferrigura", options: { idPrefix: "fixture" } }],
+  });
+  for (const fixture of fixtures) {
+    const markdown = `\`\`\`mermaid\n${fixture.source}\n\`\`\``;
+    const rendered = diagrams.toHtml(markdown);
+    assert.equal(createHash("sha256").update(rendered).digest("hex"), fixture.sha256, fixture.name);
+    assert.equal(rendered, diagrams.toHtml(markdown));
+    assert.equal(diagrams.prepare(markdown).render().body, diagrams.compile(markdown).body);
+  }
+  const broken = "```mermaid\nfutureDiagram\nA --> B\n```";
+  assert.equal(diagrams.toHtml(broken), toHtml(broken));
+  assert.equal(diagrams.takeDiagnostics()[0].start, 0);
+  assert.deepEqual(diagrams.takeDiagnostics(), []);
   const notices = JSON.parse(
     readFileSync(
       new URL("node_modules/ferromark/THIRD_PARTY_NOTICES/packages.json", import.meta.url),
@@ -51,6 +69,13 @@ if (names.includes("ferrigura")) {
   );
   const fonts = notices.find((entry) => entry.name === "ferrigura-text");
   assert.ok(fonts.files.some((file) => file.startsWith("fonts/")));
+  const css = notices.find((entry) => entry.name === "cssparser");
+  assert.equal(css.license, "MPL-2.0");
+  assert.ok(css.files.some((file) => /LICENSE/i.test(file)));
+  assert.equal(
+    css.sourceArchive,
+    "https://static.crates.io/crates/cssparser/cssparser-0.37.0.crate",
+  );
 } else assert.doesNotMatch(html, /<svg /);
 if (names.includes("ferriki")) assert.match(html, /#bb1100/i);
 const prepared = compiler.prepare(source);

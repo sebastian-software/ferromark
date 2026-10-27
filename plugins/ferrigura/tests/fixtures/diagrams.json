@@ -1,0 +1,48 @@
+[
+  {
+    "name": "flowchart",
+    "source": "flowchart LR\nA[Hello] --> B[World]",
+    "sha256": "0e489009e79c8ea00ce0922696ba289c7404a7182d0e08cd53a24f64eab83bd4",
+    "labels": [
+      "Hello",
+      "World"
+    ]
+  },
+  {
+    "name": "sequence",
+    "source": "sequenceDiagram\nAlice->>Bob: Hello",
+    "sha256": "5c826e9808eaa22660d9171e98f2d644bbe1e1858ccf38344cb39ffc496eb7be",
+    "labels": [
+      "Alice",
+      "Bob",
+      "Hello"
+    ]
+  },
+  {
+    "name": "state",
+    "source": "stateDiagram-v2\n[*] --> Idle\nIdle --> [*]",
+    "sha256": "a300a34417e7b04c7f08e3364025bb684e7fe350a11260501d1295190ab6c484",
+    "labels": [
+      "Idle"
+    ]
+  },
+  {
+    "name": "class",
+    "source": "classDiagram\nclass User {\n+String name\n}\nUser <|-- Admin",
+    "sha256": "20facdff21ddc844dd716b6b94e4f96fe2e669f34fb7502cc107517185d64f71",
+    "labels": [
+      "User",
+      "Admin"
+    ]
+  },
+  {
+    "name": "er",
+    "source": "erDiagram\nUSER ||--o{ POST : writes\nUSER {\nstring name\n}\nPOST {\nstring title\n}",
+    "sha256": "51033663c0b7d404d6828bfba2c4f55ef3e7e4b7913100bd1844709de97178e2",
+    "labels": [
+      "USER",
+      "POST",
+      "writes"
+    ]
+  }
+]

@@ -38,6 +38,13 @@ allow = ["BSL-1.0"]
 crate = "webpki-root-certs@1.0.10"
 allow = ["CDLA-Permissive-2.0"]
 
+# The optional Mermaid adapter uses the unmodified CSS tokenizer to reject
+# escaped resource URLs. Its exact source archive and MPL notice travel with
+# custom bundles; the standard addon does not include it. See ADR-0025.
+[[licenses.exceptions]]
+crate = "cssparser@0.37.0"
+allow = ["MPL-2.0"]
+
 [bans]
 # Duplicate versions are surfaced for maintenance review without blocking a
 # build that is otherwise safe.

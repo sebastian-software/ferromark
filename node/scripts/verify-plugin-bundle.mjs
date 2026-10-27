@@ -38,6 +38,10 @@ try {
     new URL("verify-plugin-bundle-worker.mjs", import.meta.url),
     path.join(directory, "verify.mjs"),
   );
+  await copyFile(
+    new URL("../../plugins/ferrigura/tests/fixtures/diagrams.json", import.meta.url),
+    path.join(directory, "mermaid-fixtures.json"),
+  );
   process.stdout.write(run(process.execPath, ["--expose-gc", "verify.mjs"]));
   await writeFile(
     path.join(path.dirname(manifestPath), "installation-test.json"),

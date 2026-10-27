@@ -528,6 +528,8 @@ export type TextExtraction = Readonly<{
 
 /** Immutable native document handle returned by `prepareDocument` or `CodeCompiler.prepare`. */
 export type PreparedJsxDocument = Readonly<{
+  /** Drains native plugin diagnostics shared with the preparing compiler. */
+  takeDiagnostics(): CodePluginDiagnostic[];
   /** Metadata snapshot computed from the prepared AST without rendering JSX. */
   metadata: JsxPreparedMetadata;
   /** Ordered references. With native passes, preparation must set trackReferences: true or this throws. */
@@ -541,6 +543,14 @@ export type PreparedJsxDocument = Readonly<{
   /** Render a complete module. Module and body choices can be varied per call. */
   renderModule(options?: JsxRenderModuleOptions, renderCode?: JsxCodeRenderer): JsxModuleResult;
 }>;
+
+/** Native plugin failure; start/end are original UTF-8 byte offsets of the complete fence. */
+export type CodePluginDiagnostic = {
+  plugin: string;
+  message: string;
+  start: number;
+  end: number;
+};
 
 /** Selects an initialized Rust plugin from this addon's compiled factory set. */
 export type NativeCodePluginConfig = {
@@ -562,6 +572,8 @@ export declare function availableCodePlugins(): string[];
 /** Reusable native HTML/JSX compiler. Rust plugins run without per-block JavaScript calls. */
 export declare class CodeCompiler {
   constructor(options?: CodeCompilerOptions);
+  /** Drain failures from HTML/JSX rendering, including shared prepared documents. */
+  takeDiagnostics(): CodePluginDiagnostic[];
   toHtml(markdown: string | Uint8Array, options?: Options): string;
   transform(markdown: string | Uint8Array, options?: Options): TransformResult;
   prepare(

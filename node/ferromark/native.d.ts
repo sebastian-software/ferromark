@@ -4,6 +4,8 @@
 /** Owns a selected set of native code plugins across HTML and JSX documents. */
 export declare class CodeCompiler {
   constructor(settings: string)
+  /** Drains diagnostics from this compiler and its prepared documents. */
+  takeDiagnostics(): Array<CodePluginDiagnostic>
   /** Renders HTML without calling JavaScript for any code block. */
   toHtml(markdown: string | Uint8Array, options?: Options | undefined | null): string
   /** Renders HTML and extracts the same metadata as the one-shot transform. */
@@ -22,6 +24,8 @@ export declare class CodeCompiler {
 export declare class PreparedJsxDocument {
   /** Collects Markdown references and literal MDX href/src attributes on demand. */
   collectReferences(): Array<DocumentReference>
+  /** Drains diagnostics shared with the compiler that prepared this document. */
+  takeDiagnostics(): Array<CodePluginDiagnostic>
   /** Projects original static Markdown without rendering or highlighting. */
   projectMarkdown(options?: ProjectMarkdownOptions | undefined | null): MarkdownProjectionResult
   /** Metadata computed from the prepared tree without rendering its body. */
@@ -45,6 +49,14 @@ export declare class Renderer {
 
 /** Names of the factories compiled into this particular addon. */
 export declare function availableCodePlugins(): Array<string>
+
+/** A native plugin failure with the original fence's UTF-8 source range. */
+export interface CodePluginDiagnostic {
+  plugin: string
+  message: string
+  start: number
+  end: number
+}
 
 /** Internal entry: the public facade validates and separates its option keys. */
 export declare function compileJsx(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
