@@ -27,3 +27,6 @@ overrides:
   js-yaml@>=4.0.0 <4.3.2: 4.3.2
   # GHSA-5gmw-xhrv-c9v3, GHSA-85c8-ppgw-ccpr: prototype pollution in worker options.
   tinypool@<2.1.2: 2.1.2
+
+minimumReleaseAgeExclude:
+  - ferramenta-native@0.1.0

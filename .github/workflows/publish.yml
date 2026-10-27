@@ -300,7 +300,7 @@ jobs:
       - run: pnpm build:native
         env:
           FERROMARK_RUST_TARGET: ${{ matrix.target }}
-          FERROMARK_PGO: ${{ matrix.target == 'aarch64-pc-windows-msvc' && '0' || '1' }}
+          FERROMARK_PGO: ${{ matrix.pgo && '1' || '0' }}
 
       - name: Test native package
         if: ${{ matrix.native }}

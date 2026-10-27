@@ -29,8 +29,8 @@ importers:
         specifier: 0.4.0
         version: 0.4.0(@types/estree@1.0.9)(@typescript-eslint/eslint-plugin@8.70.0(@typescript-eslint/parser@8.70.0(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript-eslint/utils@8.70.0(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(jsonc-eslint-parser@3.3.0)(oxlint@1.83.0)(supports-color@9.4.0)
       ferramenta-native:
-        specifier: file:vendor/ferramenta-native-0.1.0-6d574d6eff17.tgz
-        version: file:vendor/ferramenta-native-0.1.0-6d574d6eff17.tgz
+        specifier: 0.1.0
+        version: 0.1.0
       jiti:
         specifier: 2.7.0
         version: 2.7.0
@@ -2495,9 +2495,8 @@ packages:
       picomatch:
         optional: true
 
-  ferramenta-native@file:vendor/ferramenta-native-0.1.0-6d574d6eff17.tgz:
-    resolution: {integrity: sha512-2tTcTeui8oBo8muM42fQr598sz9pgSPSkTye3KVvJkVIfqc0dKWxmogw9yQtKTuObAdFsSdXd5SeUeANOs2dyA==, tarball: file:vendor/ferramenta-native-0.1.0-6d574d6eff17.tgz}
-    version: 0.1.0
+  ferramenta-native@0.1.0:
+    resolution: {integrity: sha512-iWpKvuVm0uvXJzilS50JU8K9+GVfBszYzQlD1m7bGUGAkiNxcyVlyJult45rSaLEEjRUmB+N5uN8CfHwNi6abw==}
     engines: {node: '>=22.13.0'}
 
   file-entry-cache@8.0.0:
@@ -6214,7 +6213,7 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  ferramenta-native@file:vendor/ferramenta-native-0.1.0-6d574d6eff17.tgz: {}
+  ferramenta-native@0.1.0: {}
 
   file-entry-cache@8.0.0:
     dependencies:

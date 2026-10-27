@@ -7,12 +7,10 @@ to regenerate or verify the platform manifests and standalone runtime. The
 existing npm names, public API, 3.x Ferriki compatibility build, PGO training,
 diagnostic-build isolation and release source checks remain supported.
 
-The initial dependency is the reviewed `node/vendor/ferramenta-native-0.1.0-<digest>.tgz`
-archive. It is identical to the archive used by Ferriki and Ferrigura. After
-Ferramenta publishes that tooling version, replace the file dependency with the
-exact registry version, regenerate the lockfile and remove the bootstrap archive.
-No path to a sibling checkout is required. The end-user facade contains the
-generated loader and has no dependency on the tooling package.
+The development dependency pins the published `ferramenta-native@0.1.0` registry
+version. The initial bootstrap archive has been removed. No path to a sibling
+checkout is required. The end-user facade contains the generated loader and has
+no dependency on the tooling package.
 
 ## Verification of this migration
 
@@ -23,7 +21,7 @@ callbacks with a Ferriki highlighter and a Ferrigura renderer. It produced
 highlighted, escaped code and an SVG diagram. Each product's separate packed
 consumer check also rejects a missing binary.
 
-Ferromark's complete Rust tests, Clippy, formatting, benchmark build, 221 Node
+Ferromark's complete Rust tests, Clippy, formatting, benchmark build, 222 Node
 tests, panic containment, input conversion and isolated plugin checks passed.
 Ferriki's core compatibility and release recovery checks passed. Ferrigura's
 Rust and Node checks and Ferramenta's complete project gate passed. The seven
