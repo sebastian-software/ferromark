@@ -30,9 +30,8 @@ Rust and Node checks and Ferramenta's complete project gate passed. The seven
 platform build matrices are configured in CI; the other platforms were not
 executed by this local run. This migration makes no new performance claim.
 
-The infrastructure suite reports 82 passing tests and two failures, with the
-same result on the unmodified starting commit: the workspace-members assertion
-still expects only `node/native` and `transforms`, and the release rehearsal
-changes a registry-sourced Ferromark dependency while checking that external
-dependencies stay fixed. Those pre-existing release issues need a separate fix
-before a release. No packages were published by this migration.
+The original starting commit had two failing release contracts. Both fixes are
+now included from `main`: the workspace-members assertion covers the private
+plugin crates, and release rehearsal preserves registry dependency identities.
+The updated infrastructure suite passes all 88 tests. No packages were published
+by this migration.
