@@ -171,6 +171,22 @@ fn deeply_nested_reference_links_finish_in_bounded_time() {
     parse_within_budget(nested_reference_links(64));
 }
 
+#[cfg(feature = "jsx")]
+#[test]
+fn nested_brackets_with_invalid_mdx_finish_in_bounded_time() {
+    let source = "[".repeat(64) + "</A>" + &"]".repeat(64);
+    let options = ParserOptions {
+        mdx: true,
+        mdx_compatible: true,
+        ..ParserOptions::gfm()
+    };
+    let (_, parsed) = outcome_once(&source, &options);
+    assert!(
+        !parsed,
+        "the unmatched MDX closing tag must remain an error"
+    );
+}
+
 #[test]
 fn deeply_nested_unclosed_brackets_finish_in_bounded_time() {
     // The closing run is one short, so no bracket ever becomes a link and
