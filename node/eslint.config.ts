@@ -11,6 +11,9 @@ config.unshift({
     "**/*.json",
     "**/*.md",
     "ferromark/native.d.ts",
+    "ferromark/native-target.mjs",
+    "ferromark/native-target.d.mts",
+    "scripts/native-registry.mjs",
   ],
 });
 
@@ -89,6 +92,20 @@ config.push({
   files: ["ferromark/index.mjs"],
   rules: {
     "security/detect-non-literal-require": "off",
+  },
+});
+
+// Native build scripts consume tools owned by the surrounding development workspace.
+config.push({
+  files: ["ferromark/scripts/**/*.mjs"],
+  rules: {
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        devDependencies: true,
+        packageDir: [import.meta.dirname, `${import.meta.dirname}/ferromark`],
+      },
+    ],
   },
 });
 

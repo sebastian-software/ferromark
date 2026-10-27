@@ -19,7 +19,7 @@ assert.match(profile[1], /^inherits = "release"$/m);
 assert.match(profile[1], /^panic = "unwind"$/m);
 assert.match(
   buildScript,
-  /['"]--profile['"],\s*['"]release-node['"],/,
+  /profile:\s*['"]release-node['"],/,
   "the native package builder must select Cargo's release-node profile",
 );
 

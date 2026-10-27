@@ -36,17 +36,7 @@ assert.ok(
   !packageJson.files.some((file) => file.endsWith(".node")),
   "the main package must not ship native binaries",
 );
-assert.match(
-  buildNative,
-  /endsWith\(["']-musl["']\)[\s\S]*args\.push\(["']--cross-compile["']\)/,
-  "musl targets must use napi-rs cargo-zigbuild cross-compilation",
-);
-assert.match(
-  buildNative,
-  /includes\(["']-unknown-linux-gnu["']\)[\s\S]*args\.push\(["']--use-napi-cross["']\)/,
-  "GNU Linux targets must use the napi-rs glibc 2.17 cross-toolchain",
-);
-
+assert.match(buildNative, /runBuild\(/, "native builds must use ferramenta-native");
 // One typed entry per manifest, and nothing that writes a version into the
 // pnpm lockfile: the sidecar references use the workspace protocol, so the
 // release pull request only ever changes the nine `version` fields.
@@ -86,7 +76,7 @@ for (const triple of packageJson.napi.targets) {
   assert.deepEqual(platformPackage.cpu, [target.cpu]);
   assert.deepEqual(platformPackage.libc, target.libc ? [target.libc] : undefined);
   assert.equal(platformPackage.main, `ferromark.${target.suffix}.node`);
-  assert.deepEqual(platformPackage.files, [platformPackage.main, "LICENSE", "LICENSE-MIT"]);
+  assert.deepEqual(platformPackage.files, [platformPackage.main, "LICENSE", "LICENSE-MIT"].sort());
   assert.deepEqual(platformPackage.engines, packageJson.engines);
   assert.equal(platformPackage.publishConfig?.provenance, true);
 }

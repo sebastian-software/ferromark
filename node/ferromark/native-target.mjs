@@ -1,71 +1,153 @@
-/**
- * The parts of a Node.js diagnostic report that identify the Linux C library.
- *
- * @typedef {{
- *   header?: { glibcVersionRuntime?: string }
- *   sharedObjects?: readonly string[]
- * }} DiagnosticReport
- */
+import { readFileSync } from "node:fs";
+// Generated consumer copies are owned by ferramenta-native. Do not edit them.
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 
-/**
- * Resolve the Linux C library from a diagnostic report, with a loader fallback.
- *
- * Node.js built against glibc always records `glibcVersionRuntime`, so a
- * collected report without one describes a musl host. When no report can be
- * collected at all — non-Node runtimes, or a future removal of `process.report`
- * — only positive evidence selects musl, because misreporting a glibc host
- * sends the loader to a musl package that is not installed.
- *
- * Both inputs are supplied by the caller so the detection can be tested without
- * mutating process globals, collecting diagnostic reports, or reading files.
- *
- * @param {DiagnosticReport | undefined} report Collected diagnostic report, if any.
- * @param {() => string} readLoaderHelper Reads `/usr/bin/ldd`, `""` when unreadable.
- * @returns {"gnu" | "musl"} Detected C library.
- */
+export const NATIVE_TARGETS = Object.freeze(
+  [
+    {
+      id: "linux-x64-gnu",
+      triple: "x86_64-unknown-linux-gnu",
+      os: "linux",
+      cpu: "x64",
+      libc: "glibc",
+    },
+    {
+      id: "linux-arm64-gnu",
+      triple: "aarch64-unknown-linux-gnu",
+      os: "linux",
+      cpu: "arm64",
+      libc: "glibc",
+    },
+    {
+      id: "linux-x64-musl",
+      triple: "x86_64-unknown-linux-musl",
+      os: "linux",
+      cpu: "x64",
+      libc: "musl",
+    },
+    {
+      id: "linux-arm64-musl",
+      triple: "aarch64-unknown-linux-musl",
+      os: "linux",
+      cpu: "arm64",
+      libc: "musl",
+    },
+    { id: "darwin-arm64", triple: "aarch64-apple-darwin", os: "darwin", cpu: "arm64" },
+    { id: "win32-x64-msvc", triple: "x86_64-pc-windows-msvc", os: "win32", cpu: "x64" },
+    { id: "win32-arm64-msvc", triple: "aarch64-pc-windows-msvc", os: "win32", cpu: "arm64" },
+  ].map((target) => Object.freeze(target)),
+);
+
 export function linuxLibc(report, readLoaderHelper) {
-  if (report?.header?.glibcVersionRuntime) {
-    return "gnu";
-  }
-  if (report?.sharedObjects?.some((sharedObject) => sharedObject.includes("ld-musl-"))) {
-    return "musl";
-  }
-  if (report) {
-    // A collected report without a glibc runtime version: a musl host.
-    return "musl";
-  }
-  // No report at all: only the loader helper can still prove musl.
+  if (report?.header?.glibcVersionRuntime) return "gnu";
+  if (report?.sharedObjects?.some((item) => item.includes("ld-musl-"))) return "musl";
+  if (report) return "musl";
   return readLoaderHelper().includes("musl") ? "musl" : "gnu";
 }
 
-/**
- * Resolve a Node platform, architecture, and Linux libc to the native package suffix.
- *
- * `libc` is intentionally supplied by the caller so the target table can be
- * tested without mutating process globals or collecting diagnostic reports.
- * An unknown Linux libc selects gnu, the more widely installed runtime.
- *
- * @param {NodeJS.Platform} platform Current Node platform.
- * @param {string} arch Current CPU architecture.
- * @param {"gnu" | "musl"} [libc] Detected Linux C library.
- */
-export function nativeTarget(platform, arch, libc) {
-  const suffix = platform === "linux" ? `-${libc ?? "gnu"}` : "";
-  const key = `${platform}-${arch}${suffix}`;
-  /** @type {Record<string, string>} */
-  const targets = {
-    "darwin-arm64": "darwin-arm64",
-    "linux-arm64-gnu": "linux-arm64-gnu",
-    "linux-arm64-musl": "linux-arm64-musl",
-    "linux-x64-gnu": "linux-x64-gnu",
-    "linux-x64-musl": "linux-x64-musl",
-    "win32-arm64": "win32-arm64-msvc",
-    "win32-x64": "win32-x64-msvc",
-  };
-
-  const target = targets[key];
-  if (!target) {
-    throw new Error(`ferromark does not support ${platform}/${arch}`);
+export function diagnosticReport() {
+  const report = process.report;
+  if (!report?.getReport) return;
+  const previous = report.excludeNetwork;
+  try {
+    report.excludeNetwork = true;
+    return report.getReport();
+  } catch {
+    // A failed report leaves the loader helper as the remaining evidence.
+  } finally {
+    report.excludeNetwork = previous;
   }
-  return target;
+}
+
+export function detectLinuxLibc(platform = process.platform) {
+  if (platform !== "linux") return;
+  return linuxLibc(diagnosticReport(), () => {
+    try {
+      return readFileSync("/usr/bin/ldd", "latin1");
+    } catch {
+      return "";
+    }
+  });
+}
+
+export function nativeTarget(platform, arch, libc = "gnu") {
+  const suffix = platform === "linux" ? `-${libc}` : platform === "win32" ? "-msvc" : "";
+  const id = `${platform}-${arch}${suffix}`;
+  if (!NATIVE_TARGETS.some((target) => target.id === id)) {
+    throw new Error(
+      `Unsupported native target ${platform}/${arch}${platform === "linux" ? `/${libc}` : ""}`,
+    );
+  }
+  return id;
+}
+
+function loadHint(target) {
+  if (target.endsWith("-gnu"))
+    return "Check that glibc 2.17 or newer is available and that no required shared library is missing.";
+  if (target.endsWith("-musl"))
+    return "Check that the musl runtime is compatible and that no required shared library is missing.";
+  if (target.startsWith("win32-"))
+    return "Install or repair the Microsoft Visual C++ Redistributable and verify the binary architecture.";
+  return "Check the macOS version and binary architecture, and whether quarantine or code-signing policy blocked the addon.";
+}
+
+function loadCandidate(require, candidate, context) {
+  let resolved;
+  try {
+    resolved = require.resolve(candidate.file);
+  } catch (error) {
+    if (error.code !== "MODULE_NOT_FOUND") throw error;
+    return { error };
+  }
+  try {
+    return { binding: require(resolved) };
+  } catch (error) {
+    if (error.code !== "ERR_DLOPEN_FAILED") throw error;
+    throw new Error(
+      `${context.name} could not load native binary ${context.filename} from ${candidate.source} for ${process.platform}/${process.arch} (ERR_DLOPEN_FAILED). ${loadHint(context.target)}`,
+      { cause: error },
+    );
+  }
+}
+
+function loadCandidates(require, candidates, context) {
+  const errors = [];
+  for (const candidate of candidates) {
+    const result = loadCandidate(require, candidate, context);
+    if (result.binding) return result.binding;
+    errors.push(result.error);
+  }
+  throw new Error(
+    `${context.name} could not load the optional native package ${context.packageName} for ${process.platform}/${process.arch}. No native binary for ${context.target}. Install the optional platform package ${context.packageName}.`,
+    {
+      cause: new AggregateError(errors, `No native binary found for ${context.target}`),
+    },
+  );
+}
+
+export function createNativeLoader(parentUrl, config) {
+  const require = createRequire(parentUrl);
+  let binding;
+  return () => {
+    if (binding) return binding;
+    const target = nativeTarget(process.platform, process.arch, detectLinuxLibc());
+    const filename = config.binaryPattern.replace("{target}", target);
+    const packageName = config.packagePattern.replace("{target}", target);
+    const local = config.localPatterns ?? [config.binaryPattern];
+    const candidates = [
+      ...local.map((pattern) => ({
+        file: fileURLToPath(new URL(pattern.replace("{target}", target), parentUrl)),
+        source: "the local package",
+      })),
+      { file: packageName, source: `the optional package ${packageName}` },
+    ];
+    binding = loadCandidates(require, candidates, {
+      name: config.name,
+      target,
+      filename,
+      packageName,
+    });
+    return binding;
+  };
 }

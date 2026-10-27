@@ -199,13 +199,22 @@ jobs:
       matrix: ${{ steps.platforms.outputs.matrix }}
       platform-ids: ${{ steps.platforms.outputs.platform-ids }}
     steps:
-      - id: platforms
-        uses: sebastian-software/standards/.github/actions/napi-matrix@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
+      # Matrix tooling comes from the immutable workflow commit so old tag retries
+      # do not need the shared package to exist in the historical source tree.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          package: ferromark
-          platforms: >-
-            darwin-arm64 win32-arm64-msvc linux-arm64-gnu linux-arm64-musl
-            win32-x64-msvc linux-x64-gnu linux-x64-musl
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+      - run: pnpm -C node install --frozen-lockfile --ignore-scripts
+      - id: platforms
+        working-directory: node
+        run: node scripts/write-native-matrix.mjs
 
   build-native:
     name: build ${{ matrix.id }}
@@ -291,7 +300,7 @@ jobs:
       - run: pnpm build:native
         env:
           FERROMARK_RUST_TARGET: ${{ matrix.target }}
-          FERROMARK_PGO: ${{ matrix.target == 'aarch64-pc-windows-msvc' && '0' || '1' }}
+          FERROMARK_PGO: ${{ matrix.pgo && '1' || '0' }}
 
       - name: Test native package
         if: ${{ matrix.native }}

@@ -2,6 +2,11 @@ import { spawnSync } from "node:child_process";
 import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
+import {
+  detectLinuxLibc,
+  nativeTarget as resolveNativeTarget,
+} from "../ferromark/native-target.mjs";
 const workspace = path.resolve(import.meta.dirname, "..");
 const artifacts = path.join(workspace, "artifacts");
 const packageTestNames = [
@@ -158,10 +163,5 @@ function runPackageTests(installedPackage) {
 }
 
 function nativeTarget() {
-  const base = `${process.platform}-${process.arch}`;
-  if (process.platform !== "linux") {
-    return base === "win32-arm64" || base === "win32-x64" ? `${base}-msvc` : base;
-  }
-  const report = process.report?.getReport?.();
-  return `${base}-${report?.header?.glibcVersionRuntime ? "gnu" : "musl"}`;
+  return resolveNativeTarget(process.platform, process.arch, detectLinuxLibc());
 }

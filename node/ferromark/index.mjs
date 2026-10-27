@@ -1,11 +1,15 @@
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
 import { types } from "node:util";
 
-import { linuxLibc, nativeTarget as resolveNativeTarget } from "./native-target.mjs";
+import { createNativeLoader } from "./native-target.mjs";
 
-const require = createRequire(import.meta.url);
+/** @type {() => NativeBindings} */
+const nativeLoader = /** @type {() => NativeBindings} */ (
+  createNativeLoader(import.meta.url, {
+    name: "ferromark",
+    packagePattern: "ferromark-{target}",
+    binaryPattern: "ferromark.{target}.node",
+  })
+);
 
 const optionKeys = new Set([
   "renderPolicy",
@@ -1292,140 +1296,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  * }} NativeBindings
  */
 
-/** @type {NativeBindings | undefined} */
-let native;
-
 /** @returns {NativeBindings} Loaded native bindings. */
-// This loader keeps local and optional-package fallback diagnostics together.
-// eslint-disable-next-line max-statements, sonarjs/cognitive-complexity
 function loadNative() {
-  if (native) {
-    return native;
-  }
-
-  const target = nativeTarget();
-  const filename = `ferromark.${target}.node`;
-  let localError;
-  try {
-    native = /** @type {NativeBindings} */ (
-      require(fileURLToPath(new URL(filename, import.meta.url)))
-    );
-    return native;
-  } catch (error) {
-    if (hasErrorCode(error, "ERR_DLOPEN_FAILED")) {
-      throw nativeBinaryLoadError(filename, "the local package", target, error);
-    }
-    if (!hasErrorCode(error, "MODULE_NOT_FOUND")) {
-      throw error;
-    }
-    localError = error;
-  }
-
-  const packageName = `ferromark-${target}`;
-  try {
-    native = /** @type {NativeBindings} */ (require(packageName));
-    return native;
-  } catch (error) {
-    if (hasErrorCode(error, "ERR_DLOPEN_FAILED")) {
-      throw nativeBinaryLoadError(filename, `the optional package ${packageName}`, target, error);
-    }
-    if (!hasErrorCode(error, "MODULE_NOT_FOUND")) {
-      throw error;
-    }
-    // Preserve both local and optional lookup failures for actionable diagnostics.
-    /* eslint-disable preserve-caught-error -- AggregateError intentionally retains both lookup failures. */
-    throw new Error(
-      `ferromark could not load the optional native package ${packageName} for ${process.platform}/${process.arch}`,
-      {
-        // oxlint-disable-next-line preserve-caught-error -- preserve both lookup failures
-        cause: new AggregateError([localError, error], `No native binary found for ${target}`),
-      },
-    );
-    /* eslint-enable preserve-caught-error */
-  }
-}
-
-/** @param {unknown} error Error to inspect. @param {string} code Expected error code. */
-function hasErrorCode(error, code) {
-  return error instanceof Error && "code" in error && error.code === code;
-}
-
-/**
- * @param {string} filename Native binary filename.
- * @param {string} source Load source description.
- * @param {string} target Native package target.
- * @param {unknown} cause Original loader error.
- */
-// The four values keep dynamic-loader diagnostics actionable.
-// eslint-disable-next-line max-params
-function nativeBinaryLoadError(filename, source, target, cause) {
-  return new Error(
-    `ferromark could not load native binary ${filename} from ${source} for ${process.platform}/${process.arch} (ERR_DLOPEN_FAILED). ${nativeLoadHint(target)}`,
-    { cause },
-  );
-}
-
-/** @param {string} target Native package target. */
-function nativeLoadHint(target) {
-  if (target.endsWith("-gnu")) {
-    return "Check that glibc 2.17 or newer is available and that no required shared library is missing.";
-  }
-  if (target.endsWith("-musl")) {
-    return "Check that the musl runtime is compatible and that no required shared library is missing.";
-  }
-  if (target.startsWith("win32-")) {
-    return "Install or repair the Microsoft Visual C++ Redistributable and verify the binary architecture.";
-  }
-  return "Check the macOS version and binary architecture, and whether quarantine or code-signing policy blocked the addon.";
-}
-
-/** @returns {string} Native package target for the current runtime. */
-function nativeTarget() {
-  const libc =
-    process.platform === "linux" ? linuxLibc(diagnosticReport(), readLoaderHelper) : undefined;
-  return resolveNativeTarget(process.platform, process.arch, libc);
-}
-
-/**
- * Collect the diagnostic report that identifies the Linux C library.
- *
- * Network interfaces are excluded: enumerating them can stall for seconds in
- * containers with slow DNS or many interfaces, and the loader only reads the
- * report header and the list of shared objects. The previous setting is
- * restored so an application's own reports keep their configured content.
- *
- * `excludeNetwork` is missing from the installed Node.js typings; Node.js has
- * supported it since v13.12, and an unknown property is simply ignored.
- *
- * @returns {import('./native-target.mjs').DiagnosticReport | undefined} Report, if available.
- */
-function diagnosticReport() {
-  const report = /** @type {{ excludeNetwork?: boolean, getReport(): object } | undefined} */ (
-    process.report
-  );
-  if (typeof report?.getReport !== "function") {
-    return;
-  }
-  const excludeNetwork = report.excludeNetwork;
-  try {
-    report.excludeNetwork = true;
-    return /** @type {import('./native-target.mjs').DiagnosticReport} */ (report.getReport());
-  } catch {
-    // A runtime that refuses to collect a report leaves only the loader helper.
-  } finally {
-    // Restored on both paths, so a failed collection cannot leave the process
-    // writing reports without network interfaces.
-    report.excludeNetwork = excludeNetwork;
-  }
-}
-
-/** @returns {string} Loader helper contents, or an empty string when unreadable. */
-function readLoaderHelper() {
-  try {
-    // The loader helper is a binary on musl systems, where it is the loader
-    // itself, so its bytes are read without UTF-8 decoding.
-    return readFileSync("/usr/bin/ldd", "latin1");
-  } catch {
-    return "";
-  }
+  return nativeLoader();
 }

@@ -50,6 +50,9 @@ registries**, so a change that lands on `main` is a change you are willing to
 ship. See [releasing](docs/releasing.md) and
 [ADR-0020](docs/arch/ADR-0020-standards-release-blueprint.md).
 
+The [shared native npm tooling](docs/native-npm-tooling.md) owns the common build,
+loader, platform generation, and package checks.
+
 Node and release changes also require the [package checks](docs/releasing.md#local-package-checks).
 Those checks build a plain addon; reproducing the published, profile-guided one
 needs the `llvm-tools` rustup component and `FERROMARK_PGO=1`, as described in

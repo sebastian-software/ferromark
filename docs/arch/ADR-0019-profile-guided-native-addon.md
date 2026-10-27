@@ -125,3 +125,12 @@ historical.
 
 - 2026-10-03: Updated current target and PGO counts to match the seven published
   native packages.
+
+## Amendment (2026-10-27): shared native packaging
+
+Ferramenta's native tooling now owns the seven-target table used by CI and
+publication. The matrix runs Linux arm64 builds on arm64 runners, including
+musl cross-builds. The PGO coverage limitation still applies across libc and
+Cargo unit hashes; no new coverage or performance claim is made. The product
+retains its existing training corpus, matching profile/target requirement and
+Windows arm64 exclusion.

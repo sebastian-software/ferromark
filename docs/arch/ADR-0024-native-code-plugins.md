@@ -54,8 +54,8 @@ supported during the migration.
 
 Complete external adapter packaging and publish a supported engine-free addon
 distribution before removing the compatibility feature in a breaking release.
-Ferrigura must use the same optional factory/adapter boundary. Neither external
-adapter package nor a Ferrigura factory is delivered by this first step.
+Ferrigura must use the same optional factory/adapter boundary. The private Ferrigura adapter and factory are implemented; independently
+installable native adapter packages remain distribution work.
 
 Implementation update (2026-10-25): #567 also added the optional Ferrigura
 factory and private Rust adapter. The [plugin bundle workflow](../plugin-bundles.md)
