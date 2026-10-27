@@ -13,7 +13,6 @@ config.unshift({
     "ferromark/native.d.ts",
     "ferromark/native-target.mjs",
     "ferromark/native-target.d.mts",
-    "scripts/native-registry.mjs",
   ],
 });
 

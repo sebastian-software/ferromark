@@ -1,7 +1,6 @@
-import { generatePackages, generateReleaseHelpers, generateRuntime } from "ferramenta-native";
+import { generatePackages, generateRuntime } from "ferramenta-native";
 
 import config from "../native-npm.config.mjs";
 const check = process.argv.includes("--check");
 await generatePackages(config, { check });
 await generateRuntime(config, { check });
-await generateReleaseHelpers(new URL("..", import.meta.url), { check });

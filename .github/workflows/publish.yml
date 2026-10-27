@@ -87,9 +87,10 @@ jobs:
         github.event_name == 'workflow_dispatch'
       ) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 35
     permissions:
       contents: read
+      actions: read
     outputs:
       tag_name: ${{ steps.source.outputs.tag_name }}
       source_sha: ${{ steps.source.outputs.source_sha }}
@@ -103,6 +104,10 @@ jobs:
         with:
           node-version: "22"
 
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       - id: source
         name: Resolve and validate the release tag
         env:
@@ -114,6 +119,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.source.outputs.tag_name }}
         run: node scripts/verify-github-release.mjs
+
+      - name: Require CI for the exact release commit
+        if: steps.source.outputs.require_ci == 'true'
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.source_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm -C node exec ferramenta-native source ci
 
   validate-release-version:
     name: validate release package versions
@@ -131,7 +143,7 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
-            /node/scripts/
+            /node/
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -143,6 +155,10 @@ jobs:
         with:
           node-version: "22"
 
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: release-tools/node/package.json
+      - run: pnpm -C release-tools/node install --frozen-lockfile --ignore-scripts
       - name: Verify the release tag matches the package versions
         env:
           RELEASE_TAG: ${{ needs.validate-release.outputs.tag_name }}
@@ -261,6 +277,7 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
+            /node/
             /scripts/
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
@@ -271,66 +288,29 @@ jobs:
           node-version: "22"
           cache: pnpm
           cache-dependency-path: node/pnpm-lock.yaml
-      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
-        with:
-          toolchain: "1.95"
-          targets: ${{ matrix.target }}
-          components: llvm-tools
-
-      # `matrix.native` is false for the two musl targets: their runner is not a
-      # musl host. This repository cross-compiles them with cargo-zigbuild, the
-      # way `napi build --cross-compile` expects, rather than with musl-tools.
-      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
-        if: ${{ matrix.libc == 'musl' }}
-        with:
-          version: 0.15.2
-      - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
-        if: ${{ matrix.libc == 'musl' }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          tool: cargo-zigbuild
-
       - run: pnpm install --frozen-lockfile
-
-      # FERROMARK_PGO=1 is set for six published addons. Windows ARM64 stays on
-      # the plain build: the toolchain's llvm-profdata rejects the counters its
-      # own instrumented binary writes there. See
-      # docs/arch/ADR-0019-profile-guided-native-addon.md.
-      - run: pnpm build:native
+      - run: pnpm -C ../release-tools/node install --frozen-lockfile --ignore-scripts
+      - name: Build, verify and upload the native release artifact
+        uses: ./release-tools/node/node_modules/ferramenta-native/actions/build-native
+        with:
+          target: ${{ matrix.target }}
+          libc: ${{ matrix.libc }}
+          rust-toolchain: "1.95"
+          rust-components: llvm-tools
+          platform-id: ${{ matrix.id }}
+          source-sha: ${{ needs.validate-release.outputs.source_sha }}
+          config: ../release-tools/node/native-npm.config.mjs
+          test-command: ${{ matrix.native && 'pnpm test' || '' }}
         env:
           FERROMARK_RUST_TARGET: ${{ matrix.target }}
           FERROMARK_PGO: ${{ matrix.pgo && '1' || '0' }}
-
-      - name: Test native package
-        if: ${{ matrix.native }}
-        run: pnpm test
-
-      - name: Verify platform package
-        run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.id }}
-
-      - name: Bind the native artifact to the validated source SHA
-        env:
-          PLATFORM_ID: ${{ matrix.id }}
-          BINARY_NAME: ${{ matrix.binary }}
-          SOURCE_SHA: ${{ needs.validate-release.outputs.source_sha }}
-        run: node ../release-tools/scripts/stage-native-release-artifact.mjs
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: ${{ matrix.artifact }}
-          path: |
-            ${{ runner.temp }}/ferromark-native-${{ matrix.id }}/${{ matrix.binary }}
-            ${{ runner.temp }}/ferromark-native-${{ matrix.id }}/ferromark-source-${{ matrix.id }}.json
-          if-no-files-found: error
-          retention-days: 7
 
   publish-npm:
     name: publish to npm
     needs: [release-please, validate-release, validate-release-version, native-matrix, build-native]
     if: ${{ !cancelled() && needs.validate-release.result == 'success' && needs.validate-release-version.result == 'success' && needs.build-native.result == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
       # npm Trusted Publishing and the provenance attestation both use this
@@ -355,6 +335,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /node/scripts/
+            /node/
             /scripts/
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
@@ -367,100 +348,18 @@ jobs:
           cache: pnpm
           cache-dependency-path: node/pnpm-lock.yaml
 
-      # npm Trusted Publishing needs npm 11.5.1 or newer, and the npm that ships
-      # with Node 22 is older. Pinned rather than `@latest`, so the tool that
-      # performs the publish cannot change under a release.
-      - run: npm install --global npm@11.5.1
 
       - run: pnpm install --frozen-lockfile
 
-      # Every artifact holds one addon; `napi artifacts` moves them back into
-      # their sidecar packages, the same way the CI rehearsal assembles them.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - run: pnpm -C ../release-tools/node install --frozen-lockfile --ignore-scripts
+      - name: Pack, test, publish and verify the native npm release
+        uses: ./release-tools/node/node_modules/ferramenta-native/actions/release-native
         with:
-          pattern: native-*
-          merge-multiple: true
-          path: node/ferromark/.napi-release-artifacts
-
-      - name: Verify native artifact source identities
-        env:
-          ARTIFACT_DIRECTORY: ferromark/.napi-release-artifacts
-          DESTINATION_DIRECTORY: ferromark/.napi-artifacts
-          SOURCE_SHA: ${{ needs.validate-release.outputs.source_sha }}
-        run: node ../release-tools/scripts/verify-native-release-artifacts.mjs
-
-      - name: Assemble all platform packages
-        run: pnpm --dir ferromark exec napi artifacts --output-dir .napi-artifacts --npm-dir npm
-
-      # The same checks the pre-merge rehearsal runs, on the assembled release.
-      # `verify-pack` packs with pnpm, which resolves the facade's `workspace:*`
-      # sidecar references, and `smoke:clean` installs those exact archives in a
-      # fresh consumer before anything reaches the registry.
-      - run: node ./scripts/verify-release.mjs
-      - run: node ./scripts/verify-pack.mjs --all-targets
-      - run: pnpm smoke:clean
-
-      # The musl addons are cross-compiled and `smoke:clean` above runs on
-      # glibc, so the packed x64 musl sidecar is installed and exercised in a
-      # musl container before the first registry call, the same way the
-      # pre-merge `node-musl` job does it. This job holds the OIDC token and the
-      # assembled archives, so the check runs through Docker on the runner
-      # rather than as a separate container job. Only `.tgz` archives that
-      # `verify-pack.mjs --all-targets` just wrote are read; the container
-      # writes nothing back into the workspace.
-      - name: Run the Alpine musl runtime test before publishing
-        run: |
-          docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/ferromark" \
-            --workdir /ferromark/node \
-            node:22-alpine \
-            node ./scripts/clean-install-smoke.mjs --target linux-x64-musl --package-tests
-
-      - id: release
-        name: Verify the packed archives and derive the release channel
-        run: node ./scripts/release-archives.mjs artifacts
-
-      # npm reads a bare `directory/name.tgz` as the GitHub shorthand
-      # `owner/repo`; only `./directory/name.tgz` is a local tarball. The
-      # script emits that shape itself, but a retry checks out the
-      # release tag's scripts while taking this workflow from `main`, so the
-      # workflow settles the shape itself for every tag.
-      - id: tarballs
-        name: Hand npm publish unambiguous local tarball paths
-        env:
-          PACKAGES: ${{ steps.release.outputs.packages }}
-        run: |
-          {
-            echo "packages<<PACKAGES_EOF"
-            while IFS= read -r package; do
-              [ -z "$package" ] && continue
-              case "$package" in
-                /*|./*) echo "$package" ;;
-                *) echo "./$package" ;;
-              esac
-            done <<< "$PACKAGES"
-            echo "PACKAGES_EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - id: npm-publish-plan
-        name: Skip npm tarballs already published at this exact version
-        env:
-          PACKAGES: ${{ steps.tarballs.outputs.packages }}
-          TAG_NODE_DIRECTORY: ${{ github.workspace }}/node
-        run: node ../release-tools/node/scripts/npm-publish-plan.mjs ./artifacts
-
-      - uses: sebastian-software/standards/.github/actions/publish-npm@a840766444dbb0e421f1f1868c48bee315ead769 # v0.13.0
-        if: ${{ steps.npm-publish-plan.outputs.publish_required == 'true' }}
-        with:
-          working-directory: node
-          # Pack-resolved tarballs rather than directories, so the published
-          # facade carries resolved sidecar versions instead of `workspace:*`.
-          # The action derives its dist-tag from a directory's package.json, so
-          # a tarball list has to name the channel explicitly. The retry plan
-          # preserves the validated sidecar-first order and passes only exact
-          # versions that returned HTTP 404 from the npm registry.
-          packages: ${{ steps.npm-publish-plan.outputs.packages }}
-          dist-tag: ${{ steps.release.outputs.dist-tag }}
+          source-sha: ${{ needs.validate-release.outputs.source_sha }}
+          tag: ${{ needs.validate-release.outputs.tag_name }}
+          config: ../release-tools/node/native-npm.config.mjs
+          musl-package-tests: "true"
+          publish: "true"
 
   verify-npm-publish:
     name: verify the npm release
@@ -477,6 +376,10 @@ jobs:
         with:
           node-version: "22"
 
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       - name: Verify the published versions on the registry
         run: node ./node/scripts/verify-npm-publish.mjs
         env:

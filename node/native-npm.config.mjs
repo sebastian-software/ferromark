@@ -1,3 +1,4 @@
+import { NATIVE_TARGETS } from "ferramenta-native/targets";
 import path from "node:path";
 const root = import.meta.dirname;
 export default {
@@ -10,4 +11,45 @@ export default {
   repositoryPlatformDir: "node/ferromark/npm",
   licenses: ["LICENSE", "LICENSE-MIT"],
   workspaceProtocol: true,
+  pack: {
+    platformRequired: ["README.md"],
+    allowed: [
+      "package.json",
+      "LICENSE",
+      "LICENSE-MIT",
+      "README.md",
+      "index.d.mts",
+      "index.mjs",
+      "native-target.mjs",
+      "native-target.d.mts",
+      "native.d.ts",
+    ],
+    maxUnpackedSize: 131_000,
+  },
+  consumer: {
+    smoke: `import { toHtml } from "ferromark"; if (toHtml("# Native") !== '<h1 id="native">Native</h1>\\n') throw new Error("HTML mismatch");`,
+    tests: [
+      "index.test.mjs",
+      "jsx-highlighting.test.mjs",
+      "jsx-module.test.mjs",
+      "jsx-prepared.test.mjs",
+      "jsx-render-code-block.test.mjs",
+      "jsx-title.test.mjs",
+      "jsx.test.mjs",
+    ].map((file) => `test/${file}`),
+  },
+  release: {
+    repository: "https://github.com/sebastian-software/ferromark",
+    tagPrefix: "v",
+    ci: {
+      requiredJobs: ["fmt", "clippy", "Assemble all npm packages", "Alpine musl runtime test"],
+      platformJobs: NATIVE_TARGETS.map(({ triple }) => ({
+        pattern: `^native \\(${triple}\\)$`,
+        label: `native (${triple})`,
+      })),
+    },
+    cargoFiles: ["Cargo.toml", "transforms/Cargo.toml", "node/native/Cargo.toml"],
+    exactCargoDependencies: [{ file: "transforms/Cargo.toml", name: "ferromark" }],
+    legacyRecoveryThrough: "3.6.0",
+  },
 };
