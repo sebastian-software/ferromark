@@ -329,6 +329,23 @@ jobs:
       - name: Test minimum supported Node.js
         run: node --test ferromark/test/index.test.mjs ferromark/test/bytes.test.mjs ferromark/test/jsx.test.mjs ferromark/test/jsx-title.test.mjs ferromark/test/jsx-highlighting.test.mjs ferromark/test/jsx-module.test.mjs ferromark/test/native-plugins.test.mjs
 
+  native-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          package_json_file: node/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+      - run: pnpm -C node install --frozen-lockfile --ignore-scripts
+      - id: matrix
+        working-directory: node
+        run: echo "matrix=$(node scripts/native-matrix.mjs)" >> "$GITHUB_OUTPUT"
+
   native:
     # Each target is built on a runner with the same architecture. GNU targets
     # use the glibc 2.17 napi-rs toolchain; musl targets use cargo-zigbuild.
@@ -336,19 +353,12 @@ jobs:
     # `node-musl` job below loads the packed x64 musl addon on Alpine.
     permissions:
       contents: read
+    needs: native-matrix
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { os: macos-latest, rust_target: aarch64-apple-darwin, artifact: darwin-arm64, runtime_test: true, pgo: true }
-          - { os: ubuntu-24.04-arm, rust_target: aarch64-unknown-linux-gnu, artifact: linux-arm64-gnu, runtime_test: true, pgo: true }
-          - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-gnu, artifact: linux-x64-gnu, runtime_test: true, pgo: true }
-          - { os: ubuntu-latest, rust_target: x86_64-unknown-linux-musl, artifact: linux-x64-musl, runtime_test: false, pgo: true }
-          - { os: ubuntu-latest, rust_target: aarch64-unknown-linux-musl, artifact: linux-arm64-musl, runtime_test: false, pgo: true }
-          - { os: windows-latest, rust_target: x86_64-pc-windows-msvc, artifact: win32-x64-msvc, runtime_test: true, pgo: true }
-          - { os: windows-11-arm, rust_target: aarch64-pc-windows-msvc, artifact: win32-arm64-msvc, runtime_test: true, pgo: false }
-    runs-on: ${{ matrix.os }}
-    name: native (${{ matrix.rust_target }})
+      matrix: ${{ fromJSON(needs.native-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    name: native (${{ matrix.target }})
     defaults:
       run:
         working-directory: node
@@ -381,15 +391,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
           toolchain: "1.95"
-          targets: ${{ matrix.rust_target }}
+          targets: ${{ matrix.target }}
           # llvm-profdata merges the profile-guided training counters.
           components: llvm-tools
       - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
-        if: ${{ contains(matrix.rust_target, '-musl') }}
+        if: ${{ contains(matrix.target, '-musl') }}
         with:
           version: 0.15.2
       - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
-        if: ${{ contains(matrix.rust_target, '-musl') }}
+        if: ${{ contains(matrix.target, '-musl') }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
@@ -403,18 +413,18 @@ jobs:
       # See docs/arch/ADR-0019-profile-guided-native-addon.md.
       - run: pnpm build:native
         env:
-          FERROMARK_RUST_TARGET: ${{ matrix.rust_target }}
+          FERROMARK_RUST_TARGET: ${{ matrix.target }}
           FERROMARK_PGO: ${{ matrix.pgo && '1' || '0' }}
       - name: Test native package
-        if: ${{ matrix.runtime_test }}
+        if: ${{ matrix.native }}
         run: pnpm test
       - name: Verify platform package
-        run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.artifact }}
+        run: node ./scripts/verify-platform-artifact.mjs ${{ matrix.id }}
       - name: Upload verified native binary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: native-${{ matrix.artifact }}
-          path: node/ferromark/npm/${{ matrix.artifact }}/ferromark.${{ matrix.artifact }}.node
+          name: native-${{ matrix.id }}
+          path: node/ferromark/npm/${{ matrix.id }}/ferromark.${{ matrix.id }}.node
           if-no-files-found: error
           retention-days: 7
 

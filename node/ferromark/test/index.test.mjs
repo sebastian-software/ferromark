@@ -632,10 +632,10 @@ test("maps every supported native platform and rejects unsupported targets", () 
   assert.equal(nativeTarget("linux", "x64"), "linux-x64-gnu");
   assert.throws(
     () => nativeTarget("linux", "riscv64", "gnu"),
-    /ferromark does not support linux\/riscv64/,
+    /Unsupported native target linux\/riscv64/,
   );
-  assert.throws(() => nativeTarget("freebsd", "x64"), /ferromark does not support freebsd\/x64/);
-  assert.throws(() => nativeTarget("darwin", "x64"), /ferromark does not support darwin\/x64/);
+  assert.throws(() => nativeTarget("freebsd", "x64"), /Unsupported native target freebsd\/x64/);
+  assert.throws(() => nativeTarget("darwin", "x64"), /Unsupported native target darwin\/x64/);
 });
 
 /** Loader helper contents on a system without a musl loader. */

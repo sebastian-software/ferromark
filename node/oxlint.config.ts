@@ -4,7 +4,15 @@ import { defineConfig, type OxlintConfig } from "oxlint";
 // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- getOxlintConfig() is not yet typed against oxlint's own OxlintConfig
 const config = getOxlintConfig({ node: true }) as OxlintConfig;
 
-config.ignorePatterns = ["**/dist/**", "coverage/**", "node_modules/**", "ferromark/native.d.ts"];
+config.ignorePatterns = [
+  "**/dist/**",
+  "coverage/**",
+  "node_modules/**",
+  "ferromark/native.d.ts",
+  "ferromark/native-target.mjs",
+  "ferromark/native-target.d.mts",
+  "scripts/native-registry.mjs",
+];
 config.overrides = [
   ...(config.overrides ?? []),
   {

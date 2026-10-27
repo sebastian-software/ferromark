@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
+import { NATIVE_TARGETS } from "../native-target.mjs";
+
 const readmeUrl = new URL("../README.md", import.meta.url);
 const packageUrl = new URL("../package.json", import.meta.url);
 const loaderUrl = new URL("../index.mjs", import.meta.url);
@@ -154,7 +156,7 @@ function assertReadmeContract(candidate) {
   assert.match(nativeTargets, /linux-x64-musl/, "loader must select the x64 musl package");
   assert.match(
     nativeTargets,
-    /does not support \$\{platform\}/,
+    /Unsupported native target \$\{platform\}/,
     "loader must retain unsupported-target diagnostics",
   );
   assert.match(
@@ -163,7 +165,7 @@ function assertReadmeContract(candidate) {
     "README must cover unsupported targets",
   );
   assert.match(
-    loader,
+    nativeTargets,
     /could not load the optional native package/,
     "loader must retain missing-package diagnostics",
   );
@@ -172,7 +174,11 @@ function assertReadmeContract(candidate) {
     /`could not load the optional native package`/,
     "README must cover missing platform packages",
   );
-  assert.match(loader, /ERR_DLOPEN_FAILED/, "loader must wrap native dynamic-loader failures");
+  assert.match(
+    nativeTargets,
+    /ERR_DLOPEN_FAILED/,
+    "loader must wrap native dynamic-loader failures",
+  );
   assert.match(candidate, /glibc 2\.17/, "README must document the GNU Linux binary baseline");
   assert.match(
     candidate,
@@ -180,14 +186,10 @@ function assertReadmeContract(candidate) {
     "README must cover native dynamic-loader failures",
   );
 
-  const loaderTargets = [
-    ...nativeTargets.matchAll(
-      /["']([a-z0-9]+-(?:arm64|x64)(?:-(?:gnu|musl))?)["']: ["']([a-z0-9-]+)["']/g,
-    ),
-  ].map(([, host, target]) => ({ host, target }));
+  const loaderTargets = NATIVE_TARGETS.map(({ id }) => id);
   const packageTargets = packageJson.napi.targets.map(packageTargetToBindingTarget);
   assert.deepEqual(
-    loaderTargets.map(({ target }) => target).sort(),
+    [...loaderTargets].sort(),
     [...packageTargets].sort(),
     "loader targets and published native targets must stay aligned",
   );

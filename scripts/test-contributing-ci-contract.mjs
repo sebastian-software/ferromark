@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { parse } from "yaml";
 import TOML from "@iarna/toml";
+import { NATIVE_TARGETS } from "../node/ferromark/native-target.mjs";
 
 const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 const ci = parse(read(".github/workflows/ci.yml"));
@@ -34,7 +35,12 @@ test("CI covers the v2 workspace, toolchain floor, Node package, and site", () =
     "coverage",
   ])
     assert.ok(ci.jobs[job]);
-  assert.equal(ci.jobs.native.strategy.matrix.include.length, 7);
+  assert.equal(NATIVE_TARGETS.length, 7);
+  assert.equal(ci.jobs.native.needs, "native-matrix");
+  assert.equal(
+    ci.jobs.native.strategy.matrix,
+    "$" + "{{ fromJSON(needs.native-matrix.outputs.matrix) }}",
+  );
   assert.equal(ci.jobs["npm-packages"].needs, "native");
   assert.ok(
     ci.jobs["npm-packages"].steps.some(
@@ -244,7 +250,7 @@ test("publication validates one immutable release source before publishing", () 
   const uses = Object.values(publisher.jobs).flatMap((job) =>
     job.steps.map((step) => step.uses).filter(Boolean),
   );
-  for (const action of ["publish-crates", "napi-matrix", "publish-npm"]) {
+  for (const action of ["publish-crates", "publish-npm"]) {
     assert.ok(
       uses.some(
         (entry) =>
@@ -281,34 +287,38 @@ test("publication validates one immutable release source before publishing", () 
 test("the release native matrix matches supported packages and CI targets", () => {
   const publisher = parse(read(".github/workflows/publish.yml"));
   const packageJson = JSON.parse(read("node/ferromark/package.json"));
-  const matrixAction = publisher.jobs["native-matrix"].steps.find((step) =>
-    step.uses?.includes("/napi-matrix@"),
+  for (const workflow of [ci, publisher]) {
+    const steps = workflow.jobs["native-matrix"].steps;
+    assert.ok(
+      steps.some((step) =>
+        step.run?.includes("pnpm -C node install --frozen-lockfile --ignore-scripts"),
+      ),
+    );
+    assert.ok(
+      steps.some((step) => /node scripts\/(?:write-)?native-matrix\.mjs/.test(step.run ?? "")),
+    );
+  }
+  const checkout = publisher.jobs["native-matrix"].steps.find((step) =>
+    step.uses?.startsWith("actions/checkout@"),
   );
-  assert.equal(matrixAction.with.package, packageJson.napi.packageName);
-
+  assert.equal(
+    checkout.with.ref,
+    "$" + "{{ github.workflow_sha }}",
+    "historical release retries use tooling from the immutable workflow",
+  );
+  assert.match(read("node/scripts/native-matrix.mjs"), /from ["']ferramenta-native["']/);
   const sidecars = Object.keys(packageJson.optionalDependencies)
     .map((name) => name.replace(/^ferromark-/, ""))
     .sort();
-  const publishedPlatforms = matrixAction.with.platforms
-    .trim()
-    .split(/[\s,]+/)
-    .sort();
   assert.deepEqual(
-    publishedPlatforms,
+    NATIVE_TARGETS.map(({ id }) => id).sort(),
     sidecars,
-    "the release matrix must select exactly the facade's published sidecars",
+    "the shared target table must select exactly the facade's published sidecars",
   );
-
-  const ciTargets = ci.jobs.native.strategy.matrix.include;
   assert.deepEqual(
-    ciTargets.map(({ rust_target }) => rust_target).sort(),
+    NATIVE_TARGETS.map(({ triple }) => triple).sort(),
     [...packageJson.napi.targets].sort(),
-    "native CI targets must match the facade's supported N-API targets",
-  );
-  assert.deepEqual(
-    ciTargets.map(({ artifact }) => artifact).sort(),
-    sidecars,
-    "native CI artifacts must match the facade's published sidecars",
+    "the shared Rust targets must match the facade's supported N-API targets",
   );
 });
 
