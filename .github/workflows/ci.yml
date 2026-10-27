@@ -394,22 +394,6 @@ jobs:
           node-version: "22"
           cache: pnpm
           cache-dependency-path: node/pnpm-lock.yaml
-      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
-        with:
-          toolchain: "1.95"
-          targets: ${{ matrix.target }}
-          # llvm-profdata merges the profile-guided training counters.
-          components: llvm-tools
-      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
-        if: ${{ contains(matrix.target, '-musl') }}
-        with:
-          version: 0.15.2
-      - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2
-        if: ${{ contains(matrix.target, '-musl') }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          tool: cargo-zigbuild
       - run: pnpm install --frozen-lockfile
       # Published addons are profile-guided; local builds stay opt-in.
       # See docs/arch/ADR-0019-profile-guided-native-addon.md.
@@ -417,7 +401,13 @@ jobs:
       # rejects the counters its own instrumented binary writes there
       # ("malformed instrumentation profile data: symbol name is empty").
       # See docs/arch/ADR-0019-profile-guided-native-addon.md.
-      - run: pnpm build:native
+      - name: Build native addon
+        uses: ./node/node_modules/ferramenta-native/actions/build-native
+        with:
+          target: ${{ matrix.target }}
+          libc: ${{ matrix.libc }}
+          rust-toolchain: "1.95"
+          rust-components: llvm-tools
         env:
           FERROMARK_RUST_TARGET: ${{ matrix.target }}
           FERROMARK_PGO: ${{ matrix.pgo && '1' || '0' }}

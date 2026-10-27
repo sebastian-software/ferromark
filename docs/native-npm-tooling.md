@@ -7,10 +7,20 @@ to regenerate or verify the platform manifests and standalone runtime. The
 existing npm names, public API, 3.x Ferriki compatibility build, PGO training,
 diagnostic-build isolation and release source checks remain supported.
 
-The development dependency pins the published `ferramenta-native@0.1.0` registry
-version. The initial bootstrap archive has been removed. No path to a sibling
-checkout is required. The end-user facade contains the generated loader and has
-no dependency on the tooling package.
+The development dependency pins a full Ferramenta Git commit through pnpm's
+`path:/packages/native` selector. A normal `pnpm install` or frozen install in
+`node` fetches the ready-to-run helpers automatically. No toolkit registry
+release, submodule setup, sibling checkout or build approval is needed.
+The manifest and lockfile own the exact source pin. To adopt a toolkit fix,
+update that pin and regenerate the lockfile and generated files.
+
+The same dependency provides the composite CI action for Rust target setup,
+musl toolchains and the product build command. Ferromark passes `llvm-tools`
+and the matrix's `FERROMARK_PGO` flag, preserving its existing training and the
+Windows ARM64 exception. Tests, artifacts and release source gates stay in
+Ferromark; historical release retries retain their original toolchain setup.
+The end-user facade contains the generated loader and has no dependency on the
+tooling package.
 
 ## Verification of this migration
 
@@ -31,5 +41,5 @@ executed by this local run. This migration makes no new performance claim.
 The original starting commit had two failing release contracts. Both fixes are
 now included from `main`: the workspace-members assertion covers the private
 plugin crates, and release rehearsal preserves registry dependency identities.
-The updated infrastructure suite passes all 88 tests. No packages were published
+The updated infrastructure suite passes all 88 tests. No engine packages were published
 by this migration.

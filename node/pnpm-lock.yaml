@@ -29,8 +29,8 @@ importers:
         specifier: 0.4.0
         version: 0.4.0(@types/estree@1.0.9)(@typescript-eslint/eslint-plugin@8.70.0(@typescript-eslint/parser@8.70.0(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript-eslint/utils@8.70.0(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(supports-color@9.4.0))(@typescript/typescript6@6.0.2)(eslint@10.4.0(jiti@2.7.0)(supports-color@9.4.0))(jsonc-eslint-parser@3.3.0)(oxlint@1.83.0)(supports-color@9.4.0)
       ferramenta-native:
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: github:sebastian-software/ferramenta#9bb9b8a04ef61012adebb92010ad4634816db75a&path:/packages/native
+        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/9bb9b8a04ef61012adebb92010ad4634816db75a#path:/packages/native
       jiti:
         specifier: 2.7.0
         version: 2.7.0
@@ -2495,8 +2495,9 @@ packages:
       picomatch:
         optional: true
 
-  ferramenta-native@0.1.0:
-    resolution: {integrity: sha512-iWpKvuVm0uvXJzilS50JU8K9+GVfBszYzQlD1m7bGUGAkiNxcyVlyJult45rSaLEEjRUmB+N5uN8CfHwNi6abw==}
+  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/9bb9b8a04ef61012adebb92010ad4634816db75a#path:/packages/native:
+    resolution: {gitHosted: true, integrity: sha512-5XY2VXnQCxh8dzIIMexO7bFO92a1pqi7D/nh+iQ5td4FJ/X8nwVq/7cpQ5q4KiJ8DExBf3TozwlAliSLWsLFaQ==, path: /packages/native, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/9bb9b8a04ef61012adebb92010ad4634816db75a}
+    version: 0.1.0
     engines: {node: '>=22.13.0'}
 
   file-entry-cache@8.0.0:
@@ -6213,7 +6214,7 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  ferramenta-native@0.1.0: {}
+  ferramenta-native@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/9bb9b8a04ef61012adebb92010ad4634816db75a#path:/packages/native: {}
 
   file-entry-cache@8.0.0:
     dependencies:
