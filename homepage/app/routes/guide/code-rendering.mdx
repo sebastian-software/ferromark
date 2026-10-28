@@ -86,14 +86,20 @@ hook implementations directly, without Node.js. See the
 ## Understand the current Mermaid boundary
 
 The adapter recognizes parsed `mermaid` fences and emits SVG without a browser
-Mermaid runtime. With `errorPolicy: "code"`, a failed diagram falls back to
-escaped code; the default policy throws. SVG and custom callback results are
-trusted renderer output, even when authored Markdown HTML is escaped.
+Mermaid runtime. By default, invalid or unsupported diagrams retain escaped code
+and a diagnostic with the fence's original UTF-8 byte range. Drain
+`compiler.takeDiagnostics()` or `prepared.takeDiagnostics()` after rendering.
+`errorPolicy: "throw"` selects strict failure instead.
 
-Repeated renders currently allocate new SVG IDs. Source-span diagnostics, a
-dedicated SVG safety policy, and the complete deterministic fixture matrix
-from [issue #531](https://github.com/sebastian-software/ferromark/issues/531)
-remain open. Use the current adapter with content and engine configuration
-you trust. See the
+SVG passes a dedicated policy before HTML emission or JSX conversion: scripts,
+event attributes, external resources, and `foreignObject` HTML are rejected.
+Embedded fonts and local fragment references remain available. Custom application
+callbacks keep their own trusted-output contract.
+
+IDs derive from the output namespace and original fence position. Repeated and
+prepared renders are identical; supply distinct `idPrefix` values when combining
+documents. Shared flowchart, sequence, state, class, and ER fixtures pin complete
+SVG bytes across Rust and installed Node consumers. Automatic light/dark CSS
+requires no JavaScript. See the
 [Mermaid adapter guide](https://github.com/sebastian-software/ferromark/blob/main/docs/ferrigura.md)
-for options, Rust integration, and the pinned engine version.
+for options, examples, output constraints, and the pinned engine version.

@@ -1,7 +1,5 @@
 //! Optional Mermaid factory; all rendering and SVG conversion stay in Rust.
 
-use std::sync::atomic::{AtomicU64, Ordering};
-
 use ferromark::{HtmlCodeBlockInput, HtmlRenderHooks, JsxCodeBlockInput, JsxRenderHooks};
 use ferromark_ferrigura::{
     FerriguraHooks,
@@ -10,9 +8,7 @@ use ferromark_ferrigura::{
 use napi::bindgen_prelude::{Error, Result, Status};
 use serde_json::Value;
 
-use super::{NativeCodePlugin, known_keys, object, string, usage};
-
-static NEXT_NAMESPACE: AtomicU64 = AtomicU64::new(1);
+use super::{CodePluginDiagnostic, NativeCodePlugin, known_keys, object, string, usage};
 
 pub(super) struct FerriguraPlugin {
     hooks: FerriguraHooks,
@@ -39,24 +35,15 @@ impl FerriguraPlugin {
             }
         };
         let fallback_to_code = match string(settings, "errorPolicy")? {
-            None | Some("throw") => false,
-            Some("code") => true,
+            Some("throw") => false,
+            None | Some("code") => true,
             Some(_) => return Err(usage("Ferrigura errorPolicy must be 'throw' or 'code'")),
         };
         let empty = Value::Object(serde_json::Map::new());
         let config = settings.get("config").unwrap_or(&empty);
         object(config, "Ferrigura config")?;
         let config = serde_json::from_value(config.clone()).map_err(usage)?;
-        let prefix = if let Some(prefix) = string(settings, "idPrefix")? {
-            prefix.to_owned()
-        } else {
-            let namespace = NEXT_NAMESPACE
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
-                    next.checked_add(1)
-                })
-                .map_err(|_| usage("Ferrigura output namespaces exhausted"))?;
-            format!("fm-mermaid-{namespace}")
-        };
+        let prefix = string(settings, "idPrefix")?.unwrap_or("fm-mermaid");
         let mut hooks = FerriguraHooks::new(Renderer::new(&config), prefix).map_err(usage)?;
         if let Some(scheme) = scheme {
             hooks = hooks.with_color_scheme(scheme);
@@ -72,6 +59,19 @@ impl NativeCodePlugin for FerriguraPlugin {
     fn take_error(&mut self) -> Option<Error> {
         let error = self.hooks.take_error()?;
         (!self.fallback_to_code).then(|| Error::new(Status::GenericFailure, error.to_string()))
+    }
+
+    fn take_diagnostics(&mut self) -> Vec<CodePluginDiagnostic> {
+        self.hooks
+            .take_diagnostics()
+            .into_iter()
+            .map(|diagnostic| CodePluginDiagnostic {
+                plugin: "ferrigura".to_owned(),
+                message: diagnostic.message,
+                start: diagnostic.span.start,
+                end: diagnostic.span.end,
+            })
+            .collect()
     }
 }
 

@@ -1,11 +1,12 @@
 //! An optional, Node-independent adapter from Mermaid code blocks to inline SVG.
 //!
-//! Reuse one hook set across renders. Supply an ID prefix unique to the output
-//! namespace; each recognized block gets a fresh suffix, including repeated
-//! renders. Check [`FerriguraHooks::take_error`] after rendering. Unknown
-//! languages decline the block and keep Ferromark's regular code rendering.
+//! IDs derive from the namespace and original fence position, so repeated renders
+//! are identical. Failed or unsafe diagrams retain ordinary code output; drain
+//! [`FerriguraHooks::take_diagnostics`] to report their original source ranges.
 
-use ferromark::{HtmlCodeBlockInput, HtmlRenderHooks};
+use ferromark::{HtmlCodeBlockInput, HtmlRenderHooks, ast::Span};
+
+mod svg;
 
 /// The engine's configuration and renderer types.
 pub use ferrigura;
@@ -22,25 +23,33 @@ pub enum Error {
         "idPrefix must start with an ASCII letter and contain only ASCII letters, digits, '-' and '_'"
     )]
     InvalidIdPrefix,
-    /// All suffixes in this namespace have been used.
-    #[error("Ferrigura diagram ID counter exhausted")]
-    IdExhausted,
     /// Ferrigura rejected the diagram or its configuration.
     #[error("Ferrigura rendering failed: {0}")]
     Render(#[from] ferrigura::Error),
-    /// The engine returned an SVG that cannot be converted to intrinsic JSX.
-    #[cfg(feature = "jsx")]
-    #[error("Ferrigura SVG conversion failed: {0}")]
+    /// The engine returned invalid XML.
+    #[error("Ferrigura SVG parsing failed: {0}")]
     Svg(#[from] roxmltree::Error),
+    /// SVG violates the static, local-resource output policy.
+    #[error("Ferrigura SVG policy rejected {0}")]
+    UnsafeSvg(String),
+}
+
+/// A failed Mermaid fence that fell back to ordinary code rendering.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Diagnostic {
+    /// Original UTF-8 range of the complete fence.
+    pub span: Span,
+    /// Rendering or SVG policy failure.
+    pub message: String,
 }
 
 /// Owns and reuses one Ferrigura renderer for HTML and optional JSX hooks.
 pub struct FerriguraHooks {
     renderer: ferrigura::Renderer,
     id_prefix: String,
-    next_id: u64,
     color_scheme: Option<ferrigura::ColorScheme>,
     error: Option<Error>,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl FerriguraHooks {
@@ -63,9 +72,9 @@ impl FerriguraHooks {
         Ok(Self {
             renderer,
             id_prefix,
-            next_id: 1,
-            color_scheme: None,
+            color_scheme: Some(ferrigura::ColorScheme::Auto),
             error: None,
+            diagnostics: Vec::new(),
         })
     }
 
@@ -82,30 +91,59 @@ impl FerriguraHooks {
         self.error.take()
     }
 
-    fn render_svg(&mut self, code: &str, language: Option<&str>) -> Option<String> {
-        if self.error.is_some() || language != Some("mermaid") {
-            return None;
-        }
-        let Some(next_id) = self.next_id.checked_add(1) else {
-            self.error = Some(Error::IdExhausted);
-            return None;
-        };
-        let id = format!("{}-{}", self.id_prefix, self.next_id);
-        self.next_id = next_id;
-        match self.renderer.render_with(
+    /// Drains failed-fence diagnostics, preserving their encounter order.
+    pub fn take_diagnostics(&mut self) -> Vec<Diagnostic> {
+        std::mem::take(&mut self.diagnostics)
+    }
+
+    fn render_svg(&self, code: &str, span: Span) -> Result<String, Error> {
+        let svg = self.renderer.render_with(
             code,
             &ferrigura::RenderOptions {
-                id: Some(id),
+                id: Some(format!("{}-{}", self.id_prefix, span.start)),
                 color_scheme: self.color_scheme,
+                // Gantt's implicit dates and today marker must not read the clock.
+                now: Some(0),
                 ..ferrigura::RenderOptions::default()
             },
-        ) {
-            Ok(mut svg) => {
-                svg.push('\n');
-                Some(svg)
+        )?;
+        let mut svg = svg::sanitize(&svg)?;
+        svg.push('\n');
+        Ok(svg)
+    }
+
+    fn record(&mut self, span: Span, error: Error) {
+        self.diagnostics.push(Diagnostic {
+            span,
+            message: error.to_string(),
+        });
+        if self.error.is_none() {
+            self.error = Some(error);
+        }
+    }
+
+    fn render(
+        &mut self,
+        code: &str,
+        language: Option<&str>,
+        span: Span,
+        jsx: bool,
+    ) -> Option<String> {
+        if language != Some("mermaid") {
+            return None;
+        }
+        let result = self.render_svg(code, span).and_then(|svg| {
+            #[cfg(feature = "jsx")]
+            if jsx {
+                return jsx::convert(&svg).map_err(Error::from);
             }
+            let _ = jsx;
+            Ok(svg)
+        });
+        match result {
+            Ok(output) => Some(output),
             Err(error) => {
-                self.error = Some(error.into());
+                self.record(span, error);
                 None
             }
         }
@@ -114,20 +152,13 @@ impl FerriguraHooks {
 
 impl HtmlRenderHooks for FerriguraHooks {
     fn render_code_block(&mut self, input: HtmlCodeBlockInput<'_>) -> Option<String> {
-        self.render_svg(input.code, input.language)
+        self.render(input.code, input.language, input.span, false)
     }
 }
 
 #[cfg(feature = "jsx")]
 impl ferromark::JsxRenderHooks for FerriguraHooks {
     fn render_code_block(&mut self, input: ferromark::JsxCodeBlockInput<'_>) -> Option<String> {
-        let svg = self.render_svg(input.code, input.language)?;
-        match jsx::convert(&svg) {
-            Ok(jsx) => Some(jsx),
-            Err(error) => {
-                self.error = Some(error.into());
-                None
-            }
-        }
+        self.render(input.code, input.language, input.span, true)
     }
 }

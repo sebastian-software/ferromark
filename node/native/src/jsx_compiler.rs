@@ -6,7 +6,7 @@ use napi::bindgen_prelude::Result;
 use napi_derive::napi;
 use serde_json::Value;
 
-use crate::plugins::{NativePlugins, boolean, known_keys, object, usage};
+use crate::plugins::{CodePluginDiagnostic, NativePlugins, boolean, known_keys, object, usage};
 
 use crate::jsx::{
     Compiled, JsxModuleResult, JsxOptions, JsxPreparedMetadata, JsxResult, NativeHighlighting,
@@ -45,6 +45,16 @@ impl CodeCompiler {
             )?)),
             line_numbers,
         })
+    }
+
+    /// Drains diagnostics from this compiler and its prepared documents.
+    #[napi(catch_unwind)]
+    pub fn take_diagnostics(&self) -> Result<Vec<CodePluginDiagnostic>> {
+        Ok(self
+            .plugins
+            .try_borrow_mut()
+            .map_err(|_| usage("A code compiler cannot be used recursively"))?
+            .take_diagnostics())
     }
 
     /// Renders HTML without calling JavaScript for any code block.
@@ -220,6 +230,19 @@ impl PreparedJsxDocument {
 
 #[napi]
 impl PreparedJsxDocument {
+    /// Drains diagnostics shared with the compiler that prepared this document.
+    #[napi(catch_unwind)]
+    pub fn take_diagnostics(&self) -> Result<Vec<CodePluginDiagnostic>> {
+        let Some(settings) = &self.highlighting else {
+            return Ok(Vec::new());
+        };
+        Ok(settings
+            .plugins
+            .try_borrow_mut()
+            .map_err(|_| usage("A code compiler cannot be used recursively"))?
+            .take_diagnostics())
+    }
+
     /// Projects original static Markdown without rendering or highlighting.
     #[napi(catch_unwind)]
     pub fn project_markdown(

@@ -470,7 +470,11 @@ and custom builds. The standard addon includes neither engine and reports
 `[]` from `availableCodePlugins()`. Engine-enabled bundles require explicit
 plugin selection.
 The optional [Ferrigura adapter](../../docs/ferrigura.md) adds native Mermaid
-rendering to custom builds; it is excluded from the standard addon.
+rendering to custom builds; it is excluded from the standard addon. Its default
+policy preserves escaped code for failed or unsafe diagrams. Drain
+`compiler.takeDiagnostics()` or `prepared.takeDiagnostics()` for failures with
+original UTF-8 fence ranges. SVG is checked before emission, and IDs remain
+stable across repeated renders.
 
 Use an [installable plugin bundle](../../docs/plugin-bundles.md) to choose
 `none`, `ferriki`, `ferrigura`, or `all` without compiling Rust in the consuming

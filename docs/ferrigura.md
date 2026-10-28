@@ -22,11 +22,13 @@ import { CodeCompiler } from "ferromark";
 const compiler = new CodeCompiler({
   plugins: [{
     name: "ferrigura",
-    options: { colorScheme: "auto", errorPolicy: "throw" },
+    options: { idPrefix: "page" },
   }],
 });
+const markdown = "```mermaid\nflowchart LR\nA[Hello] --> B[World]\n```";
 const html = compiler.toHtml(markdown);
 const jsx = compiler.compile(markdown);
+console.log(compiler.takeDiagnostics()); // [] for a valid diagram.
 ```
 
 The standard package reports this factory as unavailable. To test an isolated
@@ -60,20 +62,40 @@ Options are validated once:
 | Option | Behavior |
 | --- | --- |
 | `config` | Object passed to Ferrigura's renderer configuration; defaults to an empty object. Engine-specific validation belongs to Ferrigura. |
-| `colorScheme` | Optional `light`, `dark`, or `auto`; otherwise the engine default applies. |
+| `colorScheme` | `auto` by default: embedded CSS follows `prefers-color-scheme` without JavaScript. Explicit `light` and `dark` select one theme. |
 | `idPrefix` | Optional output namespace. Starts with an ASCII letter and contains only ASCII letters, digits, `-`, or `_`. |
-| `errorPolicy` | `throw` by default. `code` declines a failed block so later plugins or the normal escaped-code renderer can handle it. |
+| `errorPolicy` | `code` by default: failed or unsafe diagrams retain escaped code and a diagnostic. `throw` also records a diagnostic, then rejects the render. |
 
-Default prefixes are distinct within the loaded addon. Increasing suffixes
-distinguish blocks and repeated renders, including prepared handles. For output
-combined across processes, builds, or compiler instances with explicit prefixes,
-supply distinct namespaces yourself. IDs are stateful, so repeated renders need
-not produce byte-identical SVG.
+The default namespace is `fm-mermaid`. IDs append the original fence's UTF-8
+start offset. Repeated HTML/JSX renders, fresh compiler instances, and prepared
+handles therefore produce the same IDs and SVG bytes. Different fences in one
+document have distinct IDs, including identical diagrams. Supply a different
+`idPrefix` for each document when combining their output in one page. The
+engine's implicit clock is fixed at the Unix epoch, including Gantt's implicit
+dates and today marker; use explicit dates in time-dependent diagrams.
+
+Drain diagnostics after rendering:
+
+```js
+const source = "é\n\n```mermaid\nfutureDiagram\nA --> B\n```";
+const html = compiler.toHtml(source); // The fence remains escaped code.
+for (const diagnostic of compiler.takeDiagnostics()) {
+  console.log(diagnostic.plugin, diagnostic.start, diagnostic.end, diagnostic.message);
+  // Offsets count original UTF-8 bytes, not JavaScript string indexes.
+  console.log(Buffer.from(source).subarray(diagnostic.start, diagnostic.end).toString());
+}
+```
+
+Diagnostics accumulate until drained. `prepared.takeDiagnostics()` drains the
+same queue as its compiler, including after that compiler has been collected.
+A failed block does not suppress later diagrams under the default fallback
+policy. Analysis methods do not render diagrams or create diagnostics.
 
 The exact parsed language token must be `mermaid`. Nested fences and decoded
 info strings work; unrelated languages and metadata suffix variants decline.
-Authored document HTML keeps its existing trust policy. Plugin output is trusted
-engine output. JSX conversion preserves SVG element names, maps attributes and
+Authored document HTML keeps its existing trust policy. Mermaid output passes
+the SVG policy below before HTML emission or JSX conversion. JSX conversion
+preserves SVG element names, maps attributes and
 inline styles, and escapes text/CSS as string expressions without
 `dangerouslySetInnerHTML`. Standalone `renderCodeBlock` remains a highlighting
 API; use document HTML/JSX methods for diagrams.
@@ -97,36 +119,47 @@ if let Some(error) = hooks.take_error() {
 }
 ```
 
-Check `take_error` before using rendered output. The infallible core hook trait
-cannot return an engine error directly; the adapter retains the first error and
-declines further diagrams until it is taken. The Node host checks after each
-hook invocation and applies the configured error policy. A tuple composes these
-hooks with Ferriki hooks; the adapter itself has no Node dependency.
+`hooks.take_diagnostics()` returns failures with `span` and `message`; render
+output already contains escaped code at those fences. `take_error()` optionally
+returns the first original error for strict application policies. A failed
+fence does not prevent later diagrams from rendering. A tuple composes these
+hooks with Ferriki hooks; the adapter has no Node dependency.
 
-## Engine version and validation
+The runnable native example reads Markdown from stdin and reports ranges on
+stderr while writing HTML to stdout:
 
-### Remaining requirements from issue #531
+```sh
+cargo run -p ferromark-ferrigura --example mermaid --locked < input.md > output.html
+```
 
-The adapter supplies the native HTML/JSX integration, explicit activation,
-theme selection, observable errors, optional code fallback, and distinct IDs.
-[Issue #531](https://github.com/sebastian-software/ferromark/issues/531) remains
-open with these remaining acceptance criteria:
+## SVG policy and deterministic fixtures
 
-- IDs use a counter retained across renders, so repeated output is not
-  byte-identical. Default namespaces also depend on compiler construction order.
-- Engine errors are exposed, but there is no structured diagnostic mapped to
-  the original Markdown fence's source span. Node defaults to throwing; plain
-  code fallback requires `errorPolicy: "code"`.
-- SVG is trusted engine output. The adapter does not establish the issue's
-  dedicated SVG policy forbidding scripts, event attributes, external references,
-  and `foreignObject` HTML.
-- The adapter fixtures cover flowcharts, pie diagrams, errors, and HTML/JSX
-  behavior. The requested sequence, state, class, and ER fixture matrix and
-  cross-platform deterministic-output guarantee remain to be completed.
+Every diagram is parsed as XML and checked against a static SVG element and
+attribute allow-list. CSS is tokenized, including escaped names and nested
+functions. The policy rejects scripts, event attributes, `foreignObject`, image
+and animation elements, foreign namespaces, DTDs, processing instructions,
+external/relative links, CSS imports, and resource-loading CSS functions.
+Only local fragment references and embedded base64 font data are allowed.
+Text and attributes are serialized again, so CDATA and markup-looking labels
+cannot turn into HTML. Rejected output follows the same diagnostic/fallback
+path as a parse failure. Application callbacks remain trusted application code;
+this policy belongs to the Ferrigura adapter. See the
+[SVG decision](arch/ADR-0025-static-mermaid-output.md) for rationale and dependency
+redistribution details.
 
-Custom bundles make the current implementation installable. The adapter is
-still private, and the standard addon excludes Ferrigura. `@ferrigura/core` is
-not yet publicly available on npm.
+Shared fixtures cover flowchart, sequence, state, class, and ER diagrams. Their
+complete SVG SHA-256 values are pinned for Rust and installed Node consumers.
+CI checks the same expected bytes on its native platforms and installed musl
+bundle, as well as repeated renders, multiple diagrams, invalid and unknown
+types, and UTF-8 diagnostic ranges. Explicit light/dark options and automatic
+CSS themes need no client runtime. These checks implement the remaining
+[issue #531](https://github.com/sebastian-software/ferromark/issues/531) contract;
+they do not promise pixel parity with mermaid.js.
+
+Image-based diagrams, external links, and other engine constructs outside this
+SVG policy fall back to code with a diagnostic. The adapter is private, the
+standard addon excludes Ferrigura, and custom bundles provide installation.
+`@ferrigura/core` is not yet publicly available on npm.
 
 ### Pinned engine
 
@@ -142,7 +175,7 @@ notices. The standard addon does not include those assets.
 
 Run `pnpm test:ferrigura` from `node` to build and exercise Mermaid-only and
 Ferriki-plus-Ferrigura addons. Rust integration tests use real diagrams and
-check HTML, JSX modules, nested blocks, IDs, errors, and fallback. These tests
+check HTML, JSX modules, nested blocks, IDs, diagnostics, errors, and fallback. These tests
 do not measure rendering latency or memory. See the
 [native plugin guide](native-code-plugins.md) for the composition boundary and
 remaining distribution work.

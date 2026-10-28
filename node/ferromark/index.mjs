@@ -823,6 +823,11 @@ class PreparedDocumentFacade {
     Object.freeze(this);
   }
 
+  /** @returns {import('./index.mjs').CodePluginDiagnostic[]} Failed-fence diagnostics from the shared compiler. */
+  takeDiagnostics() {
+    return this.#nativePrepared.takeDiagnostics();
+  }
+
   collectReferences() {
     return Object.freeze(
       this.#nativePrepared.collectReferences().map((reference) => {
@@ -955,6 +960,11 @@ export class CodeCompiler {
       throw new TypeError("code compiler options must be an object");
     }
     this.#native = new (loadNative().CodeCompiler)(JSON.stringify(options));
+  }
+
+  /** @returns {import('./index.mjs').CodePluginDiagnostic[]} Drains diagnostics from this compiler and its prepared documents. */
+  takeDiagnostics() {
+    return this.#native.takeDiagnostics();
   }
 
   /**
@@ -1167,6 +1177,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
  *   renderModule(options?: import('./index.mjs').JsxRenderModuleOptions,
  *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxModuleResult
+ *   takeDiagnostics(): import('./index.mjs').CodePluginDiagnostic[]
  * }} NativePreparedJsxDocument
  * @typedef {{
  *   prepare(markdown: string | Uint8Array, options?: import('./index.mjs').JsxPreparationOptions,
@@ -1180,6 +1191,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   renderCodeBlock(input: import('./index.mjs').JsxCodeBlockRenderInput): import('./index.mjs').JsxCodeBlockRenderResult
  *   toHtml(markdown: string | Uint8Array, options?: import('./index.mjs').Options): string
  *   transform(markdown: string | Uint8Array, options?: import('./index.mjs').Options): import('./index.mjs').TransformResult
+ *   takeDiagnostics(): import('./index.mjs').CodePluginDiagnostic[]
  * }} NativeCodeCompilerSession
  * @typedef {import('./index.mjs').Options | null | undefined} NativeOptions
  * @typedef {[

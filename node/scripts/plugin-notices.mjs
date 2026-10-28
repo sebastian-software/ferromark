@@ -51,6 +51,9 @@ async function packageNotices(pkg, output, root) {
     name: pkg.name,
     version: pkg.version,
     source: pkg.source,
+    sourceArchive: pkg.source?.startsWith("registry+")
+      ? `https://static.crates.io/crates/${pkg.name}/${pkg.name}-${pkg.version}.crate`
+      : null,
     license: pkg.license,
     directory: key,
     files: files.map(({ file }) => file),

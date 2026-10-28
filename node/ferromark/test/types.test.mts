@@ -215,3 +215,8 @@ export const nativeModuleCode: string = nativeCodeCompiler.compile("# Demo", {
 export const nativeBody: string = nativeCodeCompiler.prepare("# Demo").render().body;
 // @ts-expect-error Native plugin names must be strings.
 export const invalidNativePlugin = new CodeCompiler({ plugins: [{ name: 42 }] });
+
+const diagnostics = jsxCompiler.takeDiagnostics();
+export const diagnosticPlugin: string | undefined = diagnostics[0]?.plugin;
+const preparedDiagnostics = jsxCompiler.prepare("text").takeDiagnostics();
+export const diagnosticStart: number | undefined = preparedDiagnostics[0]?.start;

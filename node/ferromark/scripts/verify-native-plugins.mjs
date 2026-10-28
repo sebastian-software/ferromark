@@ -32,11 +32,16 @@ try {
       (name) =>
         !name.startsWith("ferriki") &&
         !name.startsWith("ferrigura") &&
-        !["ferromark-plugin-fixture", "ferromark-ferrigura", "rustls", "ureq", "onig"].includes(
-          name,
-        ),
+        ![
+          "ferromark-plugin-fixture",
+          "ferromark-ferrigura",
+          "cssparser",
+          "rustls",
+          "ureq",
+          "onig",
+        ].includes(name),
     ),
-    "the engine-free build must omit Ferriki, remote asset dependencies, and diagnostic plugins",
+    "the engine-free build must omit engines, their parsers and assets, and diagnostic plugins",
   );
   run(process.execPath, [fileURLToPath(new URL("build-native.mjs", import.meta.url))], {
     env: {
