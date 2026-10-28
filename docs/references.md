@@ -11,7 +11,7 @@ checks, and network requests.
 ## Node
 
 `prepareDocument` owns the source, runs the selected syntax and native passes
-once, and returns the same immutable handle shape as `JsxCompiler.prepare`.
+once, and returns the same immutable handle shape as `CodeCompiler.prepare`.
 It does not construct a Ferriki highlighter or load themes or grammars. Its
 optional preparation settings are exactly `JsxPreparationOptions`; rendering
 choices belong to `render` and `renderModule`.
@@ -50,7 +50,7 @@ console.log(transformed.collectReferences()[0].provenance); // "transformed"
 
 Tracking with passes retains borrowed reference identity data and collected
 labels for exact source provenance comparisons. This choice applies equally
-to `prepareDocument` and `JsxCompiler.prepare`. Rendering remains available
+to `prepareDocument` and `CodeCompiler.prepare`. Rendering remains available
 without tracking; its setting cannot be changed after passes have run.
 Compile and render options reject `trackReferences`.
 

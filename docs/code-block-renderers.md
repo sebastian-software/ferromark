@@ -67,11 +67,15 @@ only the highlighting stage.
 
 ## Node.js
 
+The callback-composition APIs below are available on repository `main`; they
+are not exported by the published `ferromark@3.6.0` facade. Use a source build
+or custom bundle. See [release availability](https://ferromark.dev/guide/code-rendering).
+
 For Rust plugins without per-block JavaScript calls, use
 [`CodeCompiler`](native-code-plugins.md). The callbacks below remain available
-for application code and separately installed addons. The current 3.x addon
-still bundles Ferriki for `JsxCompiler` compatibility; an empty plugin list
-alone does not remove that download cost.
+for application code and separately installed addons. The standard addon includes
+no engines. Select an engine-enabled custom bundle when code rendering should stay
+entirely in Rust.
 
 `toHtmlWithCodeRenderer` returns HTML. `transformWithCodeRenderer` returns HTML
 plus the same headings and front matter as `transform`. `composeCodeRenderers`
@@ -103,11 +107,11 @@ that also accepts language metadata suffixes must recognize those explicitly.
 It should match parsed callback fields rather than search Markdown source text:
 for example, a fence written as `merm&#97;id` reaches the callback as `mermaid`.
 
-For JSX, use an ordered callback with `compileJsx`, `JsxCompiler.compile`, or a
+For JSX, use an ordered callback with `compileJsx`, `CodeCompiler.compile`, or a
 prepared document's render methods. Return JSX from each plugin. Returning
-`null` lets the compiler continue to component mappings and native Ferriki
-highlighting. Do not pass `createHighlighterCodeRenderer` to JSX compilation:
-its output is HTML, while native `JsxCompiler` already supplies JSX-safe
+`null` lets the compiler continue to component mappings and explicitly configured
+native plugins. Do not pass `createHighlighterCodeRenderer` to JSX compilation:
+its output is HTML, while a Ferriki-enabled `CodeCompiler` supplies JSX-safe
 highlighting.
 
 A separately installed diagram package can export these callbacks without

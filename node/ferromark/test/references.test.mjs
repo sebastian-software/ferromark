@@ -2,13 +2,10 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 
-import { compileJsx, JsxCompiler, prepareDocument } from "../index.mjs";
+import { CodeCompiler, compileJsx, prepareDocument } from "../index.mjs";
 
 function offlineCompiler() {
-  return new JsxCompiler({
-    theme: { name: "references-test", settings: [{ settings: { foreground: "#111111" } }] },
-    assets: { remote: false },
-  });
+  return new CodeCompiler();
 }
 
 function sourceSlice(source, span) {

@@ -104,16 +104,21 @@ covers metadata, Buffers, reusable renderers, and highlighters.
 
 `compileJsx(source, { format: "mdx" })` returns a JSX body and metadata.
 With `output: "module"` it returns a complete MDX module and source map instead.
-Your application compiles the JSX through its normal toolchain and supplies
-components. Ferromark adds no React runtime imports; JSX source is a trusted
-program, while existing HTML APIs keep their own trust and syntax policies.
+Your application compiles JSX and supplies components. Ferromark adds no React
+imports. JSX is a trusted program; HTML APIs keep their existing trust policies.
 
-Reuse `JsxCompiler` for native Ferriki highlighting. Its `prepare` method parses
-and runs native passes once, exposes metadata, and lets you render the same
-document with different options. `renderCodeBlock` renders standalone code with
-the same native fence metadata and highlighting. Start with the
-[Node JSX guide](docs/jsx-node.md) for API choices and runnable examples, or the
-[Rust renderer contract](docs/jsx-renderer.md) for core output.
+`CodeCompiler` reuses selected native plugins and prepared documents, with
+standalone code rendering. See the [Node JSX guide](docs/jsx-node.md) and
+[Rust renderer contract](docs/jsx-renderer.md).
+
+### Syntax highlighting and Mermaid diagrams
+
+Ferriki and Ferrigura use optional code-rendering hooks. The standard Node addon
+includes neither engine; custom bundles select either or both. The plugin API
+requires a source build or custom bundle.
+
+[Integration guide](https://ferromark.dev/guide/code-rendering): Rust hooks, Node
+callbacks, native bundles, release availability, and remaining Mermaid limitations.
 
 ### Document analysis
 
@@ -128,7 +133,7 @@ Rust and Node offer
 - [Configuration](https://ferromark.dev/guide/configuration) — syntax and output policies.
 - [Content pipelines](https://ferromark.dev/guide/pipelines) — document metadata, navigation, and presentation.
 - [Rendering and trust](https://ferromark.dev/guide/rendering) — defaults and input boundaries.
-- [Native code highlighting](https://github.com/sebastian-software/ferromark/blob/main/docs/native-code-highlighting.md) — Rust hook contract and Ferriki integration status.
+- [Code rendering](https://ferromark.dev/guide/code-rendering) — optional Ferriki highlighting, Ferrigura diagrams, and native plugin bundles.
 - [Architecture](https://ferromark.dev/guide/architecture) — arena AST, modules, and integration points.
 - [MDX boundaries](https://ferromark.dev/guide/mdx) — HTML syntax capture and JSX compilation.
 

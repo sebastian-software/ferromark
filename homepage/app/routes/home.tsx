@@ -148,7 +148,8 @@ function FamilySection() {
     <Section
       id="family"
       title="A place in your toolchain."
-      intro="Use Ferromark on its own, pair it with Ferriki for syntax highlighting, or find it inside Palamedes. Each engine has its own job and its own API."
+      intro="Use Ferromark on its own, pair it with Ferriki for syntax highlighting, or add Ferrigura diagrams through a custom build. Each engine has its own job and its own API."
+      note={<Link to="/guide/code-rendering">Choose a highlighting or diagram integration.</Link>}
     >
       <Relations current="ferromark" />
     </Section>

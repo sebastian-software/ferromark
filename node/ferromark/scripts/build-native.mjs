@@ -36,20 +36,9 @@ if (outputDir === ".") {
   await rm(path.join(packageDir, buildOutputDir), { force: true, recursive: true });
 }
 
-if (
-  process.env.FERROMARK_NAPI_NO_DEFAULT_FEATURES === "1" &&
-  (!isolatedOutput || process.env.FERROMARK_PGO === "1")
-) {
-  throw new Error(
-    "Engine-free builds require an isolated FERROMARK_NATIVE_OUTPUT_DIR and FERROMARK_PGO disabled",
-  );
-}
-
 if (process.env.FERROMARK_NAPI_FEATURES) {
   // Custom engines and diagnostic exports must stay outside package artifacts.
-  const isolated = process.env.FERROMARK_NAPI_FEATURES.split(/[\s,]+/).filter((feature) =>
-    ["boundary-bench", "panic-test", "plugin-test", "ferrigura"].includes(feature),
-  );
+  const isolated = process.env.FERROMARK_NAPI_FEATURES.split(/[\s,]+/).filter(Boolean);
   if (isolated.length > 0 && (!isolatedOutput || process.env.FERROMARK_PGO === "1")) {
     throw new Error(
       `The custom or diagnostic feature(s) ${isolated.join(", ")} build only with FERROMARK_NATIVE_OUTPUT_DIR ` +

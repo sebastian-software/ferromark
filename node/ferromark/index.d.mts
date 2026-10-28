@@ -482,7 +482,7 @@ export type DocumentReference = Readonly<{
   originalSpan?: Readonly<{ start: number; end: number }>;
 }>;
 
-/** Asset-free preparation using the same syntax and passes as JsxCompiler.prepare. */
+/** Asset-free preparation using the same syntax and passes as CodeCompiler.prepare. */
 export declare function prepareDocument(
   markdown: string | Uint8Array,
   preparationOptions?: JsxPreparationOptions,
@@ -526,7 +526,7 @@ export type TextExtraction = Readonly<{
   omittedTitleHeadingSpan?: TextByteRange;
 }>;
 
-/** Immutable native document handle returned by `prepareDocument` or `JsxCompiler.prepare`. */
+/** Immutable native document handle returned by `prepareDocument` or `CodeCompiler.prepare`. */
 export type PreparedJsxDocument = Readonly<{
   /** Metadata snapshot computed from the prepared AST without rendering JSX. */
   metadata: JsxPreparedMetadata;
@@ -541,24 +541,6 @@ export type PreparedJsxDocument = Readonly<{
   /** Render a complete module. Module and body choices can be varied per call. */
   renderModule(options?: JsxRenderModuleOptions, renderCode?: JsxCodeRenderer): JsxModuleResult;
 }>;
-
-/** A standard theme name or a JSON theme registration accepted by Ferriki. */
-export type JsxTheme =
-  | string
-  | {
-      name: string;
-      type?: string;
-      fg?: string;
-      bg?: string;
-      settings?: readonly unknown[];
-      tokenColors?: readonly unknown[];
-      colors?: Readonly<Record<string, string>>;
-      include?: string;
-      displayName?: string;
-      $schema?: string;
-      semanticHighlighting?: boolean;
-      semanticTokenColors?: Readonly<Record<string, string>>;
-    };
 
 /** Selects an initialized Rust plugin from this addon's compiled factory set. */
 export type NativeCodePluginConfig = {
@@ -600,25 +582,7 @@ export declare class CodeCompiler {
   ): JsxResult;
 }
 
-export type JsxCompilerOptions = {
-  /** A single theme or a light/dark pair. Defaults to the GitHub default pair. */
-  theme?: JsxTheme | { light: JsxTheme; dark: JsxTheme };
-  /** Enable line numbers unless overridden by code fence metadata. */
-  lineNumbers?: boolean;
-  /** Custom TextMate grammar registrations, loaded into this compiler once. */
-  languages?: readonly object[];
-  /** Standard asset source. Unset fields use Ferriki's environment and release defaults. */
-  assets?: {
-    /** Load a complete local standard asset directory instead of the release CDN/cache. */
-    assetRoot?: string;
-    remote?: boolean;
-    baseUrl?: string;
-    cacheDir?: string;
-    commit?: string;
-  };
-};
-
-/** Input to `JsxCompiler.renderCodeBlock`; `language` and `meta` use fence syntax. */
+/** Input to `CodeCompiler.renderCodeBlock`; `language` and `meta` use fence syntax. */
 export type JsxCodeBlockRenderInput = {
   code: string;
   language?: string | null;
@@ -635,27 +599,3 @@ export type JsxCodeBlockRenderResult = {
   /** Effective setting after the compiler default and fence metadata are applied. */
   lineNumbers: boolean;
 };
-
-/** Reusable native JSX compiler with Ferriki highlighting. No JavaScript highlighting callbacks are needed. */
-export declare class JsxCompiler {
-  /** Loads theme assets; first use can download missing, verified standard assets. */
-  constructor(options?: JsxCompilerOptions);
-  /** Parse and run native passes once; later renders reuse the owned source and AST. */
-  prepare(
-    markdown: string | Uint8Array,
-    preparationOptions?: JsxPreparationOptions,
-  ): PreparedJsxDocument;
-  /** Renders a standalone code block with this compiler's native metadata parser and highlighter. */
-  renderCodeBlock(input: JsxCodeBlockRenderInput): JsxCodeBlockRenderResult;
-  /** Compiles source, loading and caching the fence languages on first use. */
-  compile(
-    markdown: string | Uint8Array,
-    options: CompileJsxModuleOptions,
-    renderCode?: JsxCodeRenderer,
-  ): JsxModuleResult;
-  compile(
-    markdown: string | Uint8Array,
-    options?: CompileJsxOptions,
-    renderCode?: JsxCodeRenderer,
-  ): JsxResult;
-}

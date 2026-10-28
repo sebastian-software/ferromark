@@ -77,3 +77,11 @@ code and metadata. Fence metadata after the language is forwarded as
 `meta.__raw` for compatible title and line-highlighting transformers.
 
 For the shared trust boundary, see [rendering and trust](/guide/rendering).
+
+## Add native plugins and diagrams
+
+The source checkout also provides `CodeCompiler` for native HTML/JSX plugins
+and a Ferrigura adapter for static Mermaid SVG. These APIs require a source
+build or custom bundle; they are not exported by `ferromark@3.6.0`.
+The [highlighting and diagrams guide](/guide/code-rendering) explains factory
+selection, separately installed engines, and the current Mermaid limitations.

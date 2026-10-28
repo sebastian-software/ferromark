@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { compileJsx, JsxCompiler } from "../index.mjs";
+import { CodeCompiler, compileJsx } from "../index.mjs";
 
 const provider = { format: "mdx", output: "module", providerImportSource: "docs/provider" };
 
@@ -136,17 +136,8 @@ test("module output works for plain Markdown and without a provider", () => {
   assert.deepEqual(result.map.sources, [""]);
 });
 
-test("JsxCompiler emits highlighted fences inside a module", () => {
-  const compiler = new JsxCompiler({
-    theme: {
-      name: "module-theme",
-      type: "dark",
-      colors: { "editor.background": "#101010", "editor.foreground": "#f0f0f0" },
-      tokenColors: [],
-    },
-    languages: [],
-    assets: { remote: false },
-  });
+test("CodeCompiler emits fences inside a module without engines", () => {
+  const compiler = new CodeCompiler();
   const result = compiler.compile('```text title="notes.txt"\nplain\n```\n', {
     ...provider,
     codeBlockComponent: "_components.CodeBlock",

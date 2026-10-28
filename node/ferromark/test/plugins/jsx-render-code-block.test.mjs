@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { JsxCompiler } from "../index.mjs";
+import { CodeCompiler } from "../../index.mjs";
 
 const language = {
   name: "native-fixture",
@@ -108,12 +108,20 @@ const matchingCases = [
   },
 ];
 
-function compiler(options = {}) {
-  return new JsxCompiler({
-    theme: { light, dark },
-    languages: [language],
-    assets: { remote: false },
-    ...options,
+function compiler({ lineNumbers, ...options } = {}) {
+  return new CodeCompiler({
+    lineNumbers,
+    plugins: [
+      {
+        name: "ferriki",
+        options: {
+          theme: { light, dark },
+          languages: [language],
+          assets: { remote: false },
+          ...options,
+        },
+      },
+    ],
   });
 }
 

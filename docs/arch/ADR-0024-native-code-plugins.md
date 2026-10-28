@@ -39,28 +39,23 @@ recursive mutable use, and propagates engine failures. No engine instances,
 Rust pointers, vtables, or allocations cross addon boundaries. Plugins are
 trusted application code. There is no runtime library loader or global registry.
 
-## Migration and current implementation
+## Current implementation
 
-`CodeCompiler` defaults to an empty plugin list. The binding builds with
-`--no-default-features` without Ferriki or its remote asset stack. A separate,
-unpublished fixture crate proves native HTML/JSX dispatch from an optional crate;
-it is available only in isolated diagnostic builds.
+`CodeCompiler` defaults to an empty plugin list. The standard binding's default
+Cargo features are empty: it excludes Ferriki, Ferrigura, and their asset and
+rendering dependencies. The root Rust `ferriki` feature remains opt-in.
 
-The current 3.x package still enables Ferriki by default for `JsxCompiler`
-compatibility. That class delegates to the same host with a Ferriki plugin.
-An empty `CodeCompiler` configuration avoids engine initialization, but does not
-shrink that compatibility binary. The root Rust `ferriki` feature also remains
-supported during the migration.
+Decision update (2026-10-27): there are no existing consumers requiring a
+Ferriki compatibility distribution. Remove the Ferriki-specific `JsxCompiler`
+bridge and use `CodeCompiler` for both engines and plain rendering. Do not retain
+a default-on engine or a separate migration distribution for compatibility.
 
-Complete external adapter packaging and publish a supported engine-free addon
-distribution before removing the compatibility feature in a breaking release.
-Ferrigura must use the same optional factory/adapter boundary. The private Ferrigura adapter and factory are implemented; independently
-installable native adapter packages remain distribution work.
-
-Implementation update (2026-10-25): #567 also added the optional Ferrigura
-factory and private Rust adapter. The [plugin bundle workflow](../plugin-bundles.md)
-now produces installable custom builds using this same static composition
-boundary. It does not change the standard 3.x package or add a runtime loader.
+The unpublished fixture crate proves HTML/JSX dispatch from an optional crate.
+The private Ferrigura adapter and Ferriki factory use the same optional boundary.
+The [plugin bundle workflow](../plugin-bundles.md) produces installable custom
+builds with selected factories and notices. Both engine features require isolated
+output so they cannot enter standard package artifacts. Separately installed
+addons remain usable through JavaScript callbacks, without a native runtime loader.
 
 ## Alternatives and consequences
 
@@ -81,8 +76,8 @@ boundary. It does not change the standard 3.x package or add a runtime loader.
 Check the engine-free normal/build dependency graph, compile both feature sets,
 and load an isolated addon containing the external fixture. Verify fallback,
 escaping, parsed language matching, first-handled ordering, retained prepared
-state, and absence of the compatibility class in engine-free builds. Preserve
-the existing Ferriki tests and compare old and new compiler output.
+state, and absence of engines in the standard addon. Keep Ferriki behavioral
+coverage in an isolated custom build and check Mermaid-only and combined builds.
 
 - [Native plugin guide](../native-code-plugins.md)
 - [Node-API ABI scope](https://nodejs.org/api/n-api.html#implications-of-abi-stability)

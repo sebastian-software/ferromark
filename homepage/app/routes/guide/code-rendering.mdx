@@ -1,0 +1,99 @@
+---
+title: Add Highlighting and Mermaid Diagrams
+order: 7
+---
+
+# Add Highlighting and Mermaid Diagrams
+
+Use Ferriki to highlight source code and Ferrigura to render Mermaid fences as
+static SVG. Ferromark supplies the code-block hooks; your application chooses
+the engines and their initialization.
+
+## Choose an integration
+
+| Your task                  | Integration                                         | Availability                                              |
+| -------------------------- | --------------------------------------------------- | --------------------------------------------------------- |
+| Node.js HTML highlighting  | `toHtmlWithHighlighter` and `@ferriki/core`         | Published; [Node.js guide](/node/highlighting).           |
+| Rust HTML/JSX highlighting | Optional `ferriki` feature and Rust hooks           | Published; [Rust code rendering](/rust/highlighting).     |
+| Native plugin composition  | `CodeCompiler` with factories linked into the addon | Repository `main` and custom plugin bundles.              |
+| Mermaid to SVG             | Optional Rust adapter or a custom Node.js bundle    | Source integration; excluded from the standard npm addon. |
+
+The published `ferromark@3.6.0` facade does not export `CodeCompiler`,
+`availableCodePlugins`, or the new callback-composition helpers. Check your
+installed declarations before using those APIs. `@ferrigura/core` has not yet
+become publicly available on npm; the custom bundle is the current installable Mermaid path.
+
+## Select native plugins once
+
+The [Native plugin bundles workflow](https://github.com/sebastian-software/ferromark/blob/main/docs/plugin-bundles.md)
+builds an installable tarball for `none`, `ferriki`, `ferrigura`, or `all`.
+Download the artifact for your platform, extract it, and install its actual
+tarball filename:
+
+```sh
+npm install /path/to/ferromark-custom-bundle.tgz
+```
+
+This replaces the application's Ferromark installation with the selected custom
+build. The consuming application needs no Rust compiler or install script.
+The bundles are workflow artifacts with private custom versions, rather than
+registry releases.
+
+With a bundle containing Ferrigura:
+
+````js
+import { availableCodePlugins, CodeCompiler } from "ferromark";
+
+console.log(availableCodePlugins()); // Includes the diagram factory in this build.
+const compiler = new CodeCompiler({
+  plugins: [
+    {
+      name: "ferrigura",
+      options: { colorScheme: "auto", errorPolicy: "code", idPrefix: "guide" },
+    },
+  ],
+});
+const source = "```mermaid\nflowchart LR\nA[Markdown] --> B[SVG]\n```";
+
+console.log(compiler.toHtml(source)); // Inline SVG inside the document HTML.
+console.log(compiler.compile(source).body); // JSX source for the same diagram.
+````
+
+Reuse the compiler across documents. Add a `ferriki` entry when the bundle also
+contains that factory; initialize its languages, themes, and verified assets
+before rendering. Whole-block diagram replacements run before highlighting.
+`new CodeCompiler()` selects no plugins and initializes no engine assets.
+
+The standard addon includes neither engine and reports `[]` from
+`availableCodePlugins()`. Use `CodeCompiler` with an explicit plugin list in an
+engine-enabled bundle; both engines follow the same opt-in build boundary.
+
+## Compose separately installed engines
+
+The existing Node.js highlighter API calls an initialized engine through
+JavaScript. The source checkout adds `composeCodeRenderers`,
+`createHighlighterCodeRenderer`, `toHtmlWithCodeRenderer`, and
+`transformWithCodeRenderer` for ordered synchronous callbacks. A callback
+returns complete HTML, or declines with `null` or `undefined`. JSX callbacks
+must return JSX source instead of HTML.
+
+Separately compiled native addons compose through these JavaScript APIs.
+Installing another npm package does not add factories to a Ferromark binary;
+native factories must be compiled with that addon. Rust applications compose
+hook implementations directly, without Node.js. See the
+[code-block renderer contract](https://github.com/sebastian-software/ferromark/blob/main/docs/code-block-renderers.md).
+
+## Understand the current Mermaid boundary
+
+The adapter recognizes parsed `mermaid` fences and emits SVG without a browser
+Mermaid runtime. With `errorPolicy: "code"`, a failed diagram falls back to
+escaped code; the default policy throws. SVG and custom callback results are
+trusted renderer output, even when authored Markdown HTML is escaped.
+
+Repeated renders currently allocate new SVG IDs. Source-span diagnostics, a
+dedicated SVG safety policy, and the complete deterministic fixture matrix
+from [issue #531](https://github.com/sebastian-software/ferromark/issues/531)
+remain open. Use the current adapter with content and engine configuration
+you trust. See the
+[Mermaid adapter guide](https://github.com/sebastian-software/ferromark/blob/main/docs/ferrigura.md)
+for options, Rust integration, and the pinned engine version.

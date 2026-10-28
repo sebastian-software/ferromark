@@ -18,15 +18,6 @@ export declare class CodeCompiler {
   renderCodeBlock(input: RenderCodeBlockInput): RenderCodeBlockResult
 }
 
-/** Compatibility compiler for existing Ferriki-specific 3.x settings. */
-export declare class JsxCompiler {
-  constructor(settings: string)
-  prepare(markdown: string | Uint8Array, options?: Options | undefined | null, preparationOptions?: PreparationOptions | undefined | null): PreparedJsxDocument
-  compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
-  compileModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
-  renderCodeBlock(input: RenderCodeBlockInput): RenderCodeBlockResult
-}
-
 /** Immutable, source-owning prepared JSX document with repeatable render methods. */
 export declare class PreparedJsxDocument {
   /** Collects Markdown references and literal MDX href/src attributes on demand. */

@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 const addon = createRequire(import.meta.url)(process.argv[2]);
 const combined = process.argv[3] === "combined";
 assert.deepEqual(addon.availableCodePlugins(), combined ? ["ferriki", "ferrigura"] : ["ferrigura"]);
-if (!combined) assert.equal(addon.JsxCompiler, undefined);
+assert.equal(addon.JsxCompiler, undefined);
 const language = {
   name: "native-fixture",
   scopeName: "source.native-fixture",

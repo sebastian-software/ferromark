@@ -50,8 +50,7 @@ const compiler = new addon.CodeCompiler(JSON.stringify({
 const html = compiler.toHtml("```mermaid\npie\n\"A\" : 1\n```");
 ```
 
-Omit `FERROMARK_NAPI_NO_DEFAULT_FEATURES` to include the compatibility Ferriki
-factory as well. Use both entries in `plugins` to render diagrams and highlight
+Set `FERROMARK_NAPI_FEATURES=ferriki,ferrigura` to include both factories. Use both entries in `plugins` to render diagrams and highlight
 ordinary code. Whole-block replacements precede all highlighting plugins.
 Custom Ferrigura builds require an isolated output directory so they cannot
 overwrite standard package artifacts.
@@ -105,6 +104,31 @@ hook invocation and applies the configured error policy. A tuple composes these
 hooks with Ferriki hooks; the adapter itself has no Node dependency.
 
 ## Engine version and validation
+
+### Remaining requirements from issue #531
+
+The adapter supplies the native HTML/JSX integration, explicit activation,
+theme selection, observable errors, optional code fallback, and distinct IDs.
+[Issue #531](https://github.com/sebastian-software/ferromark/issues/531) remains
+open with these remaining acceptance criteria:
+
+- IDs use a counter retained across renders, so repeated output is not
+  byte-identical. Default namespaces also depend on compiler construction order.
+- Engine errors are exposed, but there is no structured diagnostic mapped to
+  the original Markdown fence's source span. Node defaults to throwing; plain
+  code fallback requires `errorPolicy: "code"`.
+- SVG is trusted engine output. The adapter does not establish the issue's
+  dedicated SVG policy forbidding scripts, event attributes, external references,
+  and `foreignObject` HTML.
+- The adapter fixtures cover flowcharts, pie diagrams, errors, and HTML/JSX
+  behavior. The requested sequence, state, class, and ER fixture matrix and
+  cross-platform deterministic-output guarantee remain to be completed.
+
+Custom bundles make the current implementation installable. The adapter is
+still private, and the standard addon excludes Ferrigura. `@ferrigura/core` is
+not yet publicly available on npm.
+
+### Pinned engine
 
 The adapter pins published Ferrigura **0.2.0**. That release still uses a registry
 Ferromark internally for Markdown labels. The optional adapter sits outside the

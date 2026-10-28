@@ -8,6 +8,7 @@ export default [
   route("guide/benchmark-explorer", "routes/guide/benchmark-explorer.mdx"),
   route("guide/benchmarks", "routes/guide/benchmarks.mdx"),
   route("guide/cli", "routes/guide/cli.mdx"),
+  route("guide/code-rendering", "routes/guide/code-rendering.mdx"),
   route("guide/configuration", "routes/guide/configuration.mdx"),
   route("guide/correctness", "routes/guide/correctness.mdx"),
   route("guide/document-analysis", "routes/guide/document-analysis.mdx"),

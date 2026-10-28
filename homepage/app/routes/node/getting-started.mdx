@@ -65,7 +65,7 @@ thread so rendering does not occupy the request-handling event loop.
 ## Compile JSX for a build pipeline
 
 For trusted authored content, `compileJsx` produces a JSX body or a complete MDX
-module. `JsxCompiler` adds native highlighting, prepared documents for metadata
+module. `CodeCompiler` adds optional native plugins, prepared documents for metadata
 and repeated rendering, and standalone code-block rendering. Your application's
 JSX transform compiles the output. See the
 [Node JSX guide](https://github.com/sebastian-software/ferromark/blob/main/docs/jsx-node.md)

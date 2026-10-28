@@ -3,6 +3,16 @@
 `CodeCompiler` initializes plugins once in Rust. HTML and JSX rendering do not
 need a JavaScript callback for each block.
 
+These APIs are available on repository `main` and in custom plugin bundles.
+The published `ferromark@3.6.0` facade does not export `CodeCompiler`,
+`availableCodePlugins`, or the new callback-composition helpers. Build from
+source or install a [plugin bundle](plugin-bundles.md) for the examples below.
+For the existing published highlighter API and a comparison of the integration
+paths, start with the [code-rendering guide](https://ferromark.dev/guide/code-rendering).
+
+The following example requires a Ferriki-enabled bundle and uses an in-memory
+theme, so it does not download standard assets.
+
 ```js
 import { availableCodePlugins, CodeCompiler } from "ferromark";
 
@@ -10,10 +20,17 @@ console.log(availableCodePlugins()); // Factories linked into this addon.
 const compiler = new CodeCompiler({
   plugins: [{
     name: "ferriki",
-    options: { theme: "github-dark-default", assets: { remote: false } },
+    options: {
+      theme: {
+        name: "guide-theme",
+        settings: [{ settings: { foreground: "#222222", background: "#ffffff" } }],
+      },
+      assets: { remote: false },
+    },
   }],
 });
 
+const markdown = "# Demo\n\n```text\nHello world\n```";
 const html = compiler.toHtml(markdown);
 const result = compiler.transform(markdown); // HTML, headings, front matter.
 const jsx = compiler.compile(markdown);
@@ -65,45 +82,38 @@ depends on Ferromark's Rust API and implements whole-block HTML/JSX hooks. The
 `plugin-test` feature links it into an isolated addon. This is a source
 integration point, not a published addon-host SDK.
 
-## Engine-free builds and the 3.x migration
+## Engine-free standard builds
 
-The default npm addon retains Ferriki for `JsxCompiler` compatibility. Selecting
-no plugins avoids initialization, but does **not** remove that binary dependency.
-Ferrigura is excluded from the default build; its optional Rust adapter and
-factory are described in the [Mermaid guide](ferrigura.md). Inspect the engine-free
-graph from the repository root:
-
-```sh
-cargo tree -p ferromark-node --no-default-features --edges normal,build --locked
-cargo check -p ferromark-node --no-default-features --locked
-```
-
-For an isolated local build, run this from `node/ferromark` with an absolute
-output directory outside the package:
+The standard npm addon includes neither Ferriki nor Ferrigura. Its
+`availableCodePlugins()` result is `[]`; `new CodeCompiler()` renders ordinary
+HTML and JSX without loading engine assets. Explicitly selecting an unavailable
+plugin fails with a configuration error. Inspect the default dependency graph
+from the repository root:
 
 ```sh
-FERROMARK_NAPI_NO_DEFAULT_FEATURES=1 \
-FERROMARK_NATIVE_OUTPUT_DIR=/tmp/ferromark-engine-free \
-node scripts/build-native.mjs
+cargo tree -p ferromark-node --edges normal,build --locked
+cargo check -p ferromark-node --locked
 ```
 
-Load the raw addon with Node's `createRequire`. Its native constructor takes a
-JSON string: `new addon.CodeCompiler("{}")`. It has no engine factories and no
-legacy `JsxCompiler`. The output does not replace the facade's platform binary.
-`FERROMARK_NAPI_FEATURES` selects optional factories for custom builds. PGO must
-be disabled. Diagnostic features cannot be copied into package artifacts.
+Use `pnpm build` from `node` for the standard package. PGO remains available
+through `FERROMARK_PGO=1` for release builds. No feature override is needed to
+exclude engines.
 
-`pnpm test` in `node` includes `verify-native-plugins.mjs`, which checks the
-engine-free graph and loads a fixture-only addon. Default package binaries and
-declarations stay untouched.
+The [plugin bundle workflow](plugin-bundles.md) produces installable custom
+builds with `ferriki`, `ferrigura`, both, or neither, including required notices.
+For raw custom builds, `FERROMARK_NAPI_FEATURES` selects factories. Both engine
+features require an isolated `FERROMARK_NATIVE_OUTPUT_DIR` outside the package
+and PGO disabled, so custom binaries cannot enter standard platform packages.
 
-The [plugin bundle workflow](plugin-bundles.md) distributes installable custom
-builds with the selected factories and required notices. Moving the compatibility
-Ferriki adapter into a separate crate and switching the standard package to an
-engine-free build remain breaking-version migration work.
-Existing settings migrate to
-`new CodeCompiler({ plugins: [{ name: "ferriki", options: settings }] })`, with
-`lineNumbers` moved to the outer compiler options.
+`pnpm test` in `node` tests the standard facade with no factories, checks the
+default dependency graph, loads a fixture-only addon, and runs the Ferriki
+highlighting and prepared-document suite against an isolated custom addon.
+`pnpm test:ferrigura` checks Mermaid-only and combined builds.
+
+`CodeCompiler` is the shared compiler API. The Ferriki-specific `JsxCompiler`
+compatibility class has been removed. To select highlighting in a Ferriki-enabled
+bundle, pass `new CodeCompiler({ plugins: [{ name: "ferriki", options: settings }] })`.
+`lineNumbers` belongs to the outer compiler options.
 
 ## Independently installed native plugins
 

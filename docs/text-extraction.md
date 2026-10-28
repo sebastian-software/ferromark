@@ -19,7 +19,7 @@ console.log(extracted.sections[1].parentIndex); // 0
 console.log(extracted.sections[1].text); // "Setup\n\nInstall the package."
 ```
 
-`JsxCompiler.prepare()` returns the same handle with compiler highlighting
+`CodeCompiler.prepare()` returns the same handle with compiler highlighting
 available for rendering. `extractText()` does not use that highlighter. Choose
 `format: "mdx"` at preparation time for static children of MDX wrappers. Pass
 settings and syntax options belong to preparation; extraction choices apply
