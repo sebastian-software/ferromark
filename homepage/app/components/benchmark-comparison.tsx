@@ -1,3 +1,5 @@
+import { FerraBenchmarkTable } from "ferramenta-family/ferra";
+
 import completedBenchmarks from "../data/benchmark-platform-values.json";
 import projects from "../data/benchmark-projects.json";
 import conformance from "../data/comparison-conformance.json";
@@ -238,8 +240,11 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
 
 export function BenchmarkComparison() {
   return (
-    <table className="ferromark-comparison" id="markdown-ecosystem">
-      <caption>Ferromark speedup over each library · fresh calls</caption>
+    <FerraBenchmarkTable
+      className="ferromark-comparison"
+      id="markdown-ecosystem"
+      caption="Ferromark speedup over each library · fresh calls"
+    >
       <thead>
         <tr>
           <th scope="col">Compared with</th>
@@ -264,24 +269,30 @@ export function BenchmarkComparison() {
           ))}
         </tbody>
       ))}
-      <tfoot>
+      <ComparisonFootnotes />
+    </FerraBenchmarkTable>
+  );
+}
+
+function ComparisonFootnotes() {
+  return (
+    <tfoot>
+      <tr>
+        <td colSpan={platforms.length + 2}>
+          CM: 652 CommonMark 0.31.2 examples. GFM ext.: 28 extension examples, not full GFM. Spec
+          settings and output agreement are separate from timing.{" "}
+          <a href={reportUrl(conformance.report)}>Method and raw results</a>.
+        </td>
+      </tr>
+      {rows.some((row) => row.results.some((result) => result?.outputDifferences)) && (
         <tr>
           <td colSpan={platforms.length + 2}>
-            CM: 652 CommonMark 0.31.2 examples. GFM ext.: 28 extension examples, not full GFM. Spec
-            settings and output agreement are separate from timing.{" "}
-            <a href={reportUrl(conformance.report)}>Method and raw results</a>.
+            * Output differs for some of the 57 inputs on at least one shown platform. All inputs
+            contribute to the performance factor. See the linked reports for syntax and API
+            differences.
           </td>
         </tr>
-        {rows.some((row) => row.results.some((result) => result?.outputDifferences)) && (
-          <tr>
-            <td colSpan={platforms.length + 2}>
-              * Output differs for some of the 57 inputs on at least one shown platform. All inputs
-              contribute to the performance factor. See the linked reports for syntax and API
-              differences.
-            </td>
-          </tr>
-        )}
-      </tfoot>
-    </table>
+      )}
+    </tfoot>
   );
 }

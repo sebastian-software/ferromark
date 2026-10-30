@@ -1,5 +1,7 @@
-import { Mark, Principles, Section } from "ferramenta-family";
-import { Link } from "react-router";
+import { ArdoLink as Link } from "ardo/runtime";
+import { Mark } from "ferramenta-family";
+
+import { FeatureGrid as Principles, LandingSection as Section } from "./landing-section";
 
 const publishingBenefits = [
   {
@@ -21,7 +23,6 @@ export function FlavoredMarkdownSection() {
     <Section
       id="ffm"
       className="ferromark-ffm"
-      tone="dim"
       title="More meaning. Still Markdown."
       intro="Write the context your readers need, right where it belongs. Ferromark Flavored Markdown adds publishing features to familiar Markdown. Enable the ones your documents use."
       note={
