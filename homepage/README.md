@@ -18,6 +18,10 @@ section navigation, document, and Ardo's live outline. A controlled mobile menu
 keeps every guide reachable on narrow screens. Ardo owns routing, search,
 code blocks, and prerendering; the homepage opts into its bare layout.
 
+`app/components/document-heading.tsx` preserves published Ardo 4 heading URLs
+as aliases of Ardo 6's slugs. This keeps compatibility markup out of the
+generated benchmark guide, which remains owned by its publisher.
+
 `FerraBenchmarkTable` supplies the captioned, keyboard-scrollable table and
 shared measurement styles. `app/components/benchmark-comparison.tsx` retains
 all platform grouping, source links, missing-value handling, conformance
