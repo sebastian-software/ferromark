@@ -1,30 +1,34 @@
 # Ferromark homepage
 
-This private workspace contains the React Router and Ardo site for Ferromark.
+This private workspace contains the Ardo 6 site for Ferromark.
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for repository checks and the boundaries
 between the native engine, Node.js bindings, and website.
 
-## Inherited family system
+## Shared Ferra system
 
-The visual authority is the existing
-[Ferramenta design system](https://github.com/sebastian-software/ferramenta/blob/main/DESIGN.md),
-implemented by `ferramenta-family@2.0.0`. The package owns its tokens, Barlow
-Condensed fonts, textures, member icons, landing components, and site chrome.
-Consult the package README and its kit before adding a shared pattern. Keep
-system changes in the family package rather than maintaining a second local
-token specification.
+The site consumes `ferramenta-family/ferra` and `ferramenta-family/ferra.css`
+from a pinned Git commit. The family package owns the warm light scheme,
+IBM Plex Sans display type, Blender illustrations, soft cards, site chrome,
+documentation layout, and benchmark table presentation. Shared patterns belong
+in that package and its kit; project-specific content stays here.
 
-`app/root.tsx` loads Ardo styles, then the family tokens, fonts, theme, landing
-styles, and docs styles. Site styles follow; family chrome loads last so it wins
-selector ties. Keep docs styles after the theme and landing styles before local
-styles. The root also preloads the package's Barlow Condensed 700 font.
+`app/root.tsx` passes `FerraHeader` through Ardo's header slot and renders
+`FerraFooter` outside Ardo's main landmark. `FerraDocsLayout` combines the
+section navigation, document, and Ardo's live outline. A controlled mobile menu
+keeps every guide reachable on narrow screens. Ardo owns routing, search,
+code blocks, and prerendering; the homepage opts into its bare layout.
 
-The family header and footer sit outside `ArdoRoot`, with `handle.chrome = false`
-disabling Ardo's own chrome. Documentation uses `fam-docs-shell`, `SiteMenu`, and
-the `site-search` slot while retaining Ardo's sidebar, reading layout, and theme
-toggle. Only the landing content uses `fam-page`, which pins its authored scheme.
-The home route uses `ProjectHero`, `Relations`, and the `WorkWithUs` close.
-Member icons and their provenance sidecars come from the package.
+`FerraBenchmarkTable` supplies the captioned, keyboard-scrollable table and
+shared measurement styles. `app/components/benchmark-comparison.tsx` retains
+all platform grouping, source links, missing-value handling, conformance
+qualifiers, and calculation rules. The seven benchmark fixture tests cover
+those rules independently of presentation.
+
+The build snapshots the canonical release version from
+`../node/ferromark/package.json` into `app/data/release.json` before dev,
+typecheck, and build. Browser code imports that snapshot rather than reaching
+outside Ardo's project boundary. The build verifier checks the rendered
+version against the canonical manifest.
 
 ## Transform showcase
 
@@ -89,6 +93,6 @@ pnpm build
 ```
 
 Use `pnpm format` when formatting is needed. The build prerenders the site,
-verifies routes, navigation, and benchmark content, and runs the benchmark
-platform tests. Preserve generated benchmark data and upstream attribution;
+verifies routes, published section anchors, search records, navigation, and
+benchmark content, and runs the benchmark platform tests. Preserve generated benchmark data and upstream attribution;
 follow the repository's benchmark workflow when measured content needs updating.

@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { ArdoActiveLink as NavLink } from "ardo/runtime";
 
 type Topic = "configuration" | "getting-started" | "highlighting" | "pipelines";
 

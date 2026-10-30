@@ -1,124 +1,78 @@
-import type { LinksFunction, MetaFunction } from "react-router";
-
+import { type ReactNode, useState } from "ardo/react";
+import { ArdoActiveLink as NavLink, useArdoPageData, useArdoPath } from "ardo/runtime";
 import {
   ArdoErrorBoundary,
-  ArdoGeneratedSidebar,
+  ArdoHeaderSearch,
+  ArdoMobileNavigation,
   ArdoRoot,
   ArdoRootLayout,
-  ArdoSearch,
-  ArdoSidebar,
-  ArdoSidebarGroup,
-  ArdoSidebarLink,
-  ArdoSidebarSection,
-  ArdoThemeToggle,
+  ArdoTOC,
 } from "ardo/ui";
-import { MarkDefs, SiteFooter, SiteHeader, SiteMenu } from "ferramenta-family";
-import displayFont from "ferramenta-family/fonts/barlow-condensed-700.woff2?url";
-import { NavLink, useLocation } from "react-router";
-import config from "virtual:ardo/config";
+import { MarkDefs } from "ferramenta-family";
+import {
+  FerraDocsLayout,
+  FerraFooter,
+  FerraHeader,
+  FerraMark,
+  FerraPage,
+} from "ferramenta-family/ferra";
+import touchIcon from "ferramenta-family/ferra-assets/ferromark/apple-touch-icon.png?url";
+import favicon from "ferramenta-family/ferra-assets/ferromark/favicon.ico?url";
+import { WORKSHOP } from "ferramenta-family/registry";
+import "ferramenta-family/ferra.css";
 
 import { documentationSections, sharedConcepts } from "./navigation";
 import { version } from "./version";
-import "ardo/ui/styles.css";
-import "ferramenta-family/tokens.css";
-import "ferramenta-family/fonts.css";
-import "ferramenta-family/theme.css";
-import "ferramenta-family/landing.css";
-import "ferramenta-family/docs.css";
-
 import "./styles/site.css";
-// Last on purpose, as the package README requires: the shared chrome has to win
-// the selector ties the site stylesheet would otherwise take.
-import "ferramenta-family/chrome.css";
 
-export const links: LinksFunction = () => [
-  {
-    rel: "preload",
-    href: displayFont,
-    as: "font",
-    type: "font/woff2",
-    crossOrigin: "anonymous",
-  },
-];
-
-export const meta: MetaFunction = ({ location }) => {
-  const path = location.pathname.replace(/\/$/, "");
-  const section = documentationSections.find((candidate) => path.startsWith(`/${candidate.id}/`));
-  const page = section?.pages.find(([, to]) => to === path);
-  const title = page
-    ? `${page[0]} · ${section?.label} · Ferromark`
-    : "Ferromark — Markdown at native speed";
-  return [
-    { title },
-    {
-      name: "description",
-      content:
-        "A native Markdown engine for Rust and Node.js. Compose typography, GitHub references, and emoji transforms, add publishing features, and explore reproducible benchmarks.",
-    },
-  ];
-};
-
-export function Layout({ children }: { children: React.ReactNode }) {
-  return <ArdoRootLayout iconBasePath="/">{children}</ArdoRootLayout>;
-}
-
-export const ErrorBoundary = ArdoErrorBoundary;
-
-/*
- * The site's own header and the family footer replace Ardo's chrome, so Ardo
- * must not render either: `chrome` is read from every route match and no route
- * below this one overrides it. The sidebar remains enabled for documentation
- * routes.
- */
-export const handle = { chrome: false };
-
-function GuideNav() {
-  const { pathname } = useLocation();
+export function Layout({ children }: { children: ReactNode }) {
   return (
-    <nav className="site-links" aria-label="Documentation">
-      {documentationSections.map((section) => (
-        <NavLink
-          key={section.id}
-          to={section.to}
-          data-active={pathname.startsWith(`/${section.id}/`)}
-        >
-          {section.label}
-        </NavLink>
-      ))}
-    </nav>
+    <ArdoRootLayout
+      colorScheme="light"
+      className="ferra-tokens ferromark-theme"
+      icon={favicon}
+      appleTouchIcon={touchIcon}
+      iconBasePath={false}
+    >
+      {children}
+    </ArdoRootLayout>
   );
 }
+export const ErrorBoundary = ArdoErrorBoundary;
 
-function GuideMenuLinks({
-  current,
-}: {
-  current: (typeof documentationSections)[number] | undefined;
-}) {
+function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
+  const path = useArdoPath();
+  const current =
+    documentationSections.find((section) => path.startsWith(`/${section.id}/`)) ??
+    documentationSections[0];
   return (
-    <nav className="ferromark-guide-flyout" aria-label="Mobile documentation">
-      <NavLink to="/">ferromark home</NavLink>
-      <div className="ferromark-section-switch" aria-label="Documentation sections">
+    <nav className="ferromark-navigation" aria-label="Documentation pages">
+      <NavLink to="/" onClick={onNavigate}>
+        Overview
+      </NavLink>
+      <div className="ferromark-section-switch">
         {documentationSections.map((section) => (
-          <NavLink key={section.id} to={section.to} data-active={current?.id === section.id}>
+          <NavLink
+            key={section.id}
+            to={section.to}
+            data-active={current.id === section.id}
+            onClick={onNavigate}
+          >
             {section.label}
           </NavLink>
         ))}
       </div>
-      {current && (
+      <p>{current.label}</p>
+      {current.pages.map(([label, to]) => (
+        <NavLink key={to} to={to} onClick={onNavigate}>
+          {label}
+        </NavLink>
+      ))}
+      {current.id !== "guide" && (
         <>
-          <p className="ferromark-menu-label">{current.label}</p>
-          {current.pages.map(([label, to]) => (
-            <NavLink key={to} to={to}>
-              {label}
-            </NavLink>
-          ))}
-        </>
-      )}
-      {current?.id !== "guide" && (
-        <>
-          <p className="ferromark-menu-label">Shared concepts</p>
+          <p>Shared concepts</p>
           {sharedConcepts.map(([label, to]) => (
-            <NavLink key={to} to={to}>
+            <NavLink key={to} to={to} onClick={onNavigate}>
               {label}
             </NavLink>
           ))}
@@ -128,77 +82,84 @@ function GuideMenuLinks({
   );
 }
 
-function DocsActions() {
-  const { pathname } = useLocation();
-  const current = documentationSections.find((section) => pathname.startsWith(`/${section.id}/`));
+function Header() {
+  const [open, setOpen] = useState(false);
   return (
-    <>
-      <div className="site-search">
-        <ArdoSearch />
-      </div>
-      <SiteMenu label="Docs">
-        <GuideMenuLinks current={current} />
-      </SiteMenu>
-    </>
-  );
-}
-
-function FamilyFooter() {
-  return (
-    <SiteFooter
-      current="ferromark"
-      legal={
+    <FerraHeader
+      product="ferromark"
+      home="/"
+      nav={
         <>
-          {`Ferromark v${version}`} · Released under the MIT License ·{" "}
-          <a href="https://ardo-docs.dev">Built with Ardo</a>
+          <NavLink to="/rust/getting-started">Rust</NavLink>
+          <NavLink to="/node/getting-started">Node.js</NavLink>
+          <NavLink to="/guide/getting-started">Reference</NavLink>
+          <a href="https://ferramenta.dev">Ferramenta</a>
+        </>
+      }
+      actions={
+        <>
+          <ArdoMobileNavigation title="Ferromark documentation" open={open} onOpenChange={setOpen}>
+            <GuideNavigation
+              onNavigate={() => {
+                setOpen(false);
+              }}
+            />
+          </ArdoMobileNavigation>
+          <ArdoHeaderSearch
+            variant="icon"
+            onActivate={() => {
+              setOpen(false);
+            }}
+          />
         </>
       }
     />
   );
 }
 
-export default function Root() {
-  const { pathname } = useLocation();
+function Article({ children }: { children: ReactNode }) {
+  const page = useArdoPageData();
+  const path = useArdoPath();
+  const current = documentationSections.find((section) => path.startsWith(`/${section.id}/`));
   return (
-    <>
+    <FerraDocsLayout
+      id="ferromark-article"
+      navigation={<GuideNavigation />}
+      outline={<ArdoTOC source="dom" scope="#ferromark-article" />}
+      hero={
+        <div className="ferromark-reading ardo-doc-content">
+          <div className="ferromark-reading-label">
+            <FerraMark product="ferromark" size={48} />
+            <span>{current?.label ?? "Documentation"} · Ferromark</span>
+          </div>
+          <h1>{page?.title ?? "Documentation"}</h1>
+          {children}
+        </div>
+      }
+    />
+  );
+}
+const components = { wrapper: Article };
+
+export default function Root() {
+  return (
+    <FerraPage className="ferromark-site">
       <MarkDefs />
-      <SiteHeader
-        current="ferromark"
-        lockup="project"
-        nav={<GuideNav />}
-        actions={<DocsActions />}
-        themeToggle={pathname === "/" ? undefined : <ArdoThemeToggle />}
+      <ArdoRoot
+        className="ferromark-shell"
+        scrollMode="document"
+        header={<Header />}
+        sidebar={false}
+        footer={false}
+        components={components}
       />
-
-      <div className="fam-docs-shell ferromark-shell">
-        <ArdoRoot config={config}>
-          <ArdoSidebar>
-            {documentationSections.map((section) => (
-              <ArdoSidebarSection
-                key={section.id}
-                id={section.id}
-                label={section.label}
-                to={section.to}
-              >
-                <ArdoSidebarGroup title={section.label} collapsible={false}>
-                  <ArdoGeneratedSidebar section={section.id} />
-                </ArdoSidebarGroup>
-                {section.id !== "guide" && (
-                  <ArdoSidebarGroup title="Shared concepts" collapsible={false}>
-                    {sharedConcepts.map(([label, to]) => (
-                      <ArdoSidebarLink key={to} to={to}>
-                        {label}
-                      </ArdoSidebarLink>
-                    ))}
-                  </ArdoSidebarGroup>
-                )}
-              </ArdoSidebarSection>
-            ))}
-          </ArdoSidebar>
-        </ArdoRoot>
-      </div>
-
-      <FamilyFooter />
-    </>
+      <FerraFooter product="ferromark" home="/">
+        <p>
+          Ferromark v{version} · MIT License · <a href="https://ardo-docs.dev">Built with Ardo</a> ·{" "}
+          <a href={WORKSHOP.openSource}>{WORKSHOP.company}</a> ·{" "}
+          <a href="https://ferramenta.dev">Ferramenta family</a>
+        </p>
+      </FerraFooter>
+    </FerraPage>
   );
 }

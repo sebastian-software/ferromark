@@ -1,5 +1,5 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Paths come from the fixed route table and locally generated site output. */
-import { access, readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const outputDirectory = new URL("../build/client/", import.meta.url);
@@ -52,7 +52,7 @@ const analysisPage = await readFile(
 );
 
 // The documented version has one source: the npm facade manifest the release
-// pull request updates. `app/version.ts` reads it, so a release must reach the
+// pull request updates. The build snapshots it for `app/version.ts`, so a release must reach the
 // rendered pages without any homepage edit. See docs/releasing.md.
 const { version } = JSON.parse(
   await readFile(new URL("../../node/ferromark/package.json", import.meta.url), "utf8"),
@@ -129,41 +129,44 @@ const requiredFragments = [
   'id="markdown-ecosystem"',
   "Ferromark speedup over each library",
   "2× means twice the throughput",
-  'class="ferromark-comparison"',
+  'class="ferra-table ferra-benchmark-table ferromark-comparison"',
   'id="comparison-native"',
   'id="comparison-node"',
   ...platformFragments,
   'href="/guide/benchmarks"',
   '"/assets/',
-  '"/favicon.ico"',
-  'class="site-header"',
-  'class="site-footer"',
+  'rel="icon"',
+  'class="ferra-header ferra-wrap"',
+  'class="ferra-footer ferra-wrap"',
   "https://ferramenta.dev",
   version,
   "Start with Rust",
   "Start with Node.js",
   'id="document-analysis"',
+  'id="work"',
   'href="/guide/document-analysis"',
   "Reference inventories",
   "Text and search sections",
   "Static Markdown export",
 ];
 
-// The family chrome replaces Ardo's own header and footer (`handle.chrome` in
-// app/root.tsx). If either comes back, the page carries two of each.
+// app/root.tsx passes the family header to Ardo and disables its default footer.
+// If either default comes back, the page carries two of each.
 const forbiddenFragments = ['class="ardo-header', 'class="ardo-footer'];
 
 // Every page carries the family chrome, and the guide keeps its navigation:
 // the sidebar rail, plus the header menu that stands in for it once the rail is
 // hidden — without that menu a narrow viewport has no way into the guide.
 const requiredGuideFragments = [
-  'class="site-header"',
-  'class="site-footer"',
-  'class="ardo-sidebar',
-  'class="site-menu"',
+  'class="ferra-header ferra-wrap"',
+  'class="ferra-footer ferra-wrap"',
+  'class="ferromark-navigation"',
+  'aria-label="Toggle menu"',
 ];
 
 function check(page, label, { required, forbidden = [] }) {
+  // Ardo 6 emits canonical trailing slashes; both spellings address the same static page.
+  page = page.replaceAll(/href="(\/[^"?#]*?)\/(?=[?#"])/g, 'href="$1');
   for (const fragment of required) {
     if (!page.includes(fragment)) {
       throw new Error(`Prerendered ${label} is missing ${JSON.stringify(fragment)}`);
@@ -178,7 +181,7 @@ function check(page, label, { required, forbidden = [] }) {
 
 const footer = homepage.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] ?? "";
 check(footer, "family footer", {
-  required: ["ferramenta.dev", "ferriki"],
+  required: ["ferramenta.dev", "Sebastian Software"],
   forbidden: ["https://sebastian-software.github.io/ferromark/"],
 });
 
@@ -228,11 +231,26 @@ for (const path of [
   check(html, path, { required: ['href="/guide/document-analysis"'] });
 }
 
-const searchRecords = JSON.parse(
-  await readFile(new URL("search/chunk-0.json", outputDirectory), "utf8"),
-);
+// Preserve published Ardo 4 section URLs where Ardo 6 changed the heading slug.
+for (const [path, anchor] of [
+  ["guide/feature-comparison", "nodejs-projects"],
+  ["guide/document-analysis", "prepare-once-in-nodejs"],
+  ["guide/mdx-examples", "tocomponent"],
+  ["guide/benchmarks", "nodejs-ecosystem-coverage"],
+  ["guide/typography", "nodejs"],
+  ["rust/mdx-examples", "tocomponent"],
+]) {
+  const html = await readFile(new URL(`${path}/index.html`, outputDirectory), "utf8");
+  check(html, path, { required: [`id="${anchor}"`] });
+}
+
+// Ardo 6 emits the complete static index as an ESM asset.
+const assets = await readdir(new URL("assets/", outputDirectory));
+const searchAsset = assets.find((file) => /^search-index-.*\.js$/.test(file));
+if (!searchAsset) throw new Error("Prerendered site is missing its search index");
+const { default: searchRecords } = await import(new URL(`assets/${searchAsset}`, outputDirectory));
 const analysisRecords = searchRecords.filter(
-  (record) => record.routePath === "/guide/document-analysis",
+  (record) => record.path.split("#")[0] === "/guide/document-analysis",
 );
 for (const method of ["collectReferences", "extractText", "projectMarkdown"]) {
   if (!analysisRecords.some((record) => record.content.includes(method))) {

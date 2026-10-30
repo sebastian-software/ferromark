@@ -1,9 +1,9 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- Fixture URLs point to fixed checked-in benchmark data. */
+import { createElement } from "ardo/react";
+import { renderToStaticMarkup } from "ardo/react-dom/server";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
 
 const completed = JSON.parse(
@@ -16,7 +16,7 @@ const projects = JSON.parse(
 async function renderComparison(figures, { claim = false } = {}) {
   const server = await createServer({
     configFile: false,
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false, ws: false },
     oxc: { jsx: { runtime: "automatic" } },
     plugins: [
       {
