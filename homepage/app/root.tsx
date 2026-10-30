@@ -21,6 +21,7 @@ import favicon from "ferramenta-family/ferra-assets/ferromark/favicon.ico?url";
 import { WORKSHOP } from "ferramenta-family/registry";
 import "ferramenta-family/ferra.css";
 
+import { DocumentHeading } from "./components/document-heading";
 import { documentationSections, sharedConcepts } from "./navigation";
 import { version } from "./version";
 import "./styles/site.css";
@@ -139,7 +140,7 @@ function Article({ children }: { children: ReactNode }) {
     />
   );
 }
-const components = { wrapper: Article };
+const components = { h2: DocumentHeading, wrapper: Article };
 
 export default function Root() {
   return (
