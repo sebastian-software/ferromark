@@ -2,6 +2,12 @@
 import { access, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+// Product sites consume shared presentation rather than maintaining a parallel CSS system.
+const appFiles = await readdir(new URL("../app/", import.meta.url), { recursive: true });
+if (appFiles.some((file) => file.endsWith(".css"))) {
+  throw new Error("Keep reusable site styles in ferramenta-family, not in homepage/app");
+}
+
 const outputDirectory = new URL("../build/client/", import.meta.url);
 const expectedPages = [
   "index.html",
@@ -129,7 +135,7 @@ const requiredFragments = [
   'id="markdown-ecosystem"',
   "Ferromark speedup over each library",
   "2× means twice the throughput",
-  'class="ferra-table ferra-benchmark-table ferromark-comparison"',
+  'class="ferra-table ferra-benchmark-table"',
   'id="comparison-native"',
   'id="comparison-node"',
   ...platformFragments,
@@ -144,6 +150,9 @@ const requiredFragments = [
   "Start with Node.js",
   'id="document-analysis"',
   'id="work"',
+  'id="features-title"',
+  'id="ffm-title"',
+  'id="evidence-title"',
   'href="/guide/document-analysis"',
   "Reference inventories",
   "Text and search sections",
@@ -160,7 +169,7 @@ const forbiddenFragments = ['class="ardo-header', 'class="ardo-footer'];
 const requiredGuideFragments = [
   'class="ferra-header ferra-wrap"',
   'class="ferra-footer ferra-wrap"',
-  'class="ferromark-navigation"',
+  'class="ferra-guide-navigation"',
   'aria-label="Toggle menu"',
 ];
 
@@ -179,7 +188,7 @@ function check(page, label, { required, forbidden = [] }) {
   }
 }
 
-const footer = homepage.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] ?? "";
+const footer = homepage.match(/<footer class="ferra-footer[\s\S]*?<\/footer>/)?.[0] ?? "";
 check(footer, "family footer", {
   required: ["ferramenta.dev", "Sebastian Software"],
   forbidden: ["https://sebastian-software.github.io/ferromark/"],

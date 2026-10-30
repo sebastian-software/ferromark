@@ -167,7 +167,7 @@ function ConformanceResult({
 function ConformanceCell({ id, label }: { id: string; label: string }) {
   const row = conformanceRows.get(id);
   return (
-    <td className="ferromark-conformance">
+    <td className="ferra-benchmark-conformance">
       <ConformanceResult
         value={row?.suites.commonmark}
         name="CM"
@@ -189,9 +189,9 @@ function ReferenceRow({ runtime }: { runtime: string }) {
   return (
     <tr className="ferromark-reference-row">
       <th scope="row">
-        Ferromark <span className="ferromark-project-backend">Spec reference</span>
+        Ferromark <span className="ferra-benchmark-detail">Spec reference</span>
       </th>
-      <td className="ferromark-reference-note" colSpan={platforms.length}>
+      <td className="ferra-benchmark-reference" colSpan={platforms.length}>
         Spec configuration
       </td>
       <ConformanceCell id={id} label={`Ferromark (${runtime})`} />
@@ -204,9 +204,9 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
   return (
     <tr>
       <th scope="row">
-        <span className="ferromark-project-name">
+        <span className="ferra-benchmark-name">
           <a
-            className="ferromark-project-link"
+            className="ferra-benchmark-source"
             href={row.github}
             title={`${row.label} · ${backend}`}
           >
@@ -216,7 +216,7 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
             <sup aria-label="Output differs for some inputs">*</sup>
           )}
         </span>
-        <span className="ferromark-project-backend">{backend}</span>
+        <span className="ferra-benchmark-detail">{backend}</span>
       </th>
       {row.results.map((result, index) => (
         <td key={platforms[index].id}>
@@ -241,7 +241,6 @@ function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
 export function BenchmarkComparison() {
   return (
     <FerraBenchmarkTable
-      className="ferromark-comparison"
       id="markdown-ecosystem"
       caption="Ferromark speedup over each library · fresh calls"
     >
@@ -258,7 +257,7 @@ export function BenchmarkComparison() {
       </thead>
       {groups.map((group) => (
         <tbody key={group.id} aria-labelledby={`comparison-${group.id}`}>
-          <tr className="ferromark-comparison-group">
+          <tr className="ferra-benchmark-group">
             <th scope="rowgroup" colSpan={platforms.length + 2} id={`comparison-${group.id}`}>
               {group.label}
             </th>

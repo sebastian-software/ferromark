@@ -88,17 +88,17 @@ test("all main candidates have GitHub links and measured cells; variants disclos
   for (const id of ["markdown-exit", "markdown-it-ts", "md4x-wasm"]) {
     assert.ok(!projects.some((project) => project.id === id));
   }
-  assert.ok(!html.includes('class="ferromark-project-backend">WASM</span>'));
-  assert.ok(html.includes('class="ferromark-project-backend">Native addon</span>'));
+  assert.ok(!html.includes('class="ferra-benchmark-detail">WASM</span>'));
+  assert.ok(html.includes('class="ferra-benchmark-detail">Native addon</span>'));
 });
 
 test("each runtime group is alphabetical and implementation details remain visible", async () => {
   const html = await renderComparison(completed.figures);
   for (const backend of ["Rust", "C", "Go", "JavaScript"]) {
-    assert.ok(html.includes(`class="ferromark-project-backend">${backend}</span>`));
+    assert.ok(html.includes(`class="ferra-benchmark-detail">${backend}</span>`));
   }
   assert.ok(!html.includes("(syntax subset)"));
-  const names = [...html.matchAll(/class="ferromark-project-link"[^>]*>(.*?)<\/a>/gs)].map(
+  const names = [...html.matchAll(/class="ferra-benchmark-source"[^>]*>(.*?)<\/a>/gs)].map(
     (match) => match[1],
   );
   assert.deepEqual(names, [
@@ -215,7 +215,10 @@ test("spec agreement covers every variant with separate references and evidence 
     await readFile(new URL("../app/data/comparison-conformance.json", import.meta.url), "utf8"),
   );
   assert.equal(conformance.rows.length, projects.length + 2);
-  assert.equal([...html.matchAll(/class="ferromark-conformance"/g)].length, projects.length + 2);
+  assert.equal(
+    [...html.matchAll(/class="ferra-benchmark-conformance"/g)].length,
+    projects.length + 2,
+  );
   assert.equal([...html.matchAll(/class="ferromark-reference-row"/g)].length, 2);
   assert.match(html, /28 extension examples, not full GFM/);
   assert.match(html, /GFM Unsupported/);

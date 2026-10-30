@@ -10,11 +10,12 @@ import {
 } from "ardo/ui";
 import { MarkDefs } from "ferramenta-family";
 import {
-  FerraDocsLayout,
   FerraFooter,
+  FerraGuideNavigation,
   FerraHeader,
-  FerraMark,
   FerraPage,
+  FerraReadingLayout,
+  FerraTabs,
 } from "ferramenta-family/ferra";
 import touchIcon from "ferramenta-family/ferra-assets/ferromark/apple-touch-icon.png?url";
 import favicon from "ferramenta-family/ferra-assets/ferromark/favicon.ico?url";
@@ -24,13 +25,13 @@ import "ferramenta-family/ferra.css";
 import { DocumentHeading } from "./components/document-heading";
 import { documentationSections, sharedConcepts } from "./navigation";
 import { version } from "./version";
-import "./styles/site.css";
+import "ferramenta-family/ferra-ardo.css";
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
     <ArdoRootLayout
       colorScheme="light"
-      className="ferra-tokens ferromark-theme"
+      className="ferra-tokens ferra-ardo"
       icon={favicon}
       appleTouchIcon={touchIcon}
       iconBasePath={false}
@@ -47,11 +48,11 @@ function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
     documentationSections.find((section) => path.startsWith(`/${section.id}/`)) ??
     documentationSections[0];
   return (
-    <nav className="ferromark-navigation" aria-label="Documentation pages">
+    <FerraGuideNavigation aria-label="Documentation pages">
       <NavLink to="/" onClick={onNavigate}>
         Overview
       </NavLink>
-      <div className="ferromark-section-switch">
+      <FerraTabs aria-label="Documentation sections">
         {documentationSections.map((section) => (
           <NavLink
             key={section.id}
@@ -62,7 +63,7 @@ function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
             {section.label}
           </NavLink>
         ))}
-      </div>
+      </FerraTabs>
       <p>{current.label}</p>
       {current.pages.map(([label, to]) => (
         <NavLink key={to} to={to} onClick={onNavigate}>
@@ -79,7 +80,7 @@ function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
           ))}
         </>
       )}
-    </nav>
+    </FerraGuideNavigation>
   );
 }
 
@@ -123,31 +124,27 @@ function Article({ children }: { children: ReactNode }) {
   const path = useArdoPath();
   const current = documentationSections.find((section) => path.startsWith(`/${section.id}/`));
   return (
-    <FerraDocsLayout
+    <FerraReadingLayout
       id="ferromark-article"
       navigation={<GuideNavigation />}
       outline={<ArdoTOC source="dom" scope="#ferromark-article" />}
-      hero={
-        <div className="ferromark-reading ardo-doc-content">
-          <div className="ferromark-reading-label">
-            <FerraMark product="ferromark" size={48} />
-            <span>{current?.label ?? "Documentation"} · Ferromark</span>
-          </div>
-          <h1>{page?.title ?? "Documentation"}</h1>
-          {children}
-        </div>
-      }
-    />
+    >
+      <header>
+        <p>Ferromark / {current?.label ?? "Documentation"}</p>
+        <h1>{page?.title ?? "Documentation"}</h1>
+      </header>
+      {children}
+    </FerraReadingLayout>
   );
 }
 const components = { h2: DocumentHeading, wrapper: Article };
 
 export default function Root() {
   return (
-    <FerraPage className="ferromark-site">
+    <FerraPage className="ferra-site">
       <MarkDefs />
       <ArdoRoot
-        className="ferromark-shell"
+        className="ferra-ardo-shell"
         scrollMode="document"
         header={<Header />}
         sidebar={false}
