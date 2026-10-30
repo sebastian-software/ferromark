@@ -1,11 +1,10 @@
 import { useId, useState } from "ardo/react";
 import { ArdoLink as Link } from "ardo/runtime";
 import { Mark } from "ferramenta-family";
+import { FerraExample, FerraFeatureGrid, FerraToggle } from "ferramenta-family/ferra";
 
-import rocketStages from "../assets/rocket-stages.webp";
 import samples from "../data/transform-samples.json";
 import { LandingSection as Section } from "./landing-section";
-import "../styles/transform-showcase.css";
 
 const modules = [
   {
@@ -59,38 +58,6 @@ const capabilities = [
   },
 ] as const;
 
-function StageRocket() {
-  return (
-    <img
-      className="transform-rocket"
-      src={rocketStages}
-      width={792}
-      height={864}
-      loading="lazy"
-      decoding="async"
-      alt="A forged-steel rocket with four stacked stages: CommonMark, GitHub (GFM), Ferro (FFM), and Afterburner. Its fins are unmarked."
-    />
-  );
-}
-
-function CapabilityList() {
-  return (
-    <dl className="markdown-capabilities">
-      {capabilities.map((capability) => (
-        <div key={capability.id} data-stage={capability.id}>
-          <dt>
-            <Link to={capability.to}>
-              {capability.title}
-              <Mark name="arrow" size={16} />
-            </Link>
-          </dt>
-          <dd>{capability.description}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
 function TransformControls({
   enabled,
   previewId,
@@ -101,26 +68,18 @@ function TransformControls({
   onToggle: (id: ModuleId) => void;
 }) {
   return (
-    <div className="transform-module-list" role="group" aria-label="Choose your transforms">
+    <div role="group" aria-label="Choose your transforms">
       {modules.map((module) => (
-        <button
-          className="transform-module-control"
+        <FerraToggle
           key={module.id}
-          type="button"
-          aria-pressed={enabled[module.id]}
+          pressed={enabled[module.id]}
+          label={module.title}
+          description={module.description}
           aria-controls={previewId}
           onClick={() => {
             onToggle(module.id);
           }}
-        >
-          <span className="transform-module-copy">
-            <strong>{module.title}</strong>
-            <span>{module.description}</span>
-          </span>
-          <span className="transform-switch" aria-hidden="true">
-            <Mark name="check" size={18} />
-          </span>
-        </button>
+        />
       ))}
     </div>
   );
@@ -134,45 +93,26 @@ function TransformPreview({ enabled, previewId }: { enabled: EnabledModules; pre
   const html = samples.outputs[sampleKey];
 
   return (
-    <div className="transform-workbench">
-      <div className="transform-preview">
-        <p className="transform-preview-label">Your author writes</p>
-        <p className="transform-source">{samples.markdown}</p>
-        <p className="transform-preview-label">Your reader sees</p>
-        <div
-          id={previewId}
-          className="transform-output"
-          aria-live="polite"
-          aria-atomic="true"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      </div>
-      <p className="transform-custom-link">
-        Make it your own.{" "}
-        <Link to="/rust/transforms">
-          Add your own Rust pass <Mark name="arrow" size={16} />
-        </Link>
-      </p>
-    </div>
+    <div
+      id={previewId}
+      className="transform-output"
+      aria-live="polite"
+      aria-atomic="true"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 
 function TransformFootnote() {
   return (
-    <div className="transform-footnote">
+    <>
       <p>
         {processingName} runs before rendering: built-in passes in Rust and Node.js, custom passes
         in Rust. A familiar Remark-style flow, with Ferromark’s own APIs.
       </p>
-      <div className="transform-guide-links">
-        <Link to="/rust/transforms">
-          Rust transforms <Mark name="arrow" size={16} />
-        </Link>
-        <Link to="/node/pipelines#compose-native-transforms">
-          Node.js transforms <Mark name="arrow" size={16} />
-        </Link>
-      </div>
-    </div>
+      <Link to="/rust/transforms">Rust transforms</Link>
+      <Link to="/node/pipelines#compose-native-transforms">Node.js transforms</Link>
+    </>
   );
 }
 
@@ -185,17 +125,18 @@ function ProcessingDemo({
 }) {
   const previewId = useId();
   return (
-    <div className="processing-demo">
-      <div>
-        <h3>{processingName} in action.</h3>
-        <p className="processing-intro">
-          The little publishing jobs, already built in. Pick a few finishing touches and see what
-          reaches your reader.
-        </p>
-        <TransformControls enabled={enabled} previewId={previewId} onToggle={onToggle} />
-      </div>
+    <FerraExample
+      title={`${processingName} in action.`}
+      introduction="The little publishing jobs, already built in. Pick a few finishing touches and see what reaches your reader."
+      source={samples.markdown}
+      controls={<TransformControls enabled={enabled} previewId={previewId} onToggle={onToggle} />}
+      footer={<TransformFootnote />}
+    >
       <TransformPreview enabled={enabled} previewId={previewId} />
-    </div>
+      <p>
+        Make it your own. <Link to="/rust/transforms">Add your own Rust pass</Link>
+      </p>
+    </FerraExample>
   );
 }
 
@@ -213,17 +154,23 @@ export function TransformShowcase() {
     <Section
       id="features"
       className="ferromark-transforms"
-      title="Four stages. One Markdown engine."
-      intro={`Start with CommonMark. Add the everyday conveniences of GFM and the publishing features of FFM. Give the result its final polish with ${processingName}. All in one native engine.`}
+      title="See what reaches your reader."
+      intro="Try the finishing touches on a real Markdown sample. Switch typography, GitHub references and emoji on or off to see the result."
     >
-      <div className="transform-assembly">
-        <div className="transform-visual">
-          <StageRocket />
-        </div>
-        <CapabilityList />
-      </div>
       <ProcessingDemo enabled={enabled} onToggle={onToggle} />
-      <TransformFootnote />
+      <FerraFeatureGrid
+        items={capabilities.map((capability) => ({
+          heading: capability.title,
+          text: (
+            <>
+              <p>{capability.description}</p>
+              <Link to={capability.to}>
+                Read the guide <Mark name="arrow" size={16} />
+              </Link>
+            </>
+          ),
+        }))}
+      />
     </Section>
   );
 }

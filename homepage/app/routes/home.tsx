@@ -1,9 +1,14 @@
 import type { ArdoMetaFunction } from "ardo/runtime";
 
 import { ArdoLink as Link } from "ardo/runtime";
-import { Mark, RegistryFacts } from "ferramenta-family";
-import { FerraAction, FerraHero, FerraReleaseFacts, FerraSoftCard } from "ferramenta-family/ferra";
-import { family } from "ferramenta-family/registry";
+import { RegistryFacts } from "ferramenta-family";
+import {
+  FerraAction,
+  FerraEditorialRow,
+  FerraNotes,
+  FerraProductPage,
+} from "ferramenta-family/ferra";
+import { WORKSHOP } from "ferramenta-family/registry";
 
 import {
   BenchmarkComparison,
@@ -15,9 +20,10 @@ import {
   FeatureGrid as Principles,
   LandingSection as Section,
 } from "../components/landing-section";
+import { ProjectContext, ProjectOpening, ProjectOverview } from "../components/project-intro";
 import { TransformShowcase } from "../components/transform-showcase";
+import { tool } from "../data/project";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
-import { version } from "../version";
 
 export const handle = { layout: "bare" };
 export const meta: ArdoMetaFunction = () => [
@@ -28,44 +34,6 @@ export const meta: ArdoMetaFunction = () => [
       "A native Markdown engine for Rust and Node.js. CommonMark and GFM, publishing features, and optional typography transforms.",
   },
 ];
-const tool = family.find((member) => member.name === "ferromark");
-if (!tool) throw new Error("Missing Ferromark registry entry");
-
-function ProjectIntro() {
-  if (tool === undefined) throw new Error("Missing Ferromark registry entry");
-  return (
-    <section className="ferromark-intro" aria-label="Ferromark overview">
-      <FerraHero
-        product="ferromark"
-        title="Ferromark."
-        what="Markdown, ready for your application."
-        actions={
-          <>
-            <FerraAction href="/rust/getting-started">
-              Start with Rust <Mark name="arrow" size={18} />
-            </FerraAction>
-            <FerraAction variant="secondary" href="/node/getting-started">
-              Start with Node.js
-            </FerraAction>
-          </>
-        }
-      >
-        <p>
-          A native Markdown engine for Rust and Node.js. Keep CommonMark and GFM, add publishing
-          features when you need them, and give your prose its final polish with Afterburner.
-        </p>
-        <p className="ferromark-install">
-          <code>cargo add ferromark</code>
-          <code>npm install ferromark</code>
-        </p>
-      </FerraHero>
-      <div className="ferromark-intro-facts">
-        <FerraReleaseFacts tool={tool} />
-        <span>Documented release v{version}</span>
-      </div>
-    </section>
-  );
-}
 
 function ContractBand() {
   return (
@@ -162,7 +130,7 @@ function FamilySection() {
       intro="Use Ferromark on its own, pair it with Ferriki for syntax highlighting, or add Ferrigura diagrams through a custom build. Each engine has its own job and its own API."
       note={<Link to="/guide/code-rendering">Choose a highlighting or diagram integration.</Link>}
     >
-      <p className="ferromark-family-note">
+      <p>
         <a href="https://ferramenta.dev/#ferromark">
           Explore the independent engines in Ferramenta
         </a>
@@ -187,7 +155,7 @@ function EvidenceSection() {
       }
     >
       <BenchmarkComparison />
-      <p className="native-benchmark-note">{benchmarkHosts}</p>
+      <p className="ferra-caption">{benchmarkHosts}</p>
     </Section>
   );
 }
@@ -202,7 +170,7 @@ function ConformanceSection() {
         <Link to="/guide/correctness">Read the conformance methodology and source fixtures.</Link>
       }
     >
-      <dl className="ferromark-conformance-grid">
+      <dl className="ferra-definitions">
         {conformanceEntries.map((entry) => (
           <div key={entry.name}>
             <dt>{entry.name}</dt>
@@ -219,12 +187,7 @@ function ConformanceSection() {
 
 function StartSection() {
   return (
-    <FerraSoftCard
-      as="section"
-      className="ferromark-section ferromark-start"
-      id="start"
-      aria-labelledby="work"
-    >
+    <section className="ferra-editorial-closing" id="start" aria-labelledby="work">
       <h2 id="work">Bring Markdown into your application.</h2>
       <p>
         Choose Rust for direct access to the parser and document tree, or Node.js for a typed
@@ -236,29 +199,54 @@ function StartSection() {
           Start with Node.js
         </FerraAction>
       </div>
+      <div className="ferra-install">
+        <code>cargo add ferromark</code>
+        <code>npm install ferromark</code>
+      </div>
       <p>
         <a href="https://github.com/sebastian-software/ferromark">GitHub repository</a> ·{" "}
-        <a href="/guide/getting-started">Documentation</a> ·{" "}
-        <a href="https://sebastian-consulting.com">Integration and support</a>
+        <Link to="/guide/getting-started">Documentation</Link> ·{" "}
+        <a href={WORKSHOP.consulting}>Integration and support</a>
       </p>
-    </FerraSoftCard>
+    </section>
   );
 }
 
 export default function HomePage() {
   return (
     <RegistryFacts snapshot={registrySnapshot} snapshotGeneratedAt={registrySnapshotGeneratedAt}>
-      <div className="ferromark-home ferra-wrap">
-        <ProjectIntro />
+      <FerraProductPage>
+        <ProjectOpening />
+        <ProjectOverview />
         <TransformShowcase />
-        <FlavoredMarkdownSection />
+        <ProjectContext />
+        <FerraEditorialRow
+          notes={
+            tool?.editorial !== undefined && (
+              <FerraNotes label="Language and publishing" notes={tool.editorial.notes.slice(1)} />
+            )
+          }
+        >
+          <FlavoredMarkdownSection />
+        </FerraEditorialRow>
         <DocumentAnalysisSection />
         <ContractBand />
-        <FamilySection />
         <EvidenceSection />
-        <ConformanceSection />
+        <FerraEditorialRow
+          notes={
+            tool?.editorial !== undefined && (
+              <FerraNotes
+                label="How correctness is checked"
+                notes={tool.editorial.notes.slice(0, 1)}
+              />
+            )
+          }
+        >
+          <ConformanceSection />
+        </FerraEditorialRow>
+        <FamilySection />
         <StartSection />
-      </div>
+      </FerraProductPage>
     </RegistryFacts>
   );
 }

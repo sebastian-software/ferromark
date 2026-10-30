@@ -10,11 +10,13 @@ The site consumes `ferramenta-family/ferra` and `ferramenta-family/ferra.css`
 from a pinned Git commit. The family package owns the warm light scheme,
 IBM Plex Sans display type, Blender illustrations, soft cards, site chrome,
 documentation layout, and benchmark table presentation. Shared patterns belong
-in that package and its kit; project-specific content stays here.
+in that package and its kit; project-specific content stays here. The site has
+no local CSS. It imports `ferra.css` and the shared optional `ferra-ardo.css`
+adapter, including the homepage, docs, tables, and interactive examples.
 
 `app/root.tsx` passes `FerraHeader` through Ardo's header slot and renders
-`FerraFooter` outside Ardo's main landmark. `FerraDocsLayout` combines the
-section navigation, document, and Ardo's live outline. A controlled mobile menu
+`FerraFooter` outside Ardo's main landmark. `FerraReadingLayout` combines the
+section navigation, bounded reading surface, and Ardo's live outline. A controlled mobile menu
 keeps every guide reachable on narrow screens. Ardo owns routing, search,
 code blocks, and prerendering; the homepage opts into its bare layout.
 

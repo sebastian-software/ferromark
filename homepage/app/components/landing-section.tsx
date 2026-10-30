@@ -1,49 +1,20 @@
 import type { ReactNode } from "ardo/react";
 
-import { FerraSoftCard } from "ferramenta-family/ferra";
+import { FerraArticle } from "ferramenta-family/ferra";
 
-type SectionProps = {
+export { FerraFeatureGrid as FeatureGrid } from "ferramenta-family/ferra";
+
+export function LandingSection({
+  intro,
+  note,
+  ...props
+}: {
   id: string;
   title: string;
   intro?: ReactNode;
   note?: ReactNode;
-  className?: string;
   children: ReactNode;
-};
-
-export function LandingSection({ id, title, intro, note, className = "", children }: SectionProps) {
-  return (
-    <FerraSoftCard
-      as="section"
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className={`ferromark-section ${className}`}
-    >
-      <header className="ferromark-section-heading">
-        <h2 id={`${id}-title`}>{title}</h2>
-        {intro !== undefined && intro !== null && <p>{intro}</p>}
-        {note !== undefined && note !== null && (
-          <div className="ferromark-section-note">{note}</div>
-        )}
-      </header>
-      {children}
-    </FerraSoftCard>
-  );
-}
-
-export function FeatureGrid({
-  items,
-}: {
-  items: ReadonlyArray<{ heading: string; text: string }>;
+  className?: string;
 }) {
-  return (
-    <div className="ferromark-feature-grid">
-      {items.map((item) => (
-        <div key={item.heading}>
-          <h3>{item.heading}</h3>
-          <p>{item.text}</p>
-        </div>
-      ))}
-    </div>
-  );
+  return <FerraArticle {...props} introduction={intro} meta={note} />;
 }
