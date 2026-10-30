@@ -1,9 +1,8 @@
 import { useId, useState } from "ardo/react";
 import { ArdoLink as Link } from "ardo/runtime";
 import { Mark } from "ferramenta-family";
-import { FerraColumns, FerraExample, FerraMedia, FerraToggle } from "ferramenta-family/ferra";
+import { FerraExample, FerraFeatureGrid, FerraToggle } from "ferramenta-family/ferra";
 
-import rocketStages from "../assets/rocket-stages.webp";
 import samples from "../data/transform-samples.json";
 import { LandingSection as Section } from "./landing-section";
 
@@ -58,37 +57,6 @@ const capabilities = [
     to: "/rust/transforms",
   },
 ] as const;
-
-function StageRocket() {
-  return (
-    <img
-      src={rocketStages}
-      width={792}
-      height={864}
-      loading="lazy"
-      decoding="async"
-      alt="A forged-steel rocket with four stacked stages: CommonMark, GitHub (GFM), Ferro (FFM), and Afterburner. Its fins are unmarked."
-    />
-  );
-}
-
-function CapabilityList() {
-  return (
-    <dl className="ferra-definitions">
-      {capabilities.map((capability) => (
-        <div key={capability.id} data-stage={capability.id}>
-          <dt>
-            <Link to={capability.to}>
-              {capability.title}
-              <Mark name="arrow" size={16} />
-            </Link>
-          </dt>
-          <dd>{capability.description}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 function TransformControls({
   enabled,
@@ -186,16 +154,23 @@ export function TransformShowcase() {
     <Section
       id="features"
       className="ferromark-transforms"
-      title="Four stages. One Markdown engine."
-      intro={`Start with CommonMark. Add the everyday conveniences of GFM and the publishing features of FFM. Give the result its final polish with ${processingName}. All in one native engine.`}
+      title="See what reaches your reader."
+      intro="Try the finishing touches on a real Markdown sample. Switch typography, GitHub references and emoji on or off to see the result."
     >
-      <FerraColumns>
-        <FerraMedia>
-          <StageRocket />
-        </FerraMedia>
-        <CapabilityList />
-      </FerraColumns>
       <ProcessingDemo enabled={enabled} onToggle={onToggle} />
+      <FerraFeatureGrid
+        items={capabilities.map((capability) => ({
+          heading: capability.title,
+          text: (
+            <>
+              <p>{capability.description}</p>
+              <Link to={capability.to}>
+                Read the guide <Mark name="arrow" size={16} />
+              </Link>
+            </>
+          ),
+        }))}
+      />
     </Section>
   );
 }

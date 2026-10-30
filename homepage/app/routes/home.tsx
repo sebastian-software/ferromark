@@ -4,10 +4,9 @@ import { ArdoLink as Link } from "ardo/runtime";
 import { RegistryFacts } from "ferramenta-family";
 import {
   FerraAction,
-  FerraContents,
-  FerraEditorial,
   FerraEditorialRow,
   FerraNotes,
+  FerraProductPage,
 } from "ferramenta-family/ferra";
 import { WORKSHOP } from "ferramenta-family/registry";
 
@@ -21,9 +20,9 @@ import {
   FeatureGrid as Principles,
   LandingSection as Section,
 } from "../components/landing-section";
-import { ProjectOpening, ProjectOverview } from "../components/project-intro";
+import { ProjectContext, ProjectOpening, ProjectOverview } from "../components/project-intro";
 import { TransformShowcase } from "../components/transform-showcase";
-import { contents, tool } from "../data/project";
+import { tool } from "../data/project";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
 
 export const handle = { layout: "bare" };
@@ -200,6 +199,10 @@ function StartSection() {
           Start with Node.js
         </FerraAction>
       </div>
+      <div className="ferra-install">
+        <code>cargo add ferromark</code>
+        <code>npm install ferromark</code>
+      </div>
       <p>
         <a href="https://github.com/sebastian-software/ferromark">GitHub repository</a> ·{" "}
         <Link to="/guide/getting-started">Documentation</Link> ·{" "}
@@ -212,10 +215,11 @@ function StartSection() {
 export default function HomePage() {
   return (
     <RegistryFacts snapshot={registrySnapshot} snapshotGeneratedAt={registrySnapshotGeneratedAt}>
-      <FerraEditorial navigation={<FerraContents items={contents} label="Guide" />}>
+      <FerraProductPage>
         <ProjectOpening />
         <ProjectOverview />
         <TransformShowcase />
+        <ProjectContext />
         <FerraEditorialRow
           notes={
             tool?.editorial !== undefined && (
@@ -242,7 +246,7 @@ export default function HomePage() {
         </FerraEditorialRow>
         <FamilySection />
         <StartSection />
-      </FerraEditorial>
+      </FerraProductPage>
     </RegistryFacts>
   );
 }
