@@ -659,7 +659,7 @@ dependencies = [
 
 [[package]]
 name = "ferromark"
-version = "4.0.0"
+version = "3.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12915f738971d1d59add8ca4483f3e417d23965e546508d205b1028ab1dd9163"
 dependencies = [
@@ -678,7 +678,7 @@ version = "4.0.0"
 dependencies = [
  "cssparser",
  "ferrigura",
- "ferromark 3.7.0",
+ "ferromark 4.0.0",
  "roxmltree",
  "serde_json",
  "sha2",
@@ -689,7 +689,7 @@ dependencies = [
 name = "ferromark-node"
 version = "4.0.0"
 dependencies = [
- "ferromark 3.7.0",
+ "ferromark 4.0.0",
  "ferromark-ferrigura",
  "ferromark-plugin-fixture",
  "ferromark-transforms",
@@ -704,7 +704,7 @@ dependencies = [
 name = "ferromark-plugin-fixture"
 version = "4.0.0"
 dependencies = [
- "ferromark 3.7.0",
+ "ferromark 4.0.0",
  "serde_json",
 ]
 
@@ -713,7 +713,7 @@ name = "ferromark-transforms"
 version = "4.0.0"
 dependencies = [
  "criterion",
- "ferromark 3.7.0",
+ "ferromark 4.0.0",
 ]
 
 [[package]]
