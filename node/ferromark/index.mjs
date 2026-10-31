@@ -1064,19 +1064,25 @@ export function createHighlighterCodeRenderer(highlighter, highlightOptions) {
 }
 
 /**
- * Adapt a diagram renderer, such as `new Renderer()` from `@ferrigura/core`,
- * to a whole-block HTML callback. Ferromark only calls `render(text, options)`;
- * it does not import or pin the diagram package.
- * @param {import('./index.mjs').DiagramRenderer} renderer Synchronous diagram renderer.
- * @param {import('./index.mjs').DiagramOptions} [diagramOptions] Diagram options.
+ * @param {import('./index.mjs').DiagramRenderer} renderer Diagram renderer to check.
+ * @param {import('./index.mjs').DiagramOptions} diagramOptions Diagram options to check.
+ * @returns {{ language: string, colorScheme?: "light" | "dark" | "auto", onRenderError?: Function }}
  */
-export function createDiagramCodeRenderer(renderer, diagramOptions = {}) {
+function validateDiagramOptions(renderer, diagramOptions) {
   if (!renderer || typeof renderer.render !== "function") {
     throw new TypeError("renderer must provide a synchronous render method");
   }
   if (diagramOptions === null || typeof diagramOptions !== "object") {
     throw new TypeError("diagramOptions must be an object");
   }
+  return validateDiagramFields(diagramOptions);
+}
+
+/**
+ * @param {import('./index.mjs').DiagramOptions} diagramOptions Diagram options to check.
+ * @returns {{ language: string, colorScheme?: "light" | "dark" | "auto", onRenderError?: Function }}
+ */
+function validateDiagramFields(diagramOptions) {
   const { language = "mermaid", colorScheme, onRenderError } = diagramOptions;
   if (typeof language !== "string" || language === "") {
     throw new TypeError("diagramOptions.language must be a nonempty string");
@@ -1087,6 +1093,18 @@ export function createDiagramCodeRenderer(renderer, diagramOptions = {}) {
   if (onRenderError != null && typeof onRenderError !== "function") {
     throw new TypeError("diagramOptions.onRenderError must be a function");
   }
+  return { language, colorScheme, onRenderError };
+}
+
+/**
+ * Adapt a diagram renderer, such as `new Renderer()` from `@ferrigura/core`,
+ * to a whole-block HTML callback. Ferromark only calls `render(text, options)`;
+ * it does not import or pin the diagram package.
+ * @param {import('./index.mjs').DiagramRenderer} renderer Synchronous diagram renderer.
+ * @param {import('./index.mjs').DiagramOptions} [diagramOptions] Diagram options.
+ */
+export function createDiagramCodeRenderer(renderer, diagramOptions = {}) {
+  const { language, colorScheme, onRenderError } = validateDiagramOptions(renderer, diagramOptions);
   const renderOptions = colorScheme == null ? undefined : { colorScheme };
   /**
    * @param {string} code Code block source.
