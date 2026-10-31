@@ -1066,7 +1066,7 @@ export function createHighlighterCodeRenderer(highlighter, highlightOptions) {
 /**
  * @param {import('./index.mjs').DiagramRenderer} renderer Diagram renderer to check.
  * @param {import('./index.mjs').DiagramOptions} diagramOptions Diagram options to check.
- * @returns {{ language: string, colorScheme?: "light" | "dark" | "auto", onRenderError?: Function }}
+ * @returns {Required<Pick<import('./index.mjs').DiagramOptions, "language">> & import('./index.mjs').DiagramOptions} Checked options with the default language.
  */
 function validateDiagramOptions(renderer, diagramOptions) {
   if (!renderer || typeof renderer.render !== "function") {
@@ -1080,7 +1080,7 @@ function validateDiagramOptions(renderer, diagramOptions) {
 
 /**
  * @param {import('./index.mjs').DiagramOptions} diagramOptions Diagram options to check.
- * @returns {{ language: string, colorScheme?: "light" | "dark" | "auto", onRenderError?: Function }}
+ * @returns {Required<Pick<import('./index.mjs').DiagramOptions, "language">> & import('./index.mjs').DiagramOptions} Checked options with the default language.
  */
 function validateDiagramFields(diagramOptions) {
   const { language = "mermaid", colorScheme, onRenderError } = diagramOptions;

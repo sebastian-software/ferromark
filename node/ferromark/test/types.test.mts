@@ -187,12 +187,18 @@ extractedText.sections = [];
 
 const codeRenderer: CodeBlockRenderer = (_code, language) =>
   language === "mermaid" ? "<svg />" : null;
+const diagramErrorLanguages: string[] = [];
 const codeRenderers = composeCodeRenderers(
   codeRenderer,
   createHighlighterCodeRenderer(highlighter, { theme: "test" }),
   createDiagramCodeRenderer(
     { render: (text: string) => `<svg>${text}</svg>` },
-    { colorScheme: "auto", onRenderError: (_error, { language }) => language.length },
+    {
+      colorScheme: "auto",
+      onRenderError: (_error, { language }) => {
+        diagramErrorLanguages.push(language);
+      },
+    },
   ),
 );
 // @ts-expect-error -- unknown color schemes are rejected
