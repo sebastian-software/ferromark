@@ -10,8 +10,35 @@ import { CargoLock } from "release-please/build/src/updaters/rust/cargo-lock.js"
 import { preserveRegistryLockfile } from "./lib/release-lockfile.mjs";
 import { proposeRelease, readReleaseFiles } from "./lib/release-rehearsal.mjs";
 
-test("release bumps keep the registry identity when a workspace crate has the same name/version", async () => {
+// The live graph no longer pulls a registry Ferromark, but a future dependency
+// may again. Keep the collision covered with a registry entry beside the local
+// crate, the shape Ferrigura 0.2 once put into the lockfile.
+const REGISTRY_FERROMARK = `[[package]]
+name = "ferromark"
+version = "3.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12915f738971d1d59add8ca4483f3e417d23965e546508d205b1028ab1dd9163"
+
+`;
+
+function readCollidingReleaseFiles() {
   const files = readReleaseFiles();
+  const lock = files.get("Cargo.lock");
+  const local = lock.search(/^\[\[package\]\]\nname = "ferromark"\nversion = /m);
+  assert.notEqual(local, -1);
+  const version = lock.slice(local).match(/^version = "([^"]+)"$/m)[1];
+  const next = lock.indexOf("[[package]]", local + 1);
+  // With two versions in the graph, Cargo qualifies each reference.
+  const colliding = (lock.slice(0, next) + REGISTRY_FERROMARK + lock.slice(next)).replaceAll(
+    /^ "ferromark",$/gm,
+    ` "ferromark ${version}",`,
+  );
+  files.set("Cargo.lock", colliding);
+  return files;
+}
+
+test("release bumps keep the registry identity when a workspace crate has the same name/version", async () => {
+  const files = readCollidingReleaseFiles();
   const original = TOML.parse(files.get("Cargo.lock")).package;
   const registries = original.filter((pkg) => pkg.source);
   assert.ok(registries.some((pkg) => pkg.name === "ferromark"));
@@ -45,7 +72,7 @@ test("the production correction requires the release branch base lockfile", () =
 });
 
 test("the production CLI repairs the real updater's registry collision and exact transform pin", async () => {
-  const files = readReleaseFiles();
+  const files = readCollidingReleaseFiles();
   const proposal = await proposeRelease(files, "feat: plugin release\n\nRelease-As: 3.7.0");
   const broken = new CargoLock(new Map([["ferromark", "3.7.0"]])).updateContent(
     proposal.files.get("Cargo.lock"),
