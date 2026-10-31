@@ -27,11 +27,11 @@ import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-
 
 export const handle = { layout: "bare" };
 export const meta: ArdoMetaFunction = () => [
-  { title: "Ferromark — Markdown at native speed" },
+  { title: "Ferromark — Markdown that arrives finished" },
   {
     name: "description",
     content:
-      "A native Markdown engine for Rust and Node.js. CommonMark and GFM, publishing features, and optional typography transforms.",
+      "Write plain Markdown, publish polished HTML. A native engine for Rust and Node.js with CommonMark, GFM, publishing features and real typography.",
   },
 ];
 
@@ -39,22 +39,22 @@ function ContractBand() {
   return (
     <Section
       id="contract"
-      title="Correctness is part of the contract."
-      intro="The engine keeps parsing and rendering in scope. Your application chooses trust, translation, routing and presentation."
+      title="Your application stays in charge."
+      intro="Ferromark parses and renders, and does that one job really well. Trust, translation, routing and presentation remain your decisions."
     >
       <Principles
         items={[
           {
-            heading: "Standards first",
-            text: "CommonMark and GFM define the syntax. Conformance results and reference corpora keep the behavior reviewable.",
+            heading: "Standards, not surprises",
+            text: "CommonMark and GFM define the syntax. No private dialect to learn, and no behavior you cannot look up.",
           },
           {
-            heading: "Trust stays explicit",
-            text: "Rust preserves raw HTML unless you enable sanitizing. Node.js escapes authored HTML and filters unsafe URL schemes until you trust the source.",
+            heading: "Safe until you say otherwise",
+            text: "Node.js escapes authored HTML and filters unsafe URL schemes until you trust the source. Rust keeps raw HTML unless you enable sanitizing. Either way, you decide.",
           },
           {
-            heading: "A focused core",
-            text: "Optional transforms add typography, GitHub references and emoji. Applications connect highlighting and diagrams through rendering hooks.",
+            heading: "Small core, open edges",
+            text: "Typography, GitHub references and emoji are optional passes. Highlighting and diagrams plug in through rendering hooks, so you pick the tools.",
           },
         ]}
       />
@@ -66,7 +66,7 @@ const conformanceEntries = [
     name: "CommonMark 0.31.2",
     status: "652 / 652",
     settled: true,
-    detail: "Every specification example agrees with the CommonMark reference.",
+    detail: "Every single example in the specification renders exactly like the reference.",
   },
   {
     name: "GFM extensions",
@@ -79,13 +79,14 @@ const conformanceEntries = [
     name: "CR and CRLF input",
     status: "1,304 variants",
     settled: true,
-    detail: "Line-ending variants are checked against the same expected output.",
+    detail:
+      "Every example again with CR and with CRLF line endings, and the output must not change.",
   },
   {
     name: "Original cmark corpus",
     status: "Covered",
     settled: true,
-    detail: "The upstream comparison corpus remains in the regression suite.",
+    detail: "The upstream cmark comparison corpus stays in the regression suite.",
   },
 ];
 
@@ -93,8 +94,8 @@ function DocumentAnalysisSection() {
   return (
     <Section
       id="document-analysis"
-      title="Use the document you already parsed."
-      intro="Collect references, build search records, and export static Markdown from the same prepared document. Request each analysis when your application needs it."
+      title="Parse once. Use it everywhere."
+      intro="The document Ferromark already parsed for rendering can do more. Check links, feed your search index, or export clean Markdown, without parsing a second time."
       note={
         <>
           <Link to="/guide/document-analysis">Explore document analysis in Rust and Node.js</Link>
@@ -106,15 +107,15 @@ function DocumentAnalysisSection() {
         items={[
           {
             heading: "Reference inventories",
-            text: "Collect Markdown links, images, and static MDX URL attributes with destinations and available source ranges for your link and asset checks.",
+            text: "Every link, image and static MDX URL, with its destination and source range. Broken-link checks become a loop over a list.",
           },
           {
             heading: "Text and search sections",
-            text: "Extract static plain text and ordered heading sections with final JSX heading IDs and hierarchy for your search index.",
+            text: "Plain text and ordered heading sections, with the final heading IDs and hierarchy your search index needs.",
           },
           {
             heading: "Static Markdown export",
-            text: "Keep original Markdown and code while removing dynamic MDX constructs. Omission diagnostics show where content was discarded.",
+            text: "Strip dynamic MDX, keep the original Markdown and code. Diagnostics tell you exactly what was left out.",
           },
         ]}
       />
@@ -126,15 +127,12 @@ function FamilySection() {
   return (
     <Section
       id="family"
-      title="A place in your toolchain."
-      intro="Use Ferromark on its own, pair it with Ferriki for syntax highlighting, or add Ferrigura diagrams through a custom build. Each engine has its own job and its own API."
+      title="Good company."
+      intro="Ferromark is happy on its own. Pair it with Ferriki for syntax highlighting, or add Ferrigura diagrams through a custom build. Each engine does one job and has its own API."
       note={<Link to="/guide/code-rendering">Choose a highlighting or diagram integration.</Link>}
     >
       <p>
-        <a href="https://ferramenta.dev/#ferromark">
-          Explore the independent engines in Ferramenta
-        </a>
-        .
+        <a href="https://ferramenta.dev/#ferromark">Meet the rest of the Ferramenta family</a>.
       </p>
     </Section>
   );
@@ -145,7 +143,7 @@ function EvidenceSection() {
     <Section
       id="evidence"
       title={benchmarkLead()}
-      intro="CommonMark and GFM, plus opt-in publishing features for richer documents. Enable what you need; extra syntax adds parsing work."
+      intro="All of that polish would be worth little if it made you wait. Ferromark beats every library in our comparison, on Linux and on macOS, from Rust and from Node.js. Fair warning: each extra syntax feature you enable adds a little parsing work."
       note={
         <>
           57 documents on macOS and Linux, fresh calls. 2× means twice the throughput. Node.js
@@ -164,8 +162,8 @@ function ConformanceSection() {
   return (
     <Section
       id="conformance"
-      title="Conformance with the evidence attached."
-      intro="Published output remains tied to the specification and compatibility fixtures."
+      title="Fast is nothing without right."
+      intro="Speed is easy if you cut corners. We did not. Every result below is backed by the specification and fixtures you can run yourself."
       note={
         <Link to="/guide/correctness">Read the conformance methodology and source fixtures.</Link>
       }
@@ -188,10 +186,10 @@ function ConformanceSection() {
 function StartSection() {
   return (
     <section className="ferra-editorial-closing" id="start" aria-labelledby="work">
-      <h2 id="work">Bring Markdown into your application.</h2>
+      <h2 id="work">Your next document deserves this.</h2>
       <p>
-        Choose Rust for direct access to the parser and document tree, or Node.js for a typed
-        JavaScript API backed by the same native engine.
+        One command and you are rendering. Rust gives you the parser and document tree directly,
+        Node.js a typed JavaScript API on top of the same native engine.
       </p>
       <div className="ferra-actions">
         <FerraAction href="/rust/getting-started">Start with Rust</FerraAction>
@@ -229,8 +227,6 @@ export default function HomePage() {
         >
           <FlavoredMarkdownSection />
         </FerraEditorialRow>
-        <DocumentAnalysisSection />
-        <ContractBand />
         <EvidenceSection />
         <FerraEditorialRow
           notes={
@@ -244,6 +240,8 @@ export default function HomePage() {
         >
           <ConformanceSection />
         </FerraEditorialRow>
+        <ContractBand />
+        <DocumentAnalysisSection />
         <FamilySection />
         <StartSection />
       </FerraProductPage>
