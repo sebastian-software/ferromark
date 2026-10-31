@@ -21,7 +21,6 @@ import {
   LandingSection as Section,
 } from "../components/landing-section";
 import { ProjectContext, ProjectOpening, ProjectOverview } from "../components/project-intro";
-import { TransformShowcase } from "../components/transform-showcase";
 import { tool } from "../data/project";
 import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-snapshot";
 
@@ -238,7 +237,6 @@ export default function HomePage() {
         >
           <FlavoredMarkdownSection />
         </FerraEditorialRow>
-        <TransformShowcase />
         <ProjectContext />
         <ContractBand />
         <DocumentAnalysisSection />

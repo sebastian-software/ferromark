@@ -1,0 +1,8 @@
+{
+  "ferromark": "3.7.0",
+  "sourceCommit": "df2962e6",
+  "parserOptions": "ParserOptions::ffm()",
+  "rendererOptions": "HtmlRendererOptions::new()",
+  "markdown": "> Simplicity is prerequisite for reliability.\n: Edsger W. Dijkstra, *1975*\n\n| Plan | Monthly | Yearly |\n| :--- | ---: | ---: |\n| Starter | 9 € | 90 € |\n| Team | 29 € | 290 € |\n| Enterprise | On request ||\n\n: Pricing *per seat*\n\nCaptions and credits are ==plain Markdown==.^[No HTML, no shortcodes.]\nThis sentence was ++added in the second edition++.\n",
+  "html": "<figure>\n<blockquote>\n<p>Simplicity is prerequisite for reliability.</p>\n</blockquote>\n\n<figcaption>Edsger W. Dijkstra, <em>1975</em></figcaption>\n</figure>\n<table>\n<caption>Pricing <em>per seat</em></caption>\n<thead>\n<tr>\n<th align=\"left\">Plan</th>\n<th align=\"right\">Monthly</th>\n<th align=\"right\">Yearly</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"left\">Starter</td>\n<td align=\"right\">9 €</td>\n<td align=\"right\">90 €</td>\n</tr>\n<tr>\n<td align=\"left\">Team</td>\n<td align=\"right\">29 €</td>\n<td align=\"right\">290 €</td>\n</tr>\n<tr>\n<td align=\"left\">Enterprise</td>\n<td align=\"right\" colspan=\"2\">On request</td>\n</tr>\n</tbody>\n</table>\n<p>Captions and credits are <mark>plain Markdown</mark>.<sup><a href=\"#fn-1\" id=\"fnref-1\">1</a></sup>\nThis sentence was <ins>added in the second edition</ins>.</p>\n<div id=\"fn-1\" class=\"footnote\">\n<p>No HTML, no shortcodes.</p>\n<a href=\"#fnref-1\">↩</a>\n</div>\n"
+}
