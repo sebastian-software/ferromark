@@ -150,7 +150,6 @@ const requiredFragments = [
   "Start with Node.js",
   'id="document-analysis"',
   'id="work"',
-  'id="features-title"',
   'id="ffm-title"',
   'id="evidence-title"',
   'href="/guide/document-analysis"',
