@@ -91,10 +91,7 @@ for (const options of [
 }
 
 const fixtures = JSON.parse(
-  readFileSync(
-    new URL("../../../plugins/ferrigura/tests/fixtures/diagrams.json", import.meta.url),
-    "utf8",
-  ),
+  readFileSync(new URL("../../../tests/fixtures/ferrigura/diagrams.json", import.meta.url), "utf8"),
 );
 for (const fixture of fixtures) {
   const session = new addon.CodeCompiler(

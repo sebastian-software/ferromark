@@ -27,7 +27,7 @@ required-features = ["pgo-train"]
 # Engines are opt-in and only included in isolated custom bundles.
 default = []
 ferriki = ["ferromark/ferriki-remote"]
-ferrigura = ["dep:ferromark-ferrigura"]
+ferrigura = ["ferromark/ferrigura"]
 plugin-test = ["dep:ferromark-plugin-fixture"]
 # Diagnostic N-API exports for `node/ferromark/bench/boundary.mjs`. Like
 # `panic-test`, never part of a published addon: `build-native.mjs` builds it
@@ -43,9 +43,6 @@ pgo-train = []
 ferromark = { version = "3.7.0", path = "../..", features = ["jsx"] }
 ferromark-transforms = { version = "3.7.0", path = "../../transforms" }
 ferromark-plugin-fixture = { version = "3.7.0", path = "../plugin-fixture", optional = true }
-ferromark-ferrigura = { version = "3.7.0", path = "../../plugins/ferrigura", optional = true, features = [
-  "jsx",
-] }
 napi = { version = "=3.11.0", default-features = false, features = ["dyn-symbols", "napi8"] }
 napi-derive = "=3.6.0"
 serde_json.workspace = true

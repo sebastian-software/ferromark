@@ -3,7 +3,7 @@
 use cssparser::{ParseError, Parser, ParserInput, Token};
 use roxmltree::Document;
 
-use crate::Error;
+use super::FerriguraError as Error;
 
 const SVG: &str = "http://www.w3.org/2000/svg";
 const XLINK: &str = "http://www.w3.org/1999/xlink";
@@ -25,7 +25,7 @@ pub fn sanitize(svg: &str) -> Result<String, Error> {
         }
         let tag = node.tag_name();
         if tag.namespace() != Some(SVG) || !element(tag.name()) {
-            return Err(reject(format!("element '{}'", tag.name())));
+            return Err(reject(["element '", tag.name(), "'"].concat()));
         }
         for attr in node.attributes() {
             let name = attr.name();
@@ -39,7 +39,7 @@ pub fn sanitize(svg: &str) -> Result<String, Error> {
                     return Err(reject("a non-local href"));
                 }
             } else if !attribute(name) {
-                return Err(reject(format!("attribute '{name}'")));
+                return Err(reject(["attribute '", name, "'"].concat()));
             }
             if matches!(
                 name,
@@ -74,7 +74,7 @@ pub fn sanitize(svg: &str) -> Result<String, Error> {
     // Re-serialize XML text and attributes rather than forwarding CDATA,
     // comments, namespace prefixes or parser-specific source spellings to HTML.
     let mut output = String::with_capacity(svg.len());
-    let mut pending = vec![(root, false)];
+    let mut pending = Vec::from([(root, false)]);
     while let Some((node, closing)) = pending.pop() {
         if node.is_element() {
             let name = node.tag_name().name();
@@ -379,7 +379,7 @@ fn tokens<'i>(parser: &mut Parser<'i, '_>, depth: u8) -> Result<(), ParseError<'
                         | "steps"
                         | "format"
                 ) {
-                    return Err(parser.new_custom_error(format!("CSS function {name}")));
+                    return Err(parser.new_custom_error(["CSS function ", &name].concat()));
                 }
                 parser.parse_nested_block(|nested| tokens(nested, depth + 1))?;
             }

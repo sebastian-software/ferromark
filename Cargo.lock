@@ -57,12 +57,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
-name = "beef"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a8241f3ebb85c056b509d4327ad0358fbbba6ffb340bf388f26350aeda225b1"
-
-[[package]]
 name = "bitflags"
 version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -473,9 +467,9 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "ferrigura"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4eea07888c2e5557dcb385c1d91c003ab6b0c6f701d33739006b09b999f0a25"
+checksum = "d31b20682851f889a70019d44fa9096afecbe9bf80825d68e0ab7bec57973ec1"
 dependencies = [
  "ferrigura-model",
  "ferrigura-render",
@@ -485,18 +479,18 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-cose"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ffa6fcb8aed724d92a136f697cbbaa40c57a12dd4fd99c67302844677ec2e24"
+checksum = "e738f0262a1caef9a4bc1e1011cd390e82ee9412c87243a66a308509a0973855"
 dependencies = [
  "ferrigura-jsmath",
 ]
 
 [[package]]
 name = "ferrigura-elk"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37f4f274fb19a977215e09f49cfbceac1721ce989d29a1d83054aa67fe49bc33"
+checksum = "dfc3557e5ac2013f22d6f9d267cf8efead82fcc36dec73da8009500d26057679"
 dependencies = [
  "indexmap",
  "serde",
@@ -505,15 +499,15 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-jsmath"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3c58faffc2ea3618cb559e81f18964db0bca5d0a38677de071077f8515eb484"
+checksum = "d5e91076f2be6c0e9d1aebaeb116cfb06a2c18b69bed35dc9edcac686663295b"
 
 [[package]]
 name = "ferrigura-model"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61f0f7980364c450a380182d0c95f1cea3c4a7443559469ebdc9fc6f095f65e3"
+checksum = "77b0a6814af548709e7149173d7916a0d1623b7af8acc88798959f50e4c7586f"
 dependencies = [
  "regex",
  "serde",
@@ -523,18 +517,18 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-path"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b5ebb3b26a08da49d42cfe15dc552f454911715b456e4e3dc1444766eee6ae8"
+checksum = "7a10af534f6837e892cfdda968e2b4cfbb65963084d8196d8383a31fd0bf6d65"
 dependencies = [
  "ferrigura-jsmath",
 ]
 
 [[package]]
 name = "ferrigura-render"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13f015d7c5549ae1531e5f4a6afeeec92645f9bf7c7e12d8d812a1511b54c210"
+checksum = "a0836f988007f7a04c166b3b4d14b16b4e0e7dfac6b43255980da541709e0ef6"
 dependencies = [
  "base64",
  "ferrigura-cose",
@@ -546,16 +540,16 @@ dependencies = [
  "ferrigura-syntax",
  "ferrigura-text",
  "ferrigura-venn",
- "ferromark 3.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ferroni",
  "serde",
  "serde_json",
 ]
 
 [[package]]
 name = "ferrigura-swimlane"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90bac2d906cac5f9fe7c8b7fa18d4898e6e72341e577fcfc1b9482a3e01a8645"
+checksum = "dd2ec0c19fd5810683bb7f3da4ffe1dd273ea78fcb85a632fa0736d3cb8fed4f"
 dependencies = [
  "ferrigura-jsmath",
  "indexmap",
@@ -564,9 +558,9 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-syntax"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78635c67e705aa223e86075916458ec4f04eeecbff9eb084141140d7ee3bdf98"
+checksum = "4906a38dd1fd0f8660a7d97b9f50b0eaa3b8a86d8af18666168ad104fb2069c1"
 dependencies = [
  "ferrigura-model",
  "indexmap",
@@ -578,9 +572,9 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-text"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "529d73bf709540e4b07fb5ffc0812b949bb48e393d84d78cc6a715fc1347f738"
+checksum = "90237462f4eaa8010742ba5bc6b26bd206e19f337e2fba4309727ef2618c0273"
 dependencies = [
  "base64",
  "harfrust",
@@ -591,9 +585,9 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-venn"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd89a3db07b17c391960d965d5e9c29dcdf5f4d3008a091bbc17d8cb948ab180"
+checksum = "dc1ae79b9d88c58cd0facb1fbe9458783a1679c7c2ae3edb5247aa8045111180"
 dependencies = [
  "ferrigura-jsmath",
 ]
@@ -643,6 +637,8 @@ dependencies = [
  "bumpalo",
  "compact_str",
  "criterion",
+ "cssparser",
+ "ferrigura",
  "ferriki",
  "insta",
  "memchr",
@@ -651,37 +647,11 @@ dependencies = [
  "oxc_ecmascript",
  "oxc_parser",
  "oxc_span",
- "rustc-hash",
- "serde_json",
- "smallvec",
- "thiserror",
-]
-
-[[package]]
-name = "ferromark"
-version = "3.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12915f738971d1d59add8ca4483f3e417d23965e546508d205b1028ab1dd9163"
-dependencies = [
- "bumpalo",
- "compact_str",
- "memchr",
- "rustc-hash",
- "serde_json",
- "smallvec",
- "thiserror",
-]
-
-[[package]]
-name = "ferromark-ferrigura"
-version = "3.7.0"
-dependencies = [
- "cssparser",
- "ferrigura",
- "ferromark 3.7.0",
  "roxmltree",
+ "rustc-hash",
  "serde_json",
  "sha2",
+ "smallvec",
  "thiserror",
 ]
 
@@ -689,8 +659,7 @@ dependencies = [
 name = "ferromark-node"
 version = "3.7.0"
 dependencies = [
- "ferromark 3.7.0",
- "ferromark-ferrigura",
+ "ferromark",
  "ferromark-plugin-fixture",
  "ferromark-transforms",
  "napi",
@@ -704,7 +673,7 @@ dependencies = [
 name = "ferromark-plugin-fixture"
 version = "3.7.0"
 dependencies = [
- "ferromark 3.7.0",
+ "ferromark",
  "serde_json",
 ]
 
@@ -713,14 +682,14 @@ name = "ferromark-transforms"
 version = "3.7.0"
 dependencies = [
  "criterion",
- "ferromark 3.7.0",
+ "ferromark",
 ]
 
 [[package]]
 name = "ferroni"
-version = "2.2.3"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83a5625f91788dfbfd109e4d1700bb0d56828c28923db18ff1db80b1b332f235"
+checksum = "8775b4fc21a3de1c772ef5273c45c94ee6a35030f5cc5e0eb0b6d51f3f5a49dd"
 dependencies = [
  "aho-corasick",
  "bitflags",
@@ -910,14 +879,15 @@ dependencies = [
 
 [[package]]
 name = "harfrust"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86aa776d6d32b072119e1f1650f4db843ff4382a4aaa6a2c9c4e35703cd377cb"
+checksum = "865dcc4105d51c323d8fedbb2d75b5e9c8ecddf5613f74c82f851d0afbc97114"
 dependencies = [
  "bitflags",
  "bytemuck",
  "read-fonts",
  "smallvec",
+ "yoke",
 ]
 
 [[package]]
@@ -1149,12 +1119,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lazy_static"
-version = "1.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
-
-[[package]]
 name = "libc"
 version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1190,34 +1154,32 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "logos"
-version = "0.15.1"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff472f899b4ec2d99161c51f60ff7075eeb3097069a36050d8037a6325eb8154"
+checksum = "eb2c55a318a87600ea870ff8c2012148b44bf18b74fad48d0f835c38c7d07c5f"
 dependencies = [
  "logos-derive",
 ]
 
 [[package]]
 name = "logos-codegen"
-version = "0.15.1"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "192a3a2b90b0c05b27a0b2c43eecdb7c415e29243acc3f89cc8247a5b693045c"
+checksum = "58b3ffaa284e1350d017a57d04ada118c4583cf260c8fb01e0fe28a2e9cf8970"
 dependencies = [
- "beef",
  "fnv",
- "lazy_static",
  "proc-macro2",
  "quote",
+ "regex-automata",
  "regex-syntax",
- "rustc_version",
  "syn 2.0.119",
 ]
 
 [[package]]
 name = "logos-derive"
-version = "0.15.1"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "605d9697bcd5ef3a42d38efc51541aa3d6a4a25f7ab6d1ed0da5ac632a26b470"
+checksum = "52d3a9855747c17eaf4383823f135220716ab49bea5fbea7dd42cc9a92f8aa31"
 dependencies = [
  "logos-codegen",
 ]
@@ -1704,14 +1666,15 @@ dependencies = [
 
 [[package]]
 name = "read-fonts"
-version = "0.45.1"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4edc8db0d972de88e53a085b1f01fb3fbdae7bb0cb7a0ce2b2f8285a412fe3ef"
+checksum = "bdaa4fffe9ff3ca2c353fa9729792805b9b3e324695ff5a081f860612e81b330"
 dependencies = [
  "bytemuck",
  "foldhash",
  "font-types",
  "once_cell",
+ "smallvec",
  "yoke",
 ]
 
@@ -2049,11 +2012,13 @@ checksum = "33f4fe9184a62d842c9ef383018f3306d8ba224fd9d836f56d7288308847c256"
 
 [[package]]
 name = "skera"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "531045338e36ad05b9652912a47ba38a935d0eaa0293c3e33d8112cfa414c14b"
+checksum = "1304685b8b275337200c0c138d8ca1b0b19be6185e4eb4013aebc9a1c270d761"
 dependencies = [
+ "foldhash",
  "hashbrown",
+ "read-fonts",
  "skrifa",
  "thiserror",
  "write-fonts",
@@ -2061,12 +2026,15 @@ dependencies = [
 
 [[package]]
 name = "skrifa"
-version = "0.48.0"
+version = "0.49.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5213b4825bac3587046330052d61bfac7bd3bd0d203c758d7c2ef726fcea034"
+checksum = "a7459fb60888ad9a5f367dd293fa2fb9df142cb451aa6bfd6cd66a7d6a9b739d"
 dependencies = [
  "bytemuck",
+ "once_cell",
  "read-fonts",
+ "smallvec",
+ "yoke",
 ]
 
 [[package]]
@@ -2513,9 +2481,9 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "write-fonts"
-version = "0.54.1"
+version = "0.55.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55716cfa7e8bcdb90289e07dfac478ccb2e3ec0f9a604fe682c7a03a7984d705"
+checksum = "3e91ad74b39f48f456560ed1ccc75959efa19bf6f0817d1560751bb49db84f6c"
 dependencies = [
  "font-types",
  "log",

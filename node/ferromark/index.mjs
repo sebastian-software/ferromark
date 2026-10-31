@@ -1064,6 +1064,46 @@ export function createHighlighterCodeRenderer(highlighter, highlightOptions) {
 }
 
 /**
+ * Adapt a diagram renderer, such as `new Renderer()` from `@ferrigura/core`,
+ * to a whole-block HTML callback. Ferromark only calls `render(text, options)`;
+ * it does not import or pin the diagram package.
+ * @param {import('./index.mjs').DiagramRenderer} renderer Synchronous diagram renderer.
+ * @param {import('./index.mjs').DiagramOptions} [diagramOptions] Diagram options.
+ */
+export function createDiagramCodeRenderer(renderer, diagramOptions = {}) {
+  if (!renderer || typeof renderer.render !== "function") {
+    throw new TypeError("renderer must provide a synchronous render method");
+  }
+  if (diagramOptions === null || typeof diagramOptions !== "object") {
+    throw new TypeError("diagramOptions must be an object");
+  }
+  const { language = "mermaid", colorScheme, onRenderError } = diagramOptions;
+  if (typeof language !== "string" || language === "") {
+    throw new TypeError("diagramOptions.language must be a nonempty string");
+  }
+  if (colorScheme != null && !["light", "dark", "auto"].includes(colorScheme)) {
+    throw new TypeError('diagramOptions.colorScheme must be "light", "dark", or "auto"');
+  }
+  if (onRenderError != null && typeof onRenderError !== "function") {
+    throw new TypeError("diagramOptions.onRenderError must be a function");
+  }
+  const renderOptions = colorScheme == null ? undefined : { colorScheme };
+  /**
+   * @param {string} code Code block source.
+   * @param {string | null | undefined} codeLanguage Code language.
+   */
+  return (code, codeLanguage) => {
+    if (codeLanguage !== language) return null;
+    try {
+      return renderer.render(code, renderOptions);
+    } catch (error) {
+      onRenderError?.(error, { language });
+      return null;
+    }
+  };
+}
+
+/**
  * Compose synchronous whole-code-block renderers in priority order.
  * A string handles the block (including an empty string); null or undefined declines it.
  * @param {...import('./index.mjs').CodeBlockRenderer} renderers Trusted render callbacks.

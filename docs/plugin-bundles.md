@@ -9,7 +9,7 @@ JavaScript adapter per code block is needed.
 This is static composition. A bundle replaces the application's `ferromark`
 installation; it does not add factories to another already loaded addon.
 Independent native addon loading and a cross-addon Rust ABI are not supported.
-The Rust adapter crate and native build workspace remain private.
+The native build workspace remains private.
 
 ## Download and install
 

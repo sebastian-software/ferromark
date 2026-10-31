@@ -11,17 +11,19 @@ the engines and their initialization.
 
 ## Choose an integration
 
-| Your task                  | Integration                                         | Availability                                              |
-| -------------------------- | --------------------------------------------------- | --------------------------------------------------------- |
-| Node.js HTML highlighting  | `toHtmlWithHighlighter` and `@ferriki/core`         | Published; [Node.js guide](/node/highlighting).           |
-| Rust HTML/JSX highlighting | Optional `ferriki` feature and Rust hooks           | Published; [Rust code rendering](/rust/highlighting).     |
-| Native plugin composition  | `CodeCompiler` with factories linked into the addon | Repository `main` and custom plugin bundles.              |
-| Mermaid to SVG             | Optional Rust adapter or a custom Node.js bundle    | Source integration; excluded from the standard npm addon. |
+| Your task                  | Integration                                         | Availability                                                                                                     |
+| -------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Node.js HTML highlighting  | `toHtmlWithHighlighter` and `@ferriki/core`         | Published; [Node.js guide](/node/highlighting).                                                                  |
+| Rust HTML/JSX highlighting | Optional `ferriki` feature and Rust hooks           | Published; [Rust code rendering](/rust/highlighting).                                                            |
+| Native plugin composition  | `CodeCompiler` with factories linked into the addon | Repository `main` and custom plugin bundles.                                                                     |
+| Rust Mermaid to SVG        | Optional `ferrigura` feature and Rust hooks         | Repository `main`; [Mermaid guide](https://github.com/sebastian-software/ferromark/blob/main/docs/ferrigura.md). |
+| Node.js Mermaid to SVG     | `createDiagramCodeRenderer` and `@ferrigura/core`   | Repository `main`; waits for `@ferrigura/core` on npm.                                                           |
+| Native Node.js Mermaid     | `CodeCompiler` in a custom bundle                   | Custom plugin bundles; excluded from the standard addon.                                                         |
 
 The published `ferromark@3.6.0` facade does not export `CodeCompiler`,
 `availableCodePlugins`, or the new callback-composition helpers. Check your
-installed declarations before using those APIs. `@ferrigura/core` has not yet
-become publicly available on npm; the custom bundle is the current installable Mermaid path.
+installed declarations before using those APIs. `@ferrigura/core` is not yet
+published on npm; until it is, the custom bundle is the installable Node.js Mermaid path.
 
 ## Select native plugins once
 
@@ -72,8 +74,11 @@ engine-enabled bundle; both engines follow the same opt-in build boundary.
 
 The existing Node.js highlighter API calls an initialized engine through
 JavaScript. The source checkout adds `composeCodeRenderers`,
-`createHighlighterCodeRenderer`, `toHtmlWithCodeRenderer`, and
-`transformWithCodeRenderer` for ordered synchronous callbacks. A callback
+`createHighlighterCodeRenderer`, `createDiagramCodeRenderer`,
+`toHtmlWithCodeRenderer`, and `transformWithCodeRenderer` for ordered
+synchronous callbacks. `createDiagramCodeRenderer` accepts any object with a
+synchronous `render(text, options)` method, such as a `@ferrigura/core`
+`Renderer`, so Ferromark does not pin the diagram package. A callback
 returns complete HTML, or declines with `null` or `undefined`. JSX callbacks
 must return JSX source instead of HTML.
 
@@ -85,7 +90,7 @@ hook implementations directly, without Node.js. See the
 
 ## Understand the current Mermaid boundary
 
-The adapter recognizes parsed `mermaid` fences and emits SVG without a browser
+The native integration recognizes parsed `mermaid` fences and emits SVG without a browser
 Mermaid runtime. By default, invalid or unsupported diagrams retain escaped code
 and a diagnostic with the fence's original UTF-8 byte range. Drain
 `compiler.takeDiagnostics()` or `prepared.takeDiagnostics()` after rendering.
@@ -94,12 +99,13 @@ and a diagnostic with the fence's original UTF-8 byte range. Drain
 SVG passes a dedicated policy before HTML emission or JSX conversion: scripts,
 event attributes, external resources, and `foreignObject` HTML are rejected.
 Embedded fonts and local fragment references remain available. Custom application
-callbacks keep their own trusted-output contract.
+callbacks, including `createDiagramCodeRenderer`, keep their own
+trusted-output contract.
 
 IDs derive from the output namespace and original fence position. Repeated and
 prepared renders are identical; supply distinct `idPrefix` values when combining
 documents. Shared flowchart, sequence, state, class, and ER fixtures pin complete
 SVG bytes across Rust and installed Node consumers. Automatic light/dark CSS
 requires no JavaScript. See the
-[Mermaid adapter guide](https://github.com/sebastian-software/ferromark/blob/main/docs/ferrigura.md)
-for options, examples, output constraints, and the pinned engine version.
+[Mermaid guide](https://github.com/sebastian-software/ferromark/blob/main/docs/ferrigura.md)
+for options, examples, output constraints, and the engine version.

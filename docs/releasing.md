@@ -42,8 +42,9 @@ pushes a small correction only when needed. The release rehearsal applies and
 checks the same correction.
 
 That correction also preserves registry identities in `Cargo.lock`. Ferrigura
-0.2.0 uses registry Ferromark alongside the workspace package, and the upstream
-updater matches both by name. The workflow reads the release branch's merge-base
+0.2 used registry Ferromark alongside the workspace package, and the upstream
+updater matches both by name; Ferrigura 0.3 no longer does, but the guard stays
+for any future registry package of the same name. The workflow reads the release branch's merge-base
 lockfile, keeps registry blocks unchanged, and updates only local package
 versions and their qualified local references. The real updater rehearsal
 checks registry equality and validates the resulting lockfile with Cargo.
@@ -66,7 +67,7 @@ component. The strategy updates natively, with no template to keep in step:
   the workflow then restores the exact `=…` requirement,
 - `node/native/Cargo.toml`'s version and its explicit
   `ferromark = { version = "…", path = "../.." }` requirement,
-- the private plugin fixture and Ferrigura adapter versions and local requirements,
+- the private plugin fixture version and local requirements,
 - all local entries in `Cargo.lock`,
 - `CHANGELOG.md` and `.release-please-manifest.json`.
 

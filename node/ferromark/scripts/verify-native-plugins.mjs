@@ -32,14 +32,7 @@ try {
       (name) =>
         !name.startsWith("ferriki") &&
         !name.startsWith("ferrigura") &&
-        ![
-          "ferromark-plugin-fixture",
-          "ferromark-ferrigura",
-          "cssparser",
-          "rustls",
-          "ureq",
-          "onig",
-        ].includes(name),
+        !["ferromark-plugin-fixture", "cssparser", "rustls", "ureq", "onig"].includes(name),
     ),
     "the engine-free build must omit engines, their parsers and assets, and diagnostic plugins",
   );

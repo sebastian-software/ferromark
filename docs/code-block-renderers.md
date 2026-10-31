@@ -38,9 +38,9 @@ Use `HtmlRenderer::render_with_code_hooks` or
 `render_with_hooks` entry point when per-node overrides are needed as well.
 The default `render` path continues to use no hooks.
 
-The optional [Ferrigura adapter](ferrigura.md) owns its renderer in a separate
-crate, reuses engine state, exposes diagram errors, and assigns distinct SVG
-IDs. The core Ferromark crate does not depend on the diagram engine.
+The optional [Ferrigura integration](ferrigura.md) (`ferrigura` feature) owns
+its renderer, reuses engine state, exposes diagram errors, and assigns distinct
+SVG IDs. Without the feature, Ferromark does not depend on the diagram engine.
 
 The existing Ferriki adapter works with the code-only entry point:
 

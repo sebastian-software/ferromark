@@ -39,7 +39,7 @@ try {
     path.join(directory, "verify.mjs"),
   );
   await copyFile(
-    new URL("../../plugins/ferrigura/tests/fixtures/diagrams.json", import.meta.url),
+    new URL("../../tests/fixtures/ferrigura/diagrams.json", import.meta.url),
     path.join(directory, "mermaid-fixtures.json"),
   );
   process.stdout.write(run(process.execPath, ["--expose-gc", "verify.mjs"]));

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   compileJsx,
   composeCodeRenderers,
+  createDiagramCodeRenderer,
   createHighlighterCodeRenderer,
   toHtml,
   toHtmlWithCodeRenderer,
@@ -118,4 +119,47 @@ test("highlighter adapters retain fallback and optional error observation", () =
   const source = "```rust\n<safe>\n```\n";
   assert.equal(toHtmlWithCodeRenderer(source, render), toHtml(source));
   assert.deepEqual(seen, [failure, { lang: "rust" }]);
+});
+
+test("diagram renderers handle only their fence language and fall back on errors", () => {
+  const calls = [];
+  const renderer = {
+    render(text, options) {
+      calls.push([text, options]);
+      if (text.includes("broken")) throw new Error("parse failure");
+      return '<svg data-diagram="yes"></svg>\n';
+    },
+  };
+  const errors = [];
+  const render = createDiagramCodeRenderer(renderer, {
+    colorScheme: "dark",
+    onRenderError(error, context) {
+      errors.push([error.message, context]);
+    },
+  });
+  const html = toHtmlWithCodeRenderer(
+    "```mermaid\nA --> B\n```\n\n```mermaid\nbroken\n```\n\n```js\nx\n```\n",
+    render,
+  );
+  assert.match(html, /<svg data-diagram="yes"><\/svg>/);
+  assert.match(html, /<code class="language-mermaid">broken\n<\/code>/);
+  assert.match(html, /<code class="language-js">x\n<\/code>/);
+  assert.deepEqual(calls, [
+    ["A --> B\n", { colorScheme: "dark" }],
+    ["broken\n", { colorScheme: "dark" }],
+  ]);
+  assert.deepEqual(errors, [["parse failure", { language: "mermaid" }]]);
+
+  const plantuml = createDiagramCodeRenderer(renderer, { language: "plantuml" });
+  assert.equal(plantuml("A --> B\n", "mermaid"), null);
+  assert.equal(plantuml("A --> B\n", "plantuml"), '<svg data-diagram="yes"></svg>\n');
+  assert.equal(calls.at(-1)[1], undefined);
+});
+
+test("diagram renderers reject invalid arguments", () => {
+  assert.throws(() => createDiagramCodeRenderer({}), /synchronous render method/);
+  const renderer = { render: () => "" };
+  assert.throws(() => createDiagramCodeRenderer(renderer, { language: "" }), /language/);
+  assert.throws(() => createDiagramCodeRenderer(renderer, { colorScheme: "sepia" }), /colorScheme/);
+  assert.throws(() => createDiagramCodeRenderer(renderer, { onRenderError: 1 }), /onRenderError/);
 });

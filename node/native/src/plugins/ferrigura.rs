@@ -1,9 +1,8 @@
 //! Optional Mermaid factory; all rendering and SVG conversion stay in Rust.
 
-use ferromark::{HtmlCodeBlockInput, HtmlRenderHooks, JsxCodeBlockInput, JsxRenderHooks};
-use ferromark_ferrigura::{
-    FerriguraHooks,
-    ferrigura::{ColorScheme, Renderer},
+use ferromark::ferrigura::{ColorScheme, Renderer};
+use ferromark::{
+    FerriguraHooks, HtmlCodeBlockInput, HtmlRenderHooks, JsxCodeBlockInput, JsxRenderHooks,
 };
 use napi::bindgen_prelude::{Error, Result, Status};
 use serde_json::Value;

@@ -2,11 +2,9 @@
 
 use std::io::{Read, Write};
 
+use ferromark::FerriguraHooks;
+use ferromark::ferrigura::{Renderer, Value};
 use ferromark::{Allocator, HtmlRenderer, HtmlRendererOptions, Parser};
-use ferromark_ferrigura::{
-    FerriguraHooks,
-    ferrigura::{Renderer, Value},
-};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut source = String::new();

@@ -9,7 +9,7 @@ pub fn convert(svg: &str) -> Result<String, roxmltree::Error> {
     let root = document.root_element();
     let mut output = String::with_capacity(svg.len());
     // Traversal is iterative so deeply nested diagrams do not add Rust stack frames.
-    let mut pending = vec![(root, false)];
+    let mut pending = Vec::from([(root, false)]);
     while let Some((node, closing)) = pending.pop() {
         match (node, closing) {
             (node, false) if node.is_element() => {
@@ -26,7 +26,7 @@ pub fn convert(svg: &str) -> Result<String, roxmltree::Error> {
                         write_style(&mut output, attribute.value());
                     } else {
                         let name = attribute_name(attribute.name(), attribute.namespace());
-                        write!(output, " {name}={{{}}}", string(attribute.value())).unwrap();
+                        let _ = write!(output, " {name}={{{}}}", string(attribute.value()));
                     }
                 }
                 output.push('>');
@@ -34,10 +34,10 @@ pub fn convert(svg: &str) -> Result<String, roxmltree::Error> {
                 pending.extend(node.children().rev().map(|child| (child, false)));
             }
             (node, true) if node.is_element() => {
-                write!(output, "</{}>", node.tag_name().name()).unwrap();
+                let _ = write!(output, "</{}>", node.tag_name().name());
             }
             (node, false) if node.is_text() => {
-                write!(output, "{{{}}}", string(node.text().unwrap_or_default())).unwrap();
+                let _ = write!(output, "{{{}}}", string(node.text().unwrap_or_default()));
             }
             _ => {}
         }
@@ -47,7 +47,8 @@ pub fn convert(svg: &str) -> Result<String, roxmltree::Error> {
 }
 
 fn string(value: &str) -> String {
-    serde_json::to_string(value).expect("serializing a string cannot fail")
+    // Serializing a `&str` cannot fail; an empty JSON string is unreachable.
+    serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_owned())
 }
 
 fn attribute_name(name: &str, namespace: Option<&str>) -> String {
@@ -103,14 +104,16 @@ fn write_style(output: &mut String, value: &str) {
         let name = if property.starts_with("--") {
             property.to_owned()
         } else if let Some(tail) = property.strip_prefix("-ms-") {
-            format!("ms{}", camel_case(&format!("-{tail}")))
+            let mut name = camel_case(&["-", tail].concat());
+            name.insert_str(0, "ms");
+            name
         } else {
             camel_case(property)
         };
         if emitted {
             output.push(',');
         }
-        write!(output, "{}:{}", string(&name), string(value)).unwrap();
+        let _ = write!(output, "{}:{}", string(&name), string(value));
         emitted = true;
     }
     output.push_str("}}");
