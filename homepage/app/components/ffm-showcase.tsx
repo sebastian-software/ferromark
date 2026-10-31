@@ -5,16 +5,16 @@ import { FeatureGrid as Principles, LandingSection as Section } from "./landing-
 
 const publishingBenefits = [
   {
-    heading: "Give images their context.",
-    text: "Add a visible caption while keeping alternative text for accessibility. Your reader gets the explanation; your image keeps its meaning.",
+    heading: "Images that explain themselves.",
+    text: "A visible caption for every reader, alt text for every screen reader. Nobody has to guess what the picture means.",
   },
   {
-    heading: "Make the source clear.",
-    text: "Put an attribution beside a quotation, separate from the quoted words. Credit travels with the passage.",
+    heading: "Quotes that keep their author.",
+    text: "The attribution sits beside the quotation, never mixed into it. Credit travels wherever the passage goes.",
   },
   {
-    heading: "Let tables carry real data.",
-    text: "Use captions and merged cells to explain the structure. Style whole columns through CSS without rewriting the document.",
+    heading: "Tables that hold real data.",
+    text: "Captions and merged cells explain the structure. Named columns let your CSS style them without touching the document.",
   },
 ];
 
@@ -23,11 +23,11 @@ export function FlavoredMarkdownSection() {
     <Section
       id="ffm"
       className="ferromark-ffm"
-      title="More meaning. Still Markdown."
-      intro="Write the context your readers need, right where it belongs. Ferromark Flavored Markdown adds publishing features to familiar Markdown. Enable the ones your documents use."
+      title="Say more. It is still Markdown."
+      intro="No HTML islands, no shortcodes, no plugin hunt. Ferromark Flavored Markdown lets you write the context your readers need right where it belongs, in syntax that still reads like plain text. Every feature is opt-in."
       note={
         <Link to="/guide/ffm">
-          See what FFM makes possible <Mark name="arrow" className="icon" size={18} />
+          See everything FFM can do <Mark name="arrow" className="icon" size={18} />
         </Link>
       }
     >

@@ -10,17 +10,17 @@ const modules = [
   {
     id: "typography",
     title: "Typography",
-    description: "Give prose the quotes, dashes, and spacing your language calls for.",
+    description: "Real quotes, real dashes, and the spacing your language expects.",
   },
   {
     id: "github",
     title: "GitHub references",
-    description: "Turn issue numbers, mentions, and commits into links to your repository.",
+    description: "Issue numbers, mentions and commits become links to your repository.",
   },
   {
     id: "emoji",
     title: "Emoji shortcodes",
-    description: "Let familiar shortcodes become emoji, with the dictionary already included.",
+    description: "Type :rocket: and get the real thing. The dictionary ships with it.",
   },
 ] as const;
 
@@ -33,27 +33,27 @@ const capabilities = [
   {
     id: "commonmark",
     title: "CommonMark",
-    description: "The Markdown you know, with behavior checked against the specification.",
+    description:
+      "The Markdown you already know, checked against every example in the specification.",
     to: "/guide/features",
   },
   {
     id: "gfm",
     title: "GFM",
-    description: "The everyday extras: tables, task lists, strikethrough, and automatic links.",
+    description: "The extras you reach for daily: tables, task lists, strikethrough and autolinks.",
     to: "/guide/features",
   },
   {
     id: "ffm",
     title: "FFM",
     description:
-      "Publishing details that belong with your content: captions, attribution, and richer tables.",
+      "Ferromark Flavored Markdown: captions, attributions and richer tables, written right into your text.",
     to: "/guide/ffm",
   },
   {
     id: "processing",
     title: processingName,
-    description:
-      "The finishing touches: polish typography, link GitHub references, expand emoji, or add your own Rust pass.",
+    description: "The finishing pass: typography, GitHub links, emoji, or a Rust pass of your own.",
     to: "/rust/transforms",
   },
 ] as const;
@@ -107,8 +107,8 @@ function TransformFootnote() {
   return (
     <>
       <p>
-        {processingName} runs before rendering: built-in passes in Rust and Node.js, custom passes
-        in Rust. A familiar Remark-style flow, with Ferromark’s own APIs.
+        {processingName} runs on the document tree before rendering. Built-in passes work in Rust
+        and Node.js, your own passes in Rust. If you know Remark, you will feel at home.
       </p>
       <Link to="/rust/transforms">Rust transforms</Link>
       <Link to="/node/pipelines#compose-native-transforms">Node.js transforms</Link>
@@ -126,15 +126,15 @@ function ProcessingDemo({
   const previewId = useId();
   return (
     <FerraExample
-      title={`${processingName} in action.`}
-      introduction="The little publishing jobs, already built in. Pick a few finishing touches and see what reaches your reader."
+      title={`${processingName}, live.`}
+      introduction="One Markdown source, eight possible results. Flip the switches and watch the same text grow up."
       source={samples.markdown}
       controls={<TransformControls enabled={enabled} previewId={previewId} onToggle={onToggle} />}
       footer={<TransformFootnote />}
     >
       <TransformPreview enabled={enabled} previewId={previewId} />
       <p>
-        Make it your own. <Link to="/rust/transforms">Add your own Rust pass</Link>
+        Missing something? <Link to="/rust/transforms">Write your own pass in Rust</Link>
       </p>
     </FerraExample>
   );
@@ -154,8 +154,8 @@ export function TransformShowcase() {
     <Section
       id="features"
       className="ferromark-transforms"
-      title="See what reaches your reader."
-      intro="Try the finishing touches on a real Markdown sample. Switch typography, GitHub references and emoji on or off to see the result."
+      title="Watch your words get better."
+      intro="This is real Ferromark output, not a mockup. Switch typography, GitHub references and emoji on and off, and see exactly what your readers will get."
     >
       <ProcessingDemo enabled={enabled} onToggle={onToggle} />
       <FerraFeatureGrid

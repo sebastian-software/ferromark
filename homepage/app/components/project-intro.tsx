@@ -16,8 +16,8 @@ export function ProjectOpening() {
   return (
     <FerraProductLead
       id="overview"
-      title="Publish richer Markdown. At native speed."
-      introduction="A Markdown engine for Rust and Node.js. CommonMark and GFM, with opt-in publishing features and native typography transforms."
+      title="Markdown that arrives finished."
+      introduction="You write plain Markdown. Your readers get real typography, captioned images and footnotes that land where they belong. Ferromark does the polishing, natively in Rust and Node.js, and faster than every library we measured."
       art={<FerraInstrument product="ferromark" />}
       byline={
         <>
@@ -40,26 +40,26 @@ export function ProjectOverview() {
   return (
     <FerraColumns>
       <FerraArticle
-        title="The publishing details, already built in."
+        title="Everything a real document needs."
         icon={<Mark name="document" size={28} />}
         meta={<FerraReleaseFacts tool={tool} />}
       >
         <p>
-          Add image captions, quote attributions, footnotes and structured tables. Enable what your
-          documents need.
+          Captions, quote attributions, footnotes, tables with merged cells. The things you used to
+          bolt on later are simply there. Turn on what your documents use, skip the rest.
         </p>
-        <a href="/guide/ffm">Explore publishing features</a>
+        <a href="/guide/ffm">See what you can write</a>
       </FerraArticle>
       <FerraArticle
-        title="Give prose its final polish."
+        title="Fast, and right down to the edge cases."
         icon={<Mark name="pen" size={28} />}
-        meta={<a href="#evidence">Benchmarks, methods and conditions</a>}
+        meta={<a href="#conformance">How correctness is checked</a>}
       >
         <p>
-          Afterburner adds language-aware typography, linked GitHub references and emoji before
-          rendering.
+          Ahead of every library in our 57-document benchmark, and in agreement with all 652
+          CommonMark examples. Speed you can measure, correctness you can check.
         </p>
-        <a href="#features">Try the finishing touches</a>
+        <a href="#evidence">See the numbers</a>
       </FerraArticle>
     </FerraColumns>
   );
@@ -68,12 +68,13 @@ export function ProjectOverview() {
 export function ProjectContext() {
   return (
     <FerraNote
-      title="Your document. Your presentation."
+      title="The details are the point."
       source={{ href: "/guide/architecture", label: "Inside Ferromark" }}
     >
       <p>
-        Your application owns routing, translation and presentation. Ferromark handles parsing,
-        rendering and the document tree.
+        Curly quotes. A caption under the photo. A footnote that links back. Readers rarely notice
+        when these are right, and always notice when they are wrong. Ferromark takes care of them,
+        so your attention can go to the words.
       </p>
     </FerraNote>
   );
