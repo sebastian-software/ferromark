@@ -23,8 +23,8 @@ export function FlavoredMarkdownSection() {
     <Section
       id="ffm"
       className="ferromark-ffm"
-      title="Say more. It is still Markdown."
-      intro="No HTML islands, no shortcodes, no plugin hunt. Ferromark Flavored Markdown lets you write the context your readers need right where it belongs, in syntax that still reads like plain text. Every feature is opt-in."
+      title="Then come the extras."
+      intro="Standard Markdown is the foundation. On top, Ferromark brings a whole set of its own extensions: front matter, footnotes, callouts, tables of contents, and Ferromark Flavored Markdown for captions, attributions and richer tables. No plugin hunt. Everything is opt-in, so plain documents stay plain and fast."
       note={
         <Link to="/guide/ffm">
           See everything FFM can do <Mark name="arrow" className="icon" size={18} />

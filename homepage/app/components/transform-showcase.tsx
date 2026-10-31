@@ -154,8 +154,8 @@ export function TransformShowcase() {
     <Section
       id="features"
       className="ferromark-transforms"
-      title="Watch your words get better."
-      intro="This is real Ferromark output, not a mockup. Switch typography, GitHub references and emoji on and off, and see exactly what your readers will get."
+      title="And a final polish."
+      intro="Afterburner runs right before rendering and gives your text the finishing touch. This is real Ferromark output, not a mockup. Switch typography, GitHub references and emoji on and off, and watch your words get better."
     >
       <ProcessingDemo enabled={enabled} onToggle={onToggle} />
       <FerraFeatureGrid
