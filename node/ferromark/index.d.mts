@@ -164,6 +164,34 @@ export declare function createHighlighterCodeRenderer(
   highlightOptions: HighlightOptions,
 ): CodeBlockRenderer;
 
+// oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
+export interface DiagramRenderer {
+  /**
+   * Render one diagram source to SVG. The returned markup is written verbatim,
+   * so only connect a renderer whose output you trust.
+   */
+  render(text: string, options?: { colorScheme?: "light" | "dark" | "auto" }): string;
+}
+
+// oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
+export interface DiagramOptions {
+  /** Fence language that selects the renderer. Default: "mermaid". */
+  language?: string;
+  /** Passed to the renderer; unset keeps the renderer's own default. */
+  colorScheme?: "light" | "dark" | "auto";
+  /** Observe a renderer exception before ordinary code output is used. */
+  onRenderError?: (error: unknown, context: { language: string }) => void;
+}
+
+/**
+ * Adapt a diagram renderer, such as `new Renderer()` from `@ferrigura/core`, to
+ * a whole-block callback. Failed diagrams fall back to ordinary code output.
+ */
+export declare function createDiagramCodeRenderer(
+  renderer: DiagramRenderer,
+  diagramOptions?: DiagramOptions,
+): CodeBlockRenderer;
+
 /** Replace code blocks with trusted HTML. Escape untrusted values inside the callback. */
 export declare function toHtmlWithCodeRenderer(
   markdown: string | Uint8Array,

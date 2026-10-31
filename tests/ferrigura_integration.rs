@@ -1,8 +1,8 @@
+#![cfg(feature = "ferrigura")]
+
+use ferromark::ferrigura::{Renderer, Value};
 use ferromark::{Allocator, HtmlRenderer, Parser};
-use ferromark_ferrigura::{
-    Error, FerriguraHooks,
-    ferrigura::{Renderer, Value},
-};
+use ferromark::{FerriguraError as Error, FerriguraHooks};
 
 fn hooks(prefix: &str) -> FerriguraHooks {
     FerriguraHooks::new(Renderer::new(&Value::empty_object()), prefix).unwrap()
@@ -106,7 +106,7 @@ fn emits_intrinsic_jsx_and_a_valid_module_without_html_injection() {
 fn fixture_bytes_are_pinned_across_processes_and_platforms() {
     use sha2::{Digest, Sha256};
     let fixtures: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/diagrams.json")).unwrap();
+        serde_json::from_str(include_str!("fixtures/ferrigura/diagrams.json")).unwrap();
     let mut actual = Vec::new();
     let mut expected = Vec::new();
     for fixture in fixtures.as_array().unwrap() {
@@ -187,10 +187,8 @@ fn explicit_light_and_dark_schemes_need_no_client_runtime() {
     let source = "```mermaid\npie\n\"A\" : 1\n```";
     let document = Parser::new(&allocator, source).parse().unwrap();
     let mut renderer = HtmlRenderer::new();
-    let mut light =
-        hooks("scheme").with_color_scheme(ferromark_ferrigura::ferrigura::ColorScheme::Light);
-    let mut dark =
-        hooks("scheme").with_color_scheme(ferromark_ferrigura::ferrigura::ColorScheme::Dark);
+    let mut light = hooks("scheme").with_color_scheme(ferromark::ferrigura::ColorScheme::Light);
+    let mut dark = hooks("scheme").with_color_scheme(ferromark::ferrigura::ColorScheme::Dark);
     let light_html = renderer.render_with_code_hooks(&document, &mut light);
     let dark_html = renderer.render_with_code_hooks(&document, &mut dark);
     assert!(light_html.starts_with("<svg ") && dark_html.starts_with("<svg "));

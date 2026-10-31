@@ -377,7 +377,6 @@ test("the core and transform packages are public with release-managed path depen
   assert.deepEqual(workspace.members, [
     "node/native",
     "node/plugin-fixture",
-    "plugins/ferrigura",
     "transforms",
   ]);
   const publicMembers = workspace.members

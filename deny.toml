@@ -38,7 +38,7 @@ allow = ["BSL-1.0"]
 crate = "webpki-root-certs@1.0.10"
 allow = ["CDLA-Permissive-2.0"]
 
-# The optional Mermaid adapter uses the unmodified CSS tokenizer to reject
+# The optional `ferrigura` feature uses the unmodified CSS tokenizer to reject
 # escaped resource URLs. Its exact source archive and MPL notice travel with
 # custom bundles; the standard addon does not include it. See ADR-0025.
 [[licenses.exceptions]]

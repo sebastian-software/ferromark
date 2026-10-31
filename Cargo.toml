@@ -48,6 +48,7 @@ workspace = true
 default = []
 ferriki = ["dep:ferriki"]
 ferriki-remote = ["ferriki", "ferriki/remote"]
+ferrigura = ["dep:ferrigura", "dep:cssparser", "dep:roxmltree"]
 jsx = [
     "dep:oxc_allocator",
     "dep:oxc_ast",
@@ -65,6 +66,9 @@ rustc-hash.workspace = true
 thiserror.workspace = true
 serde_json.workspace = true
 ferriki = { version = "1.1.2", optional = true, default-features = false }
+ferrigura = { version = "0.3.0", optional = true }
+cssparser = { version = "0.37.0", optional = true, default-features = false }
+roxmltree = { version = "0.21.1", optional = true, default-features = false, features = ["std"] }
 oxc_allocator = { version = "0.146.0", optional = true }
 oxc_ast = { version = "0.146.0", optional = true }
 oxc_ecmascript = { version = "0.146.0", optional = true, default-features = false }
@@ -74,10 +78,15 @@ oxc_span = { version = "0.146.0", optional = true }
 [dev-dependencies]
 criterion.workspace = true
 insta.workspace = true
+sha2 = "0.10.9"
 
 [[example]]
 name = "ferriki_contract"
 required-features = ["ferriki"]
+
+[[example]]
+name = "ferrigura_mermaid"
+required-features = ["ferrigura"]
 
 [[bench]]
 name = "code_block_hooks"
@@ -147,7 +156,7 @@ required-features = ["jsx"]
 
 [workspace]
 resolver = "2"
-members = ["node/native", "node/plugin-fixture", "plugins/ferrigura", "transforms"]
+members = ["node/native", "node/plugin-fixture", "transforms"]
 
 # Package versions are deliberately not inherited: Release Please cannot replace
 # an inherited `version.workspace = true` with a concrete version, so the root

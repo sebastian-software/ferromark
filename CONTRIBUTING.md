@@ -37,9 +37,10 @@ require the [bundle installation checks](docs/plugin-bundles.md).
 
 `ferromark` is the workspace root package: its `src/`, `tests/`, `benches/`
 and `examples/` sit at the top level. The workspace members are `node/native`
-(private Node.js bindings), `transforms` (optional Rust AST passes),
-`node/plugin-fixture` (an unpublished native plugin test crate), and
-`plugins/ferrigura` (a private optional Mermaid adapter). Workspace
+(private Node.js bindings), `transforms` (optional Rust AST passes), and
+`node/plugin-fixture` (an unpublished native plugin test crate). Optional
+engines are features of the root package: `ferriki` for highlighting and
+`ferrigura` for Mermaid diagrams. Workspace
 checks cover the root package and all members. A Cargo `include` list decides
 what the published archive contains, so compare `cargo package --list` whenever
 you change it.

@@ -469,8 +469,10 @@ See the [native plugin guide](../../docs/native-code-plugins.md) for configurati
 and custom builds. The standard addon includes neither engine and reports
 `[]` from `availableCodePlugins()`. Engine-enabled bundles require explicit
 plugin selection.
-The optional [Ferrigura adapter](../../docs/ferrigura.md) adds native Mermaid
-rendering to custom builds; it is excluded from the standard addon. Its default
+The optional [Ferrigura integration](../../docs/ferrigura.md) adds native Mermaid
+rendering to custom builds; it is excluded from the standard addon. Without a
+custom build, `createDiagramCodeRenderer(new Renderer())` connects a separately
+installed `@ferrigura/core` renderer through `toHtmlWithCodeRenderer`. Its default
 policy preserves escaped code for failed or unsafe diagrams. Drain
 `compiler.takeDiagnostics()` or `prepared.takeDiagnostics()` for failures with
 original UTF-8 fence ranges. SVG is checked before emission, and IDs remain

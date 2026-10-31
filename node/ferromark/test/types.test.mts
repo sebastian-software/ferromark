@@ -12,6 +12,7 @@ import {
   CodeCompiler,
   compileJsx,
   composeCodeRenderers,
+  createDiagramCodeRenderer,
   createHighlighterCodeRenderer,
   prepareDocument,
   Renderer,
@@ -189,7 +190,13 @@ const codeRenderer: CodeBlockRenderer = (_code, language) =>
 const codeRenderers = composeCodeRenderers(
   codeRenderer,
   createHighlighterCodeRenderer(highlighter, { theme: "test" }),
+  createDiagramCodeRenderer(
+    { render: (text: string) => `<svg>${text}</svg>` },
+    { colorScheme: "auto", onRenderError: (_error, { language }) => language.length },
+  ),
 );
+// @ts-expect-error -- unknown color schemes are rejected
+createDiagramCodeRenderer({ render: () => "" }, { colorScheme: "sepia" });
 const renderedCodeHtml: string = toHtmlWithCodeRenderer(
   "```mermaid\nA --> B\n```",
   codeRenderers,

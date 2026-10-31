@@ -66,6 +66,6 @@ Use `HtmlRenderHooks::render_code_block` for whole-block replacements and
 all whole-block replacements run before highlighting. The code-only
 `render_with_code_hooks` entry point preserves normal inline rendering.
 
-The optional Ferrigura adapter implements these HTML and JSX contracts in a
-separate private crate. The [highlighting and diagrams guide](/guide/code-rendering)
+The optional `ferrigura` feature implements these HTML and JSX contracts with
+`FerriguraHooks`, just as the `ferriki` feature does with `FerrikiHighlightHooks`. The [highlighting and diagrams guide](/guide/code-rendering)
 explains the available builds and links to the Rust adapter example.

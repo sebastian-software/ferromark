@@ -47,7 +47,7 @@ function proveCargo(directory) {
     const target = resolve(transforms, entry);
     if (!existsSync(target)) symlinkSync(resolve(root, "transforms", entry), target);
   }
-  for (const member of ["node/native", "node/plugin-fixture", "plugins/ferrigura"]) {
+  for (const member of ["node/native", "node/plugin-fixture"]) {
     const manifest = readFileSync(resolve(directory, member, "Cargo.toml"), "utf8");
     cpSync(resolve(root, member), resolve(directory, member), {
       recursive: true,

@@ -39,6 +39,11 @@ pub use html::FerrikiHighlightHooks;
 #[cfg(feature = "ferriki")]
 pub use jsx::FerrikiJsxHooks;
 
+#[cfg(feature = "ferrigura")]
+mod ferrigura_integration;
+#[cfg(feature = "ferrigura")]
+pub use ferrigura_integration::{FerriguraDiagnostic, FerriguraError, FerriguraHooks};
+
 pub use html::{
     AbbreviationOptions, AutolinkMatcher, CodeAnnotationSyntax, CodeHighlightInput,
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, HighlightedCodeBlock, HtmlCodeBlockInput,

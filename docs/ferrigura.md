@@ -1,20 +1,50 @@
-# Ferrigura Mermaid plugin
+# Ferrigura Mermaid integration
 
-The private `plugins/ferrigura` adapter renders parsed `mermaid` code blocks as
-inline SVG. It owns a reusable Ferrigura renderer and implements the same
+Ferromark integrates Ferrigura the same way it integrates Ferriki: an optional
+`ferrigura` feature of the `ferromark` crate in Rust, and an injected renderer
+object in Node.js. Both render parsed `mermaid` code blocks as inline SVG.
+
+The Rust feature owns a reusable Ferrigura renderer and implements the same
 HTML/JSX hook contracts used by Ferriki. Recognition, rendering, ID allocation,
-and SVG-to-JSX conversion run in Rust. No browser Mermaid runtime or per-block
-JavaScript callback is required.
+SVG policy checks, and SVG-to-JSX conversion run in Rust. No browser Mermaid
+runtime is required. Without the feature, the crate and the standard npm addon
+contain no Ferrigura code.
 
-The core crate and standard npm addon do not depend on this adapter. The Node
-factory is available only in custom builds with the `ferrigura` Cargo feature.
-The adapter crate remains private. The [plugin bundle workflow](plugin-bundles.md)
-produces installable custom npm tarballs; these are workflow artifacts, not
-registry releases.
+## Node.js with `@ferrigura/core`
 
-## Node.js
+`createDiagramCodeRenderer` adapts any object with a synchronous
+`render(text, options)` method, such as a `Renderer` from `@ferrigura/core`, to
+a code-block callback. Ferromark does not import or pin the diagram package;
+the application installs and configures it, as it does `@ferriki/core`.
 
-For a custom addon containing the factory, the facade accepts:
+```js
+import { Renderer } from "@ferrigura/core";
+import { createDiagramCodeRenderer, toHtmlWithCodeRenderer } from "ferromark";
+
+const diagrams = createDiagramCodeRenderer(new Renderer(), {
+  colorScheme: "auto",
+  onRenderError(error) {
+    console.warn("Diagram fell back to code", error);
+  },
+});
+const html = toHtmlWithCodeRenderer("```mermaid\nflowchart LR\nA --> B\n```", diagrams);
+```
+
+Only fences whose language is `mermaid` (or the configured `language`) reach the
+renderer. A renderer exception calls `onRenderError` and keeps ordinary code
+output. Compose it with a highlighter through `composeCodeRenderers`. The
+callback output is trusted application HTML: unlike the native integration
+below, this path does not apply Ferromark's SVG policy. `@ferrigura/core` is not
+yet published on npm; see
+[ferrigura#3](https://github.com/sebastian-software/ferrigura/issues/3).
+
+## Node.js with a custom native bundle
+
+The native factory, with the SVG policy and deterministic IDs below, is
+available in custom addon builds with the `ferrigura` Cargo feature. The
+[plugin bundle workflow](plugin-bundles.md) produces installable custom npm
+tarballs; these are workflow artifacts, not registry releases. For such an
+addon, the facade accepts:
 
 ```js
 import { CodeCompiler } from "ferromark";
@@ -102,12 +132,15 @@ API; use document HTML/JSX methods for diagrams.
 
 ## Rust
 
-In this workspace, depend on the private adapter with a path dependency. Enable
-its `jsx` feature only when needed:
+Enable the `ferrigura` feature, and `jsx` as well for JSX output:
+
+```sh
+cargo add ferromark --features ferrigura
+```
 
 ```rust
-use ferromark::{Allocator, HtmlRenderer, Parser};
-use ferromark_ferrigura::{FerriguraHooks, ferrigura::{Renderer, Value}};
+use ferromark::ferrigura::{Renderer, Value};
+use ferromark::{Allocator, FerriguraHooks, HtmlRenderer, Parser};
 
 let allocator = Allocator::new();
 let source = "```mermaid\npie\n\"A\" : 1\n```";
@@ -123,13 +156,14 @@ if let Some(error) = hooks.take_error() {
 output already contains escaped code at those fences. `take_error()` optionally
 returns the first original error for strict application policies. A failed
 fence does not prevent later diagrams from rendering. A tuple composes these
-hooks with Ferriki hooks; the adapter has no Node dependency.
+hooks with Ferriki hooks. `FerriguraError` and `FerriguraDiagnostic` are the
+error and diagnostic types; `ferromark::ferrigura` re-exports the engine API.
 
 The runnable native example reads Markdown from stdin and reports ranges on
 stderr while writing HTML to stdout:
 
 ```sh
-cargo run -p ferromark-ferrigura --example mermaid --locked < input.md > output.html
+cargo run --features ferrigura --example ferrigura_mermaid --locked < input.md > output.html
 ```
 
 ## SVG policy and deterministic fixtures
@@ -143,7 +177,7 @@ Only local fragment references and embedded base64 font data are allowed.
 Text and attributes are serialized again, so CDATA and markup-looking labels
 cannot turn into HTML. Rejected output follows the same diagnostic/fallback
 path as a parse failure. Application callbacks remain trusted application code;
-this policy belongs to the Ferrigura adapter. See the
+this policy belongs to the native Ferrigura integration. See the
 [SVG decision](arch/ADR-0025-static-mermaid-output.md) for rationale and dependency
 redistribution details.
 
@@ -157,17 +191,16 @@ CSS themes need no client runtime. These checks implement the remaining
 they do not promise pixel parity with mermaid.js.
 
 Image-based diagrams, external links, and other engine constructs outside this
-SVG policy fall back to code with a diagnostic. The adapter is private, the
-standard addon excludes Ferrigura, and custom bundles provide installation.
-`@ferrigura/core` is not yet publicly available on npm.
+SVG policy fall back to code with a diagnostic. The standard addon excludes
+Ferrigura; custom bundles provide native installation.
 
-### Pinned engine
+### Engine version
 
-The adapter pins published Ferrigura **0.2.0**. That release still uses a registry
-Ferromark internally for Markdown labels. The optional adapter sits outside the
-core, so the dependency graph remains acyclic. Ferrigura's separate
-`label-markdown` branch removes that internal dependency; adopt its replacement
-through a reviewed engine release. No unpublished engine branch is required.
+The `ferrigura` feature depends on Ferrigura **0.3**. That release no longer
+depends on Ferromark, so the optional feature lives in the published crate
+without a dependency cycle. Engine upgrades that change SVG bytes update the
+pinned fixture hashes in the same change, after the rendered fixtures are
+compared. See [ADR-0026](arch/ADR-0026-ferrigura-crate-feature.md).
 
 Ferrigura embeds font assets. Custom binary distributions must retain its font
 licenses and attribution, including `ferrigura-text`'s MIT, OFL-1.1, and CC-BY-4.0

@@ -51,7 +51,8 @@ bridge and use `CodeCompiler` for both engines and plain rendering. Do not retai
 a default-on engine or a separate migration distribution for compatibility.
 
 The unpublished fixture crate proves HTML/JSX dispatch from an optional crate.
-The private Ferrigura adapter and Ferriki factory use the same optional boundary.
+The Ferrigura and Ferriki factories use the same optional boundary; both are
+optional features of the root crate ([ADR-0026](ADR-0026-ferrigura-crate-feature.md)).
 The [plugin bundle workflow](../plugin-bundles.md) produces installable custom
 builds with selected factories and notices. Both engine features require isolated
 output so they cannot enter standard package artifacts. Separately installed

@@ -31,6 +31,10 @@ pub mod text;
 #[cfg(feature = "ferriki")]
 pub use ferriki;
 
+/// Ferrigura's Rust API, available with the `ferrigura` feature.
+#[cfg(feature = "ferrigura")]
+pub use ferrigura;
+
 mod callout;
 pub use callout::{Callout, CalloutBody, CalloutKind};
 mod convenience;
@@ -69,3 +73,6 @@ pub use renderer::FerrikiHighlightHooks;
 
 #[cfg(feature = "ferriki")]
 pub use renderer::FerrikiJsxHooks;
+
+#[cfg(feature = "ferrigura")]
+pub use renderer::{FerriguraDiagnostic, FerriguraError, FerriguraHooks};
