@@ -38,9 +38,15 @@ code when the renderer throws. Ferromark neither imports nor pins
 the Ferriki highlighter. Its output is trusted application HTML, like every
 code-renderer callback; the SVG policy applies to the native integration only.
 
-Depend on Ferrigura `0.3` with a caret requirement, as `ferriki` does. The
-MPL-2.0 `cssparser` exception in `deny.toml` stays version-scoped and reaches
-users only through the optional feature.
+Depend on Ferrigura `0.3` with a caret requirement, as `ferriki` does. Moving
+the adapter into the published crate makes Ferrigura's dependency licenses part
+of the crate's policy. `deny.toml` allows them as version-scoped exceptions that
+reach users only through the optional feature: MPL-2.0 for `cssparser` and
+`dtoa-short`, EPL-2.0 for `ferrigura-elk`, `Apache-2.0 WITH LLVM-exception` for
+`ferrigura-jsmath`, and OFL-1.1 and CC-BY-4.0 for the fonts and data in
+`ferrigura-text`. It ignores RUSTSEC-2024-0449, an unmaintained notice for
+`unsafe-libyaml`, a build-time dependency of `ferrigura-model`. A Ferrigura
+upgrade must review these exceptions again.
 
 ## Consequences and validation
 
