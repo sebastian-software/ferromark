@@ -187,7 +187,6 @@ extractedText.sections = [];
 
 const codeRenderer: CodeBlockRenderer = (_code, language) =>
   language === "mermaid" ? "<svg />" : null;
-const diagramErrorLanguages: string[] = [];
 const codeRenderers = composeCodeRenderers(
   codeRenderer,
   createHighlighterCodeRenderer(highlighter, { theme: "test" }),
@@ -196,7 +195,7 @@ const codeRenderers = composeCodeRenderers(
     {
       colorScheme: "auto",
       onRenderError(_error, { language }) {
-        diagramErrorLanguages.push(language);
+        const _upperCaseLanguage = language.toUpperCase();
       },
     },
   ),
