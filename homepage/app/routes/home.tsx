@@ -27,11 +27,11 @@ import { registrySnapshot, registrySnapshotGeneratedAt } from "../data/registry-
 
 export const handle = { layout: "bare" };
 export const meta: ArdoMetaFunction = () => [
-  { title: "Ferromark — Markdown that arrives finished" },
+  { title: "Ferromark — Absurdly fast, fully compatible Markdown" },
   {
     name: "description",
     content:
-      "Write plain Markdown, publish polished HTML. A native engine for Rust and Node.js with CommonMark, GFM, publishing features and real typography.",
+      "A native Markdown engine for Rust and Node.js. Faster than every library we measured, fully CommonMark and GFM compatible, with publishing extensions and typography on top.",
   },
 ];
 
@@ -143,7 +143,7 @@ function EvidenceSection() {
     <Section
       id="evidence"
       title={benchmarkLead()}
-      intro="All of that polish would be worth little if it made you wait. Ferromark beats every library in our comparison, on Linux and on macOS, from Rust and from Node.js. Fair warning: each extra syntax feature you enable adds a little parsing work."
+      intro="Twenty Markdown libraries, native and JavaScript. 57 real documents. Two platforms. Ferromark comes out ahead of every single one, from Rust and from Node.js. Fair warning: each extra syntax feature you enable adds a little parsing work."
       note={
         <>
           57 documents on macOS and Linux, fresh calls. 2× means twice the throughput. Node.js
@@ -162,8 +162,8 @@ function ConformanceSection() {
   return (
     <Section
       id="conformance"
-      title="Fast is nothing without right."
-      intro="Speed is easy if you cut corners. We did not. Every result below is backed by the specification and fixtures you can run yourself."
+      title="And not one shortcut."
+      intro="Speed is easy if you cut corners. Ferromark keeps the full CommonMark and GFM behavior, and every result below is backed by specification fixtures you can run yourself."
       note={
         <Link to="/guide/correctness">Read the conformance methodology and source fixtures.</Link>
       }
@@ -216,17 +216,6 @@ export default function HomePage() {
       <FerraProductPage>
         <ProjectOpening />
         <ProjectOverview />
-        <TransformShowcase />
-        <ProjectContext />
-        <FerraEditorialRow
-          notes={
-            tool?.editorial !== undefined && (
-              <FerraNotes label="Language and publishing" notes={tool.editorial.notes.slice(1)} />
-            )
-          }
-        >
-          <FlavoredMarkdownSection />
-        </FerraEditorialRow>
         <EvidenceSection />
         <FerraEditorialRow
           notes={
@@ -240,6 +229,17 @@ export default function HomePage() {
         >
           <ConformanceSection />
         </FerraEditorialRow>
+        <FerraEditorialRow
+          notes={
+            tool?.editorial !== undefined && (
+              <FerraNotes label="Language and publishing" notes={tool.editorial.notes.slice(1)} />
+            )
+          }
+        >
+          <FlavoredMarkdownSection />
+        </FerraEditorialRow>
+        <TransformShowcase />
+        <ProjectContext />
         <ContractBand />
         <DocumentAnalysisSection />
         <FamilySection />

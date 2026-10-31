@@ -16,8 +16,8 @@ export function ProjectOpening() {
   return (
     <FerraProductLead
       id="overview"
-      title="Markdown that arrives finished."
-      introduction="You write plain Markdown. Your readers get real typography, captioned images and footnotes that land where they belong. Ferromark does the polishing, natively in Rust and Node.js, and faster than every library we measured."
+      title="Absurdly fast. Fully compatible."
+      introduction="Ferromark renders Markdown faster than every library we measured, and it does not bend a single rule of CommonMark or GFM to get there. Native for Rust and Node.js, with a stack of extras on top when you want them."
       art={<FerraInstrument product="ferromark" />}
       byline={
         <>
@@ -40,26 +40,26 @@ export function ProjectOverview() {
   return (
     <FerraColumns>
       <FerraArticle
-        title="Everything a real document needs."
+        title="Speed you can measure."
         icon={<Mark name="document" size={28} />}
         meta={<FerraReleaseFacts tool={tool} />}
       >
         <p>
-          Captions, quote attributions, footnotes, tables with merged cells. The things you used to
-          bolt on later are simply there. Turn on what your documents use, skip the rest.
-        </p>
-        <a href="/guide/ffm">See what you can write</a>
-      </FerraArticle>
-      <FerraArticle
-        title="Fast, and right down to the edge cases."
-        icon={<Mark name="pen" size={28} />}
-        meta={<a href="#conformance">How correctness is checked</a>}
-      >
-        <p>
-          Ahead of every library in our 57-document benchmark, and in agreement with all 652
-          CommonMark examples. Speed you can measure, correctness you can check.
+          Ahead of every library in our 57-document benchmark, on Linux and macOS, from Rust and
+          from Node.js. Fast enough that rendering stops being a step you think about.
         </p>
         <a href="#evidence">See the numbers</a>
+      </FerraArticle>
+      <FerraArticle
+        title="Compatible down to the edge cases."
+        icon={<Mark name="pen" size={28} />}
+        meta={<a href="/guide/correctness">How correctness is checked</a>}
+      >
+        <p>
+          All 652 CommonMark examples, the official GFM extensions, every line-ending variant. The
+          Markdown you already have keeps rendering the way it should.
+        </p>
+        <a href="#conformance">See the conformance results</a>
       </FerraArticle>
     </FerraColumns>
   );
