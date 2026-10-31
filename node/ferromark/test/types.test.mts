@@ -195,7 +195,7 @@ const codeRenderers = composeCodeRenderers(
     { render: (text: string) => `<svg>${text}</svg>` },
     {
       colorScheme: "auto",
-      onRenderError: (_error, { language }) => {
+      onRenderError(_error, { language }) {
         diagramErrorLanguages.push(language);
       },
     },
