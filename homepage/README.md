@@ -36,48 +36,28 @@ typecheck, and build. Browser code imports that snapshot rather than reaching
 outside Ardo's project boundary. The build verifier checks the rendered
 version against the canonical manifest.
 
-## Transform showcase
+## FFM example
 
-`app/components/transform-showcase.tsx` presents four rocket stages: CommonMark,
-GFM, FFM, and Afterburner, the optional processing stage before rendering. The
-adjacent list explains and links to each capability. Keep the illustration
-compact and the fins unmarked; it does not define a new family component. The
-rocket labels read CommonMark, GitHub (GFM), Ferro (FFM), and Afterburner, with
-bright metal letter faces for readability and a static 10-degree clockwise tilt.
+`app/components/ffm-showcase.tsx` shows one fixed Markdown source beside its
+rendered result. The source and HTML live in `app/data/ffm-sample.json`, which
+records the Ferromark version, source commit and options used
+(`ParserOptions::ffm()` with `HtmlRendererOptions::new()`). The preview is that
+frozen output; it accepts no visitor input or remote HTML.
+
+When changing the sample, render it again with the native engine, update the
+recorded version and commit, and keep the syntax notes below the example in
+agreement with what the sample demonstrates.
 
 `app/assets/rocket-stages.webp` is a photorealistic transparent cutout generated
 with the built-in image tool, using the package's Ferromark icon as the material
 and lighting reference. Its exact generation and edit prompts and provenance live in
 `app/assets/rocket-stages.webp.json`. Preserve the native alpha and the family's
-forged steel, worn edges, and orange-hot accent when replacing it. The shipping
-asset is resized to 864 pixels high and encoded as WebP quality 88 with lossless
-alpha; its displayed height is 288 pixels on desktop and 240 pixels on mobile.
+forged steel, worn edges, and orange-hot accent when replacing it.
 
-The separate "Afterburner in action" demo groups typography, GitHub-reference,
-and emoji controls within that fourth capability. These controls change the
-example output; the four product stages stay assembled. Afterburner names the
-processing stage, while public Rust and Node.js API names remain unchanged.
-
-All three controls start enabled. A three-bit key selects one of eight frozen
-outputs from `app/data/transform-samples.json`: typography first, GitHub
-references second, emoji third. The sample records Ferromark 3.0.0 and source
-commit `2b00ce0f`; its source and outputs were rendered with the real `ferromark`
-and `ferromark-transforms` crates. Browser controls only select those outputs.
-The preview accepts no visitor input or remote HTML.
-
-When changing the sample, regenerate every combination with the native engine,
-retain the version and source commit, and compare all eight outputs before
-updating the data. Keep button pressed states and preview output in agreement.
-The controls expose `aria-pressed` and a preview relationship; the
-result announces changes politely. The rocket has descriptive alternative text
-and no motion; its capability names and explanations also appear as live text.
-
-The Rust and Node.js guides document opt-in passes in order, protected syntax,
-an explicit GitHub repository, and the bundled emoji dictionary. Built-in passes
-are available in both runtimes; arbitrary custom passes use Rust's API. The
-Remark comparison describes a processing shape, without claiming plugin
-compatibility. The FFM section presents publishing benefits and links to its
-guide; benchmark and conformance sections retain their measured evidence.
+Afterburner, the optional processing stage before rendering, is linked from the
+FFM section; its Rust and Node.js guides document opt-in passes in order,
+protected syntax, an explicit GitHub repository, and the bundled emoji
+dictionary. Benchmark and conformance sections retain their measured evidence.
 
 ## Development and checks
 
