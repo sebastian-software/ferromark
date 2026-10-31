@@ -10,7 +10,12 @@ all-features = true
 [advisories]
 # A yanked package still builds from Cargo.lock, but must not ship unnoticed.
 yanked = "deny"
-ignore = []
+ignore = [
+    # unsafe-libyaml is unmaintained, not vulnerable. It reaches Ferromark only
+    # as a build-time dependency of ferrigura-model (via serde_yaml_ng) behind
+    # the optional `ferrigura` feature. See ADR-0026.
+    { id = "RUSTSEC-2024-0449", reason = "build-only dependency of the optional ferrigura feature; see ADR-0026" },
+]
 
 [licenses]
 allow = [
@@ -44,6 +49,25 @@ allow = ["CDLA-Permissive-2.0"]
 [[licenses.exceptions]]
 crate = "cssparser@0.37.0"
 allow = ["MPL-2.0"]
+
+# The remaining exceptions are Ferrigura 0.3 crates and reach users only through
+# the optional `ferrigura` feature; the default feature set has none of them.
+# The same sources and notices already ship with custom bundles. See ADR-0026.
+[[licenses.exceptions]]
+crate = "dtoa-short@0.3.5"
+allow = ["MPL-2.0"]
+
+[[licenses.exceptions]]
+crate = "ferrigura-elk@0.3.0"
+allow = ["EPL-2.0"]
+
+[[licenses.exceptions]]
+crate = "ferrigura-jsmath@0.3.0"
+allow = ["Apache-2.0 WITH LLVM-exception"]
+
+[[licenses.exceptions]]
+crate = "ferrigura-text@0.3.0"
+allow = ["OFL-1.1", "CC-BY-4.0"]
 
 [bans]
 # Duplicate versions are surfaced for maintenance review without blocking a
