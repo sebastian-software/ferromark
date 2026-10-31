@@ -15,6 +15,7 @@ import {
   FerraHeader,
   FerraPage,
   FerraReadingLayout,
+  FerraReadingTable,
   FerraTabs,
 } from "ferramenta-family/ferra";
 import touchIcon from "ferramenta-family/ferra-assets/ferromark/apple-touch-icon.png?url";
@@ -137,7 +138,7 @@ function Article({ children }: { children: ReactNode }) {
     </FerraReadingLayout>
   );
 }
-const components = { h2: DocumentHeading, wrapper: Article };
+const components = { h2: DocumentHeading, table: FerraReadingTable, wrapper: Article };
 
 export default function Root() {
   return (
