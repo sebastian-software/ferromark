@@ -45,8 +45,8 @@ function ContractBand() {
       <Principles
         items={[
           {
-            heading: "Standards, not surprises",
-            text: "CommonMark and GFM define the syntax. No private dialect to learn, and no behavior you cannot look up.",
+            heading: "Memory-safe by design",
+            text: "Written in Rust, so whole classes of memory bugs never compile. Unsafe code fails the build, except in a few small, documented SIMD and allocator spots.",
           },
           {
             heading: "Safe until you say otherwise",
