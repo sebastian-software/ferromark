@@ -1,130 +1,11 @@
-import { FerraBenchmarkTable } from "ferramenta-family/ferra";
+import { type ChangeEvent, useState } from "ardo/react";
+import { FerraBenchmarkTable, FerraSelect } from "ferramenta-family/ferra";
 
-import completedBenchmarks from "../data/benchmark-platform-values.json";
-import projects from "../data/benchmark-projects.json";
 import conformance from "../data/comparison-conformance.json";
-import ecosystemBenchmarks from "../data/markdown-ecosystem-benchmarks.json";
-import { formatSpeed, nativeBenchmarks } from "./native-benchmarks";
+import { groups, platforms, reportUrl } from "./benchmark-data";
+import { formatSpeed } from "./native-benchmarks";
 
-const platforms = [
-  ...new Map(
-    [
-      ...nativeBenchmarks.platforms.map((platform) => ({ id: platform.id, label: platform.label })),
-      ...completedBenchmarks.figures.map((figure) => ({
-        id: figure.platform,
-        label: figure.platformLabel,
-      })),
-    ].map((platform) => [platform.id, platform]),
-  ).values(),
-];
-const reportUrl = (report: string) =>
-  `https://github.com/sebastian-software/ferromark/tree/main/${report}`;
-const ecosystemFigures = new Map(ecosystemBenchmarks.figures.map((figure) => [figure.id, figure]));
-
-type CompletedFigure = {
-  scoringScope?: string;
-  agreeingDocuments?: number;
-  overviewReport?: string;
-} & Omit<
-  (typeof completedBenchmarks.figures)[number],
-  "agreeingDocuments" | "overviewReport" | "scoringScope"
->;
-
-const completedFigures = new Map<string, CompletedFigure>(
-  completedBenchmarks.figures.map((figure) => [`${figure.platform}/${figure.id}`, figure]),
-);
-
-/** The overall claim must hold for every displayed library on every platform. */
-export function benchmarkLead(): string {
-  for (const project of projects) {
-    for (const platform of platforms) {
-      const figure = completedFigures.get(`${platform.id}/${project.id}`);
-      if (
-        !figure ||
-        !Number.isFinite(figure.fresh) ||
-        figure.fresh <= 1 ||
-        figure.documents !== 57 ||
-        figure.corpusDocuments !== 57 ||
-        figure.scoringScope !== "all-documents"
-      ) {
-        throw new Error("An overall speed claim needs complete measurements above the baseline");
-      }
-    }
-  }
-  return "Ahead of every measured library.";
-}
-
-const measuredHosts = new Map(
-  completedBenchmarks.figures.map((figure) => [
-    figure.platform,
-    `${figure.platformLabel}: ${figure.machine.split(", ")[0]} · ${figure.measured}`,
-  ]),
-);
-export const benchmarkHosts = platforms
-  .map((platform) => measuredHosts.get(platform.id))
-  .filter(Boolean)
-  .join("; ");
-
-const nativePlatforms = new Map(
-  nativeBenchmarks.platforms.map((platform) => [platform.id, platform]),
-);
-
-const nativeFiguresByPlatform = new Map(
-  nativeBenchmarks.platforms.map((platform) => [
-    platform.id,
-    new Map(platform.figures.map((figure) => [figure.id, figure])),
-  ]),
-);
-
-function completedResult(completed: CompletedFigure) {
-  return {
-    speed: completed.fresh,
-    outputDifferences:
-      completed.scoringScope === "all-documents" &&
-      (completed.agreeingDocuments ?? completed.documents) < completed.corpusDocuments,
-    report: completed.overviewReport ?? completed.report,
-    evidence: `${completed.documents}/${completed.corpusDocuments} ${completed.scoringScope === "all-documents" ? `timed documents · ${completed.agreeingDocuments} equivalent outputs` : "documents · equivalent HTML"} · ${completed.profileScope} · ${completed.platformLabel} · ${completed.machine} · ${completed.measured} · ${completed.revision}`,
-  };
-}
-
-const rows = [...projects]
-  .sort((left, right) => left.label.localeCompare(right.label, "en", { sensitivity: "base" }))
-  .map((project) => ({
-    ...project,
-    results: platforms.map((platform) => {
-      const completed = completedFigures.get(`${platform.id}/${project.id}`);
-      if (completed) {
-        return completedResult(completed);
-      }
-      const ecosystem = ecosystemFigures.get(project.id);
-      if (ecosystem && platform.id === "macos-arm64") {
-        return {
-          speed: ecosystem.fresh,
-          outputDifferences: false,
-          report: ecosystemBenchmarks.report,
-          evidence: `${ecosystem.documents}/${ecosystem.corpusDocuments} documents · equivalent HTML · ${ecosystem.profileScope} · macOS arm64 · ${ecosystemBenchmarks.measured} · ${ecosystem.revision}`,
-        };
-      }
-      const historical = nativePlatforms.get(platform.id);
-      const native =
-        project.runtime === "Native"
-          ? nativeFiguresByPlatform.get(platform.id)?.get(project.id)
-          : undefined;
-      return native && historical
-        ? {
-            speed: native.fresh,
-            outputDifferences: false,
-            report: historical.report,
-            evidence: `${native.documents} equivalent documents · ${platform.label} · ${historical.machine} · ${historical.measured} · ${historical.revision}`,
-          }
-        : null;
-    }),
-  }));
-
-const groups = [
-  { id: "native", label: "Native", rows: rows.filter((row) => row.runtime === "Native") },
-  { id: "node", label: "Node.js", rows: rows.filter((row) => row.runtime === "Node.js") },
-];
+export { benchmarkLead, benchmarkRange } from "./benchmark-data";
 
 const conformanceRows = new Map(conformance.rows.map((row) => [row.id, row]));
 
@@ -164,134 +45,203 @@ function ConformanceResult({
   );
 }
 
-function ConformanceCell({ id, label }: { id: string; label: string }) {
+function ConformanceCells({ id, label }: { id: string; label: string }) {
   const row = conformanceRows.get(id);
   return (
-    <td className="ferra-benchmark-conformance">
-      <ConformanceResult
-        value={row?.suites.commonmark}
-        name="CM"
-        label={label}
-        evidence={row?.evidence}
-      />
-      <ConformanceResult
-        value={row?.suites.gfm}
-        name="GFM"
-        label={label}
-        evidence={row?.evidence}
-      />
-    </td>
-  );
-}
-
-function ReferenceRow({ runtime }: { runtime: string }) {
-  const id = runtime === "Native" ? "ferromark-native" : "ferromark-node";
-  return (
-    <tr className="ferromark-reference-row">
-      <th scope="row">
-        Ferromark <span className="ferra-benchmark-detail">Spec reference</span>
-      </th>
-      <td className="ferra-benchmark-reference" colSpan={platforms.length}>
-        Spec configuration
+    <>
+      <td className="ferra-benchmark-conformance">
+        <ConformanceResult
+          value={row?.suites.commonmark}
+          name="CM"
+          label={label}
+          evidence={row?.evidence}
+        />
       </td>
-      <ConformanceCell id={id} label={`Ferromark (${runtime})`} />
-    </tr>
+      <td className="ferra-benchmark-conformance">
+        <ConformanceResult
+          value={row?.suites.gfm}
+          name="GFM"
+          label={label}
+          evidence={row?.evidence}
+        />
+      </td>
+    </>
   );
 }
 
-function ComparisonRow({ row }: { row: (typeof rows)[number] }) {
+function LibraryName({
+  row,
+  differs = false,
+}: {
+  row: (typeof groups)[number]["rows"][number];
+  differs?: boolean;
+}) {
   const backend = row.backend.replace(" (syntax subset)", "");
   return (
-    <tr>
-      <th scope="row">
-        <span className="ferra-benchmark-name">
-          <a
-            className="ferra-benchmark-source"
-            href={row.github}
-            title={`${row.label} · ${backend}`}
-          >
-            {row.label}
-          </a>
-          {row.results.some((result) => result?.outputDifferences) && (
-            <sup aria-label="Output differs for some inputs">*</sup>
-          )}
-        </span>
-        <span className="ferra-benchmark-detail">{backend}</span>
-      </th>
-      {row.results.map((result, index) => (
-        <td key={platforms[index].id}>
-          {result ? (
-            <a
-              href={reportUrl(result.report)}
-              title={result.evidence}
-              aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
-            >
-              {formatSpeed(result.speed)}
-            </a>
-          ) : (
-            <span aria-label="Not measured">—</span>
-          )}
-        </td>
-      ))}
-      <ConformanceCell id={row.id} label={`${row.label} (${row.runtime})`} />
-    </tr>
+    <th scope="row">
+      <span className="ferra-benchmark-name">
+        <a className="ferra-benchmark-source" href={row.github} title={`${row.label} · ${backend}`}>
+          {row.label}
+        </a>
+        {differs && <sup aria-label="Output differs for some inputs">*</sup>}
+      </span>
+      <span className="ferra-benchmark-detail">{backend}</span>
+    </th>
   );
 }
 
 export function BenchmarkComparison() {
+  const [selected, setSelected] = useState(platforms[0].id);
   return (
-    <FerraBenchmarkTable
-      id="markdown-ecosystem"
-      caption="Ferromark speedup over each library · fresh calls"
-    >
-      <thead>
-        <tr>
-          <th scope="col">Compared with</th>
-          {platforms.map((platform) => (
-            <th scope="col" key={platform.id}>
-              {platform.label}
-            </th>
-          ))}
-          <th scope="col">CM / GFM ext.</th>
-        </tr>
-      </thead>
-      {groups.map((group) => (
-        <tbody key={group.id} aria-labelledby={`comparison-${group.id}`}>
-          <tr className="ferra-benchmark-group">
-            <th scope="rowgroup" colSpan={platforms.length + 2} id={`comparison-${group.id}`}>
-              {group.label}
-            </th>
-          </tr>
-          <ReferenceRow runtime={group.label} />
-          {group.rows.map((row) => (
-            <ComparisonRow key={row.id} row={row} />
-          ))}
-        </tbody>
-      ))}
-      <ComparisonFootnotes />
-    </FerraBenchmarkTable>
+    <div id="markdown-ecosystem">
+      <FerraSelect
+        label="Platform"
+        options={platforms.map((platform) => ({ value: platform.id, label: platform.label }))}
+        value={selected}
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          setSelected(event.currentTarget.value);
+        }}
+        aria-controls="markdown-ecosystem-results"
+      />
+      <div id="markdown-ecosystem-results">
+        {platforms.map((platform, index) => (
+          <PlatformComparison
+            key={platform.id}
+            platform={platform}
+            index={index}
+            hidden={selected !== platform.id}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
-function ComparisonFootnotes() {
+function SpeedRow({ row, index }: { row: (typeof groups)[number]["rows"][number]; index: number }) {
+  const result = row.results[index];
+  return (
+    <tr>
+      <LibraryName row={row} differs={result?.outputDifferences} />
+      <td>
+        {result ? (
+          <a
+            href={reportUrl(result.report)}
+            title={result.evidence}
+            aria-label={`Ferromark has ${result.speed.toFixed(1)} times the throughput of ${row.label} on ${platforms[index].label}. View measurement report.`}
+          >
+            {formatSpeed(result.speed)}
+          </a>
+        ) : (
+          <span aria-label="Not measured">—</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function PlatformComparison({
+  platform,
+  index,
+  hidden,
+}: {
+  platform: (typeof platforms)[number];
+  index: number;
+  hidden: boolean;
+}) {
+  return (
+    <div hidden={hidden}>
+      <FerraBenchmarkTable
+        caption={`Ferromark speedup over each library · ${platform.label} · fresh calls`}
+      >
+        <thead>
+          <tr>
+            <th scope="col">Compared with</th>
+            <th scope="col">Speedup</th>
+          </tr>
+        </thead>
+        {groups.map((group) => (
+          <tbody key={group.id} aria-labelledby={`comparison-${platform.id}-${group.id}`}>
+            <tr>
+              <th scope="rowgroup" colSpan={2} id={`comparison-${platform.id}-${group.id}`}>
+                {group.label}
+              </th>
+            </tr>
+            {group.rows.map((row) => (
+              <SpeedRow key={row.id} row={row} index={index} />
+            ))}
+          </tbody>
+        ))}
+        <SpeedFootnotes index={index} />
+      </FerraBenchmarkTable>
+    </div>
+  );
+}
+
+function SpeedFootnotes({ index }: { index: number }) {
   return (
     <tfoot>
       <tr>
-        <td colSpan={platforms.length + 2}>
-          CM: 652 CommonMark 0.31.2 examples. GFM ext.: 28 extension examples, not full GFM. Spec
-          settings and output agreement are separate from timing.{" "}
-          <a href={reportUrl(conformance.report)}>Method and raw results</a>.
+        <td colSpan={2}>
+          2× means twice the throughput. Node.js includes binding overhead. Every factor includes
+          all 57 frozen inputs.
         </td>
       </tr>
-      {rows.some((row) => row.results.some((result) => result?.outputDifferences)) && (
+      {groups.some((group) => group.rows.some((row) => row.results[index]?.outputDifferences)) && (
         <tr>
-          <td colSpan={platforms.length + 2}>
-            * Output differs for some of the 57 inputs on at least one shown platform. All inputs
-            contribute to the performance factor. See the linked reports for syntax and API
-            differences.
+          <td colSpan={2}>
+            * Output differs for some of the 57 inputs on this platform. All inputs contribute to
+            the performance factor. See the linked reports for syntax and API differences.
           </td>
         </tr>
       )}
     </tfoot>
+  );
+}
+
+/** Specification agreement is measured separately from the performance profiles. */
+export function ConformanceComparison() {
+  return (
+    <FerraBenchmarkTable caption="Specification agreement · public spec settings">
+      <thead>
+        <tr>
+          <th scope="col">Library</th>
+          <th scope="col">CommonMark</th>
+          <th scope="col">GFM ext.</th>
+        </tr>
+      </thead>
+      {groups.map((group) => (
+        <tbody key={group.id} aria-labelledby={`conformance-${group.id}`}>
+          <tr>
+            <th scope="rowgroup" colSpan={3} id={`conformance-${group.id}`}>
+              {group.label}
+            </th>
+          </tr>
+          <tr className="ferromark-reference-row">
+            <th scope="row">
+              Ferromark <span className="ferra-benchmark-detail">Spec reference</span>
+            </th>
+            <ConformanceCells
+              id={group.id === "native" ? "ferromark-native" : "ferromark-node"}
+              label={`Ferromark (${group.label})`}
+            />
+          </tr>
+          {group.rows.map((row) => (
+            <tr key={row.id}>
+              <LibraryName row={row} />
+              <ConformanceCells id={row.id} label={`${row.label} (${row.runtime})`} />
+            </tr>
+          ))}
+        </tbody>
+      ))}
+      <tfoot>
+        <tr>
+          <td colSpan={3}>
+            CM: 652 CommonMark 0.31.2 examples. GFM ext.: 28 extension examples, not full GFM. Spec
+            settings and output agreement are separate from timing.{" "}
+            <a href={reportUrl(conformance.report)}>Method and raw results</a>.
+          </td>
+        </tr>
+      </tfoot>
+    </FerraBenchmarkTable>
   );
 }

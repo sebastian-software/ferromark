@@ -10,11 +10,7 @@ import {
 } from "ferramenta-family/ferra";
 import { WORKSHOP } from "ferramenta-family/registry";
 
-import {
-  BenchmarkComparison,
-  benchmarkHosts,
-  benchmarkLead,
-} from "../components/benchmark-comparison";
+import { benchmarkLead, benchmarkRange } from "../components/benchmark-data";
 import { FlavoredMarkdownSection } from "../components/ffm-showcase";
 import {
   FeatureGrid as Principles,
@@ -142,17 +138,27 @@ function EvidenceSection() {
     <Section
       id="evidence"
       title={benchmarkLead()}
-      intro="Twenty Markdown libraries, native and JavaScript. 57 real documents. Two platforms. Ferromark comes out ahead of every single one, from Rust and from Node.js. Fair warning: each extra syntax feature you enable adds a little parsing work."
+      intro="Twenty Markdown libraries. 57 real documents. Both macOS and Linux. Ferromark delivered more throughput than every library in our comparison, from Rust and from Node.js."
       note={
         <>
-          57 documents on macOS and Linux, fresh calls. 2× means twice the throughput. Node.js
-          includes binding overhead. <Link to="/guide/benchmarks">Methods and raw data</Link> ·{" "}
-          <Link to="/guide/feature-comparison">Features and costs</Link>
+          <Link to="/guide/benchmarks#markdown-ecosystem">Explore the benchmarks</Link> ·{" "}
+          <Link to="/guide/correctness#library-comparison-scores">
+            Compare specification agreement
+          </Link>
         </>
       }
     >
-      <BenchmarkComparison />
-      <p className="ferra-caption">{benchmarkHosts}</p>
+      <p id="markdown-ecosystem">
+        In native Rust, Ferromark delivered {benchmarkRange("pulldown-cmark")} the throughput of
+        pulldown-cmark. Through Node.js, it delivered {benchmarkRange("marked")} that of marked,
+        including binding overhead. These ranges cover both recorded hosts, using fresh calls across
+        the full corpus.
+      </p>
+      <p>
+        Your workload and enabled features affect the result. Some libraries also produce different
+        output for these inputs. The detailed comparison keeps those differences, configurations and
+        source measurements in view.
+      </p>
     </Section>
   );
 }
@@ -187,18 +193,14 @@ function StartSection() {
     <section className="ferra-editorial-closing" id="start" aria-labelledby="work">
       <h2 id="work">Your next document deserves this.</h2>
       <p>
-        One command and you are rendering. Rust gives you the parser and document tree directly,
-        Node.js a typed JavaScript API on top of the same native engine.
+        Choose your runtime and follow the getting-started guide. Rust gives you the parser and
+        document tree directly, Node.js a typed JavaScript API on top of the same native engine.
       </p>
       <div className="ferra-actions">
         <FerraAction href="/rust/getting-started">Start with Rust</FerraAction>
         <FerraAction variant="secondary" href="/node/getting-started">
           Start with Node.js
         </FerraAction>
-      </div>
-      <div className="ferra-install">
-        <code>cargo add ferromark</code>
-        <code>npm install ferromark</code>
       </div>
       <p>
         <a href="https://github.com/sebastian-software/ferromark">GitHub repository</a> ·{" "}
