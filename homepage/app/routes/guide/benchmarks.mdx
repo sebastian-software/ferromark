@@ -3,11 +3,23 @@ title: Parser Benchmarks
 order: 11
 ---
 
+import { BenchmarkComparison } from "../../components/benchmark-comparison";
+
 # Parser Benchmarks
 
 V2 benchmark reports preserve source revisions, compiler flags, output checks,
 and raw measurements. Results describe the recorded workloads and machines.
 
+
+## Compare throughput
+
+Choose a platform to compare native and Node.js libraries on the same recorded
+host. Each speedup includes all 57 documents, including inputs whose output
+differs. Follow a number for the machine, source revision and measurement date.
+[Specification agreement](/guide/correctness#library-comparison-scores) is measured
+separately, with each library's public spec settings.
+
+<BenchmarkComparison />
 
 {/* current-comparisons */}
 

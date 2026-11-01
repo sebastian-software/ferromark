@@ -13,7 +13,7 @@ const projects = JSON.parse(
   await readFile(new URL("../app/data/benchmark-projects.json", import.meta.url), "utf8"),
 );
 
-async function renderComparison(figures, { claim = false } = {}) {
+async function renderComparison(figures, { claim = false, conformance = false, rangeId } = {}) {
   const server = await createServer({
     configFile: false,
     server: { middlewareMode: true, hmr: false, ws: false },
@@ -31,16 +31,19 @@ async function renderComparison(figures, { claim = false } = {}) {
     ],
   });
   try {
-    const { BenchmarkComparison, benchmarkLead } = await server.ssrLoadModule(
-      "/app/components/benchmark-comparison.tsx",
+    const { BenchmarkComparison, ConformanceComparison, benchmarkLead, benchmarkRange } =
+      await server.ssrLoadModule("/app/components/benchmark-comparison.tsx");
+    if (claim) return benchmarkLead();
+    if (rangeId) return benchmarkRange(rangeId);
+    return renderToStaticMarkup(
+      createElement(conformance ? ConformanceComparison : BenchmarkComparison),
     );
-    return claim ? benchmarkLead() : renderToStaticMarkup(createElement(BenchmarkComparison));
   } finally {
     await server.close();
   }
 }
 
-test("a newly measured architecture adds one column and preserves existing cells", async () => {
+test("a newly measured architecture adds a selectable panel and preserves existing measurements", async () => {
   const baseline = await renderComparison(completed.figures);
   // Routing fixtures only: never published or presented as measured Intel data.
   const additional = projects.map((project) => ({
@@ -53,15 +56,15 @@ test("a newly measured architecture adds one column and preserves existing cells
     overviewReport: "docs/reports/test-fixture",
   }));
   const extended = await renderComparison([...completed.figures, ...additional]);
-  assert.match(extended, /<th scope="col">macOS x86-64<\/th>/);
+  assert.match(extended, /<option value="macos-x86-64">macOS x86-64<\/option>/);
   const before = [...baseline.matchAll(/<td>(.*?)<\/td>/gs)].map((match) => match[1]);
   const after = [...extended.matchAll(/<td>(.*?)<\/td>/gs)].map((match) => match[1]);
   assert.equal(before.length, projects.length * 2);
   assert.equal(after.length, projects.length * 3);
-  for (let row = 0; row < projects.length; row += 1) {
-    assert.deepEqual(after.slice(row * 3, row * 3 + 2), before.slice(row * 2, row * 2 + 2));
-    assert.match(after[row * 3 + 2], /TEST FIXTURE/);
-    assert.match(after[row * 3 + 2], /docs\/reports\/test-fixture/);
+  assert.deepEqual(after.slice(0, before.length), before);
+  for (const cell of after.slice(before.length)) {
+    assert.match(cell, /TEST FIXTURE/);
+    assert.match(cell, /docs\/reports\/test-fixture/);
   }
 });
 
@@ -101,7 +104,7 @@ test("each runtime group is alphabetical and implementation details remain visib
   const names = [...html.matchAll(/class="ferra-benchmark-source"[^>]*>(.*?)<\/a>/gs)].map(
     (match) => match[1],
   );
-  assert.deepEqual(names, [
+  const expected = [
     "Bun MD",
     "cmark",
     "cmark-gfm",
@@ -122,7 +125,8 @@ test("each runtime group is alphabetical and implementation details remain visib
     "Sätteri",
     "Showdown",
     "TanStack Markdown",
-  ]);
+  ];
+  assert.deepEqual(names, [...expected, ...expected]);
 });
 
 test("the overall speed claim requires every candidate on every displayed platform", async () => {
@@ -210,14 +214,14 @@ test("full-corpus factors with equivalent outputs do not need an asterisk", asyn
 });
 
 test("spec agreement covers every variant with separate references and evidence links", async () => {
-  const html = await renderComparison(completed.figures);
+  const html = await renderComparison(completed.figures, { conformance: true });
   const conformance = JSON.parse(
     await readFile(new URL("../app/data/comparison-conformance.json", import.meta.url), "utf8"),
   );
   assert.equal(conformance.rows.length, projects.length + 2);
   assert.equal(
     [...html.matchAll(/class="ferra-benchmark-conformance"/g)].length,
-    projects.length + 2,
+    (projects.length + 2) * 2,
   );
   assert.equal([...html.matchAll(/class="ferromark-reference-row"/g)].length, 2);
   assert.match(html, /28 extension examples, not full GFM/);
@@ -236,4 +240,22 @@ test("spec agreement covers every variant with separate references and evidence 
       }
     }
   }
+});
+
+test("speed and conformance are separate tables", async () => {
+  const speed = await renderComparison(completed.figures);
+  const spec = await renderComparison(completed.figures, { conformance: true });
+  assert.ok(!speed.includes("ferra-benchmark-conformance"));
+  assert.ok(!spec.includes("times the throughput"));
+  assert.match(speed, /aria-controls="markdown-ecosystem-results"/);
+  assert.equal([...speed.matchAll(/<div hidden=""/g)].length, 1);
+});
+
+test("homepage ranges use the measured hosts and reject incomplete examples", async () => {
+  assert.equal(
+    await renderComparison(completed.figures, { rangeId: "pulldown-cmark" }),
+    "2.3–2.7×",
+  );
+  assert.equal(await renderComparison(completed.figures, { rangeId: "marked" }), "9.5–9.7×");
+  await assert.rejects(renderComparison(completed.figures.slice(1), { rangeId: "pulldown-cmark" }));
 });

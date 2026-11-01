@@ -51,6 +51,10 @@ const benchmarkPage = await readFile(
   new URL("guide/benchmarks/index.html", outputDirectory),
   "utf8",
 );
+const correctnessPage = await readFile(
+  new URL("guide/correctness/index.html", outputDirectory),
+  "utf8",
+);
 const guidePage = await readFile(new URL("guide/quick-start/index.html", outputDirectory), "utf8");
 const analysisPage = await readFile(
   new URL("guide/document-analysis/index.html", outputDirectory),
@@ -64,7 +68,7 @@ const { version } = JSON.parse(
   await readFile(new URL("../../node/ferromark/package.json", import.meta.url), "utf8"),
 );
 
-// The landing page states the measured figures that
+// The benchmark guide states the measured figures that
 // scripts/publish-native-readme.py derives from one archived native comparison
 // per platform; a hard-coded number would survive the next measurement, so the
 // prerendered page must carry every platform's library figures, machine and
@@ -92,7 +96,7 @@ const completedKeys = new Set(
   completedBenchmarks.figures.map((figure) => `${figure.platform}/${figure.id}`),
 );
 // Historical values remain in the guide; require the currently selected values
-// on the landing page when a new manual report replaces a platform's cells.
+// in the benchmark guide when a new manual report replaces a platform's cells.
 const completedPlatforms = new Map(
   completedBenchmarks.figures.map((figure) => [figure.platform, figure.platformLabel]),
 );
@@ -128,7 +132,7 @@ const completedFragments = completedBenchmarks.figures.flatMap((figure) => [
   `href="https://github.com/sebastian-software/ferromark/tree/main/${figure.overviewReport ?? figure.report}"`,
 ]);
 
-const requiredFragments = [
+const requiredComparisonFragments = [
   ...completedFragments,
   ...ecosystemFragments,
   ...projects.flatMap((project) => [project.label, `href="${project.github}"`]),
@@ -136,10 +140,24 @@ const requiredFragments = [
   "Ferromark speedup over each library",
   "2× means twice the throughput",
   'class="ferra-table ferra-benchmark-table"',
-  'id="comparison-native"',
-  'id="comparison-node"',
+  ...[...completedPlatforms.keys()].flatMap((platform) => [
+    `id="comparison-${platform}-native"`,
+    `id="comparison-${platform}-node"`,
+  ]),
   ...platformFragments,
-  'href="/guide/benchmarks"',
+];
+
+const requiredFragments = [
+  'id="markdown-ecosystem"',
+  ...["pulldown-cmark", "marked"].map((id) => {
+    const values = completedBenchmarks.figures
+      .filter((figure) => figure.id === id)
+      .map((figure) => figure.fresh);
+    const low = Math.min(...values).toFixed(1);
+    const high = Math.max(...values).toFixed(1);
+    return low === high ? `${low}×` : `${low}–${high}×`;
+  }),
+  'href="/guide/benchmarks#markdown-ecosystem"',
   '"/assets/',
   'rel="icon"',
   'class="ferra-header ferra-wrap"',
@@ -195,10 +213,17 @@ check(footer, "family footer", {
 
 check(homepage, "homepage", {
   required: requiredFragments,
-  forbidden: [...forbiddenFragments, "Ferromark v1", "OX-Content original"],
+  forbidden: [
+    ...forbiddenFragments,
+    "Ferromark v1",
+    "OX-Content original",
+    "ferra-benchmark-table",
+    'class="ferra-install"',
+  ],
 });
 check(benchmarkPage, "v2 benchmark evidence", {
   required: [
+    ...requiredComparisonFragments,
     "v2",
     "source revisions",
     ...benchmarks.platforms.flatMap((platform) => [
@@ -207,6 +232,15 @@ check(benchmarkPage, "v2 benchmark evidence", {
       platform.revision,
     ]),
   ],
+});
+check(correctnessPage, "conformance comparison", {
+  required: [
+    "Specification agreement · public spec settings",
+    'id="conformance-native"',
+    'id="conformance-node"',
+    "28 extension examples, not full GFM",
+  ],
+  forbidden: ["times the throughput"],
 });
 check(guidePage, "guide page", {
   required: requiredGuideFragments,
