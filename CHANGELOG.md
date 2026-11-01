@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.0.0](https://github.com/sebastian-software/ferromark/compare/v3.7.0...v4.0.0) (2026-11-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **node:** make native code engines opt-in
+* **node:** make native code engines opt-in ([#574](https://github.com/sebastian-software/ferromark/issues/574))
+
+### Features
+
+* **homepage:** adopt Ferra design and Ardo 6 ([9f7e457](https://github.com/sebastian-software/ferromark/commit/9f7e45729ed0322b64045aeec8ab457c9a8967b2))
+* **homepage:** adopt the image-first editorial cover ([f742432](https://github.com/sebastian-software/ferromark/commit/f7424329ea0374c16e8e0211e86e02d8562020ea))
+* **homepage:** adopt the shared image-first editorial design ([a9b407e](https://github.com/sebastian-software/ferromark/commit/a9b407e1e5e647a00cc9903a69b767a1af64b44d))
+* **homepage:** focus benchmark evidence and simplify getting started ([8e92431](https://github.com/sebastian-software/ferromark/commit/8e924312b96d943ee3d913fe6114966e937ef82a))
+* **homepage:** focus benchmark evidence and simplify getting started ([a0998eb](https://github.com/sebastian-software/ferromark/commit/a0998eba737af8eb3d95af6a86a1e89aeea13ead))
+* **homepage:** use shared editorial and reading layouts ([f64b3b1](https://github.com/sebastian-software/ferromark/commit/f64b3b1a89f0e77a6dd2e890faaafbc6d1252a2e))
+* integrate Ferrigura as an optional crate feature like Ferriki ([3a1040d](https://github.com/sebastian-software/ferromark/commit/3a1040d1cf9b83939c771dfc9ca2550ec213db42))
+* **mermaid:** complete deterministic static SVG rendering ([#575](https://github.com/sebastian-software/ferromark/issues/575)) ([6ee1647](https://github.com/sebastian-software/ferromark/commit/6ee1647d8ffcb1b7469ae26120daa1d829af5675))
+
+
+### Bug Fixes
+
+* **homepage:** adopt compact shared mobile layouts ([a7dc7ec](https://github.com/sebastian-software/ferromark/commit/a7dc7ec7cd0a054ff6e4d9444b55f2e4322054a1))
+* **homepage:** adopt lightly textured metadata footers ([3e13386](https://github.com/sebastian-software/ferromark/commit/3e1338664fe2f1348d7981b367147f31deefa58e))
+* **homepage:** adopt lightly textured metadata footers ([7daea53](https://github.com/sebastian-software/ferromark/commit/7daea53815f825e69655b8674e2e680a6bd0d8f3))
+* **homepage:** adopt matching card grid gutters ([a5b2843](https://github.com/sebastian-software/ferromark/commit/a5b28438268366594e871b44c0cf61342741fe8e))
+* **homepage:** adopt warm metadata footers ([bf7fc22](https://github.com/sebastian-software/ferromark/commit/bf7fc228486b945c47c85a6e62c8a9859daa5e47))
+* **homepage:** adopt warm metadata footers ([e28d547](https://github.com/sebastian-software/ferromark/commit/e28d54787941540b1e3f9ddd4a510c74c4613bfa))
+* **homepage:** improve mobile spacing and tables ([87b3cde](https://github.com/sebastian-software/ferromark/commit/87b3cdec845fe88fc1037a641f56dbd49a69834a))
+* **homepage:** keep generated benchmark content reproducible ([33baa2f](https://github.com/sebastian-software/ferromark/commit/33baa2f0b74c2b4f2c4723417776b38acf05dc57))
+* **homepage:** match vertical and horizontal card gutters ([ab0c596](https://github.com/sebastian-software/ferromark/commit/ab0c5968c31a4a8df3233139ab901fa5a1890e01))
+* **homepage:** preserve generated benchmark guide boundaries ([dbe90a4](https://github.com/sebastian-software/ferromark/commit/dbe90a4a0dc24ea26eb680ffd9e7afe171aa67e3))
+* **homepage:** preserve nested metadata text contrast ([edcd3b6](https://github.com/sebastian-software/ferromark/commit/edcd3b682e480ece33459d9dafa1259f9a2b67a5))
+* **homepage:** preserve nested metadata text contrast ([b6eb82f](https://github.com/sebastian-software/ferromark/commit/b6eb82fa994423e2052045f669491b093f400a7d))
+* **node:** make native code engines opt-in ([2a82065](https://github.com/sebastian-software/ferromark/commit/2a8206568619880231cee200d7e8fbbc5fbc8eae))
+* **node:** make native code engines opt-in ([#574](https://github.com/sebastian-software/ferromark/issues/574)) ([2a82065](https://github.com/sebastian-software/ferromark/commit/2a8206568619880231cee200d7e8fbbc5fbc8eae))
+* **site:** adopt compact code blocks and unframed docs ([#589](https://github.com/sebastian-software/ferromark/issues/589)) ([7cdd17d](https://github.com/sebastian-software/ferromark/commit/7cdd17d16304fa36e340ced01c4e5b0276ee73d6))
+
 ## [3.7.0](https://github.com/sebastian-software/ferromark/compare/v3.6.0...v3.7.0) (2026-10-27)
 
 
