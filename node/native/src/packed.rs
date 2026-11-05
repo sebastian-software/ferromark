@@ -235,7 +235,7 @@ pub fn to_html_with_renderer_packed(
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
     #[napi(
-        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined"
     )]
     renderer: crate::CodeCallback<'_>,
 ) -> Result<String> {
@@ -270,7 +270,7 @@ pub fn transform_with_renderer_packed(
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
     #[napi(
-        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined"
     )]
     renderer: crate::CodeCallback<'_>,
 ) -> Result<TransformResult> {

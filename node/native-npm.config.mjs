@@ -24,7 +24,9 @@ export default {
       "native-target.d.mts",
       "native.d.ts",
     ],
-    maxUnpackedSize: 131_000,
+    // Caps the facade and declarations, including the code-hook adapters.
+    // Engines and native binaries stay outside the main package.
+    maxUnpackedSize: 160_000,
   },
   consumer: {
     smoke: `import { availableCodePlugins, toHtml } from "ferromark"; if (availableCodePlugins().length !== 0) throw new Error("Standard addon must be engine-free"); if (toHtml("# Native") !== '<h1 id="native">Native</h1>\\n') throw new Error("HTML mismatch");`,

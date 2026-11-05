@@ -744,7 +744,7 @@ pub fn to_html_with_renderer(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
     #[napi(
-        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined"
     )]
     renderer: crate::CodeCallback<'_>,
 ) -> Result<String> {
@@ -761,7 +761,7 @@ pub fn transform_with_renderer(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
     #[napi(
-        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined"
     )]
     renderer: crate::CodeCallback<'_>,
 ) -> Result<TransformResult> {

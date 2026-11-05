@@ -32,7 +32,7 @@ pub struct CodeBlockStage {
 /// converts it to JSX. In the highlight stage, `lines` holds one balanced HTML
 /// fragment per code line, with optional block colors.
 #[napi(object)]
-pub struct CodeCallbackObject {
+pub struct CodeHookResult {
     pub html: Option<String>,
     pub lines: Option<Vec<String>>,
     pub foreground: Option<String>,
@@ -41,7 +41,7 @@ pub struct CodeCallbackObject {
     pub dark_background: Option<String>,
 }
 
-pub(crate) type CodeCallbackResult = Option<Either<String, CodeCallbackObject>>;
+pub(crate) type CodeCallbackResult = Option<Either<String, CodeHookResult>>;
 
 pub(crate) type CodeCallback<'a> = Function<
     'a,
@@ -134,7 +134,7 @@ impl<'a> JsCodeHooks<'a> {
         language: Option<&str>,
         meta: Option<&str>,
         span: Span,
-    ) -> Option<CodeCallbackObject> {
+    ) -> Option<CodeHookResult> {
         match self.call("highlight", code, language, meta, span)? {
             Either::B(object) if object.lines.is_some() => Some(object),
             _ => self.fail(HIGHLIGHT_RESULT),

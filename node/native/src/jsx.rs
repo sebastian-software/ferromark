@@ -572,7 +572,7 @@ pub fn compile_jsx(
     options: Option<Options>,
     jsx_options: Option<JsxOptions>,
     #[napi(
-        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined"
     )]
     render_code: Option<CodeCallback<'_>>,
 ) -> Result<JsxResult> {
@@ -586,7 +586,7 @@ pub fn compile_jsx_module(
     options: Option<Options>,
     jsx_options: Option<JsxOptions>,
     #[napi(
-        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined"
     )]
     render_code: Option<CodeCallback<'_>>,
 ) -> Result<JsxModuleResult> {
