@@ -974,10 +974,11 @@ export class CodeCompiler {
 
   /**
    * @param {import('./index.mjs').JsxCodeBlockRenderInput} input Standalone code and optional fence language and metadata.
+   * @param {import('./index.mjs').CodeRendering} [hooks] Code hooks; only the highlighting stage applies.
    * @returns {import('./index.mjs').JsxCodeBlockRenderResult} Intrinsic JSX and metadata parsed by the native fence parser.
    */
-  renderCodeBlock(input) {
-    return this.#native.renderCodeBlock(validateJsxCodeBlockInput(input));
+  renderCodeBlock(input, hooks) {
+    return this.#native.renderCodeBlock(validateJsxCodeBlockInput(input), codeDispatcher(hooks));
   }
 
   /**
@@ -1622,7 +1623,8 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   compileModule(markdown: string | Uint8Array, options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
  *     renderCode?: NativeCodeDispatcher): import('./index.mjs').JsxModuleResult
- *   renderCodeBlock(input: import('./index.mjs').JsxCodeBlockRenderInput): import('./index.mjs').JsxCodeBlockRenderResult
+ *   renderCodeBlock(input: import('./index.mjs').JsxCodeBlockRenderInput,
+ *     renderCode?: NativeCodeDispatcher): import('./index.mjs').JsxCodeBlockRenderResult
  *   toHtml(markdown: string | Uint8Array, options?: import('./index.mjs').Options): string
  *   transform(markdown: string | Uint8Array, options?: import('./index.mjs').Options): import('./index.mjs').TransformResult
  *   takeDiagnostics(): import('./index.mjs').CodePluginDiagnostic[]

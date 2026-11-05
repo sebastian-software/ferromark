@@ -164,9 +164,16 @@ impl CodeCompiler {
             .module()
     }
 
-    /// Renders one standalone code block with the compiler's native highlighting plugins.
+    /// Renders one standalone code block with code hooks and native highlighting plugins.
     #[napi(catch_unwind)]
-    pub fn render_code_block(&self, input: RenderCodeBlockInput) -> Result<RenderCodeBlockResult> {
+    pub fn render_code_block(
+        &self,
+        input: RenderCodeBlockInput,
+        #[napi(
+            ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined"
+        )]
+        render_code: Option<CodeCallback<'_>>,
+    ) -> Result<RenderCodeBlockResult> {
         let mut plugins = self.plugins.try_borrow_mut().map_err(|_| {
             usage("A JSX compiler cannot be used recursively from its code callback")
         })?;
@@ -176,6 +183,7 @@ impl CodeCompiler {
                 plugins: &mut plugins,
                 line_numbers: self.line_numbers,
             },
+            render_code,
         )
     }
 

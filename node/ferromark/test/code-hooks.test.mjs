@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CodeCompiler,
   compileJsx,
   composeCodeHooks,
   createDiagramCodeRenderer,
@@ -258,4 +259,28 @@ test("line highlighter options are validated", () => {
     () => createLineHighlighter(highlighter, { theme: "x", onHighlightError: 1 }),
     /onHighlightError/,
   );
+});
+
+test("standalone code blocks use the highlighting hook only", () => {
+  const seen = [];
+  const hooks = {
+    renderCodeBlock() {
+      throw new Error("standalone blocks have no whole-block stage");
+    },
+    // Code hooks share the public (code, language, meta, block) shape.
+    // eslint-disable-next-line max-params
+    highlightCodeBlock(code, language, meta, block) {
+      seen.push([language, meta, block]);
+      return { lines: redLines(code), foreground: "#111", background: "#fff" };
+    },
+  };
+  const result = new CodeCompiler().renderCodeBlock(
+    { code: "let a\n", language: "ts", meta: 'title="a.ts"' },
+    hooks,
+  );
+  assert.equal(result.title, "a.ts");
+  assert.match(result.jsx, /^<pre className=\{"shiki ox-code-block"\} style=\{\{color: "#111"/);
+  assert.match(result.jsx, /<span style=\{\{color: "#f00"\}\}>\{"let a"\}<\/span>/);
+  assert.deepEqual(seen, [["ts", 'title="a.ts"', { start: 0, end: 0 }]]);
+  assert.doesNotMatch(new CodeCompiler().renderCodeBlock({ code: "x" }).jsx, /shiki/);
 });

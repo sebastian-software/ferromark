@@ -16,8 +16,8 @@ export declare class CodeCompiler {
   compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined): JsxResult
   /** Compiles source to an MDX module; the public facade selects this entry. */
   compileModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined): JsxModuleResult
-  /** Renders one standalone code block with the compiler's native highlighting plugins. */
-  renderCodeBlock(input: RenderCodeBlockInput): RenderCodeBlockResult
+  /** Renders one standalone code block with code hooks and native highlighting plugins. */
+  renderCodeBlock(input: RenderCodeBlockInput, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeHookResult | null | undefined): RenderCodeBlockResult
 }
 
 /** Immutable, source-owning prepared JSX document with repeatable render methods. */
