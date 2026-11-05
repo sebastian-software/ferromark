@@ -2,6 +2,7 @@ export const documentationSections = [
   {
     id: "rust",
     label: "Rust",
+    icon: "crate",
     to: "/rust/getting-started",
     pages: [
       ["Start with Rust", "/rust/getting-started"],
@@ -16,6 +17,7 @@ export const documentationSections = [
   {
     id: "node",
     label: "Node.js",
+    icon: "package",
     to: "/node/getting-started",
     pages: [
       ["Start with Node.js", "/node/getting-started"],
@@ -28,6 +30,7 @@ export const documentationSections = [
   {
     id: "guide",
     label: "Shared reference",
+    icon: "document",
     to: "/guide/getting-started",
     pages: [
       ["Documentation", "/guide/getting-started"],
