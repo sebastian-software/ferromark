@@ -8,7 +8,7 @@ import {
   ArdoRootLayout,
   ArdoTOC,
 } from "ardo/ui";
-import { MarkDefs } from "ferramenta-family";
+import { Mark, MarkDefs } from "ferramenta-family";
 import {
   FerraFooter,
   FerraGuideNavigation,
@@ -16,7 +16,7 @@ import {
   FerraPage,
   FerraReadingLayout,
   FerraReadingTable,
-  FerraTabs,
+  FerraSectionRail,
 } from "ferramenta-family/ferra";
 import touchIcon from "ferramenta-family/ferra-assets/ferromark/apple-touch-icon.png?url";
 import favicon from "ferramenta-family/ferra-assets/ferromark/favicon.ico?url";
@@ -49,11 +49,8 @@ function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
     documentationSections.find((section) => path.startsWith(`/${section.id}/`)) ??
     documentationSections[0];
   return (
-    <FerraGuideNavigation aria-label="Documentation pages">
-      <NavLink to="/" onClick={onNavigate}>
-        Overview
-      </NavLink>
-      <FerraTabs aria-label="Documentation sections">
+    <>
+      <FerraSectionRail aria-label="Documentation sections">
         {documentationSections.map((section) => (
           <NavLink
             key={section.id}
@@ -61,27 +58,33 @@ function GuideNavigation({ onNavigate }: { onNavigate?: () => void }) {
             data-active={current.id === section.id}
             onClick={onNavigate}
           >
+            <Mark name={section.icon} />
             {section.label}
           </NavLink>
         ))}
-      </FerraTabs>
-      <p>{current.label}</p>
-      {current.pages.map(([label, to]) => (
-        <NavLink key={to} to={to} onClick={onNavigate}>
-          {label}
+      </FerraSectionRail>
+      <FerraGuideNavigation aria-label="Documentation pages">
+        <NavLink to="/" onClick={onNavigate}>
+          Overview
         </NavLink>
-      ))}
-      {current.id !== "guide" && (
-        <>
-          <p>Shared concepts</p>
-          {sharedConcepts.map(([label, to]) => (
-            <NavLink key={to} to={to} onClick={onNavigate}>
-              {label}
-            </NavLink>
-          ))}
-        </>
-      )}
-    </FerraGuideNavigation>
+        <p>{current.label}</p>
+        {current.pages.map(([label, to]) => (
+          <NavLink key={to} to={to} onClick={onNavigate}>
+            {label}
+          </NavLink>
+        ))}
+        {current.id !== "guide" && (
+          <>
+            <p>Shared concepts</p>
+            {sharedConcepts.map(([label, to]) => (
+              <NavLink key={to} to={to} onClick={onNavigate}>
+                {label}
+              </NavLink>
+            ))}
+          </>
+        )}
+      </FerraGuideNavigation>
+    </>
   );
 }
 
