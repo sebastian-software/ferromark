@@ -1,6 +1,6 @@
 [package]
 name = "ferromark-plugin-fixture"
-version = "3.7.0"
+version = "4.0.0"
 edition = "2024"
 rust-version.workspace = true
 license = "MIT"
@@ -12,5 +12,5 @@ publish = false
 workspace = true
 
 [dependencies]
-ferromark = { version = "3.7.0", path = "../..", features = ["jsx"] }
+ferromark = { version = "4.0.0", path = "../..", features = ["jsx"] }
 serde_json.workspace = true
