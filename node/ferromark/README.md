@@ -460,35 +460,51 @@ Fence meta text after the language (e.g. ` ```ts {1-3} title="…" `) reaches th
 
 ## Code-block renderer plugins
 
-The APIs in this section are available on repository `main` and in custom
-plugin bundles. The published `ferromark@3.6.0` package does not export them;
-check your installed declarations or use the source build described above.
+The APIs in this section are available on repository `main`. The published
+`ferromark@3.7.0` package does not export all of them; check your installed
+declarations or use the source build described above.
 
-`CodeCompiler` selects Rust plugins once for native HTML and JSX rendering.
-See the [native plugin guide](../../docs/native-code-plugins.md) for configuration
-and custom builds. The standard addon includes neither engine and reports
-`[]` from `availableCodePlugins()`. Engine-enabled bundles require explicit
-plugin selection.
-The optional [Ferrigura integration](../../docs/ferrigura.md) adds native Mermaid
-rendering to custom builds; it is excluded from the standard addon. Without a
-custom build, `createDiagramCodeRenderer(new Renderer())` connects a separately
-installed `@ferrigura/core` renderer through `toHtmlWithCodeRenderer`. Its default
-policy preserves escaped code for failed or unsafe diagrams. Drain
-`compiler.takeDiagnostics()` or `prepared.takeDiagnostics()` for failures with
-original UTF-8 fence ranges. SVG is checked before emission, and IDs remain
-stable across repeated renders.
+Highlighting and diagrams reach Ferromark the same way: the application installs
+and initializes the engine and passes code hooks. A whole-block hook
+(`renderCodeBlock`) replaces a block, for example with a Mermaid SVG. A
+highlighting hook (`highlightCodeBlock`) returns one fragment per line, and
+Ferromark keeps its code block wrapper, line annotations, title and
+`codeBlockComponent`. Both receive the fence's UTF-8 byte range. The standard
+addon includes no engine.
 
-Use an [installable plugin bundle](../../docs/plugin-bundles.md) to choose
-`none`, `ferriki`, `ferrigura`, or `all` without compiling Rust in the consuming
-application. Installing `@ferriki/core` separately works through the highlighter
-API above; installing a package does not extend an existing binary's factory
-list. The [code-rendering guide](https://ferromark.dev/guide/code-rendering)
-compares these paths and their release availability.
+````js
+import { createHighlighter } from "@ferriki/core";
+import { Renderer } from "@ferrigura/core";
+import {
+  compileJsx,
+  composeCodeHooks,
+  createDiagramCodeRenderer,
+  createLineHighlighter,
+  toHtmlWithCodeRenderer,
+} from "ferromark";
 
-Compose diagram renderers and highlighters with `composeCodeRenderers()`.
-`toHtmlWithCodeRenderer()` and `transformWithCodeRenderer()` accept the result.
-See the [plugin guide](../../docs/code-block-renderers.md) for Rust and Node
-usage, fallbacks, JSX, and output trust.
+const themes = { light: "github-light-default", dark: "github-dark-default" };
+const highlighter = await createHighlighter({ themes: Object.values(themes), langs: ["rust"] });
+const hooks = composeCodeHooks(createDiagramCodeRenderer(new Renderer(), { colorScheme: "auto" }), {
+  highlightCodeBlock: createLineHighlighter(highlighter, { themes }),
+});
+
+const markdown = "```rust\nfn main() {}\n```\n\n```mermaid\nflowchart LR\nA --> B\n```";
+const html = toHtmlWithCodeRenderer(markdown, hooks);
+const jsx = compileJsx(markdown, { codeBlockComponent: "CodeBlock" }, hooks);
+````
+
+Failed diagrams and unloaded languages fall back to ordinary code; observe them
+with `onRenderError` and `onHighlightError`, which also receive the block range.
+JSX entry points convert `{ html }` results, including SVG, to JSX. See the
+[plugin guide](../../docs/code-block-renderers.md) for the contract, ordering
+and output trust.
+
+`CodeCompiler` selects Rust plugins compiled into a custom addon for native
+HTML and JSX rendering. See the [native plugin guide](../../docs/native-code-plugins.md)
+and [installable plugin bundles](../../docs/plugin-bundles.md). The optional
+[Ferrigura integration](../../docs/ferrigura.md) in such builds adds the static
+SVG policy and `takeDiagnostics()`.
 
 ## Document metadata for docs pipelines
 

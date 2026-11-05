@@ -12,31 +12,37 @@ contain no Ferrigura code.
 
 ## Node.js with `@ferrigura/core`
 
-`createDiagramCodeRenderer` adapts any object with a synchronous
-`render(text, options)` method, such as a `Renderer` from `@ferrigura/core`, to
-a code-block callback. Ferromark does not import or pin the diagram package;
-the application installs and configures it, as it does `@ferriki/core`.
+Node.js applications inject the renderer, the same way they inject a
+`@ferriki/core` highlighter. `createDiagramCodeRenderer` adapts any object with
+a synchronous `render(text, options)` method, such as a `Renderer` from
+`@ferrigura/core`, to a whole-block code hook. Ferromark does not import or pin
+the diagram package; the application installs and configures it.
 
 ```js
 import { Renderer } from "@ferrigura/core";
-import { createDiagramCodeRenderer, toHtmlWithCodeRenderer } from "ferromark";
+import { compileJsx, createDiagramCodeRenderer, toHtmlWithCodeRenderer } from "ferromark";
 
 const diagrams = createDiagramCodeRenderer(new Renderer(), {
   colorScheme: "auto",
-  onRenderError(error) {
-    console.warn("Diagram fell back to code", error);
+  onRenderError(error, { start, end }) {
+    console.warn(`Diagram at bytes ${start}-${end} fell back to code`, error);
   },
 });
-const html = toHtmlWithCodeRenderer("```mermaid\nflowchart LR\nA --> B\n```", diagrams);
+const markdown = "```mermaid\nflowchart LR\nA --> B\n```";
+const html = toHtmlWithCodeRenderer(markdown, diagrams);
+const jsx = compileJsx(markdown, {}, diagrams);
 ```
 
 Only fences whose language is `mermaid` (or the configured `language`) reach the
-renderer. A renderer exception calls `onRenderError` and keeps ordinary code
-output. Compose it with a highlighter through `composeCodeRenderers`. The
-callback output is trusted application HTML: unlike the native integration
-below, this path does not apply Ferromark's SVG policy. `@ferrigura/core` is not
-yet published on npm; see
-[ferrigura#3](https://github.com/sebastian-software/ferrigura/issues/3).
+renderer. The hook returns `{ html }`; JSX entry points convert the SVG to JSX.
+Each fence gets the SVG namespace `<idPrefix>-<UTF-8 start offset>`, with
+`fm-mermaid` as the default prefix, so IDs match the native integration and stay
+stable across HTML, JSX and prepared renders. A renderer exception calls
+`onRenderError` with the language and the fence's UTF-8 byte range and keeps
+ordinary code output. Combine diagrams with highlighting through
+`composeCodeHooks`; see the [code-block renderer contract](code-block-renderers.md#nodejs).
+The hook output is trusted application HTML: unlike the native integration
+below, this path does not apply Ferromark's SVG policy.
 
 ## Node.js with a custom native bundle
 
@@ -196,7 +202,7 @@ Ferrigura; custom bundles provide native installation.
 
 ### Engine version
 
-The `ferrigura` feature depends on Ferrigura **0.3**. That release no longer
+The `ferrigura` feature depends on Ferrigura **0.4**. Since 0.3, Ferrigura no longer
 depends on Ferromark, so the optional feature lives in the published crate
 without a dependency cycle. Engine upgrades that change SVG bytes update the
 pinned fixture hashes in the same change, after the rendered fixtures are

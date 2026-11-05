@@ -46,6 +46,21 @@ pub(super) fn render_code_block<H: JsxRenderHooks>(
     }
 }
 
+/// Converts trusted HTML, including inline SVG, to JSX source.
+///
+/// The conversion follows the rules for authored raw HTML in a JSX document:
+/// text is emitted as string expressions, HTML comments become JSX comments,
+/// HTML attribute names are mapped to their JSX spelling, and SVG attribute
+/// names keep their case, with hyphenated and namespaced names camel-cased.
+/// It does not sanitize the input; pass only trusted application output.
+pub fn html_to_jsx(html: &str) -> String {
+    let options = JsxRendererOptions::default();
+    let mut hooks = super::NoJsxRenderHooks;
+    let mut renderer = Renderer::new("", &options, &mut hooks);
+    renderer.write_raw_html(html);
+    renderer.output.body
+}
+
 pub(super) fn render_document<H: JsxRenderHooks>(
     document: &Document<'_>,
     source: &str,
@@ -967,9 +982,16 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
 
         self.push("<");
         self.push(&raw_tag_name(tag.name));
+        let svg = is_svg_element_name(tag.name) && !is_html_element_name(tag.name);
         for attribute in &tag.attributes {
             let normalized_name = attribute.name.to_ascii_lowercase();
-            let name = jsx_attribute_name(&normalized_name);
+            let svg_name;
+            let name = if svg {
+                svg_name = svg_jsx_attribute_name(attribute.name);
+                svg_name.as_str()
+            } else {
+                jsx_attribute_name(&normalized_name)
+            };
             if attribute.name.eq_ignore_ascii_case("style") {
                 if let Some(value) = attribute.value {
                     self.write_style_attribute(&decode_html_entities(value));
@@ -1585,6 +1607,34 @@ fn jsx_attribute_name(name: &str) -> &str {
         "xml:lang" => "xmlLang",
         _ => name,
     }
+}
+
+/// Maps an SVG attribute to its JSX name. SVG names are case-sensitive
+/// (`markerWidth`, `refX`), so they are not lowercased like HTML names.
+fn svg_jsx_attribute_name(name: &str) -> String {
+    if name.eq_ignore_ascii_case("class") {
+        return "className".to_owned();
+    }
+    let lower = name.to_ascii_lowercase();
+    if lower.starts_with("data-") || lower.starts_with("aria-") {
+        return lower;
+    }
+    if !name.contains(['-', ':']) {
+        return name.to_owned();
+    }
+    let mut output = String::with_capacity(name.len());
+    let mut upper = false;
+    for character in name.chars() {
+        if matches!(character, '-' | ':') {
+            upper = !output.is_empty();
+        } else if upper {
+            output.push(character.to_ascii_uppercase());
+            upper = false;
+        } else {
+            output.push(character);
+        }
+    }
+    output
 }
 
 fn is_standard_html_attribute(name: &str) -> bool {

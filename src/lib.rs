@@ -61,7 +61,7 @@ pub use renderer::{
     InvalidHeadingIdPrefix, JsxCodeBlock, JsxCodeBlockInput, JsxCodeBlockRenderOutput,
     JsxHighlightedCodeBlock, JsxModuleSource, JsxOutput, JsxRenderHooks, JsxRenderer,
     JsxRendererOptions, JsxSourceMapping, NoHtmlRenderHooks, NoJsxRenderHooks,
-    collect_heading_text, find_autolink_ranges, map_heading_level, slugify_heading,
+    collect_heading_text, find_autolink_ranges, html_to_jsx, map_heading_level, slugify_heading,
 };
 pub use text::{TextExtraction, TextExtractionOptions, TextRange, TextSection};
 

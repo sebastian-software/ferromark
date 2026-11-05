@@ -510,4 +510,4 @@ impl JsxRenderer {
     }
 }
 
-pub use render::decode_html_entities;
+pub use render::{decode_html_entities, html_to_jsx};

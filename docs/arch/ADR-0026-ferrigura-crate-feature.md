@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31
+- Last updated: 2026-11-05
 - Extends [ADR-0024](ADR-0024-native-code-plugins.md) and
   [ADR-0025](ADR-0025-static-mermaid-output.md); follows the Ferriki placement in
   [ADR-0018](ADR-0018-single-rust-crate.md).
@@ -38,7 +39,7 @@ code when the renderer throws. Ferromark neither imports nor pins
 the Ferriki highlighter. Its output is trusted application HTML, like every
 code-renderer callback; the SVG policy applies to the native integration only.
 
-Depend on Ferrigura `0.3` with a caret requirement, as `ferriki` does. Moving
+Depend on Ferrigura `0.4` with a caret requirement, as `ferriki` does. Moving
 the adapter into the published crate makes Ferrigura's dependency licenses part
 of the crate's policy. `deny.toml` allows them as version-scoped exceptions that
 reach users only through the optional feature: MPL-2.0 for `cssparser` and
@@ -51,10 +52,10 @@ upgrade must review these exceptions again.
 ## Consequences and validation
 
 Rust applications enable one feature instead of depending on an unpublished
-crate. Node.js applications can use Ferrigura from npm without a custom bundle
-once `@ferrigura/core` is published
-([ferrigura#3](https://github.com/sebastian-software/ferrigura/issues/3)); the
-custom bundle remains the native path with the SVG policy.
+crate. Node.js applications use Ferrigura from npm (`@ferrigura/core` 0.4)
+without a custom bundle, through the same code hooks as Ferriki
+([ADR-0027](ADR-0027-injected-code-engines.md)); the custom bundle remains the
+native path with the SVG policy.
 
 Moving to Ferrigura 0.3 changed the pinned SVG bytes of the five shared
 fixtures. The rendered fixtures were compared in Chromium before and after the
@@ -64,3 +65,10 @@ tests, now in `tests/ferrigura_integration.rs`, cover HTML, JSX, IDs,
 diagnostics, errors, and fallback. Node.js tests cover the callback adapter.
 Parser snapshots and conformance output are unchanged. No performance claim is
 made.
+
+## History
+
+- 2026-11-05: Upgraded to Ferrigura 0.4. Only the embedded font subset of the
+  flowchart fixture changed; geometry, text and the other four fixtures are
+  byte-identical. The license exceptions moved to the 0.4 crates. Node.js
+  injection now follows [ADR-0027](ADR-0027-injected-code-engines.md).

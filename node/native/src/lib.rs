@@ -1,5 +1,6 @@
 #[cfg(feature = "boundary-bench")]
 pub mod boundary;
+pub mod code_callback;
 mod default_renderer;
 pub mod document;
 pub mod input;
@@ -16,15 +17,15 @@ use std::collections::HashMap;
 use crate::input::Utf8Input;
 use crate::options::{CoreOptions, addon_defaults};
 use ferromark::{
-    AbbreviationOptions, Allocator, HeadingIdPlanner, HtmlCodeBlockInput, HtmlRenderHooks,
-    HtmlRenderer, Parser, ParserOptions,
+    AbbreviationOptions, Allocator, HeadingIdPlanner, HtmlRenderHooks, HtmlRenderer, Parser,
+    ParserOptions,
     ast::{Node, Visit},
 };
 use ferromark_transforms::{
     EmojiShortcodesPass, GitHubReferencesPass, TransformContext, TransformPipeline,
     TypographyLanguage, TypographyOptions, TypographyPass,
 };
-use napi::bindgen_prelude::{Buffer, Error, FnArgs, Function, Result, Status};
+use napi::bindgen_prelude::{Buffer, Error, Result, Status};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
@@ -645,29 +646,7 @@ impl<'a> Visit<'a> for Metadata {
     }
 }
 
-type CodeCallback<'a> =
-    Function<'a, FnArgs<(String, Option<String>, Option<String>)>, Option<String>>;
-
-struct CallbackRenderer<'a> {
-    callback: CodeCallback<'a>,
-    error: Option<Error>,
-}
-
-impl HtmlRenderHooks for CallbackRenderer<'_> {
-    fn render_code_block(&mut self, input: HtmlCodeBlockInput<'_>) -> Option<String> {
-        if self.error.is_none() {
-            match self.callback.call(FnArgs::from((
-                input.code.to_owned(),
-                input.language.map(str::to_owned),
-                input.meta.map(str::to_owned),
-            ))) {
-                Ok(html) => return html,
-                Err(error) => self.error = Some(error),
-            }
-        }
-        None
-    }
-}
+pub(crate) use code_callback::CodeCallback;
 
 fn render_document(
     markdown: &str,
@@ -675,15 +654,9 @@ fn render_document(
     callback: Option<CodeCallback<'_>>,
 ) -> Result<TransformResult> {
     if let Some(callback) = callback {
-        let mut hooks = CallbackRenderer {
-            callback,
-            error: None,
-        };
-        let output = render_document_with_hooks(markdown, options, Some(&mut hooks), true)?;
-        if let Some(error) = hooks.error {
-            return Err(error);
-        }
-        Ok(output)
+        let mut hooks = code_callback::JsCodeHooks::new(callback);
+        let output = render_document_with_hooks(markdown, options, Some(&mut hooks), true);
+        code_callback::finish(&mut hooks, output)
     } else {
         render_document_with_hooks::<ferromark::NoHtmlRenderHooks>(markdown, options, None, true)
     }
@@ -767,11 +740,13 @@ pub fn transform(
 }
 
 #[napi(catch_unwind)]
-#[allow(clippy::type_complexity)]
 pub fn to_html_with_renderer(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
-    renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
+    #[napi(
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+    )]
+    renderer: crate::CodeCallback<'_>,
 ) -> Result<String> {
     Ok(render_document(
         markdown.try_as_str()?,
@@ -782,11 +757,13 @@ pub fn to_html_with_renderer(
 }
 
 #[napi(catch_unwind)]
-#[allow(clippy::type_complexity)]
 pub fn transform_with_renderer(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
-    renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
+    #[napi(
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+    )]
+    renderer: crate::CodeCallback<'_>,
 ) -> Result<TransformResult> {
     render_document(
         markdown.try_as_str()?,

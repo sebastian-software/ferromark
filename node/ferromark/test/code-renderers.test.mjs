@@ -144,16 +144,29 @@ test("diagram renderers handle only their fence language and fall back on errors
   assert.match(html, /<svg data-diagram="yes"><\/svg>/);
   assert.match(html, /<code class="language-mermaid">broken\n<\/code>/);
   assert.match(html, /<code class="language-js">x\n<\/code>/);
+  // Each fence gets the native integration's ID namespace: prefix and UTF-8 start offset.
   assert.deepEqual(calls, [
-    ["A --> B\n", { colorScheme: "dark" }],
-    ["broken\n", { colorScheme: "dark" }],
+    ["A --> B\n", { colorScheme: "dark", id: "fm-mermaid-0" }],
+    ["broken\n", { colorScheme: "dark", id: "fm-mermaid-24" }],
   ]);
-  assert.deepEqual(errors, [["parse failure", { language: "mermaid" }]]);
+  assert.deepEqual(errors, [["parse failure", { language: "mermaid", start: 24, end: 46 }]]);
+});
 
+test("diagram renderers select other languages and ID prefixes", () => {
+  const calls = [];
+  const renderer = {
+    render(text, options) {
+      calls.push([text, options]);
+      return '<svg data-diagram="yes"></svg>\n';
+    },
+  };
   const plantuml = createDiagramCodeRenderer(renderer, { language: "plantuml" });
   assert.equal(plantuml("A --> B\n", "mermaid"), null);
-  assert.equal(plantuml("A --> B\n", "plantuml"), '<svg data-diagram="yes"></svg>\n');
+  assert.deepEqual(plantuml("A --> B\n", "plantuml"), { html: '<svg data-diagram="yes"></svg>\n' });
   assert.equal(calls.at(-1)[1], undefined);
+  const prefixed = createDiagramCodeRenderer(renderer, { idPrefix: "page" });
+  prefixed("A --> B\n", "mermaid", null, { start: 7, end: 30 });
+  assert.deepEqual(calls.at(-1)[1], { id: "page-7" });
 });
 
 test("diagram renderers reject invalid arguments", () => {
@@ -162,4 +175,5 @@ test("diagram renderers reject invalid arguments", () => {
   assert.throws(() => createDiagramCodeRenderer(renderer, { language: "" }), /language/);
   assert.throws(() => createDiagramCodeRenderer(renderer, { colorScheme: "sepia" }), /colorScheme/);
   assert.throws(() => createDiagramCodeRenderer(renderer, { onRenderError: 1 }), /onRenderError/);
+  assert.throws(() => createDiagramCodeRenderer(renderer, { idPrefix: "1x" }), /idPrefix/);
 });

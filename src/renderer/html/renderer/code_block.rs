@@ -47,6 +47,7 @@ impl HtmlRenderer {
                 language,
                 raw_language: code_block.lang,
                 raw_meta: code_block.meta,
+                span: code_block.span,
             });
             if let Some(highlighted) = highlighted
                 && highlighted.is_valid_for(code_block.value.split('\n').count())
@@ -72,6 +73,7 @@ impl HtmlRenderer {
             language: state.language.as_deref(),
             raw_language: code_block.lang,
             raw_meta: code_block.meta,
+            span: code_block.span,
         });
         let highlighted = highlighted
             .as_ref()
