@@ -485,13 +485,16 @@ fn prepare_tree(
 pub(crate) fn render_code_block_with_highlighter(
     input: RenderCodeBlockInput,
     highlighting: NativeHighlighting<'_>,
+    render_code: Option<CodeCallback<'_>>,
 ) -> Result<RenderCodeBlockResult> {
     let renderer = JsxRenderer::with_options(JsxRendererOptions {
         show_line_numbers: highlighting.line_numbers,
         ..JsxRendererOptions::default()
     });
+    // Standalone blocks only reach the highlighting stage; whole-block hooks
+    // and component mappings belong to documents.
     let mut hook = CodeHook {
-        callback: None,
+        callback: render_code.map(JsCodeHooks::new),
         highlighting: Some(highlighting),
         error: None,
     };

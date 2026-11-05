@@ -51,7 +51,8 @@ compiler is collected. Plugins run synchronously and in list order; all
 whole-block replacements precede highlighting. An empty replacement handles a
 block. Enabling `lineNumbers` also enables VitePress-compatible annotations for
 HTML. Standalone `renderCodeBlock` produces intrinsic code and consults only
-highlighting plugins, as the existing standalone API does.
+the highlighting stage: a passed `highlightCodeBlock` hook, then highlighting
+plugins.
 
 Engine errors propagate unless an adapter offers a fallback policy. Ferrigura
 defaults to escaped-code fallback and records a fence diagnostic; its explicit

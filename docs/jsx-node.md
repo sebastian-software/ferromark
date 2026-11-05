@@ -270,7 +270,22 @@ supported tokens are:
 Other metadata tokens are ignored. Recognized tokens may be appended directly
 to the language, for example `typescript:line-numbers=4`.
 `renderCodeBlock` does not invoke whole-fence callbacks or component mappings;
-it always returns the reusable intrinsic markup. Rust callers can use
+it always returns the reusable intrinsic markup. Pass code hooks as a second
+argument to highlight with an injected engine: only `highlightCodeBlock`
+applies, before any native highlighting plugin, and its block range is empty
+because the code has no surrounding document.
+
+```js
+import { CodeCompiler, createLineHighlighter } from "ferromark";
+
+// `highlighter` is an initialized @ferriki/core highlighter with TypeScript loaded.
+const highlightCodeBlock = createLineHighlighter(highlighter, { theme: "github-dark" });
+const block = new CodeCompiler().renderCodeBlock(
+  { code: "const ready = true;\n", language: "typescript" },
+  { highlightCodeBlock },
+);
+```
+ Rust callers can use
 `JsxRenderer::render_code_block` for escaped plain code or
 `render_code_block_with_hooks` to apply the same metadata and markup path with
 a `highlight_code_block` hook.

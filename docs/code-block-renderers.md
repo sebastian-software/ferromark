@@ -90,7 +90,8 @@ Rust exposes the same conversion as `ferromark::html_to_jsx`.
 Every entry point that accepts code rendering takes either a whole-block
 function or a hook object: `toHtmlWithCodeRenderer`, `transformWithCodeRenderer`,
 `compileJsx`, `CodeCompiler.compile`, and a prepared document's `render` and
-`renderModule`. `composeCodeHooks` combines functions and hook objects in
+`renderModule`. `CodeCompiler.renderCodeBlock` also accepts hooks, but a
+standalone block reaches only the highlighting stage. `composeCodeHooks` combines functions and hook objects in
 priority order; within each stage the first result wins. `composeCodeRenderers`
 combines whole-block functions only. Results are checked synchronously, so
 Promises and other shapes throw. Exceptions propagate; the adapters below catch

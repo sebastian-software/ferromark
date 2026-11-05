@@ -728,8 +728,12 @@ export declare class CodeCompiler {
     markdown: string | Uint8Array,
     preparationOptions?: JsxPreparationOptions,
   ): PreparedJsxDocument;
-  /** Standalone intrinsic code output consults highlighting plugins only. */
-  renderCodeBlock(input: JsxCodeBlockRenderInput): JsxCodeBlockRenderResult;
+  /**
+   * Standalone intrinsic code output. Only highlighting applies: the hooks'
+   * `highlightCodeBlock`, then native highlighting plugins. The block range is
+   * empty because the code has no surrounding document.
+   */
+  renderCodeBlock(input: JsxCodeBlockRenderInput, hooks?: CodeRendering): JsxCodeBlockRenderResult;
   compile(
     markdown: string | Uint8Array,
     options: CompileJsxModuleOptions,
