@@ -27,15 +27,16 @@ pipeline. Ferromark preserves expressions and module statements; your JSX
 transform compiles the result and your application supplies components.
 The HTML API's untrusted render policy does not apply to JSX compilation.
 
-`CodeCompiler` below is a source API newer than published `ferromark@3.6.0`.
-Build this checkout or install a [custom bundle](../../docs/plugin-bundles.md).
-The source addon is engine-free; native highlighting requires a Ferriki-enabled bundle.
+The standard addon contains no highlighting or diagram engine. Pass
+[code hooks](#highlighting-and-mermaid-diagrams) to highlight code and render
+Mermaid diagrams in the JSX output.
 
 | Your task                                                             | API                                                       |
 | --------------------------------------------------------------------- | --------------------------------------------------------- |
-| Compile one document without highlighting                             | `compileJsx(source, options?)`                            |
+| Compile one document                                                  | `compileJsx(source, options?)`                            |
+| Highlight code and render diagrams                                    | `compileJsx(source, options, hooks)`                      |
 | Emit a complete MDX module and source map                             | `compileJsx(source, { output: "module", ...options })`    |
-| Reuse native highlighting across documents                            | `new CodeCompiler({ plugins }).compile(source, options?)` |
+| Use plugins compiled into a custom bundle                             | `new CodeCompiler({ plugins }).compile(source, options?)` |
 | Read metadata before choosing output, or render a document repeatedly | `compiler.prepare(source, preparationOptions?)`           |
 | Render code outside a Markdown document                               | `compiler.renderCodeBlock({ code, language?, meta? })`    |
 
@@ -73,9 +74,9 @@ does not account for later title omission or heading settings. Parser and pass
 options belong to `prepare`; component, title, heading, and callout choices
 belong to each render. Modules use `_components` for generated Markdown tags.
 
-Repeated renders leave the tree unchanged and rerun highlighting and callbacks.
-The handle retains the native highlighter even after the compiler object is
-collected. One-shot `compileJsx` and `compiler.compile` keep their combined-options
+Repeated renders leave the tree unchanged and rerun code hooks and plugins;
+pass hooks as `prepared.render(options, hooks)`. The handle retains native
+plugins even after the compiler object is collected. One-shot `compileJsx` and `compiler.compile` keep their combined-options
 APIs. Their source spans count UTF-8 bytes; source-map columns count UTF-16 units.
 
 `prepared.projectMarkdown()` exports original static Markdown and code with
@@ -97,12 +98,11 @@ console.log(block.title); // "ready.ts"
 // block.jsx contains intrinsic <pre><code> JSX without a document fragment.
 ```
 
-Standalone rendering shares fence metadata, markup, and native highlighting.
-It uses intrinsic tags without component mappings or whole-fence callbacks.
-Unknown languages use escaped plain code. The compiler's default GitHub
-light/dark themes load at construction; recognized code languages load when
-first highlighted. Standard assets use Ferriki's verified CDN and cache.
-Offline use needs cached/local assets or custom JSON theme and grammar registrations.
+Standalone rendering shares fence metadata and markup with document code
+blocks. It uses intrinsic tags without component mappings. Pass code hooks as a
+second argument to highlight it, as in `compiler.renderCodeBlock(input, {
+highlightCodeBlock })`; only the highlighting stage applies. Without hooks or
+native plugins, the code stays escaped plain text.
 
 The [Node JSX guide](https://github.com/sebastian-software/ferromark/blob/main/docs/jsx-node.md)
 provides complete offline examples, stage-specific options, module/provider
@@ -433,44 +433,17 @@ addresses just under 4 GB of Markdown. Node.js strings stop far below that
 Bytes can: a `Uint8Array` of more than 4,294,967,295 bytes throws a
 `RangeError` with the code `ERR_OUT_OF_RANGE` before any of it is read.
 
-## Syntax highlighting with Ferriki
+## Highlighting and Mermaid diagrams
 
-An initialized [Ferriki](https://github.com/sebastian-software/ferriki) highlighter (`npm install @ferriki/core`) plugs into the code-block renderer without coupling the two native cores:
+Highlight code with [Ferriki](https://github.com/sebastian-software/ferriki) and
+render Mermaid fences as static SVG with
+[Ferrigura](https://github.com/sebastian-software/ferrigura). Your application
+installs and initializes both engines and passes them to Ferromark as code
+hooks; Ferromark pins neither.
 
-````js
-import { createHighlighter } from "@ferriki/core";
-import { toHtmlWithHighlighter } from "ferromark";
-
-const highlighter = await createHighlighter({
-  langs: ["rust"],
-  themes: ["github-dark"],
-});
-
-const html = toHtmlWithHighlighter("```rust\nfn main() {}\n```", highlighter, {
-  theme: "github-dark",
-  onHighlightError(error, { lang }) {
-    console.warn(`Could not highlight ${lang}`, error);
-  },
-});
-````
-
-Unsupported languages and highlighter exceptions fall back to Ferromark's escaped `<pre><code>` output. Use `onHighlightError` to observe exceptions; if that callback throws, the render call throws too. Invalid highlighter return values also surface as native callback errors.
-Highlighter HTML is otherwise written verbatim, so only pass an implementation that escapes untrusted code and metadata.
-Fence meta text after the language (e.g. ` ```ts {1-3} title="…" `) reaches the highlighter as Shiki-style `meta.__raw`, so meta-driven transformers (line highlighting, titles) work unchanged.
-
-## Code-block renderer plugins
-
-The APIs in this section are available on repository `main`. The published
-`ferromark@3.7.0` package does not export all of them; check your installed
-declarations or use the source build described above.
-
-Highlighting and diagrams reach Ferromark the same way: the application installs
-and initializes the engine and passes code hooks. A whole-block hook
-(`renderCodeBlock`) replaces a block, for example with a Mermaid SVG. A
-highlighting hook (`highlightCodeBlock`) returns one fragment per line, and
-Ferromark keeps its code block wrapper, line annotations, title and
-`codeBlockComponent`. Both receive the fence's UTF-8 byte range. The standard
-addon includes no engine.
+```sh
+npm install ferromark @ferriki/core @ferrigura/core
+```
 
 ````js
 import { Renderer } from "@ferrigura/core";
@@ -485,6 +458,7 @@ import {
 
 const themes = { light: "github-light-default", dark: "github-dark-default" };
 const highlighter = await createHighlighter({ themes: Object.values(themes), langs: ["rust"] });
+
 const hooks = composeCodeHooks(createDiagramCodeRenderer(new Renderer(), { colorScheme: "auto" }), {
   highlightCodeBlock: createLineHighlighter(highlighter, { themes }),
 });
@@ -494,17 +468,30 @@ const html = toHtmlWithCodeRenderer(markdown, hooks);
 const jsx = compileJsx(markdown, { codeBlockComponent: "CodeBlock" }, hooks);
 ````
 
-Failed diagrams and unloaded languages fall back to ordinary code; observe them
-with `onRenderError` and `onHighlightError`, which also receive the block range.
-JSX entry points convert `{ html }` results, including SVG, to JSX. See the
-[plugin guide](../../docs/code-block-renderers.md) for the contract, ordering
-and output trust.
+Code blocks pass through two stages. `renderCodeBlock` replaces a whole block,
+as the diagram renderer does. `highlightCodeBlock` returns one fragment per line,
+and Ferromark keeps its wrapper, line annotations, title, and
+`codeBlockComponent`. Both receive the block's UTF-8 byte range. JSX output
+converts diagram SVG to JSX.
 
-`CodeCompiler` selects Rust plugins compiled into a custom addon for native
-HTML and JSX rendering. See the [native plugin guide](../../docs/native-code-plugins.md)
-and [installable plugin bundles](../../docs/plugin-bundles.md). The optional
-[Ferrigura integration](../../docs/ferrigura.md) in such builds adds the static
-SVG policy and `takeDiagnostics()`.
+Failed diagrams and languages the highlighter has not loaded keep escaped code;
+`onRenderError` and `onHighlightError` observe them with the byte range. Hook
+output is inserted as trusted HTML. The
+[highlighting and diagrams guide](https://ferromark.dev/guide/code-rendering)
+shows how to load languages before rendering, and the
+[hook contract](../../docs/code-block-renderers.md) covers ordering, result
+checks, and custom engines.
+
+Code hooks arrive with Ferromark 4.0. `toHtmlWithHighlighter(markdown,
+highlighter, { theme })` and `transformWithHighlighter()` remain a single-theme
+HTML shortcut that inserts each block's complete `codeToHtml()` output; fence
+metadata after the language reaches it as Shiki-style `meta.__raw`.
+
+To keep code rendering entirely in Rust, `CodeCompiler` runs plugins compiled
+into a custom addon. See [installable plugin bundles](../../docs/plugin-bundles.md)
+and the [native plugin guide](../../docs/native-code-plugins.md); the native
+[Ferrigura integration](../../docs/ferrigura.md) adds a static SVG policy and
+`takeDiagnostics()`.
 
 ## Document metadata for docs pipelines
 
@@ -518,7 +505,7 @@ const { html, headings, frontMatter } = transform(source, { frontMatter: true })
 // frontMatter: raw text between the --- delimiters (parse with your YAML library)
 ```
 
-`transformWithHighlighter()` combines this with code-block highlighting in the same native pass.
+`transformWithCodeRenderer()` combines this with code hooks in the same native pass.
 
 For sites deployed under a subpath (e.g. GitHub Pages), `linkBasePath` prefixes internal absolute link destinations natively. A trailing slash is optional:
 

@@ -46,14 +46,14 @@ package for your platform.
 
 ## Choose your API
 
-| Your task                      | API                                | Result                                |
-| ------------------------------ | ---------------------------------- | ------------------------------------- |
-| Render one document            | `toHtml(markdown, options?)`       | HTML string                           |
-| Send HTML as bytes             | `toHtmlBuffer(markdown, options?)` | UTF-8 `Buffer`                        |
-| Get HTML and metadata          | `transform(markdown, options?)`    | HTML, headings, optional front matter |
-| Render many documents          | `new Renderer(options?)`           | Reuses native parser scratch          |
-| Highlight code                 | `toHtmlWithHighlighter()`          | HTML with custom code-block output    |
-| Highlight and collect metadata | `transformWithHighlighter()`       | HTML, headings, optional front matter |
+| Your task                      | API                                       | Result                                 |
+| ------------------------------ | ----------------------------------------- | -------------------------------------- |
+| Render one document            | `toHtml(markdown, options?)`              | HTML string                            |
+| Send HTML as bytes             | `toHtmlBuffer(markdown, options?)`        | UTF-8 `Buffer`                         |
+| Get HTML and metadata          | `transform(markdown, options?)`           | HTML, headings, optional front matter  |
+| Render many documents          | `new Renderer(options?)`                  | Reuses native parser scratch           |
+| Highlight code and diagrams    | `toHtmlWithCodeRenderer(markdown, hooks)` | HTML with engine output in code blocks |
+| Highlight and collect metadata | `transformWithCodeRenderer()`             | HTML, headings, optional front matter  |
 
 Every call that takes Markdown accepts `markdown: string | Uint8Array`: a string,
 or its UTF-8 bytes in a `Uint8Array` such as a `Buffer` from `fs.readFile(path)`.

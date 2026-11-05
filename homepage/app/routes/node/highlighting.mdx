@@ -1,16 +1,17 @@
 ---
-title: Highlight Code in Node.js
+title: Highlight Code and Render Diagrams in Node.js
 order: 4
 ---
 
-# Highlight Code in Node.js
+# Highlight Code and Render Diagrams in Node.js
 
 import { RuntimeSwitch } from "../../components/runtime-switch";
 
 <RuntimeSwitch topic="highlighting" />
 
-Connect an initialized Ferriki highlighter to Ferromark. The same interface
-also accepts a compatible synchronous highlighter.
+Connect an initialized Ferriki highlighter and, optionally, a Ferrigura diagram
+renderer. Ferromark keeps its own code block markup, so line numbers, highlighted
+lines, titles, and your JSX code block component keep working.
 
 ## Install and initialize
 
@@ -18,72 +19,105 @@ also accepts a compatible synchronous highlighter.
 npm install ferromark @ferriki/core
 ```
 
-Create the highlighter once and reuse it. Load the languages and theme your
+Create the highlighter once and reuse it. Load the themes and languages your
 content needs:
 
-````js
+```js
 import { createHighlighter } from "@ferriki/core";
-import { toHtmlWithHighlighter } from "ferromark";
+import { createLineHighlighter } from "ferromark";
 
+const themes = {
+  light: "github-light-default",
+  dark: "github-dark-default",
+};
 const highlighter = await createHighlighter({
-  langs: ["javascript"],
-  themes: ["github-dark"],
+  themes: Object.values(themes),
+  langs: ["javascript", "rust"],
 });
 
-const html = toHtmlWithHighlighter(
-  '```javascript\nconsole.log("Hello")\n```',
-  highlighter,
-  {
-    theme: "github-dark",
-    onHighlightError(error, { lang }) {
-      console.warn(`Could not highlight ${lang}`, error);
-    },
+const highlightCodeBlock = createLineHighlighter(highlighter, {
+  themes,
+  onHighlightError(error, { lang }) {
+    console.warn(`Could not highlight ${lang}`, error);
   },
-  { headingIds: true },
-);
-console.log(html);
-````
+});
+```
 
-The arguments are Markdown, the highlighter, highlighting settings, and optional
-Markdown options. Initialization is asynchronous; rendering uses synchronous
-`codeToHtml()` calls.
+Pass `theme: "github-dark"` instead of `themes` for a single theme.
+Initialization is asynchronous; rendering is synchronous.
 
-## Keep document metadata
+## Render HTML
 
 ```js
-import { transformWithHighlighter } from "ferromark";
+import { toHtmlWithCodeRenderer, transformWithCodeRenderer } from "ferromark";
+import { readFile } from "node:fs/promises";
 
-// Reuse the highlighter initialized above.
-const page = transformWithHighlighter(
-  "---\ntitle: Example\n---\n# Example",
-  highlighter,
-  { theme: "github-dark" },
-  { frontMatter: true },
-);
+const source = await readFile("guide.md", "utf8");
+const hooks = { highlightCodeBlock };
+const html = toHtmlWithCodeRenderer(source, hooks, { headingIds: true });
+
+// The same hooks, with headings and front matter.
+const page = transformWithCodeRenderer(source, hooks, { frontMatter: true });
 console.log(page.headings, page.frontMatter);
 ```
 
-The callback receives fenced and indented code blocks.
+Ferromark writes the `<pre><code>` wrapper and the language class around the
+highlighted lines. The highlighter only colors tokens.
+
+## Compile JSX
+
+```js
+import { compileJsx } from "ferromark";
+
+const options = { codeBlockComponent: "CodeBlock" };
+const { body } = compileJsx(source, options, hooks);
+```
+
+JSX output also applies fence metadata: `{1}` marks highlighted lines and
+`title="…"` becomes a title. `CodeBlock` receives the original code, language,
+and title as props and the highlighted `<pre>` as children. With a theme pair,
+the colors arrive as `--shiki-light` and `--shiki-dark` CSS variables.
+
+## Add Mermaid diagrams
+
+```sh
+npm install @ferrigura/core
+```
+
+```js
+import { Renderer } from "@ferrigura/core";
+import { composeCodeHooks, createDiagramCodeRenderer } from "ferromark";
+
+const diagrams = createDiagramCodeRenderer(new Renderer(), {
+  colorScheme: "auto",
+});
+const withDiagrams = composeCodeHooks(diagrams, { highlightCodeBlock });
+const html = toHtmlWithCodeRenderer(source, withDiagrams);
+```
+
+`mermaid` fences become inline SVG that follows the reader's color scheme
+without JavaScript. Other fences reach the highlighter.
 
 ## Understand fallback behavior
 
-Unsupported languages and highlighter exceptions fall back to escaped
-`<pre><code>` output. `onHighlightError` can observe exceptions; if it throws,
-the render call also throws. Invalid highlighter return values surface as
-native callback errors.
+Unsupported languages, failed diagrams, and engine exceptions keep escaped
+`<pre><code>` output. `onHighlightError` and `onRenderError` observe them, with the
+block's UTF-8 byte range; if an observer throws, the render call throws too.
+Load the languages a document uses before rendering it; the
+[highlighting and diagrams guide](/guide/code-rendering#load-languages-before-rendering)
+shows how.
 
-Highlighter HTML is inserted verbatim. The highlighter must escape untrusted
-code and metadata. Fence metadata after the language is forwarded as
-`meta.__raw` for compatible title and line-highlighting transformers.
+Hook output is inserted as trusted HTML. Use engines that escape the code they
+receive. See [rendering and trust](/guide/rendering) for the shared boundary.
 
-For the shared trust boundary, see [rendering and trust](/guide/rendering).
+## Use the single-theme shortcut
 
-## Add native plugins and diagrams
+`toHtmlWithHighlighter(source, highlighter, { theme })` and
+`transformWithHighlighter()` pass each block to `codeToHtml()` and insert its
+complete HTML. They are available since Ferromark 3 and suit one theme in HTML
+output. Use the hooks above for JSX, theme pairs, or Ferromark's line
+annotations.
 
-The source checkout also provides code hooks: `createLineHighlighter` keeps
-Ferromark's code block markup in HTML and JSX, and `createDiagramCodeRenderer`
-connects a separately installed diagram renderer such as `@ferrigura/core`.
-`CodeCompiler` runs native plugins compiled into a custom bundle. These APIs are
-not exported by `ferromark@3.7.0`.
-The [highlighting and diagrams guide](/guide/code-rendering) explains factory
-selection, separately installed engines, and the current Mermaid limitations.
+Code hooks arrive with Ferromark 4.0. The
+[highlighting and diagrams guide](/guide/code-rendering) compares them with
+native plugin bundles.

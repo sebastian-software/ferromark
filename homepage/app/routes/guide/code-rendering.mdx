@@ -5,79 +5,48 @@ order: 7
 
 # Add Highlighting and Mermaid Diagrams
 
-Use Ferriki to highlight source code and Ferrigura to render Mermaid fences as
-static SVG. Ferromark supplies the code-block hooks; your application chooses
-the engines and their initialization.
+Highlight code with [Ferriki](https://github.com/sebastian-software/ferriki) and
+turn Mermaid fences into static SVG with
+[Ferrigura](https://github.com/sebastian-software/ferrigura). Both engines reach
+Ferromark the same way. Your application installs and initializes them, then
+hands them to the renderer. Markdown that needs neither engine pays nothing for
+them.
 
 ## Choose an integration
 
-| Your task                     | Integration                                         | Availability                                                                                                     |
-| ----------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Node.js HTML highlighting     | `toHtmlWithHighlighter` and `@ferriki/core`         | Published; [Node.js guide](/node/highlighting).                                                                  |
-| Node.js HTML/JSX highlighting | `createLineHighlighter` and `@ferriki/core`         | Repository `main`; keeps Ferromark's code block markup.                                                          |
-| Rust HTML/JSX highlighting    | Optional `ferriki` feature and Rust hooks           | Published; [Rust code rendering](/rust/highlighting).                                                            |
-| Native plugin composition     | `CodeCompiler` with factories linked into the addon | Repository `main` and custom plugin bundles.                                                                     |
-| Rust Mermaid to SVG           | Optional `ferrigura` feature and Rust hooks         | Repository `main`; [Mermaid guide](https://github.com/sebastian-software/ferromark/blob/main/docs/ferrigura.md). |
-| Node.js Mermaid to SVG        | `createDiagramCodeRenderer` and `@ferrigura/core`   | Repository `main`; `@ferrigura/core` 0.4 is on npm.                                                              |
-| Native Node.js Mermaid        | `CodeCompiler` in a custom bundle                   | Custom plugin bundles; excluded from the standard addon.                                                         |
+| Runtime | Highlighting                                              | Mermaid diagrams                                            |
+| ------- | --------------------------------------------------------- | ----------------------------------------------------------- |
+| Rust    | `ferriki` feature with `FerrikiHighlightHooks`            | `ferrigura` feature with `FerriguraHooks`                   |
+| Node.js | `@ferriki/core` through `createLineHighlighter`           | `@ferrigura/core` through `createDiagramCodeRenderer`       |
+| Native  | `CodeCompiler` plugin `ferriki` in a custom plugin bundle | `CodeCompiler` plugin `ferrigura` in a custom plugin bundle |
 
-The published `ferromark@3.7.0` facade does not export the code hooks,
-`composeCodeHooks`, `createLineHighlighter`, or `createDiagramCodeRenderer`.
-Check your installed declarations before using those APIs.
+Code hooks for Node.js arrive with Ferromark 4.0: `composeCodeHooks`,
+`createLineHighlighter`, and `createDiagramCodeRenderer`. Ferromark 3.7 offers
+whole-block HTML callbacks and `toHtmlWithHighlighter` only.
 
-## Select native plugins once
+## How code hooks work
 
-The [Native plugin bundles workflow](https://github.com/sebastian-software/ferromark/blob/main/docs/plugin-bundles.md)
-builds an installable tarball for `none`, `ferriki`, `ferrigura`, or `all`.
-Download the artifact for your platform, extract it, and install its actual
-tarball filename:
+A code block passes through two stages, in Rust and in Node.js alike:
+
+1. **Replace the whole block** with `render_code_block` in Rust or
+   `renderCodeBlock` in Node.js. The engine returns complete markup, such as a
+   diagram, and the block is replaced.
+2. **Highlight its lines** with `highlight_code_block` or `highlightCodeBlock`.
+   The engine returns one HTML fragment per line plus block colors; Ferromark
+   keeps the wrapper, line annotations, title, and JSX component around them.
+
+Whole-block replacements run first. When none handles a block, highlighting
+runs; within each stage the first hook that returns a result wins. Every hook
+receives the code, its language and metadata, and the block's original UTF-8
+byte range, so errors can name a file and line. JSX output always applies fence
+metadata such as `{1}` and `title="…"`; HTML output applies it when code
+annotations are enabled.
+
+## Highlight code and render diagrams in Node.js
 
 ```sh
-npm install /path/to/ferromark-custom-bundle.tgz
+npm install ferromark @ferriki/core @ferrigura/core
 ```
-
-This replaces the application's Ferromark installation with the selected custom
-build. The consuming application needs no Rust compiler or install script.
-The bundles are workflow artifacts with private custom versions, rather than
-registry releases.
-
-With a bundle containing Ferrigura:
-
-````js
-import { availableCodePlugins, CodeCompiler } from "ferromark";
-
-console.log(availableCodePlugins()); // Includes the diagram factory in this build.
-const compiler = new CodeCompiler({
-  plugins: [
-    {
-      name: "ferrigura",
-      options: { colorScheme: "auto", errorPolicy: "code", idPrefix: "guide" },
-    },
-  ],
-});
-const source = "```mermaid\nflowchart LR\nA[Markdown] --> B[SVG]\n```";
-
-console.log(compiler.toHtml(source)); // Inline SVG inside the document HTML.
-console.log(compiler.compile(source).body); // JSX source for the same diagram.
-````
-
-Reuse the compiler across documents. Add a `ferriki` entry when the bundle also
-contains that factory; initialize its languages, themes, and verified assets
-before rendering. Whole-block diagram replacements run before highlighting.
-`new CodeCompiler()` selects no plugins and initializes no engine assets.
-
-The standard addon includes neither engine and reports `[]` from
-`availableCodePlugins()`. Use `CodeCompiler` with an explicit plugin list in an
-engine-enabled bundle; both engines follow the same opt-in build boundary.
-
-## Compose separately installed engines
-
-Node.js applications inject Ferriki and Ferrigura the same way: install and
-initialize the engine, then pass code hooks. A whole-block hook replaces a
-fence, for example with a diagram. A highlighting hook returns one fragment per
-line and keeps Ferromark's code block wrapper, annotations, title and
-`codeBlockComponent`. Both hooks receive the fence's UTF-8 byte range, so failures
-can name a file and line. Ferromark pins neither engine.
 
 ```js
 import { Renderer } from "@ferrigura/core";
@@ -87,41 +56,130 @@ import {
   composeCodeHooks,
   createDiagramCodeRenderer,
   createLineHighlighter,
+  toHtmlWithCodeRenderer,
 } from "ferromark";
+import { readFile } from "node:fs/promises";
 
-const themes = { light: "github-light-default", dark: "github-dark-default" };
-const highlighter = await createHighlighter({ themes: Object.values(themes), langs: ["ts"] });
-const hooks = composeCodeHooks(createDiagramCodeRenderer(new Renderer(), { colorScheme: "auto" }), {
-  highlightCodeBlock: createLineHighlighter(highlighter, { themes }),
+const themes = {
+  light: "github-light-default",
+  dark: "github-dark-default",
+};
+const highlighter = await createHighlighter({
+  themes: Object.values(themes),
+  langs: ["ts"],
 });
-const { body } = compileJsx(source, { codeBlockComponent: "CodeBlock" }, hooks);
+
+const diagrams = createDiagramCodeRenderer(new Renderer(), {
+  colorScheme: "auto",
+});
+const highlightCodeBlock = createLineHighlighter(highlighter, { themes });
+const hooks = composeCodeHooks(diagrams, { highlightCodeBlock });
+
+const source = await readFile("guide.md", "utf8");
+const html = toHtmlWithCodeRenderer(source, hooks);
+const jsx = compileJsx(source, { codeBlockComponent: "CodeBlock" }, hooks);
 ```
 
-The same hooks work with `toHtmlWithCodeRenderer`, `transformWithCodeRenderer`,
-`CodeCompiler.compile`, and prepared documents. JSX entry points convert diagram
-SVG to JSX. Whole-block replacements run before highlighting. Installing another
-npm package does not add factories to a Ferromark binary; Rust applications
-compose hook implementations directly. See the
-[code-block renderer contract](https://github.com/sebastian-software/ferromark/blob/main/docs/code-block-renderers.md).
+The same hooks work with `transformWithCodeRenderer`, `CodeCompiler.compile`,
+and prepared documents. JSX output converts the diagram's SVG to JSX, keeping
+case-sensitive SVG attributes such as `markerWidth`. A theme pair writes
+`--shiki-light` and `--shiki-dark` CSS variables, so your stylesheet decides
+which colors apply.
 
-## Understand the current Mermaid boundary
+## Load languages before rendering
 
-The native integration recognizes parsed `mermaid` fences and emits SVG without a browser
-Mermaid runtime. By default, invalid or unsupported diagrams retain escaped code
-and a diagnostic with the fence's original UTF-8 byte range. Drain
-`compiler.takeDiagnostics()` or `prepared.takeDiagnostics()` after rendering.
-`errorPolicy: "throw"` selects strict failure instead.
+Hooks run synchronously, while Ferriki loads grammars asynchronously. Prepare
+the document first, load the languages it uses, then render:
 
-SVG passes a dedicated policy before HTML emission or JSX conversion: scripts,
-event attributes, external resources, and `foreignObject` HTML are rejected.
-Embedded fonts and local fragment references remain available. Custom application
-callbacks, including `createDiagramCodeRenderer`, keep their own
-trusted-output contract.
+```js
+import { prepareDocument } from "ferromark";
 
-IDs derive from the output namespace and original fence position. Repeated and
-prepared renders are identical; supply distinct `idPrefix` values when combining
-documents. Shared flowchart, sequence, state, class, and ER fixtures pin complete
-SVG bytes across Rust and installed Node consumers. Automatic light/dark CSS
-requires no JavaScript. See the
-[Mermaid guide](https://github.com/sebastian-software/ferromark/blob/main/docs/ferrigura.md)
-for options, examples, output constraints, and the engine version.
+const prepared = prepareDocument(source);
+const { codeBlocks } = prepared.metadata;
+const languages = new Set(codeBlocks.map((block) => block.language));
+for (const language of languages) {
+  if (language) await highlighter.loadLanguage(language).catch(() => {});
+}
+const jsx = prepared.render({}, hooks);
+```
+
+A language that is still missing falls back to plain code and reports through
+`onHighlightError`.
+
+## Handle failures
+
+Both adapters keep ordinary code output when their engine fails and report the
+failure with the block's byte range:
+
+```js
+const diagrams = createDiagramCodeRenderer(new Renderer(), {
+  onRenderError(error, { start }) {
+    console.warn(`Diagram at byte ${start} kept as code:`, error);
+  },
+});
+const highlight = createLineHighlighter(highlighter, {
+  themes,
+  onHighlightError(error, { lang, start }) {
+    console.warn(`Could not highlight ${lang} at byte ${start}:`, error);
+  },
+});
+```
+
+Hooks you write yourself can throw instead; the render call then throws too.
+Results are checked synchronously, so a Promise or a value of the wrong shape is
+an error.
+
+## Use native plugins in a custom bundle
+
+A custom build can compile the engines into the Ferromark addon, so no
+JavaScript runs per code block. The
+[Native plugin bundles workflow](https://github.com/sebastian-software/ferromark/blob/main/docs/plugin-bundles.md)
+builds an installable tarball for `none`, `ferriki`, `ferrigura`, or `all`.
+Install it in place of the registry package:
+
+```sh
+npm install /path/to/ferromark-custom-bundle.tgz
+```
+
+````js
+import { availableCodePlugins, CodeCompiler } from "ferromark";
+
+console.log(availableCodePlugins()); // ["ferrigura"] in a diagram bundle
+const compiler = new CodeCompiler({
+  plugins: [
+    {
+      name: "ferrigura",
+      options: { colorScheme: "auto", idPrefix: "guide" },
+    },
+  ],
+});
+const source = "```mermaid\nflowchart LR\nA[Markdown] --> B[SVG]\n```";
+
+console.log(compiler.toHtml(source)); // Inline SVG in the HTML
+console.log(compiler.compile(source).body); // JSX for the same diagram
+console.log(compiler.takeDiagnostics()); // [] for a valid diagram
+````
+
+The bundles are workflow artifacts with private versions, not registry
+releases. The standard package reports `[]` from `availableCodePlugins()`.
+
+## Mermaid output
+
+Diagrams render to SVG in Rust, without a browser or Mermaid runtime. Automatic
+light and dark styles live in the SVG's own CSS and need no JavaScript.
+
+- **Stable IDs.** Each diagram's SVG namespace is a prefix plus the fence's
+  byte offset, `fm-mermaid-<offset>` by default. Repeated, prepared, HTML, and
+  JSX renders produce the same IDs. Give each document its own prefix when you
+  combine several on one page.
+- **Fallback.** Invalid or unsupported diagrams keep escaped code. The native
+  plugin also records a diagnostic; `errorPolicy: "throw"` makes it strict.
+- **Trust.** The native plugin checks every SVG against a static allow-list
+  before emitting it: no scripts, event attributes, external resources, or
+  `foreignObject`. Hook output is trusted application HTML and skips that check.
+
+The [Mermaid guide](https://github.com/sebastian-software/ferromark/blob/main/docs/ferrigura.md)
+covers options, the SVG policy, and the engine version. The
+[code-block hook contract](https://github.com/sebastian-software/ferromark/blob/main/docs/code-block-renderers.md)
+describes both stages in detail. For the shared output boundary, see
+[rendering and trust](/guide/rendering).
