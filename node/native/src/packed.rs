@@ -37,7 +37,7 @@
 //! The entries are private to the facade. napi-rs declares them in the
 //! generated `native.d.ts`, but the package types in `index.d.mts` do not.
 
-use napi::bindgen_prelude::{Buffer, FnArgs, Function, Result};
+use napi::bindgen_prelude::{Buffer, Result};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
@@ -224,7 +224,6 @@ pub fn transform_packed(
 /// Internal to the `ferromark` facade: `toHtmlWithRenderer` with packed
 /// options.
 #[napi(catch_unwind, js_name = "toHtmlWithRendererPacked")]
-#[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
 pub fn to_html_with_renderer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
@@ -235,7 +234,10 @@ pub fn to_html_with_renderer_packed(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
+    #[napi(
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+    )]
+    renderer: crate::CodeCallback<'_>,
 ) -> Result<String> {
     let options = unpack(
         set,
@@ -257,7 +259,6 @@ pub fn to_html_with_renderer_packed(
 /// Internal to the `ferromark` facade: `transformWithRenderer` with packed
 /// options.
 #[napi(catch_unwind, js_name = "transformWithRendererPacked")]
-#[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
 pub fn transform_with_renderer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
@@ -268,7 +269,10 @@ pub fn transform_with_renderer_packed(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-    renderer: Function<FnArgs<(String, Option<String>, Option<String>)>, Option<String>>,
+    #[napi(
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
+    )]
+    renderer: crate::CodeCallback<'_>,
 ) -> Result<TransformResult> {
     let options = unpack(
         set,

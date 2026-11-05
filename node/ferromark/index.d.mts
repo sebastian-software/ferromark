@@ -142,21 +142,78 @@ export interface CodeHighlighter {
   ): string;
 }
 
+/** Original location of a code block as UTF-8 byte offsets into the source. */
+export type CodeBlockLocation = {
+  /** Start of the complete block, including its fence. */
+  start: number;
+  /** End of the complete block, including its fence. */
+  end: number;
+};
+
 /**
  * Trusted synchronous replacement of a whole code block. Return HTML for HTML
- * entry points or JSX for JSX entry points. Null/undefined uses the next renderer
- * or the built-in output; an empty string removes the block. Exceptions propagate.
+ * entry points or JSX for JSX entry points, or `{ html }` for either: JSX
+ * entry points convert that HTML, including inline SVG, to JSX. Null/undefined
+ * uses the next hook or the built-in output; an empty string removes the block.
+ * Exceptions propagate.
  */
+// Code hooks share the public (code, language, meta, block) shape.
+// eslint-disable-next-line max-params
 export type CodeBlockRenderer = (
   code: string,
   language?: string | null,
   meta?: string | null,
-) => string | null | undefined;
+  block?: CodeBlockLocation,
+) => string | { html: string } | null | undefined;
 
-/** Try callbacks in order until one returns a string. Promise results are rejected. */
+/** Highlighted fragments for one code block. Ferromark writes the wrapper. */
+export type HighlightedCode = {
+  /** One tag-balanced inner-HTML fragment per code line, without line breaks. */
+  lines: string[];
+  /** Single-theme or light foreground of the block. */
+  foreground?: string;
+  /** Single-theme or light background of the block. */
+  background?: string;
+  /** Dark foreground; JSX output writes it as `--shiki-dark`. */
+  darkForeground?: string;
+  /** Dark background; JSX output writes it as `--shiki-dark-bg`. */
+  darkBackground?: string;
+};
+
+/**
+ * Trusted synchronous highlighting stage. It runs only when no whole-block
+ * renderer handled the block and receives the normalized language. Ferromark
+ * keeps its code block wrapper, line annotations, metadata and code block
+ * component. A result with the wrong number of lines uses plain code.
+ */
+// Code hooks share the public (code, language, meta, block) shape.
+// eslint-disable-next-line max-params
+export type CodeLineHighlighter = (
+  code: string,
+  language?: string | null,
+  meta?: string | null,
+  block?: CodeBlockLocation,
+) => HighlightedCode | null | undefined;
+
+/** Both code-block stages, mirroring the Rust render hooks. */
+export type CodeHooks = {
+  renderCodeBlock?: CodeBlockRenderer;
+  highlightCodeBlock?: CodeLineHighlighter;
+};
+
+/** A whole-block renderer function or a hook object. */
+export type CodeRendering = CodeBlockRenderer | CodeHooks;
+
+/** Try callbacks in order until one returns a result. Promise results are rejected. */
 export declare function composeCodeRenderers(
   ...renderers: readonly CodeBlockRenderer[]
 ): CodeBlockRenderer;
+
+/**
+ * Compose renderers and hook objects in priority order. Whole-block
+ * replacements precede highlighting; within each stage the first result wins.
+ */
+export declare function composeCodeHooks(...items: readonly CodeRendering[]): CodeHooks;
 
 /** Adapt a highlighter to a whole-block HTML callback, preserving highlight error fallback. */
 export declare function createHighlighterCodeRenderer(
@@ -164,13 +221,66 @@ export declare function createHighlighterCodeRenderer(
   highlightOptions: HighlightOptions,
 ): CodeBlockRenderer;
 
+/** One highlighted token as Shiki-compatible transformers receive it. */
+export type HighlightToken = {
+  content: string;
+  color?: string;
+  fontStyle?: number;
+  variants?: Readonly<Record<string, { color?: string; fontStyle?: number }>>;
+};
+
+// oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
+export interface TokenHighlighter {
+  /**
+   * Shiki-compatible synchronous highlighting with transformers. Ferromark
+   * reads the tokens and the `<pre>` colors from the `tokens` and `pre` hooks.
+   */
+  codeToHtml(
+    code: string,
+    options: {
+      lang: string;
+      theme?: string;
+      themes?: { light: string; dark: string };
+      defaultColor?: false;
+      transformers: Array<{
+        name?: string;
+        tokens?: (tokens: HighlightToken[][]) => void;
+        pre?: (node: { properties?: Record<string, unknown> }) => void;
+      }>;
+    },
+  ): string;
+}
+
+// oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
+export interface LineHighlightOptions {
+  /** One theme for all output. Use either `theme` or `themes`. */
+  theme?: string;
+  /** Light and dark themes, written as `--shiki-light`/`--shiki-dark` CSS variables. */
+  themes?: { light: string; dark: string };
+  /** Observe a highlighter exception before plain code output is used. */
+  onHighlightError?: (
+    error: unknown,
+    context: { lang: string } & Partial<CodeBlockLocation>,
+  ) => void;
+}
+
+/**
+ * Adapt a Shiki-compatible highlighter, such as one from `@ferriki/core`, to
+ * the highlighting stage. Load the languages before rendering; failures fall
+ * back to plain code.
+ */
+export declare function createLineHighlighter(
+  highlighter: TokenHighlighter,
+  highlightOptions: LineHighlightOptions,
+): CodeLineHighlighter;
+
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
 export interface DiagramRenderer {
   /**
    * Render one diagram source to SVG. The returned markup is written verbatim,
    * so only connect a renderer whose output you trust.
    */
-  render(text: string, options?: { colorScheme?: "light" | "dark" | "auto" }): string;
+  render(text: string, options?: { colorScheme?: "light" | "dark" | "auto"; id?: string }): string;
 }
 
 // oxlint-disable-next-line typescript/consistent-type-definitions -- preserve public declaration merging
@@ -179,13 +289,23 @@ export interface DiagramOptions {
   language?: string;
   /** Passed to the renderer; unset keeps the renderer's own default. */
   colorScheme?: "light" | "dark" | "auto";
+  /**
+   * SVG namespace prefix; each fence uses `<idPrefix>-<start offset>`.
+   * Starts with an ASCII letter and contains letters, digits, - or _.
+   * Default: "fm-mermaid".
+   */
+  idPrefix?: string;
   /** Observe a renderer exception before ordinary code output is used. */
-  onRenderError?: (error: unknown, context: { language: string }) => void;
+  onRenderError?: (
+    error: unknown,
+    context: { language: string } & Partial<CodeBlockLocation>,
+  ) => void;
 }
 
 /**
  * Adapt a diagram renderer, such as `new Renderer()` from `@ferrigura/core`, to
- * a whole-block callback. Failed diagrams fall back to ordinary code output.
+ * a whole-block renderer returning `{ html }`. Failed diagrams fall back to
+ * ordinary code output.
  */
 export declare function createDiagramCodeRenderer(
   renderer: DiagramRenderer,
@@ -195,14 +315,14 @@ export declare function createDiagramCodeRenderer(
 /** Replace code blocks with trusted HTML. Escape untrusted values inside the callback. */
 export declare function toHtmlWithCodeRenderer(
   markdown: string | Uint8Array,
-  renderCode: CodeBlockRenderer,
+  renderCode: CodeRendering,
   options?: Options,
 ): string;
 
 /** Whole-block HTML rendering with the same metadata as `transform()`. */
 export declare function transformWithCodeRenderer(
   markdown: string | Uint8Array,
-  renderCode: CodeBlockRenderer,
+  renderCode: CodeRendering,
   options?: Options,
 ): TransformResult;
 
@@ -344,8 +464,8 @@ export type CompileJsxModuleOptions = {
   reservedBindings?: string[];
 } & Omit<CompileJsxOptions, "output" | "componentPrefix">;
 
-/** A trusted hook may replace an entire code block with JSX. Exceptions propagate. */
-export type JsxCodeRenderer = CodeBlockRenderer;
+/** Trusted code hooks for JSX output. Exceptions propagate. */
+export type JsxCodeRenderer = CodeRendering;
 
 /** Heading metadata with its original UTF-8 byte range, including heading syntax. */
 export type JsxHeading = {

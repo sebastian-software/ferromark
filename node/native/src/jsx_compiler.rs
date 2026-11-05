@@ -140,7 +140,7 @@ impl CodeCompiler {
         options: Option<Options>,
         jsx_options: Option<JsxOptions>,
         #[napi(
-            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+            ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
         )]
         render_code: Option<CodeCallback<'_>>,
     ) -> Result<JsxResult> {
@@ -156,7 +156,7 @@ impl CodeCompiler {
         options: Option<Options>,
         jsx_options: Option<JsxOptions>,
         #[napi(
-            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+            ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
         )]
         render_code: Option<CodeCallback<'_>>,
     ) -> Result<JsxModuleResult> {
@@ -273,7 +273,7 @@ impl PreparedJsxDocument {
         &self,
         options: Option<JsxOptions>,
         #[napi(
-            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+            ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
         )]
         render_code: Option<CodeCallback<'_>>,
     ) -> Result<JsxResult> {
@@ -299,7 +299,7 @@ impl PreparedJsxDocument {
         &self,
         options: Option<JsxOptions>,
         #[napi(
-            ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+            ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
         )]
         render_code: Option<CodeCallback<'_>>,
     ) -> Result<JsxModuleResult> {

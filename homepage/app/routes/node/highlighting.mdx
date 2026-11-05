@@ -80,9 +80,10 @@ For the shared trust boundary, see [rendering and trust](/guide/rendering).
 
 ## Add native plugins and diagrams
 
-The source checkout also provides `CodeCompiler` for native HTML/JSX plugins,
-including static Mermaid SVG through Ferrigura, and `createDiagramCodeRenderer`
-for a separately installed diagram renderer. These APIs require a source build
-or custom bundle; they are not exported by `ferromark@3.6.0`.
+The source checkout also provides code hooks: `createLineHighlighter` keeps
+Ferromark's code block markup in HTML and JSX, and `createDiagramCodeRenderer`
+connects a separately installed diagram renderer such as `@ferrigura/core`.
+`CodeCompiler` runs native plugins compiled into a custom bundle. These APIs are
+not exported by `ferromark@3.7.0`.
 The [highlighting and diagrams guide](/guide/code-rendering) explains factory
 selection, separately installed engines, and the current Mermaid limitations.

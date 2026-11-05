@@ -67,53 +67,83 @@ only the highlighting stage.
 
 ## Node.js
 
-The callback-composition APIs below are available on repository `main`; they
-are not exported by the published `ferromark@3.6.0` facade. Use a source build
-or custom bundle. See [release availability](https://ferromark.dev/guide/code-rendering).
+Node.js applications inject their engines, the same way for highlighting and
+diagrams: the application installs and initializes `@ferriki/core`,
+`@ferrigura/core` or another engine, and passes code hooks to Ferromark. The
+standard addon contains no engine. The hooks mirror the two Rust stages:
 
-For Rust plugins without per-block JavaScript calls, use
-[`CodeCompiler`](native-code-plugins.md). The callbacks below remain available
-for application code and separately installed addons. The standard addon includes
-no engines. Select an engine-enabled custom bundle when code rendering should stay
-entirely in Rust.
+| Hook | Stage | Returns | Ferromark keeps |
+| --- | --- | --- | --- |
+| `renderCodeBlock(code, language, meta, block)` | whole-block replacement | HTML (HTML entry points), JSX source (JSX entry points), or `{ html }` for either | nothing; the block is replaced |
+| `highlightCodeBlock(code, language, meta, block)` | highlighting | `{ lines, foreground?, background?, darkForeground?, darkBackground? }` | wrapper, line annotations, title/label, `codeBlockComponent` |
 
-`toHtmlWithCodeRenderer` returns HTML. `transformWithCodeRenderer` returns HTML
-plus the same headings and front matter as `transform`. `composeCodeRenderers`
-tries callbacks in order and rejects non-string, non-nullish results, including
-Promises. Exceptions propagate. Diagram plugins that want plain-code fallback
-can catch their engine's errors and return `null`.
+`block` is the complete fence's original UTF-8 byte range, `{ start, end }`, for
+diagnostics that name a file and line. `renderCodeBlock` receives the language
+token as authored; `highlightCodeBlock` receives the normalized bare language.
+Highlighting runs only when no whole-block hook handled the block. A highlighted
+result needs one tag-balanced fragment per code line, or Ferromark uses plain
+code. JSX entry points convert `{ html }`, including inline SVG, with the rules for
+authored raw HTML: SVG attribute names keep their case (`markerWidth`), and
+hyphenated or namespaced names are camel-cased (`strokeWidth`, `xlinkHref`).
+Rust exposes the same conversion as `ferromark::html_to_jsx`.
 
-`createHighlighterCodeRenderer` adapts the existing `CodeHighlighter` interface
-to this contract. It retains `fallbackLanguage` and `onHighlightError`; the
-existing `toHtmlWithHighlighter` and `transformWithHighlighter` APIs still work.
+Every entry point that accepts code rendering takes either a whole-block
+function or a hook object: `toHtmlWithCodeRenderer`, `transformWithCodeRenderer`,
+`compileJsx`, `CodeCompiler.compile`, and a prepared document's `render` and
+`renderModule`. `composeCodeHooks` combines functions and hook objects in
+priority order; within each stage the first result wins. `composeCodeRenderers`
+combines whole-block functions only. Results are checked synchronously, so
+Promises and other shapes throw. Exceptions propagate; the adapters below catch
+their engine's errors instead and fall back to ordinary code.
 
 ```js
+import { createHighlighter } from "@ferriki/core";
+import { Renderer } from "@ferrigura/core";
 import {
-  composeCodeRenderers,
-  createHighlighterCodeRenderer,
-  transformWithCodeRenderer,
+  compileJsx,
+  composeCodeHooks,
+  createDiagramCodeRenderer,
+  createLineHighlighter,
 } from "ferromark";
 
-// Application-owned synchronous diagram and highlighting engines.
-const renderCode = composeCodeRenderers(
-  (code, language) => language === "mermaid" ? diagramEngine.render(code) : null,
-  createHighlighterCodeRenderer(highlighter, { theme: "github-dark" }),
+const themes = { light: "github-light-default", dark: "github-dark-default" };
+const highlighter = await createHighlighter({ themes: Object.values(themes), langs: ["ts"] });
+const hooks = composeCodeHooks(
+  createDiagramCodeRenderer(new Renderer(), {
+    colorScheme: "auto",
+    onRenderError: (error, { start }) => report(error, start),
+  }),
+  {
+    highlightCodeBlock: createLineHighlighter(highlighter, {
+      themes,
+      onHighlightError: (error, { start }) => report(error, start),
+    }),
+  },
 );
-const result = transformWithCodeRenderer(markdown, renderCode);
+const result = compileJsx(markdown, { codeBlockComponent: "CodeBlock" }, hooks);
 ```
 
-The diagram callback above expects a bare `mermaid` language token. A plugin
-that also accepts language metadata suffixes must recognize those explicitly.
-It should match parsed callback fields rather than search Markdown source text:
-for example, a fence written as `merm&#97;id` reaches the callback as `mermaid`.
+`createLineHighlighter` adapts any Shiki-compatible synchronous highlighter. It
+reads tokens and block colors through the `tokens` and `pre` transformer hooks
+and writes the same per-line fragments as the native Ferriki integration,
+including `--shiki-light`/`--shiki-dark` variables for a theme pair. Load the
+document's languages before rendering; a missing language falls back to plain
+code and reports through `onHighlightError`.
 
-For JSX, use an ordered callback with `compileJsx`, `CodeCompiler.compile`, or a
-prepared document's render methods. Return JSX from each plugin. Returning
-`null` lets the compiler continue to component mappings and explicitly configured
-native plugins. Do not pass `createHighlighterCodeRenderer` to JSX compilation:
-its output is HTML, while a Ferriki-enabled `CodeCompiler` supplies JSX-safe
-highlighting.
+`createDiagramCodeRenderer` accepts any object with a synchronous
+`render(text, options)` method. It handles only its fence language (`mermaid` by
+default), returns `{ html }`, and gives each fence the SVG namespace
+`<idPrefix>-<start offset>` (`fm-mermaid` by default), as the native integration
+does. The exact parsed language must match; a fence written as `merm&#97;id`
+reaches the hook as `mermaid`. Hook output is trusted application HTML; the
+static SVG policy belongs to the native Ferrigura integration.
 
-A separately installed diagram package can export these callbacks without
-adding its native binary to the default Ferromark package. Lazy initialization
-of an engine compiled into a shared addon does not remove its download cost.
+`createHighlighterCodeRenderer` adapts the older `CodeHighlighter` interface to a
+whole-block HTML renderer with one theme. It retains `fallbackLanguage` and
+`onHighlightError`; `toHtmlWithHighlighter` and `transformWithHighlighter` still
+use it. Prefer `createLineHighlighter`, which keeps Ferromark's code block markup
+and also works for JSX.
+
+Engines compiled into a custom addon remain available through
+[`CodeCompiler`](native-code-plugins.md) plugins. Hooks passed to
+`CodeCompiler.compile` run before its native plugins within each stage.

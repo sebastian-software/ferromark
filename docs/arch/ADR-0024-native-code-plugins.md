@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-25
+- Last updated: 2026-11-05
 - Partially supersedes the long-term Ferriki adapter placement in
   [ADR-0018](ADR-0018-single-rust-crate.md) and the Ferriki-specific Node compiler
   direction in [ADR-0023](ADR-0023-framework-neutral-jsx.md).
@@ -57,6 +58,8 @@ The [plugin bundle workflow](../plugin-bundles.md) produces installable custom
 builds with selected factories and notices. Both engine features require isolated
 output so they cannot enter standard package artifacts. Separately installed
 addons remain usable through JavaScript callbacks, without a native runtime loader.
+Node.js applications inject Ferriki and Ferrigura through those callbacks, which
+mirror both Rust stages ([ADR-0027](ADR-0027-injected-code-engines.md)).
 
 ## Alternatives and consequences
 
@@ -83,3 +86,9 @@ coverage in an isolated custom build and check Mermaid-only and combined builds.
 - [Native plugin guide](../native-code-plugins.md)
 - [Node-API ABI scope](https://nodejs.org/api/n-api.html#implications-of-abi-stability)
 - [Rust ABI](https://doc.rust-lang.org/reference/items/external-blocks.html#abi)
+
+## History
+
+- 2026-11-05: Node.js applications inject both engines through code hooks that
+  mirror the whole-block and highlighting stages; see
+  [ADR-0027](ADR-0027-injected-code-engines.md).

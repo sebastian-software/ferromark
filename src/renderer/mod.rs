@@ -58,7 +58,7 @@ pub use jsx::{JsxModuleError, JsxModuleOptions, JsxModuleOutput, JsxSourceMap};
 pub use jsx::{
     JsxCodeBlock, JsxCodeBlockInput, JsxCodeBlockRenderOutput, JsxHighlightedCodeBlock,
     JsxModuleSource, JsxOutput, JsxRenderHooks, JsxRenderer, JsxRendererOptions, JsxSourceMapping,
-    NoJsxRenderHooks,
+    NoJsxRenderHooks, html_to_jsx,
 };
 
 pub(crate) use jsx::decode_html_entities;

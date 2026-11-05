@@ -8,10 +8,11 @@ use ferromark::{
     JsxModuleOptions, JsxRenderHooks, JsxRenderer, JsxRendererOptions, OutlineOptions, Parser,
 };
 use ferromark_transforms::TransformContext;
-use napi::bindgen_prelude::{Error, FnArgs, Result, Status};
+use napi::bindgen_prelude::{Error, Result, Status};
 use napi_derive::napi;
 use self_cell::self_cell;
 
+use crate::code_callback::JsCodeHooks;
 use crate::plugins::NativePlugins;
 
 use crate::{
@@ -183,28 +184,36 @@ impl Compiled {
 }
 
 struct CodeHook<'callback, 'highlight> {
-    callback: Option<CodeCallback<'callback>>,
+    callback: Option<JsCodeHooks<'callback>>,
     highlighting: Option<NativeHighlighting<'highlight>>,
     error: Option<Error>,
 }
 
+impl CodeHook<'_, '_> {
+    fn failed(&mut self) -> bool {
+        if self.error.is_none()
+            && let Some(error) = self.callback.as_mut().and_then(JsCodeHooks::take_error)
+        {
+            self.error = Some(error);
+        }
+        self.error.is_some()
+    }
+
+    fn take_failure(&mut self) -> Option<Error> {
+        self.failed();
+        self.error.take()
+    }
+}
+
 impl JsxRenderHooks for CodeHook<'_, '_> {
     fn render_code_block(&mut self, input: JsxCodeBlockInput<'_>) -> Option<String> {
-        if self.error.is_some() {
+        if self.failed() {
             return None;
         }
-        if let Some(callback) = self.callback.as_ref() {
-            match callback.call(FnArgs::from((
-                input.code.to_owned(),
-                input.language.map(str::to_owned),
-                input.meta.map(str::to_owned),
-            ))) {
-                Ok(Some(output)) => return Some(output),
-                Ok(None) => {}
-                Err(error) => {
-                    self.error = Some(error);
-                    return None;
-                }
+        if let Some(callback) = self.callback.as_mut() {
+            let output = callback.render_jsx(input);
+            if output.is_some() || self.failed() {
+                return output;
             }
         }
         let settings = self.highlighting.as_mut()?;
@@ -217,8 +226,14 @@ impl JsxRenderHooks for CodeHook<'_, '_> {
         &mut self,
         input: JsxCodeBlockInput<'_>,
     ) -> Option<JsxHighlightedCodeBlock> {
-        if self.error.is_some() {
+        if self.failed() {
             return None;
+        }
+        if let Some(callback) = self.callback.as_mut() {
+            let output = callback.highlight_jsx(input);
+            if output.is_some() || self.failed() {
+                return output;
+            }
         }
         let settings = self.highlighting.as_mut()?;
         let output = JsxRenderHooks::highlight_code_block(settings.plugins, input);
@@ -492,7 +507,7 @@ pub(crate) fn render_code_block_with_highlighter(
         input.meta.as_deref(),
         &mut hook,
     );
-    if let Some(error) = hook.error {
+    if let Some(error) = hook.take_failure() {
         return Err(error);
     }
     Ok(RenderCodeBlockResult {
@@ -557,7 +572,7 @@ pub fn compile_jsx(
     options: Option<Options>,
     jsx_options: Option<JsxOptions>,
     #[napi(
-        ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
     )]
     render_code: Option<CodeCallback<'_>>,
 ) -> Result<JsxResult> {
@@ -571,7 +586,7 @@ pub fn compile_jsx_module(
     options: Option<Options>,
     jsx_options: Option<JsxOptions>,
     #[napi(
-        ts_arg_type = "(code: string, language?: string | null, meta?: string | null) => string | null | undefined"
+        ts_arg_type = "(code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined"
     )]
     render_code: Option<CodeCallback<'_>>,
 ) -> Result<JsxModuleResult> {
@@ -784,14 +799,14 @@ fn render_parsed(
             ferromark::ast::FrontMatterKind::Toml => "toml".to_owned(),
         });
     let mut hook = CodeHook {
-        callback: render_code,
+        callback: render_code.map(JsCodeHooks::new),
         highlighting,
         error: None,
     };
     if let Some(module_options) = module_options {
         let result =
             renderer.render_module_with_hooks(document, source, &module_options, &mut hook);
-        if let Some(error) = hook.error {
+        if let Some(error) = hook.take_failure() {
             return Err(error);
         }
         let output = result.map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
@@ -815,7 +830,7 @@ fn render_parsed(
         }));
     }
     let output = renderer.render_with_hooks(document, source, &mut hook);
-    if let Some(error) = hook.error {
+    if let Some(error) = hook.take_failure() {
         return Err(error);
     }
     Ok(Compiled::Body(JsxResult {

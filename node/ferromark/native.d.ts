@@ -13,9 +13,9 @@ export declare class CodeCompiler {
   /** Parses source and runs native transforms once, returning an owned document handle. */
   prepare(markdown: string | Uint8Array, options?: Options | undefined | null, preparationOptions?: PreparationOptions | undefined | null): PreparedJsxDocument
   /** Compiles source and reuses the initialized native plugins. */
-  compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
+  compile(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): JsxResult
   /** Compiles source to an MDX module; the public facade selects this entry. */
-  compileModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
+  compileModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): JsxModuleResult
   /** Renders one standalone code block with the compiler's native highlighting plugins. */
   renderCodeBlock(input: RenderCodeBlockInput): RenderCodeBlockResult
 }
@@ -33,9 +33,9 @@ export declare class PreparedJsxDocument {
   /** Extracts static text and final heading sections without highlighting or rendering. */
   extractText(options?: TextOptions | undefined | null): TextExtraction
   /** Renders the prepared document as a JSX body. */
-  render(options?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
+  render(options?: JsxOptions | undefined | null, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): JsxResult
   /** Renders the prepared document as a complete MDX module. */
-  renderModule(options?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
+  renderModule(options?: JsxOptions | undefined | null, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): JsxModuleResult
 }
 
 /** Reuses arena storage and HTML buffers; documents never outlive a call. */
@@ -50,6 +50,32 @@ export declare class Renderer {
 /** Names of the factories compiled into this particular addon. */
 export declare function availableCodePlugins(): Array<string>
 
+/** The rendering stage and original location of one code block. */
+export interface CodeBlockStage {
+  /** `"render"` for whole-block replacement, `"highlight"` for line fragments. */
+  stage: string
+  /** Start of the complete block as a UTF-8 byte offset into the source. */
+  start: number
+  /** End of the complete block as a UTF-8 byte offset into the source. */
+  end: number
+}
+
+/**
+ * Object results of the code-block channel.
+ *
+ * In the render stage, `html` replaces the block with trusted HTML; JSX output
+ * converts it to JSX. In the highlight stage, `lines` holds one balanced HTML
+ * fragment per code line, with optional block colors.
+ */
+export interface CodeCallbackObject {
+  html?: string
+  lines?: Array<string>
+  foreground?: string
+  background?: string
+  darkForeground?: string
+  darkBackground?: string
+}
+
 /** A native plugin failure with the original fence's UTF-8 source range. */
 export interface CodePluginDiagnostic {
   plugin: string
@@ -59,10 +85,10 @@ export interface CodePluginDiagnostic {
 }
 
 /** Internal entry: the public facade validates and separates its option keys. */
-export declare function compileJsx(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxResult
+export declare function compileJsx(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): JsxResult
 
 /** Internal entry for `output: "module"`; the public facade selects it. */
-export declare function compileJsxModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language?: string | null, meta?: string | null) => string | null | undefined): JsxModuleResult
+export declare function compileJsxModule(markdown: string | Uint8Array, options?: Options | undefined | null, jsxOptions?: JsxOptions | undefined | null, renderCode?: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): JsxModuleResult
 
 /** One reference occurrence from the prepared tree. */
 export interface DocumentReference {
@@ -326,13 +352,13 @@ export declare function toHtmlBufferPacked(markdown: string | Uint8Array, set: n
 /** Internal to the `ferromark` facade: `toHtml` with packed options. */
 export declare function toHtmlPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset?: number | undefined | null, headingIdPrefix?: string | undefined | null, linkBasePath?: string | undefined | null, typography?: TypographyConfig | undefined | null, passes?: Array<NativePassConfig> | undefined | null): string
 
-export declare function toHtmlWithRenderer(markdown: string | Uint8Array, options: Options | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): string
+export declare function toHtmlWithRenderer(markdown: string | Uint8Array, options: Options | undefined | null, renderer: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): string
 
 /**
  * Internal to the `ferromark` facade: `toHtmlWithRenderer` with packed
  * options.
  */
-export declare function toHtmlWithRendererPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, typography: TypographyConfig | undefined | null, passes: Array<NativePassConfig> | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): string
+export declare function toHtmlWithRendererPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, typography: TypographyConfig | undefined | null, passes: Array<NativePassConfig> | undefined | null, renderer: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): string
 
 export declare function transform(markdown: string | Uint8Array, options?: Options | undefined | null): TransformResult
 
@@ -345,13 +371,13 @@ export interface TransformResult {
   frontMatter?: string
 }
 
-export declare function transformWithRenderer(markdown: string | Uint8Array, options: Options | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): TransformResult
+export declare function transformWithRenderer(markdown: string | Uint8Array, options: Options | undefined | null, renderer: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): TransformResult
 
 /**
  * Internal to the `ferromark` facade: `transformWithRenderer` with packed
  * options.
  */
-export declare function transformWithRendererPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, typography: TypographyConfig | undefined | null, passes: Array<NativePassConfig> | undefined | null, renderer: (arg0: string, arg1?: string | undefined | null, arg2?: string | undefined | null) => string | null): TransformResult
+export declare function transformWithRendererPacked(markdown: string | Uint8Array, set: number, on: number, headingOffset: number | undefined | null, headingIdPrefix: string | undefined | null, linkBasePath: string | undefined | null, typography: TypographyConfig | undefined | null, passes: Array<NativePassConfig> | undefined | null, renderer: (code: string, language: string | null | undefined, meta: string | null | undefined, block: CodeBlockStage) => string | CodeCallbackObject | null | undefined): TransformResult
 
 export interface TypographyConfig {
   language?: string

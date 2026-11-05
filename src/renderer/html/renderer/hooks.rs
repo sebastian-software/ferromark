@@ -128,6 +128,8 @@ pub struct CodeHighlightInput<'a> {
     pub raw_language: Option<&'a str>,
     /// Original metadata field after the language/info field.
     pub raw_meta: Option<&'a str>,
+    /// Original UTF-8 source range of the complete block.
+    pub span: Span,
 }
 
 /// Trusted inner HTML for one code block, with one entry per displayed line.

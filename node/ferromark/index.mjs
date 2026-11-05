@@ -858,22 +858,16 @@ class PreparedDocumentFacade {
     return Object.freeze(result);
   }
 
-  /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
+  /** @param {import('./index.mjs').JsxRenderOptions} [options] Render settings. @param {import('./index.mjs').CodeRendering} [renderCode] Trusted synchronous code hooks. */
   #render(options, renderCode) {
     validatePreparedRenderOptions(options, false);
-    if (renderCode !== undefined && typeof renderCode !== "function") {
-      throw new TypeError("renderCode must be a synchronous function");
-    }
-    return this.#nativePrepared.render(options, renderCode);
+    return this.#nativePrepared.render(options, codeDispatcher(renderCode));
   }
 
-  /** @param {import('./index.mjs').JsxRenderModuleOptions} [options] Module and render settings. @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous code override. */
+  /** @param {import('./index.mjs').JsxRenderModuleOptions} [options] Module and render settings. @param {import('./index.mjs').CodeRendering} [renderCode] Trusted synchronous code hooks. */
   #renderModule(options, renderCode) {
     validatePreparedRenderOptions(options, true);
-    if (renderCode !== undefined && typeof renderCode !== "function") {
-      throw new TypeError("renderCode must be a synchronous function");
-    }
-    return this.#nativePrepared.renderModule(options, renderCode);
+    return this.#nativePrepared.renderModule(options, codeDispatcher(renderCode));
   }
 }
 
@@ -930,18 +924,16 @@ export function prepareDocument(markdown, preparationOptions) {
  * Compile trusted authored Markdown or MDX to framework-neutral JSX.
  * @param {string | Uint8Array} markdown Authored source.
  * @param {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} [options] Syntax and JSX options.
- * @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Trusted synchronous JSX hook.
+ * @param {import('./index.mjs').CodeRendering} [renderCode] Trusted synchronous code hooks.
  * @returns {import('./index.mjs').JsxResult | import('./index.mjs').JsxModuleResult} A JSX body with its parts, or a module with `output: "module"`.
  */
 export function compileJsx(markdown, options, renderCode) {
   const module = validateJsxOptions(options);
-  if (renderCode !== undefined && typeof renderCode !== "function") {
-    throw new TypeError("renderCode must be a synchronous function");
-  }
+  const dispatcher = codeDispatcher(renderCode);
   const addon = loadNative();
   return module
-    ? addon.compileJsxModule(markdown, options, options, renderCode)
-    : addon.compileJsx(markdown, options, options, renderCode);
+    ? addon.compileJsxModule(markdown, options, options, dispatcher)
+    : addon.compileJsx(markdown, options, options, dispatcher);
 }
 
 /** Names of code plugin factories compiled into the loaded addon. */
@@ -991,17 +983,15 @@ export class CodeCompiler {
   /**
    * @param {string | Uint8Array} markdown Trusted authored source.
    * @param {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions} [options] Syntax and JSX options.
-   * @param {import('./index.mjs').JsxCodeRenderer} [renderCode] Optional whole-fence override.
+   * @param {import('./index.mjs').CodeRendering} [renderCode] Optional code hooks.
    * @returns {import('./index.mjs').JsxResult | import('./index.mjs').JsxModuleResult} Highlighted JSX and metadata, or a module with `output: "module"`.
    */
   compile(markdown, options, renderCode) {
     const module = validateJsxOptions(options);
-    if (renderCode !== undefined && typeof renderCode !== "function") {
-      throw new TypeError("renderCode must be a synchronous function");
-    }
+    const dispatcher = codeDispatcher(renderCode);
     return module
-      ? this.#native.compileModule(markdown, options, options, renderCode)
-      : this.#native.compile(markdown, options, options, renderCode);
+      ? this.#native.compileModule(markdown, options, options, dispatcher)
+      : this.#native.compile(markdown, options, options, dispatcher);
   }
 
   /**
@@ -1051,12 +1041,19 @@ export function createHighlighterCodeRenderer(highlighter, highlightOptions) {
   return (code, language, meta) => {
     const lang = language ?? fallbackLanguage;
     try {
-      return highlighter.codeToHtml(code, {
+      const html = highlighter.codeToHtml(code, {
         lang,
         theme: highlightOptions.theme,
         ...(meta ? { meta: { __raw: meta } } : {}),
       });
+      if (typeof html !== "string") {
+        throw new TypeError("highlighter.codeToHtml must return a string synchronously");
+      }
+      return html;
     } catch (error) {
+      if (error instanceof TypeError && error.message.startsWith("highlighter.codeToHtml")) {
+        throw error;
+      }
       onHighlightError?.(error, { lang });
       return null;
     }
@@ -1083,49 +1080,295 @@ function validateDiagramOptions(renderer, diagramOptions) {
  * @returns {Required<Pick<import('./index.mjs').DiagramOptions, "language">> & import('./index.mjs').DiagramOptions} Checked options with the default language.
  */
 function validateDiagramFields(diagramOptions) {
-  const { language = "mermaid", colorScheme, onRenderError } = diagramOptions;
+  const {
+    language = "mermaid",
+    colorScheme,
+    idPrefix = "fm-mermaid",
+    onRenderError,
+  } = diagramOptions;
   if (typeof language !== "string" || language === "") {
     throw new TypeError("diagramOptions.language must be a nonempty string");
   }
   if (colorScheme != null && !["light", "dark", "auto"].includes(colorScheme)) {
     throw new TypeError('diagramOptions.colorScheme must be "light", "dark", or "auto"');
   }
+  validateIdPrefix(idPrefix);
   if (onRenderError != null && typeof onRenderError !== "function") {
     throw new TypeError("diagramOptions.onRenderError must be a function");
   }
-  return { language, colorScheme, onRenderError };
+  return { language, colorScheme, idPrefix, onRenderError };
+}
+
+/** @param {unknown} idPrefix SVG namespace prefix to check. */
+function validateIdPrefix(idPrefix) {
+  if (typeof idPrefix !== "string" || !/^[A-Za-z][\w-]*$/u.test(idPrefix)) {
+    throw new TypeError(
+      "diagramOptions.idPrefix must start with an ASCII letter and contain only letters, digits, - or _",
+    );
+  }
 }
 
 /**
  * Adapt a diagram renderer, such as `new Renderer()` from `@ferrigura/core`,
- * to a whole-block HTML callback. Ferromark only calls `render(text, options)`;
- * it does not import or pin the diagram package.
+ * to a whole-block code renderer for HTML and JSX output. Ferromark only calls
+ * `render(text, options)`; it does not import or pin the diagram package.
+ * Each fence gets the SVG namespace `<idPrefix>-<UTF-8 start offset>`, as in
+ * the native integration.
  * @param {import('./index.mjs').DiagramRenderer} renderer Synchronous diagram renderer.
  * @param {import('./index.mjs').DiagramOptions} [diagramOptions] Diagram options.
+ * @returns {import('./index.mjs').CodeBlockRenderer} A whole-block renderer returning `{ html }`.
  */
 export function createDiagramCodeRenderer(renderer, diagramOptions = {}) {
-  const { language, colorScheme, onRenderError } = validateDiagramOptions(renderer, diagramOptions);
-  const renderOptions = colorScheme == null ? undefined : { colorScheme };
-  /**
-   * @param {string} code Code block source.
-   * @param {string | null | undefined} codeLanguage Code language.
-   */
-  return (code, codeLanguage) => {
+  const { language, colorScheme, idPrefix, onRenderError } = validateDiagramOptions(
+    renderer,
+    diagramOptions,
+  );
+  // Code hooks share the public (code, language, meta, block) shape.
+  // eslint-disable-next-line max-params
+  return (code, codeLanguage, _meta, block) => {
     if (codeLanguage !== language) return null;
+    const location = blockLocation(block);
     try {
-      return renderer.render(code, renderOptions);
+      const options = {
+        ...(colorScheme == null ? {} : { colorScheme }),
+        ...(location == null ? {} : { id: `${idPrefix}-${location.start}` }),
+      };
+      const html = renderer.render(code, Object.keys(options).length === 0 ? undefined : options);
+      if (typeof html !== "string") {
+        throw new TypeError("diagram renderers must return an SVG string");
+      }
+      return { html };
     } catch (error) {
-      onRenderError?.(error, { language });
+      onRenderError?.(error, { language, ...location });
       return null;
     }
   };
 }
 
 /**
+ * Adapt a Shiki-compatible highlighter, such as one from `@ferriki/core`, to
+ * the highlighting stage. Ferromark keeps its code block wrapper, line
+ * annotations and code block component and inserts one fragment per line.
+ * @param {import('./index.mjs').TokenHighlighter} highlighter Synchronous highlighter.
+ * @param {import('./index.mjs').LineHighlightOptions} highlightOptions Theme and error options.
+ * @returns {import('./index.mjs').CodeLineHighlighter} A highlighting-stage hook.
+ */
+export function createLineHighlighter(highlighter, highlightOptions) {
+  const { theme, themes, onHighlightError } = validateLineHighlightOptions(
+    highlighter,
+    highlightOptions,
+  );
+  const themeOptions =
+    themes == null
+      ? { theme: /** @type {string} */ (theme) }
+      : { themes, defaultColor: /** @type {const} */ (false) };
+  // Code hooks share the public (code, language, meta, block) shape.
+  // eslint-disable-next-line max-params
+  return (code, language, _meta, block) => {
+    if (language == null || language === "") return null;
+    /** @type {{ tokens?: import('./index.mjs').HighlightToken[][], style?: unknown }} */
+    const captured = {};
+    try {
+      highlighter.codeToHtml(code, {
+        lang: language,
+        ...themeOptions,
+        transformers: [
+          {
+            name: "ferromark:lines",
+            tokens(tokens) {
+              captured.tokens = tokens;
+            },
+            pre(node) {
+              captured.style = node?.properties?.style;
+            },
+          },
+        ],
+      });
+      if (!Array.isArray(captured.tokens)) {
+        throw new TypeError("highlighter did not expose tokens to transformers");
+      }
+      return highlightedLines(captured.tokens, captured.style, themes != null);
+    } catch (error) {
+      onHighlightError?.(error, { lang: language, ...blockLocation(block) });
+      return null;
+    }
+  };
+}
+
+/**
+ * @param {import('./index.mjs').TokenHighlighter} highlighter Highlighter to check.
+ * @param {import('./index.mjs').LineHighlightOptions} options Options to check.
+ */
+function validateLineHighlightOptions(highlighter, options) {
+  if (!highlighter || typeof highlighter.codeToHtml !== "function") {
+    throw new TypeError("highlighter must provide a synchronous codeToHtml method");
+  }
+  if (options === null || typeof options !== "object") {
+    throw new TypeError("highlightOptions must be an object");
+  }
+  const { theme, themes, onHighlightError } = options;
+  const pair = themePair(themes);
+  if ((theme == null) === (pair == null) || (theme != null && typeof theme !== "string")) {
+    throw new TypeError(
+      "highlightOptions needs either a theme name or themes: { light, dark } with theme names",
+    );
+  }
+  if (onHighlightError != null && typeof onHighlightError !== "function") {
+    throw new TypeError("highlightOptions.onHighlightError must be a function");
+  }
+  return { theme, themes: pair, onHighlightError };
+}
+
+/**
+ * @param {unknown} themes Candidate light and dark theme names.
+ * @returns {{ light: string, dark: string } | undefined} The checked pair.
+ */
+function themePair(themes) {
+  if (themes == null || typeof themes !== "object") return;
+  const { light, dark } = /** @type {{ light?: unknown, dark?: unknown }} */ (themes);
+  return typeof light === "string" && typeof dark === "string" ? { light, dark } : undefined;
+}
+
+/**
+ * @param {import('./index.mjs').HighlightToken[][]} tokens Highlighted tokens per line.
+ * @param {unknown} style The highlighter's `<pre>` style.
+ * @param {boolean} dual Whether light and dark themes were requested.
+ * @returns {import('./index.mjs').HighlightedCode} Line fragments and block colors.
+ */
+function highlightedLines(tokens, style, dual) {
+  const lines = tokens.map((line) =>
+    line
+      .map((token) => {
+        if (token.content === "") return "";
+        const css = dual ? dualTokenStyle(token) : singleTokenStyle(token);
+        const text = escapeHtml(token.content);
+        return css === "" ? text : `<span style="${escapeAttribute(css)}">${text}</span>`;
+      })
+      .join(""),
+  );
+  const colors = preColors(typeof style === "string" ? style : "");
+  return dual
+    ? {
+        lines,
+        foreground: colors["--shiki-light"],
+        background: colors["--shiki-light-bg"],
+        darkForeground: colors["--shiki-dark"],
+        darkBackground: colors["--shiki-dark-bg"],
+      }
+    : { lines, foreground: colors.color, background: colors["background-color"] };
+}
+
+/** @param {string} style CSS declarations. @returns {Record<string, string>} */
+function preColors(style) {
+  /** @type {Record<string, string>} */
+  const colors = {};
+  for (const declaration of style.split(";")) {
+    const separator = declaration.indexOf(":");
+    if (separator > 0) {
+      colors[declaration.slice(0, separator).trim().toLowerCase()] = declaration
+        .slice(separator + 1)
+        .trim();
+    }
+  }
+  return colors;
+}
+
+const FONT_ITALIC = 1;
+const FONT_BOLD = 2;
+const FONT_UNDERLINE = 4;
+const FONT_STRIKETHROUGH = 8;
+
+/** @param {import('./index.mjs').HighlightToken} token Single-theme token. */
+function singleTokenStyle(token) {
+  const declarations = [];
+  if (token.color) declarations.push(`color:${token.color}`);
+  const fontStyle = token.fontStyle ?? 0;
+  if (fontStyle & FONT_ITALIC) declarations.push("font-style:italic");
+  if (fontStyle & FONT_BOLD) declarations.push("font-weight:bold");
+  const decoration = textDecoration(fontStyle);
+  if (decoration != null) declarations.push(`text-decoration:${decoration}`);
+  return declarations.join(";");
+}
+
+/**
+ * Mirrors the native Ferriki JSX integration so both paths emit the same fragments.
+ * @param {import('./index.mjs').HighlightToken} token Dual-theme token.
+ */
+function dualTokenStyle(token) {
+  const light = token.variants?.light ?? {};
+  const dark = token.variants?.dark ?? {};
+  const declarations = [];
+  if (light.color) declarations.push(`color:${light.color}`, `--shiki-light:${light.color}`);
+  if (dark.color) declarations.push(`--shiki-dark:${dark.color}`);
+  declarations.push(...dualFontDeclarations(light.fontStyle ?? 0, dark.fontStyle ?? 0));
+  return declarations.join(";");
+}
+
+/**
+ * @param {number} lightStyle Light theme font style flags.
+ * @param {number} darkStyle Dark theme font style flags.
+ * @returns {string[]} Font declarations with light and dark variables.
+ */
+function dualFontDeclarations(lightStyle, darkStyle) {
+  const declarations = [];
+  for (const [flag, property, on] of /** @type {const} */ ([
+    [FONT_ITALIC, "font-style", "italic"],
+    [FONT_BOLD, "font-weight", "bold"],
+  ])) {
+    if ((lightStyle | darkStyle) & flag) {
+      const lightValue = lightStyle & flag ? on : "normal";
+      const darkValue = darkStyle & flag ? on : "normal";
+      declarations.push(
+        `${property}:${lightValue}`,
+        `--shiki-light-${property}:${lightValue}`,
+        `--shiki-dark-${property}:${darkValue}`,
+      );
+    }
+  }
+  const lightDecoration = textDecoration(lightStyle) ?? "none";
+  const darkDecoration = textDecoration(darkStyle) ?? "none";
+  if (lightDecoration !== "none" || darkDecoration !== "none") {
+    declarations.push(
+      `text-decoration:${lightDecoration}`,
+      `--shiki-light-text-decoration:${lightDecoration}`,
+      `--shiki-dark-text-decoration:${darkDecoration}`,
+    );
+  }
+  return declarations;
+}
+
+/** @param {number} fontStyle TextMate font style flags. */
+function textDecoration(fontStyle) {
+  const underline = (fontStyle & FONT_UNDERLINE) !== 0;
+  const strike = (fontStyle & FONT_STRIKETHROUGH) !== 0;
+  if (underline && strike) return "underline line-through";
+  if (underline) return "underline";
+  return strike ? "line-through" : undefined;
+}
+
+/** @param {string} value Text content. */
+function escapeHtml(value) {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+/** @param {string} value Attribute value. */
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+}
+
+/**
+ * @param {import('./index.mjs').CodeBlockLocation | undefined} block Location argument.
+ * @returns {import('./index.mjs').CodeBlockLocation | undefined} A plain copy.
+ */
+function blockLocation(block) {
+  return block == null ? undefined : { start: block.start, end: block.end };
+}
+
+/**
  * Compose synchronous whole-code-block renderers in priority order.
- * A string handles the block (including an empty string); null or undefined declines it.
+ * A string or `{ html }` handles the block (including an empty string); null or undefined declines it.
  * @param {...import('./index.mjs').CodeBlockRenderer} renderers Trusted render callbacks.
- * @returns {NativeFencedCodeRenderer} A reusable callback for HTML or JSX entry points.
+ * @returns {import('./index.mjs').CodeBlockRenderer} A reusable callback for HTML or JSX entry points.
  */
 export function composeCodeRenderers(...renderers) {
   for (const renderer of renderers) {
@@ -1133,32 +1376,159 @@ export function composeCodeRenderers(...renderers) {
       throw new TypeError("code renderers must be synchronous functions");
     }
   }
-  return (code, language, meta) => {
+  // Code hooks share the public (code, language, meta, block) shape.
+  // eslint-disable-next-line max-params
+  return (code, language, meta, block) => {
     for (const renderer of renderers) {
-      const output = renderer(code, language, meta);
-      if (output != null) {
-        if (typeof output !== "string") {
-          throw new TypeError(
-            "code renderers must return a string, null, or undefined synchronously",
-          );
-        }
-        return output;
-      }
+      const output = checkedRenderResult(renderer(code, language, meta, block));
+      if (output != null) return output;
     }
     return null;
   };
 }
 
 /**
+ * Compose code renderers and code hooks in priority order. Within each stage the
+ * first hook that returns a result handles the block; whole-block replacements
+ * precede highlighting, as in the Rust render hooks.
+ * @param {...import('./index.mjs').CodeRendering} items Functions or hook objects.
+ * @returns {import('./index.mjs').CodeHooks} One hook object for HTML or JSX entry points.
+ */
+export function composeCodeHooks(...items) {
+  const hooks = items.map((item) => checkedCodeHooks(item));
+  const renderers = hooks.flatMap((hook) => (hook.renderCodeBlock ? [hook.renderCodeBlock] : []));
+  const highlighters = hooks.flatMap((hook) =>
+    hook.highlightCodeBlock ? [hook.highlightCodeBlock] : [],
+  );
+  return Object.freeze({
+    renderCodeBlock: composeCodeRenderers(...renderers),
+    // Code hooks share the public (code, language, meta, block) shape.
+    // eslint-disable-next-line max-params
+    highlightCodeBlock(code, language, meta, block) {
+      for (const highlighter of highlighters) {
+        const output = checkedHighlightResult(highlighter(code, language, meta, block));
+        if (output != null) return output;
+      }
+      return null;
+    },
+  });
+}
+
+/**
+ * @param {unknown} item A code renderer function or hook object.
+ * @returns {import('./index.mjs').CodeHooks} Checked hooks.
+ */
+function checkedCodeHooks(item) {
+  if (typeof item === "function") {
+    return { renderCodeBlock: /** @type {import('./index.mjs').CodeBlockRenderer} */ (item) };
+  }
+  if (item === null || typeof item !== "object" || Array.isArray(item)) {
+    throw new TypeError("code hooks must be a function or an object with hook functions");
+  }
+  const hooks = /** @type {Record<string | symbol, unknown>} */ (item);
+  for (const key of Reflect.ownKeys(hooks)) {
+    checkedCodeHook(key, hooks[key]);
+  }
+  return /** @type {import('./index.mjs').CodeHooks} */ (item);
+}
+
+/**
+ * @param {string | symbol} key Hook name.
+ * @param {unknown} hook Hook value.
+ */
+function checkedCodeHook(key, hook) {
+  if (key !== "renderCodeBlock" && key !== "highlightCodeBlock") {
+    throw new TypeError(`unknown code hook "${String(key)}"`);
+  }
+  if (hook != null && typeof hook !== "function") {
+    throw new TypeError(`${key} must be a synchronous function`);
+  }
+}
+
+/** @param {unknown} output Whole-block renderer result. */
+function checkedRenderResult(output) {
+  if (output == null) return null;
+  if (typeof output === "string") return output;
+  if (
+    typeof output === "object" &&
+    typeof (/** @type {{ html?: unknown }} */ (output).html) === "string"
+  ) {
+    return { html: /** @type {{ html: string }} */ (output).html };
+  }
+  throw new TypeError(
+    "code renderers must return a string, { html }, null, or undefined synchronously",
+  );
+}
+
+/** @param {unknown} output Highlighting hook result. */
+function checkedHighlightResult(output) {
+  if (output == null) return null;
+  const value = /** @type {import('./index.mjs').HighlightedCode} */ (output);
+  if (
+    typeof output !== "object" ||
+    !Array.isArray(value.lines) ||
+    !value.lines.every((line) => typeof line === "string")
+  ) {
+    throw new TypeError(
+      "code highlighters must return { lines } with string fragments, null, or undefined synchronously",
+    );
+  }
+  /** @type {import('./index.mjs').HighlightedCode} */
+  const result = { lines: value.lines };
+  for (const key of /** @type {const} */ ([
+    "foreground",
+    "background",
+    "darkForeground",
+    "darkBackground",
+  ])) {
+    if (value[key] != null) {
+      if (typeof value[key] !== "string") {
+        throw new TypeError(`highlighted ${key} must be a string`);
+      }
+      result[key] = value[key];
+    }
+  }
+  return result;
+}
+
+/**
+ * @param {import('./index.mjs').CodeRendering} rendering Function or hooks.
+ * @returns {NativeCodeDispatcher} The native callback.
+ */
+function requiredCodeDispatcher(rendering) {
+  if (rendering === undefined) {
+    throw new TypeError("code renderers must be synchronous functions or code hooks");
+  }
+  return /** @type {NativeCodeDispatcher} */ (codeDispatcher(rendering));
+}
+
+/**
+ * Turn public code rendering into the single native dispatcher.
+ * @param {import('./index.mjs').CodeRendering | undefined} rendering Function or hooks.
+ * @returns {NativeCodeDispatcher | undefined} The native callback.
+ */
+function codeDispatcher(rendering) {
+  if (rendering === undefined) return;
+  const { renderCodeBlock, highlightCodeBlock } = composeCodeHooks(rendering);
+  // Code hooks share the public (code, language, meta, block) shape.
+  // eslint-disable-next-line max-params
+  return (code, language, meta, block) => {
+    const location = { start: block.start, end: block.end };
+    const hook = block.stage === "render" ? renderCodeBlock : highlightCodeBlock;
+    return hook?.(code, language, meta, location) ?? null;
+  };
+}
+
+/**
  * Replace code blocks with trusted HTML through a synchronous renderer.
  * @param {string | Uint8Array} markdown Markdown source.
- * @param {import('./index.mjs').CodeBlockRenderer} renderCode Trusted HTML callback.
+ * @param {import('./index.mjs').CodeRendering} renderCode Trusted code hooks.
  * @param {import('./index.mjs').Options} [options] Rendering options.
  * @returns {string} Rendered HTML.
  */
 export function toHtmlWithCodeRenderer(markdown, renderCode, options) {
   validateOptions(options);
-  const render = composeCodeRenderers(renderCode);
+  const render = requiredCodeDispatcher(renderCode);
   const addon = loadNative();
   const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
@@ -1169,13 +1539,13 @@ export function toHtmlWithCodeRenderer(markdown, renderCode, options) {
 /**
  * Replace code blocks with trusted HTML and retain document metadata.
  * @param {string | Uint8Array} markdown Markdown source.
- * @param {import('./index.mjs').CodeBlockRenderer} renderCode Trusted HTML callback.
+ * @param {import('./index.mjs').CodeRendering} renderCode Trusted code hooks.
  * @param {import('./index.mjs').Options} [options] Rendering options.
  * @returns {import('./index.mjs').TransformResult} HTML, headings, and front matter.
  */
 export function transformWithCodeRenderer(markdown, renderCode, options) {
   validateOptions(options);
-  const render = composeCodeRenderers(renderCode);
+  const render = requiredCodeDispatcher(renderCode);
   const addon = loadNative();
   const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
@@ -1193,7 +1563,9 @@ export function transformWithCodeRenderer(markdown, renderCode, options) {
 // eslint-disable-next-line max-params
 export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, options) {
   validateOptions(options);
-  const render = createHighlighterCodeRenderer(highlighter, highlightOptions);
+  const render = /** @type {NativeCodeDispatcher} */ (
+    codeDispatcher(createHighlighterCodeRenderer(highlighter, highlightOptions))
+  );
   const addon = loadNative();
   const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
@@ -1211,7 +1583,9 @@ export function toHtmlWithHighlighter(markdown, highlighter, highlightOptions, o
 // eslint-disable-next-line max-params
 export function transformWithHighlighter(markdown, highlighter, highlightOptions, options) {
   validateOptions(options);
-  const render = createHighlighterCodeRenderer(highlighter, highlightOptions);
+  const render = /** @type {NativeCodeDispatcher} */ (
+    codeDispatcher(createHighlighterCodeRenderer(highlighter, highlightOptions))
+  );
   const addon = loadNative();
   const packed = isMarkdown(markdown) ? packOptions(options) : options;
   return Array.isArray(packed)
@@ -1220,7 +1594,9 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
 }
 
 /**
- * @typedef {(code: string, language?: string | null, meta?: string | null) => string | null} NativeFencedCodeRenderer
+ * @typedef {(code: string, language: string | null | undefined, meta: string | null | undefined,
+ *   block: { stage: "render" | "highlight", start: number, end: number }) =>
+ *   string | { html: string } | import('./index.mjs').HighlightedCode | null} NativeCodeDispatcher
  * @typedef {{
  *   toHtml(markdown: string | Uint8Array): string
  *   toHtmlBuffer(markdown: string | Uint8Array): import('node:buffer').Buffer
@@ -1232,9 +1608,9 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   extractText(options?: import('./index.mjs').TextExtractionOptions): import('./index.mjs').TextExtraction
  *   projectMarkdown(options?: import('./index.mjs').MarkdownProjectionOptions): import('./index.mjs').MarkdownProjectionResult
  *   render(options?: import('./index.mjs').JsxRenderOptions,
- *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
+ *     renderCode?: NativeCodeDispatcher): import('./index.mjs').JsxResult
  *   renderModule(options?: import('./index.mjs').JsxRenderModuleOptions,
- *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxModuleResult
+ *     renderCode?: NativeCodeDispatcher): import('./index.mjs').JsxModuleResult
  *   takeDiagnostics(): import('./index.mjs').CodePluginDiagnostic[]
  * }} NativePreparedJsxDocument
  * @typedef {{
@@ -1242,10 +1618,10 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     preparationOptions?: Pick<import('./index.mjs').JsxPreparationOptions, 'format' | 'trackReferences'>): NativePreparedJsxDocument
  *   compile(markdown: string | Uint8Array, options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
- *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxResult
+ *     renderCode?: NativeCodeDispatcher): import('./index.mjs').JsxResult
  *   compileModule(markdown: string | Uint8Array, options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
- *     renderCode?: import('./index.mjs').JsxCodeRenderer): import('./index.mjs').JsxModuleResult
+ *     renderCode?: NativeCodeDispatcher): import('./index.mjs').JsxModuleResult
  *   renderCodeBlock(input: import('./index.mjs').JsxCodeBlockRenderInput): import('./index.mjs').JsxCodeBlockRenderResult
  *   toHtml(markdown: string | Uint8Array, options?: import('./index.mjs').Options): string
  *   transform(markdown: string | Uint8Array, options?: import('./index.mjs').Options): import('./index.mjs').TransformResult
@@ -1269,7 +1645,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   linkBasePath: string | undefined,
  *   typography: import('./index.mjs').TypographyOptions | null | undefined,
  *   passes: import('./index.mjs').NativePassOptions[] | null | undefined,
- *   renderer: NativeFencedCodeRenderer,
+ *   renderer: NativeCodeDispatcher,
  * ]} NativePackedRendererOptions
  * @typedef {{
  *   Renderer: {
@@ -1284,13 +1660,13 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *     markdown: string | Uint8Array,
  *     options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
- *     renderCode?: import('./index.mjs').JsxCodeRenderer,
+ *     renderCode?: NativeCodeDispatcher,
  *   ): import('./index.mjs').JsxResult
  *   compileJsxModule(
  *     markdown: string | Uint8Array,
  *     options?: NativeJsxOptions,
  *     jsxOptions?: NativeJsxOptions,
- *     renderCode?: import('./index.mjs').JsxCodeRenderer,
+ *     renderCode?: NativeCodeDispatcher,
  *   ): import('./index.mjs').JsxModuleResult
  *   toHtml(markdown: string | Uint8Array, options?: NativeOptions): string
  *   toHtmlPacked(markdown: string | Uint8Array, ...options: NativePackedOptions): string
@@ -1302,7 +1678,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   toHtmlWithRenderer(
  *     markdown: string | Uint8Array,
  *     options: NativeOptions,
- *     renderer: NativeFencedCodeRenderer,
+ *     renderer: NativeCodeDispatcher,
  *   ): string
  *   toHtmlWithRendererPacked(
  *     markdown: string | Uint8Array,
@@ -1319,7 +1695,7 @@ export function transformWithHighlighter(markdown, highlighter, highlightOptions
  *   transformWithRenderer(
  *     markdown: string | Uint8Array,
  *     options: NativeOptions,
- *     renderer: NativeFencedCodeRenderer,
+ *     renderer: NativeCodeDispatcher,
  *   ): import('./index.mjs').TransformResult
  *   transformWithRendererPacked(
  *     markdown: string | Uint8Array,
