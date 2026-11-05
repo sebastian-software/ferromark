@@ -473,8 +473,8 @@ Ferromark keeps its code block wrapper, line annotations, title and
 addon includes no engine.
 
 ````js
-import { createHighlighter } from "@ferriki/core";
 import { Renderer } from "@ferrigura/core";
+import { createHighlighter } from "@ferriki/core";
 import {
   compileJsx,
   composeCodeHooks,

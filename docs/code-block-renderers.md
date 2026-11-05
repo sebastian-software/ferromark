@@ -97,8 +97,8 @@ Promises and other shapes throw. Exceptions propagate; the adapters below catch
 their engine's errors instead and fall back to ordinary code.
 
 ```js
-import { createHighlighter } from "@ferriki/core";
 import { Renderer } from "@ferrigura/core";
+import { createHighlighter } from "@ferriki/core";
 import {
   compileJsx,
   composeCodeHooks,
