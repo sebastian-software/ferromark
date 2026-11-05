@@ -101,18 +101,16 @@ With `output: "module"` it returns a complete MDX module and source map instead.
 Your application compiles JSX and supplies components. Ferromark adds no React
 imports. JSX is a trusted program; HTML APIs keep their existing trust policies.
 
-`CodeCompiler` reuses selected native plugins and prepared documents, with
-standalone code rendering. See the [Node JSX guide](docs/jsx-node.md) and
-[Rust renderer contract](docs/jsx-renderer.md).
+`compileJsx` accepts the same code hooks as the HTML APIs. See the
+[Node JSX guide](docs/jsx-node.md) and [Rust renderer contract](docs/jsx-renderer.md).
 
 ### Syntax highlighting and Mermaid diagrams
 
-Ferriki and Ferrigura use optional code-rendering hooks. The standard Node addon
-includes neither engine; custom bundles select either or both. The plugin API
-requires a source build or custom bundle.
-
-[Integration guide](https://ferromark.dev/guide/code-rendering): Rust hooks, Node
-callbacks, native bundles, release availability, SVG safety, and diagnostics.
+Ferriki highlights code and Ferrigura renders Mermaid as static SVG. Both use
+the same code-block hooks: the `ferriki` and `ferrigura` features in Rust, or
+`@ferriki/core` and `@ferrigura/core` passed to the Node renderer. Without them,
+Ferromark contains no engine.
+[Highlighting and diagrams guide](https://ferromark.dev/guide/code-rendering).
 
 ### Document analysis
 
@@ -127,7 +125,7 @@ Rust and Node offer
 - [Configuration](https://ferromark.dev/guide/configuration) — syntax and output policies.
 - [Content pipelines](https://ferromark.dev/guide/pipelines) — document metadata, navigation, and presentation.
 - [Rendering and trust](https://ferromark.dev/guide/rendering) — defaults and input boundaries.
-- [Code rendering](https://ferromark.dev/guide/code-rendering) — optional Ferriki highlighting, Ferrigura diagrams, and native plugin bundles.
+- [Highlighting and diagrams](https://ferromark.dev/guide/code-rendering) — Ferriki code and Ferrigura Mermaid diagrams.
 - [Architecture](https://ferromark.dev/guide/architecture) — arena AST, modules, and integration points.
 - [MDX boundaries](https://ferromark.dev/guide/mdx) — HTML syntax capture and JSX compilation.
 

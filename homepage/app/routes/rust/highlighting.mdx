@@ -12,22 +12,28 @@ import { RuntimeSwitch } from "../../components/runtime-switch";
 Use `HtmlRenderHooks` to replace output for selected AST nodes. The normal
 `render()` path does not dispatch hooks; opt in with `render_with_hooks()`.
 
-For syntax highlighting, enable Ferromark's optional `ferriki` Cargo feature and
-use `FerrikiHighlightHooks` with an initialized Ferriki highlighter. Ferromark
-keeps the code-block wrappers, line numbers, and annotations. The optional
-`ferriki-remote` feature enables release-pinned CDN assets. Build the
-highlighter and preload required languages/themes before rendering. See the
-[native highlighting guide](https://github.com/sebastian-software/ferromark/blob/main/docs/native-code-highlighting.md) for the adapter contract.
+For syntax highlighting and Mermaid diagrams, use the optional `ferriki` and
+`ferrigura` features described [below](#highlight-code-and-render-diagrams).
+Ferromark keeps the code-block wrappers, line numbers, and annotations around
+highlighted lines. The optional `ferriki-remote` feature enables release-pinned
+CDN assets. See the
+[native highlighting guide](https://github.com/sebastian-software/ferromark/blob/main/docs/native-code-highlighting.md)
+for the adapter contract.
 
 ````rust
-use ferromark::{Allocator, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks,
-    HtmlRenderer, Parser};
+use ferromark::{
+    Allocator, HtmlRenderContext, HtmlRenderControl, HtmlRenderHooks,
+    HtmlRenderer, Parser,
+};
 use ferromark::ast::Node;
 
 struct CodeRenderer;
 impl HtmlRenderHooks for CodeRenderer {
-    fn render_node(&mut self, node: &Node<'_>, cx: &mut HtmlRenderContext<'_>)
-        -> HtmlRenderControl {
+    fn render_node(
+        &mut self,
+        node: &Node<'_>,
+        cx: &mut HtmlRenderContext<'_>,
+    ) -> HtmlRenderControl {
         if let Node::CodeBlock(block) = node {
             cx.write("<pre class=\"source\"><code>");
             cx.write_escaped(&block.value);
@@ -41,7 +47,8 @@ impl HtmlRenderHooks for CodeRenderer {
 let source = "```rust\nfn main() {}\n```";
 let allocator = Allocator::for_source_len(source.len());
 let document = Parser::new(&allocator, source).parse().unwrap();
-let html = HtmlRenderer::new().render_with_hooks(&document, &mut CodeRenderer);
+let html = HtmlRenderer::new()
+    .render_with_hooks(&document, &mut CodeRenderer);
 assert!(html.contains("class=\"source\""));
 ````
 
@@ -59,13 +66,45 @@ For code annotations, line numbers, and heading permalinks, inspect the existing
 `HtmlRendererOptions` before writing a hook. [Rendering and trust](/guide/rendering)
 explains the shared output boundary.
 
-## Compose highlighting and diagrams
+## Highlight code and render diagrams
 
-Use `HtmlRenderHooks::render_code_block` for whole-block replacements and
-`highlight_code_block` for highlighted line fragments. A tuple composes hooks;
-all whole-block replacements run before highlighting. The code-only
-`render_with_code_hooks` entry point preserves normal inline rendering.
+Enable the optional features you need:
 
-The optional `ferrigura` feature implements these HTML and JSX contracts with
-`FerriguraHooks`, just as the `ferriki` feature does with `FerrikiHighlightHooks`. The [highlighting and diagrams guide](/guide/code-rendering)
-explains the available builds and links to the Rust adapter example.
+```sh
+cargo add ferromark --features ferriki,ferrigura
+```
+
+`FerrikiHighlightHooks` implements the highlighting stage and
+`FerriguraHooks` the whole-block stage. A tuple composes them; whole-block
+replacements run before highlighting, and the first hook that returns a result
+wins within each stage:
+
+```rust
+use ferromark::ferrigura::{Renderer, Value};
+use ferromark::{
+    Allocator, FerriguraHooks, FerrikiHighlightHooks, HtmlRenderer,
+    Parser,
+};
+
+let source = std::fs::read_to_string("guide.md")?;
+let allocator = Allocator::for_source_len(source.len());
+let document = Parser::new(&allocator, &source).parse()?;
+
+let renderer = Renderer::new(&Value::empty_object());
+let diagrams = FerriguraHooks::new(renderer, "page")?;
+let highlighting =
+    FerrikiHighlightHooks::new(&mut highlighter, "github-dark");
+let mut hooks = (diagrams, highlighting);
+let html = HtmlRenderer::new()
+    .render_with_code_hooks(&document, &mut hooks);
+```
+
+`highlighter` is a Ferriki highlighter with the theme and languages loaded.
+`render_with_code_hooks` keeps normal inline rendering and dispatches only the
+two code stages. For JSX, `FerrikiJsxHooks` and the same `FerriguraHooks`
+implement `JsxRenderHooks`. To write your own engine adapter, implement
+`render_code_block` for whole blocks or `highlight_code_block` for line
+fragments; `ferromark::html_to_jsx` converts trusted HTML or SVG for JSX output.
+
+The [highlighting and diagrams guide](/guide/code-rendering) compares the Rust,
+Node.js, and native plugin integrations.

@@ -29,8 +29,9 @@ The Node `compileJsx` API returns a JSX fragment and metadata. Set
 still contains JSX: your application's JSX transform compiles it and your
 application supplies components. Module blocks accept JavaScript, not TypeScript.
 
-Reuse `CodeCompiler` with explicitly selected plugins for native highlighting. Its `prepare`
-method separates parsing and native passes from later rendering decisions.
+Pass [code hooks](/guide/code-rendering) to highlight code and render diagrams
+in the JSX output. `prepareDocument` and `CodeCompiler.prepare` separate parsing
+and native passes from later rendering decisions.
 The immutable handle exposes metadata without highlighting and can render a
 body or module repeatedly. Its preparation-time outline can differ from the
 final output after title omission or heading changes; use final result
