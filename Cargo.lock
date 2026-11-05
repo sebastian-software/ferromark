@@ -72,6 +72,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "block-buffer"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2f6c7dbe95a6ed67ad9f18e57daf93a2f034c524b99fd2b76d18fdfeb6660aa"
+dependencies = [
+ "hybrid-array",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -131,6 +140,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e17dd265a7d0f31ef544e1b20e03add05d3b45b491b633b10d67145d2acc1a38"
 dependencies = [
  "find-msvc-tools",
+ "jobserver",
+ "libc",
  "shlex",
 ]
 
@@ -236,6 +247,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-oid"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
+
+[[package]]
 name = "convert_case"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -271,6 +288,15 @@ name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "cpufeatures"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ca28b0ae3115b884660db4118d803791fd6756b6e88f39c0f3f7859060d7566"
 dependencies = [
  "libc",
 ]
@@ -361,6 +387,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto-common"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453"
+dependencies = [
+ "hybrid-array",
+]
+
+[[package]]
 name = "cssparser"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -383,8 +418,19 @@ version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
- "block-buffer",
- "crypto-common",
+ "block-buffer 0.10.4",
+ "crypto-common 0.1.7",
+]
+
+[[package]]
+name = "digest"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
+dependencies = [
+ "block-buffer 0.12.1",
+ "const-oid",
+ "crypto-common 0.2.2",
 ]
 
 [[package]]
@@ -467,9 +513,9 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "ferrigura"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d31b20682851f889a70019d44fa9096afecbe9bf80825d68e0ab7bec57973ec1"
+checksum = "43f2bcdc4e2c395f9f5ca69948459c09d9e972a7662e7cd7ee61ddb33bb8937e"
 dependencies = [
  "ferrigura-model",
  "ferrigura-render",
@@ -479,18 +525,18 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-cose"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e738f0262a1caef9a4bc1e1011cd390e82ee9412c87243a66a308509a0973855"
+checksum = "994292067102762722f62657e3b45e72bfb072946f33547b338c7148c8dc4919"
 dependencies = [
  "ferrigura-jsmath",
 ]
 
 [[package]]
 name = "ferrigura-elk"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfc3557e5ac2013f22d6f9d267cf8efead82fcc36dec73da8009500d26057679"
+checksum = "611f84393c2bfc29c59cb13369c4510c3f4cecca6003408fc8663a9e2e4ff4dd"
 dependencies = [
  "indexmap",
  "serde",
@@ -499,15 +545,15 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-jsmath"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5e91076f2be6c0e9d1aebaeb116cfb06a2c18b69bed35dc9edcac686663295b"
+checksum = "f767bed60bdfb1a06d6d3ae746df95446ec6a340564a90abc73b884f2008047a"
 
 [[package]]
 name = "ferrigura-model"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77b0a6814af548709e7149173d7916a0d1623b7af8acc88798959f50e4c7586f"
+checksum = "92f386e77728dad03041a422f36e38e7708434abffd6c24249ef5316f0332882"
 dependencies = [
  "regex",
  "serde",
@@ -517,18 +563,18 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-path"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a10af534f6837e892cfdda968e2b4cfbb65963084d8196d8383a31fd0bf6d65"
+checksum = "99eba72224c6f25e448fbb555008e8ebad47ceab373b47ed95af7c9c73eadb0c"
 dependencies = [
  "ferrigura-jsmath",
 ]
 
 [[package]]
 name = "ferrigura-render"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0836f988007f7a04c166b3b4d14b16b4e0e7dfac6b43255980da541709e0ef6"
+checksum = "13db31d5115d7e77e182e8d83bb0d384cf8f2308a0e3e531e42c978dc34aa392"
 dependencies = [
  "base64",
  "ferrigura-cose",
@@ -547,9 +593,9 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-swimlane"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd2ec0c19fd5810683bb7f3da4ffe1dd273ea78fcb85a632fa0736d3cb8fed4f"
+checksum = "149dbe41750d1311f6312ac443a7077f5c47e428a4344780a7bc1a7bad0fc441"
 dependencies = [
  "ferrigura-jsmath",
  "indexmap",
@@ -558,9 +604,9 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-syntax"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4906a38dd1fd0f8660a7d97b9f50b0eaa3b8a86d8af18666168ad104fb2069c1"
+checksum = "9ea168dcf9599d537e6550f68b4eb66a3911048bee370a2c8564cd985b5203f3"
 dependencies = [
  "ferrigura-model",
  "indexmap",
@@ -572,9 +618,9 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-text"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90237462f4eaa8010742ba5bc6b26bd206e19f337e2fba4309727ef2618c0273"
+checksum = "ff06b6733247bbac593befdc77beb7ab789838edf88193e6c9ec75c635d2e0ef"
 dependencies = [
  "base64",
  "harfrust",
@@ -585,49 +631,54 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-venn"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc1ae79b9d88c58cd0facb1fbe9458783a1679c7c2ae3edb5247aa8045111180"
+checksum = "23b8127113d68deb9a1750288bcbf67d708c3535040aec1f33d9a35bcc48274e"
 dependencies = [
  "ferrigura-jsmath",
 ]
 
 [[package]]
 name = "ferriki"
-version = "1.1.2"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e69cfd960bea862c0b894a324239469c5b0d5e3b94ac4a25c8c12e902f9904f4"
+checksum = "cc5a01b9e25ea502b0b3582899955831dd57af1fde185ad614ca1eb046f57213"
 dependencies = [
  "ferriki-asset-gen",
  "ferriki-textmate",
  "rustls",
+ "rustls-webpki",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.1",
  "ureq",
+ "webpki-root-certs",
 ]
 
 [[package]]
 name = "ferriki-asset-gen"
-version = "1.1.2"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55c9a94ffd73c7e00ab70b7e2726bc14188ff511b865fe7504a45b76d39fc907"
+checksum = "2c4dfd9c324d6f0944033142166d559a28dcb18d13a46cd90a872986d8b8f879"
 dependencies = [
+ "ferriki-textmate",
  "postcard",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.1",
 ]
 
 [[package]]
 name = "ferriki-textmate"
-version = "1.1.2"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc306237f393d0f4943d114fc2062ae32889f29c884e9a2b667f187009008afc"
+checksum = "80c317a5b89e7a7675e91e226b6d4d127f9e94b94ef89e704b24a5fb6f38917e"
 dependencies = [
  "ferroni",
  "serde",
  "serde_json",
+ "sha2 0.11.1",
+ "zstd",
 ]
 
 [[package]]
@@ -650,7 +701,7 @@ dependencies = [
  "roxmltree",
  "rustc-hash",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "smallvec",
  "thiserror",
 ]
@@ -916,6 +967,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87"
 
 [[package]]
+name = "hybrid-array"
+version = "0.4.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27f864f10dfb56725ce5ce5472bc52252c8f93a4ab86327122cebf62c5f59a17"
+dependencies = [
+ "typenum",
+]
+
+[[package]]
 name = "icu_collections"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1105,6 +1165,16 @@ checksum = "38c0b942f458fe50cdac086d2f946512305e5631e720728f2a61aabcd47a6264"
 dependencies = [
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "jobserver"
+version = "0.1.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c00acbd29eabad4a2392fa0e921c874934dbbf4194312ad20f04a0ed67a3cb3"
+dependencies = [
+ "getrandom 0.4.3",
+ "libc",
 ]
 
 [[package]]
@@ -1572,6 +1642,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
+name = "pkg-config"
+version = "0.3.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
+
+[[package]]
 name = "plotters"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1966,8 +2042,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
 dependencies = [
  "cfg-if",
- "cpufeatures",
- "digest",
+ "cpufeatures 0.2.17",
+ "digest 0.10.7",
+]
+
+[[package]]
+name = "sha2"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d7069beb7d6ac7b9acd1039986e73443f24234f41074da099d6f994ac9ad19"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.3.1",
+ "digest 0.11.3",
 ]
 
 [[package]]
@@ -2610,3 +2697,31 @@ name = "zmij"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
+
+[[package]]
+name = "zstd"
+version = "0.14.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db3ae9bf90af6e40197bef767eeefc46ad6397420fe873830bd85e5fbbfb3c70"
+dependencies = [
+ "zstd-safe",
+]
+
+[[package]]
+name = "zstd-safe"
+version = "8.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ded520f16b29e1a9b771c722221b2b0a0398c2316d9bb3c42b458a5414d7434b"
+dependencies = [
+ "zstd-sys",
+]
+
+[[package]]
+name = "zstd-sys"
+version = "2.1.2+zstd.1.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "481ada9c543b2323cbb7bbdbb5249177fbf0188ed959ed2c15e4b22421c84ed3"
+dependencies = [
+ "cc",
+ "pkg-config",
+]
