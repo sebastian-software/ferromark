@@ -1,0 +1,643 @@
+/*
+ * Ferromark's own specimens on the Monografie homepage (and one fit of the
+ * header on the guides, under `fm-docs`): rendered documents,
+ * the engine drawing, the typography loupe, the agreement table and the cards'
+ * contents. Everything is scoped to `fm-` classes and takes the package's
+ * `--mono-*` tokens; the page system itself lives in ferramenta-family.
+ * scripts/verify-build.mjs fails on a selector that does not start with `.fm-`.
+ */
+
+/* ---------- Ardo shell: the homepage's main stands on the page's paper ---------- */
+.fm-shell {
+  min-height: 0;
+  background: transparent;
+}
+.fm-shell > div {
+  padding-block-start: 0;
+}
+.fm-shell #main-content {
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+.fm-site {
+  min-height: 100vh;
+}
+
+/* ---------- Guides: one menu on narrow screens ---------- */
+/* The guides' own drawer carries their navigation below 961px; a second,
+   identical menu icon beside it would only confuse. The name leads home. */
+@media (max-width: 960px) {
+  .fm-docs .mono-menu-button {
+    display: none;
+  }
+  .fm-docs .mono-header-actions {
+    margin-left: auto;
+  }
+}
+
+/* ---------- Rendered documents ---------- */
+.fm-source {
+  margin: 0;
+  font: 400 14px/1.75 var(--mono-mono);
+  color: #3a3631;
+  white-space: pre-wrap;
+  tab-size: 2;
+}
+.fm-source .fm-line {
+  display: block;
+  padding: 0 6px;
+  margin: 0 -6px;
+  border-radius: 2px;
+  transition: background 0.18s ease;
+  min-height: 1.75em;
+}
+.fm-source .fm-line.fm-on {
+  background: var(--mono-oxide-wash);
+}
+.fm-rendered {
+  font: 400 16.5px/1.6 var(--mono-sans);
+  color: var(--mono-ink);
+}
+.fm-rendered > * {
+  transition: background 0.18s ease;
+  border-radius: 2px;
+}
+.fm-rendered > .fm-on {
+  background: var(--mono-oxide-wash);
+}
+.fm-rendered h2 {
+  font: 600 25px/1.2 var(--mono-serif);
+  margin: 0 0 10px;
+}
+.fm-rendered p {
+  margin: 0 0 12px;
+}
+.fm-rendered code {
+  background: rgba(38, 35, 31, 0.06);
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 0.82em;
+}
+.fm-rendered figure {
+  margin: 0 0 18px;
+}
+.fm-rendered blockquote {
+  margin: 0;
+  padding: 2px 0 2px 16px;
+  border-left: 2px solid var(--mono-oxide);
+  font-style: italic;
+  font-size: 19px;
+}
+.fm-rendered blockquote p {
+  margin: 0;
+}
+.fm-rendered figcaption {
+  font: 400 14px/1.5 var(--mono-sans);
+  color: var(--mono-ink-2);
+  margin: 6px 0 0 18px;
+}
+.fm-rendered table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 15px/1.4 var(--mono-sans);
+  margin: 0 0 16px;
+}
+.fm-rendered caption {
+  caption-side: top;
+  text-align: left;
+  font: italic 400 14.5px/1.4 var(--mono-serif);
+  color: var(--mono-ink-2);
+  padding-bottom: 6px;
+}
+.fm-rendered th {
+  font-weight: 600;
+  border-bottom: 1px solid var(--mono-ink);
+  padding: 6px 8px 6px 0;
+}
+.fm-rendered td {
+  border-bottom: 1px solid var(--mono-hair-2);
+  padding: 6px 8px 6px 0;
+}
+.fm-rendered mark {
+  background: #efe0c9;
+  color: inherit;
+  padding: 0 2px;
+}
+.fm-rendered ins {
+  text-decoration-color: var(--mono-oxide);
+  text-underline-offset: 3px;
+}
+.fm-rendered sup a {
+  font: 600 11px/1 var(--mono-sans);
+  text-decoration: none;
+}
+.fm-rendered .footnote {
+  border-top: 1px solid var(--mono-hair);
+  margin-top: 10px;
+  padding-top: 8px;
+  font: 400 13.5px/1.5 var(--mono-sans);
+  color: var(--mono-ink-2);
+  display: flex;
+  gap: 8px;
+}
+.fm-rendered .footnote p {
+  margin: 0;
+}
+.fm-rendered .footnote::before {
+  content: "1";
+  font-weight: 600;
+  color: var(--mono-oxide);
+}
+.fm-rendered .footnote a {
+  text-decoration: none;
+}
+.fm-rendered abbr {
+  text-decoration: underline dotted rgba(38, 35, 31, 0.45);
+  text-underline-offset: 3px;
+}
+
+/* ---------- Inside the engine ---------- */
+.fm-drawing {
+  margin: 64px 0 24px;
+  --fm-steel-1: #fbfaf8;
+  --fm-steel-2: #e4e2dd;
+  --fm-steel-3: #cfccc5;
+  --fm-oxide-1: #f6ece6;
+  --fm-oxide-2: #ead6cb;
+  --fm-oxide-3: #dcbfae;
+}
+.fm-drawing svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.fm-drawing .fm-iso-steel-1 {
+  stop-color: var(--fm-steel-1);
+}
+.fm-drawing .fm-iso-steel-2 {
+  stop-color: var(--fm-steel-2);
+}
+.fm-drawing .fm-iso-steel-3 {
+  stop-color: var(--fm-steel-3);
+}
+.fm-drawing .fm-iso-oxide-1 {
+  stop-color: var(--fm-oxide-1);
+}
+.fm-drawing .fm-iso-oxide-2 {
+  stop-color: var(--fm-oxide-2);
+}
+.fm-drawing .fm-iso-oxide-3 {
+  stop-color: var(--fm-oxide-3);
+}
+.fm-drawing .fm-iso-side {
+  fill: #b6b2aa;
+}
+.fm-drawing .fm-iso-hot .fm-iso-side {
+  fill: #b98e79;
+}
+.fm-drawing .fm-iso-top {
+  stroke: var(--mono-steel-3);
+  stroke-width: 0.75;
+}
+.fm-drawing .fm-iso-hot .fm-iso-top {
+  stroke: var(--mono-oxide-2);
+}
+.fm-drawing .fm-iso-edge-light {
+  stroke: #fff;
+  stroke-width: 0.8;
+  opacity: 0.9;
+}
+.fm-drawing .fm-iso-code {
+  font-family: var(--mono-mono);
+  fill: var(--mono-ink-2);
+}
+.fm-drawing .fm-iso-cell {
+  fill: none;
+  stroke: var(--mono-steel-3);
+  stroke-width: 0.6;
+}
+.fm-drawing .fm-iso-hit {
+  fill: var(--mono-oxide-2);
+  stroke: var(--mono-steel-3);
+  stroke-width: 0.6;
+}
+.fm-drawing .fm-iso-filled {
+  fill: var(--mono-oxide-2);
+  fill-opacity: 0.78;
+  stroke: var(--mono-oxide-2);
+  stroke-width: 0.55;
+}
+.fm-drawing .fm-iso-slot {
+  fill: none;
+  stroke: var(--mono-oxide-2);
+  stroke-width: 0.55;
+}
+.fm-drawing .fm-iso-edge {
+  stroke: var(--mono-oxide-2);
+  stroke-width: 0.9;
+}
+.fm-drawing .fm-iso-root {
+  fill: var(--mono-oxide-2);
+  stroke: var(--mono-oxide);
+  stroke-width: 0.9;
+}
+.fm-drawing .fm-iso-node {
+  fill: #fbf4ef;
+  stroke: var(--mono-oxide);
+  stroke-width: 0.9;
+}
+.fm-drawing .fm-iso-wire {
+  stroke: var(--mono-steel-3);
+  stroke-width: 0.8;
+}
+.fm-drawing .fm-iso-label {
+  font: 600 19px var(--mono-serif);
+  fill: var(--mono-ink);
+  white-space: pre;
+}
+.fm-drawing .fm-iso-hot .fm-iso-label {
+  fill: var(--mono-oxide);
+}
+.fm-drawing .fm-iso-caption {
+  font: 400 13px/1.4 var(--mono-sans);
+  color: var(--mono-ink-2);
+}
+.fm-drawing .fm-iso-bracket {
+  fill: none;
+  stroke: var(--mono-oxide-2);
+  stroke-width: 0.8;
+}
+.fm-drawing .fm-iso-note {
+  font: 400 13.5px var(--mono-sans);
+  fill: var(--mono-oxide);
+}
+
+/* ---------- Specification agreement ---------- */
+.fm-agree {
+  margin: 80px 0 0;
+}
+.fm-agree h3 {
+  font-size: 21px;
+}
+.fm-agree .fm-agree-sub {
+  font: 400 14px/1.5 var(--mono-sans);
+  color: var(--mono-ink-2);
+  margin: 0 0 16px;
+}
+.fm-agree table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 14.5px/1.3 var(--mono-sans);
+}
+.fm-agree th {
+  text-align: left;
+  font-weight: 600;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--mono-ink);
+}
+.fm-agree td {
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--mono-hair-2);
+  vertical-align: middle;
+}
+.fm-agree td small {
+  color: var(--mono-ink-3);
+  font-size: 12.5px;
+  margin-left: 6px;
+}
+.fm-agree .fm-own td:first-child {
+  color: var(--mono-oxide);
+  font-weight: 600;
+}
+.fm-meter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fm-meter .fm-meter-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(38, 35, 31, 0.08);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.fm-meter .fm-meter-track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--mono-steel-2);
+  border-radius: 2px;
+}
+.fm-agree .fm-own .fm-meter-track i {
+  background: var(--mono-oxide);
+}
+.fm-meter b {
+  font: 500 13.5px/1 var(--mono-mono);
+  min-width: 66px;
+  text-align: right;
+}
+.fm-meter .fm-meter-none {
+  font: 400 13px/1 var(--mono-sans);
+  color: var(--mono-ink-3);
+}
+
+/* ---------- FFM features ---------- */
+.fm-features {
+  margin: 56px 0 0;
+  columns: 3;
+  column-gap: 40px;
+  font: 400 14.5px/1.4 var(--mono-sans);
+}
+.fm-features div {
+  break-inside: avoid;
+  padding: 8px 0 9px;
+  border-top: 1px solid var(--mono-hair-2);
+}
+.fm-features dt {
+  color: var(--mono-ink);
+  font-weight: 500;
+}
+.fm-features dd {
+  margin: 2px 0 0;
+  font: 400 13px/1.4 var(--mono-mono);
+  color: var(--mono-ink-2);
+}
+
+/* ---------- Typography loupe ---------- */
+.fm-typo {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 64px;
+  align-items: center;
+  margin: 72px 0 0;
+}
+.fm-loupe {
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 38%, #fff 0%, #f7f6f3 55%, #ecebe6 100%);
+  box-shadow:
+    0 0 0 1px rgba(38, 35, 31, 0.14),
+    0 0 0 7px #f0eee9,
+    0 0 0 8px rgba(38, 35, 31, 0.12),
+    0 22px 40px -26px rgba(38, 35, 31, 0.55),
+    inset 0 2px 6px rgba(38, 35, 31, 0.08);
+  position: relative;
+}
+.fm-loupe .fm-glyphs {
+  font: 600 128px/1 var(--mono-serif);
+  color: var(--mono-ink);
+  display: flex;
+  gap: 34px;
+  letter-spacing: -0.02em;
+  padding-top: 0.42em;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+.fm-loupe .fm-glyphs.fm-swap {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.fm-loupe .fm-glyphs span:first-child {
+  color: var(--mono-oxide);
+}
+.fm-loupe .fm-loupe-language {
+  position: absolute;
+  bottom: 70px;
+  font: 500 13px/1 var(--mono-sans);
+  color: var(--mono-ink-2);
+}
+.fm-typo .fm-typo-out {
+  font: 600 28px/1.35 var(--mono-serif);
+  color: var(--mono-ink);
+  margin: 0 0 12px;
+  min-height: 2.7em;
+}
+.fm-typo .fm-typo-out p {
+  margin: 0;
+}
+.fm-typo .fm-typo-in {
+  font: 400 14px/1.5 var(--mono-mono);
+  color: var(--mono-ink-2);
+  margin: 0 0 22px;
+  white-space: pre;
+}
+.fm-languages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.fm-languages button {
+  font: 500 13px/1 var(--mono-mono);
+  border: 0;
+  padding: 7px 9px;
+  border-radius: 2px;
+  cursor: pointer;
+  color: var(--mono-ink-2);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--mono-hair);
+}
+.fm-languages button[aria-pressed="true"] {
+  color: #fbf3ee;
+  background: var(--mono-oxide);
+  box-shadow: none;
+}
+
+/* ---------- Cards ---------- */
+.fm-sub-head {
+  font: 600 13px/1.3 var(--mono-sans);
+  color: var(--mono-ink-2);
+  margin: 16px 0 6px;
+}
+.fm-sub-head:first-of-type {
+  margin-top: 0;
+}
+.fm-trust .mono-card pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.fm-trust .mono-card pre .fm-hit {
+  background: var(--mono-oxide-wash);
+  color: var(--mono-oxide);
+  border-radius: 2px;
+}
+.fm-defaults.mono-table {
+  margin-top: 48px;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.fm-code .mono-card pre {
+  font-size: 12.5px;
+}
+.fm-highlighted pre {
+  margin: 0;
+  font: 400 13.5px/1.7 var(--mono-mono);
+  background: transparent !important;
+  white-space: pre;
+  overflow-x: auto;
+}
+.fm-code .fm-highlighted pre {
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+.fm-diagram svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.fm-out-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font: 400 13.5px/1.5 var(--mono-mono);
+}
+.fm-out-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--mono-hair-2);
+}
+.fm-out-list li span:last-child {
+  color: var(--mono-ink-3);
+}
+
+/* ---------- At work ---------- */
+.fm-apps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin: 56px 0 0;
+}
+.fm-app {
+  background: #fff;
+  padding: 22px 24px;
+  box-shadow:
+    0 0 0 1px var(--mono-hair-2),
+    0 14px 28px -24px rgba(38, 35, 31, 0.5);
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 16px;
+  align-items: start;
+  font: 400 15px/1.5 var(--mono-sans);
+  color: var(--mono-ink-2);
+}
+.fm-app img {
+  width: 52px;
+  height: 52px;
+}
+.fm-app h3 {
+  font: 600 18px/1.2 var(--mono-sans);
+  margin: 2px 0 4px;
+  color: var(--mono-ink);
+}
+.fm-app p {
+  margin: 0 0 6px;
+}
+.fm-app .fm-runs {
+  font: 400 12.5px/1.4 var(--mono-mono);
+  color: var(--mono-ink-3);
+}
+
+/* ---------- Tablet ---------- */
+@media (max-width: 960px) {
+  .fm-typo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+    justify-items: center;
+  }
+  .fm-typo > :not(.fm-loupe) {
+    justify-self: stretch;
+  }
+  .fm-features {
+    columns: 2;
+  }
+  .fm-apps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 640px) {
+  .fm-loupe {
+    width: 260px;
+    height: 260px;
+  }
+  .fm-loupe .fm-glyphs {
+    font-size: 92px;
+    gap: 22px;
+  }
+  .fm-loupe .fm-loupe-language {
+    bottom: 48px;
+  }
+  .fm-typo .fm-typo-out {
+    font-size: 23px;
+  }
+  .fm-rendered {
+    font-size: 16px;
+  }
+  .fm-rendered table {
+    display: block;
+    overflow-x: auto;
+    font-size: 14px;
+  }
+  /* the drawing keeps its scale and scrolls sideways inside its own box */
+  .fm-drawing {
+    margin: 44px -16px 16px;
+    padding: 0 16px 8px;
+    overflow-x: auto;
+  }
+  .fm-drawing svg {
+    min-width: 820px;
+  }
+  .fm-features {
+    columns: 1;
+  }
+  .fm-apps {
+    margin-top: 44px;
+  }
+  .fm-app {
+    grid-template-columns: 40px 1fr;
+    padding: 18px;
+  }
+  .fm-app img {
+    width: 40px;
+    height: 40px;
+  }
+  /* the figures carry the agreement table; the meters need the room */
+  .fm-meter .fm-meter-track {
+    display: none;
+  }
+  .fm-meter b {
+    min-width: 0;
+    text-align: left;
+  }
+  .fm-agree th {
+    font-size: 12.5px;
+  }
+  .fm-agree td small {
+    display: block;
+    margin-left: 0;
+  }
+  .fm-agree {
+    margin-top: 56px;
+  }
+  .fm-agree table {
+    font-size: 13.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-site *,
+  .fm-site *::before,
+  .fm-site *::after {
+    transition: none !important;
+  }
+}

@@ -4,21 +4,29 @@ This private workspace contains the Ardo 6 site for Ferromark.
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for repository checks and the boundaries
 between the native engine, Node.js bindings, and website.
 
-## Shared Ferra system
+## Monografie homepage and Ferra guides
 
-The site consumes `ferramenta-family/ferra` and `ferramenta-family/ferra.css`
-from a pinned Git commit. The family package owns the warm light scheme,
-IBM Plex Sans display type, Blender illustrations, soft cards, site chrome,
-documentation layout, and benchmark table presentation. Shared patterns belong
-in that package and its kit; project-specific content stays here. The site has
-no local CSS. It imports `ferra.css` and the shared optional `ferra-ardo.css`
-adapter, including the homepage, docs, tables, and interactive examples.
+The site consumes `ferramenta-family` from a pinned Git commit. The homepage
+uses the Monografie page system (`ferramenta-family/monografie` and
+`monografie.css`, Ferramenta ADR-0012): the steel header, the instrument as the
+opening plate, one reading column with margin notes, facing sheets, cards, the
+comparison chart and the closing. The documentation keeps the Ferra reading
+layout (`ferramenta-family/ferra`, `ferra.css` and the `ferra-ardo.css`
+adapter).
 
-`app/root.tsx` passes `FerraHeader` through Ardo's header slot and renders
-`FerraFooter` outside Ardo's main landmark. `FerraReadingLayout` combines the
-section navigation, bounded reading surface, and Ardo's live outline. A controlled mobile menu
-keeps every guide reachable on narrow screens. Ardo owns routing, search,
-code blocks, and prerendering; the homepage opts into its bare layout.
+`app/root.tsx` passes `MonoHeader` through Ardo's header slot on every page and
+renders `MonoFooter` outside Ardo's main landmark. On the guides the header also
+carries Ardo's mobile documentation menu and search; `FerraReadingLayout`
+combines the section navigation, the bounded reading surface and Ardo's live
+outline. The release tag in the header and the toolchain minimums come from the
+build-time snapshot in `app/data/release.json`.
+
+Ferromark's own specimens live in `app/components/`: the rendered sheets with
+line linking (`rendered-sheets.tsx`), the engine drawing, the typography loupe,
+the speed chart and agreement table (`homepage-evidence.tsx`) and the cards.
+Their one stylesheet, `homepage-specimens.css`, uses the package's `--mono-*`
+tokens, and the build fails on any selector there that is not scoped to an
+`fm-` class. Shared patterns belong in the family package and its kit.
 
 `app/components/document-heading.tsx` preserves published Ardo 4 heading URLs
 as aliases of Ardo 6's slugs. This keeps compatibility markup out of the
@@ -31,33 +39,27 @@ qualifiers, and calculation rules. The seven benchmark fixture tests cover
 those rules independently of presentation.
 
 The build snapshots the canonical release version from
-`../node/ferromark/package.json` into `app/data/release.json` before dev,
+`../node/ferromark/package.json` (and the minimum Rust and Node.js versions from
+`../Cargo.toml` and that manifest) into `app/data/release.json` before dev,
 typecheck, and build. Browser code imports that snapshot rather than reaching
 outside Ardo's project boundary. The build verifier checks the rendered
 version against the canonical manifest.
 
-## FFM example
+## Homepage data
 
-`app/components/ffm-showcase.tsx` shows one fixed Markdown source beside its
-rendered result. The source and HTML live in `app/data/ffm-sample.json`, which
-records the Ferromark version, source commit and options used
-(`ParserOptions::ffm()` with `HtmlRendererOptions::new()`). The preview is that
-frozen output; it accepts no visitor input or remote HTML.
+Every sample on the homepage is real output of the published packages.
+`pnpm samples` (`scripts/render-homepage-samples.mjs`) installs the released
+`ferromark` (the version in `node/ferromark/package.json`) and the pinned
+`@ferriki/core` and `@ferrigura/core` into a temporary directory, renders each
+sample and writes `app/data/homepage-samples.json` with the versions in
+`renderedWith`. Never edit that file by hand; run the script again after a
+release. The build fails when its Ferromark version differs from the release.
 
-When changing the sample, render it again with the native engine, update the
-recorded version and commit, and keep the syntax notes below the example in
-agreement with what the sample demonstrates.
-
-`app/assets/rocket-stages.webp` is a photorealistic transparent cutout generated
-with the built-in image tool, using the package's Ferromark icon as the material
-and lighting reference. Its exact generation and edit prompts and provenance live in
-`app/assets/rocket-stages.webp.json`. Preserve the native alpha and the family's
-forged steel, worn edges, and orange-hot accent when replacing it.
-
-Afterburner, the optional processing stage before rendering, is linked from the
-FFM section; its Rust and Node.js guides document opt-in passes in order,
-protected syntax, an explicit GitHub repository, and the bundled emoji
-dictionary. Benchmark and conformance sections retain their measured evidence.
+The chart, its table and the agreement table read the repository's own
+benchmark and conformance data (`benchmark-platform-values.json`,
+`benchmark-projects.json`, `comparison-conformance.json`) through
+`app/components/homepage-data.ts`, which fails the build when a new campaign no
+longer supports a claim the copy makes.
 
 ## Development and checks
 

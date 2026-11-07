@@ -3,9 +3,34 @@ import { access, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 // Product sites consume shared presentation rather than maintaining a parallel CSS system.
+// The one exception is the homepage's own specimens: every rule there is scoped to
+// an `fm-` class, so nothing reusable or global can grow in homepage/app.
+const specimenStyles = join("components", "homepage-specimens.css");
+
+/** Every selector in the homepage's specimen stylesheet starts with an `fm-` class. */
+function unscopedSelectors(css) {
+  return css
+    .replaceAll(/\/\*[\s\S]*?\*\//g, "")
+    .split("{")
+    .slice(0, -1)
+    .map((chunk) =>
+      chunk.slice(Math.max(chunk.lastIndexOf("}"), chunk.lastIndexOf(";")) + 1).trim(),
+    )
+    .filter((prelude) => !prelude.startsWith("@"))
+    .flatMap((prelude) => prelude.split(",").map((selector) => selector.trim()))
+    .filter((selector) => !selector.startsWith(".fm-"));
+}
+
 const appFiles = await readdir(new URL("../app/", import.meta.url), { recursive: true });
-if (appFiles.some((file) => file.endsWith(".css"))) {
-  throw new Error("Keep reusable site styles in ferramenta-family, not in homepage/app");
+for (const file of appFiles.filter((name) => name.endsWith(".css"))) {
+  if (file !== specimenStyles) {
+    throw new Error(`Keep reusable site styles in ferramenta-family, not in homepage/app/${file}`);
+  }
+  const css = await readFile(new URL(`../app/${file}`, import.meta.url), "utf8");
+  const unscoped = unscopedSelectors(css);
+  if (unscoped.length > 0) {
+    throw new Error(`${file}: scope ${JSON.stringify(unscoped)} under an fm- class`);
+  }
 }
 
 const outputDirectory = new URL("../build/client/", import.meta.url);
@@ -147,33 +172,53 @@ const requiredComparisonFragments = [
   ...platformFragments,
 ];
 
+// The homepage chart and its table show the featured libraries' figures from the
+// completed campaigns, the agreement table the conformance report, and the
+// samples the release that produced them.
+const homepageSamples = JSON.parse(
+  await readFile(new URL("../app/data/homepage-samples.json", import.meta.url), "utf8"),
+);
+if (homepageSamples.renderedWith.ferromark !== version) {
+  throw new Error("Render the homepage samples again: node scripts/render-homepage-samples.mjs");
+}
+const featuredLibraries = new Set([
+  "pulldown-cmark",
+  "comrak",
+  "cmark",
+  "marked",
+  "markdown-it",
+  "remark",
+]);
 const requiredFragments = [
-  'id="markdown-ecosystem"',
-  ...["pulldown-cmark", "marked"].map((id) => {
-    const values = completedBenchmarks.figures
-      .filter((figure) => figure.id === id)
-      .map((figure) => figure.fresh);
-    const low = Math.min(...values).toFixed(1);
-    const high = Math.max(...values).toFixed(1);
-    return low === high ? `${low}×` : `${low}–${high}×`;
-  }),
-  'href="/guide/benchmarks#markdown-ecosystem"',
-  '"/assets/',
+  'class="mono-header"',
+  'class="mono-footer"',
   'rel="icon"',
-  'class="ferra-header ferra-wrap"',
-  'class="ferra-footer ferra-wrap"',
   "https://ferramenta.dev",
   version,
   "Start with Rust",
   "Start with Node.js",
-  'id="document-analysis"',
-  'id="work"',
-  'id="ffm-title"',
-  'id="evidence-title"',
-  'href="/guide/document-analysis"',
-  "Reference inventories",
-  "Text and search sections",
-  "Static Markdown export",
+  ...[
+    "speed",
+    "inside",
+    "correctness",
+    "ffm",
+    "typography",
+    "trust",
+    "code",
+    "mdx",
+    "runtimes",
+    "work",
+  ].map((id) => `id="${id}"`),
+  'href="/guide/benchmarks"',
+  'href="/guide/correctness"',
+  `Real output of ferromark ${version}`,
+  ...completedBenchmarks.figures.flatMap((figure) =>
+    featuredLibraries.has(figure.id)
+      ? [libraryLabels.get(figure.id), `${figure.fresh.toFixed(2)}×`, `${figure.reuse.toFixed(2)}×`]
+      : [],
+  ),
+  "652 / 652",
+  "28 / 28",
 ];
 
 // app/root.tsx passes the family header to Ardo and disables its default footer.
@@ -184,8 +229,8 @@ const forbiddenFragments = ['class="ardo-header', 'class="ardo-footer'];
 // the sidebar rail, plus the header menu that stands in for it once the rail is
 // hidden — without that menu a narrow viewport has no way into the guide.
 const requiredGuideFragments = [
-  'class="ferra-header ferra-wrap"',
-  'class="ferra-footer ferra-wrap"',
+  'class="mono-header"',
+  'class="mono-footer"',
   'class="ferra-guide-navigation"',
   'aria-label="Toggle menu"',
 ];
@@ -205,7 +250,7 @@ function check(page, label, { required, forbidden = [] }) {
   }
 }
 
-const footer = homepage.match(/<footer class="ferra-footer[\s\S]*?<\/footer>/)?.[0] ?? "";
+const footer = homepage.match(/<footer class="mono-footer[\s\S]*?<\/footer>/)?.[0] ?? "";
 check(footer, "family footer", {
   required: ["ferramenta.dev", "Sebastian Software"],
   forbidden: ["https://sebastian-software.github.io/ferromark/"],
@@ -215,7 +260,9 @@ check(homepage, "homepage", {
   required: requiredFragments,
   forbidden: [
     ...forbiddenFragments,
-    "Ferromark v1",
+    // The colophon names Ferromark v1 as its lineage; it never stands in the comparison.
+    ">Ferromark v1<",
+    '"Ferromark v1',
     "OX-Content original",
     "ferra-benchmark-table",
     'class="ferra-install"',

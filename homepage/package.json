@@ -11,11 +11,12 @@
     "format:check": "oxfmt --check .",
     "typecheck": "node scripts/write-release-data.mjs && tsc6 --noEmit -p tsconfig.json",
     "preview": "ardo preview",
+    "samples": "node scripts/render-homepage-samples.mjs",
     "audit": "pnpm audit --prod --audit-level high"
   },
   "dependencies": {
     "ardo": "^6.0.0",
-    "ferramenta-family": "github:sebastian-software/ferramenta#0e22e8aa755fce55287a1a26a66f5e8de5b91f29&path:/packages/family"
+    "ferramenta-family": "github:sebastian-software/ferramenta#307b6f2cdac5c079854bcb0b02cbf54c33cef511&path:/packages/family"
   },
   "devDependencies": {
     "eslint": "10.4.0",
