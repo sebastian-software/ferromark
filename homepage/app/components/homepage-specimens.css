@@ -1,6 +1,6 @@
 /*
- * Ferromark's own specimens on the Monografie homepage (and one fit of the
- * header on the guides, under `fm-docs`): rendered documents,
+ * Ferromark's own specimens on the Monografie homepage (and two fits of the
+ * guides, under `fm-docs`): rendered documents,
  * the engine drawing, the typography loupe, the agreement table and the cards'
  * contents. Everything is scoped to `fm-` classes and takes the package's
  * `--mono-*` tokens; the page system itself lives in ferramenta-family.
@@ -24,6 +24,17 @@
   .fm-docs .mono-header-in {
     gap: 24px;
   }
+}
+
+/* ---------- Guides: code comments (temporary) ---------- */
+/* Shiki's GitHub Light comment gray (#6E7781) reaches only 4.39:1 on the
+   Monografie code sheet. ferramenta PR #138 fixes it in monografie-ardo.css;
+   this rule goes once the pin includes that fix. */
+.fm-docs .ardo-code-block span[style*="--shiki-light:#6E7781" i],
+.fm-docs .ardo-code-block span[style*="color:#6E7781" i],
+.fm-docs .ardo-shiki span[style*="--shiki-light:#6E7781" i],
+.fm-docs .ardo-shiki span[style*="color:#6E7781" i] {
+  color: #59636e !important;
 }
 
 /* ---------- Rendered documents ---------- */
