@@ -164,7 +164,7 @@ const requiredComparisonFragments = [
   'id="markdown-ecosystem"',
   "Ferromark speedup over each library",
   "2× means twice the throughput",
-  'class="ferra-table ferra-benchmark-table"',
+  'class="mono-data-table mono-benchmark-table"',
   ...[...completedPlatforms.keys()].flatMap((platform) => [
     `id="comparison-${platform}-native"`,
     `id="comparison-${platform}-node"`,
@@ -231,7 +231,8 @@ const forbiddenFragments = ['class="ardo-header', 'class="ardo-footer'];
 const requiredGuideFragments = [
   'class="mono-header"',
   'class="mono-footer"',
-  'class="ferra-guide-navigation"',
+  'class="mono-guide-navigation"',
+  'class="mono-reading-surface"',
   'aria-label="Toggle menu"',
 ];
 
@@ -264,8 +265,7 @@ check(homepage, "homepage", {
     ">Ferromark v1<",
     '"Ferromark v1',
     "OX-Content original",
-    "ferra-benchmark-table",
-    'class="ferra-install"',
+    "mono-benchmark-table",
   ],
 });
 check(benchmarkPage, "v2 benchmark evidence", {
@@ -359,8 +359,40 @@ if (homepage.replaceAll(version, "").includes("-rc.")) {
   throw new Error("Prerendered homepage contains a hard-coded release-candidate version");
 }
 
+// Every page stands on Monografie (ADR-0012 in ferramenta): no class of the Ferra
+// theme or the original kit survives. Only Ferra's identity assets keep the name.
+const ferraIdentity = new Set(["ferra-mark", "ferra-instrument", "ferra-workshop-logo"]);
+function ferraClasses(html) {
+  return [...html.matchAll(/class="([^"]*)"/g)]
+    .flatMap(([, value]) => value.split(/\s+/))
+    .filter((name) => /^(?:ferra|fam)-/.test(name) && !ferraIdentity.has(name));
+}
+
+// The theme's stylesheets stay out of the bundle: no source imports them, and no
+// built stylesheet carries a selector of theirs.
+for (const file of appFiles.filter((name) => /\.(?:tsx?|mdx?|css)$/.test(name))) {
+  const source = await readFile(new URL(`../app/${file}`, import.meta.url), "utf8");
+  const theme =
+    /ferramenta-family\/(?:ferra(?:-ardo|-tokens|-fonts)?\.css|ferra"|landing\.css|chrome\.css)/;
+  if (theme.test(source)) {
+    throw new Error(`app/${file} imports the Ferra theme or the original kit`);
+  }
+}
+const builtAssets = await readdir(new URL("assets/", outputDirectory));
+const cssAssets = builtAssets.filter((file) => file.endsWith(".css"));
+for (const file of cssAssets) {
+  const css = await readFile(new URL(`assets/${file}`, outputDirectory), "utf8");
+  if (/\.(?:ferra-(?!mark|instrument|workshop-logo)|fam-)[a-z]/.test(css)) {
+    throw new Error(`build/client/assets/${file} carries the Ferra theme or the original kit`);
+  }
+}
+
 for (const path of expectedPages) {
   const html = await readFile(new URL(path, outputDirectory), "utf8");
+  const leftovers = ferraClasses(html);
+  if (leftovers.length > 0) {
+    throw new Error(`${path} still renders ${JSON.stringify([...new Set(leftovers)])}`);
+  }
   check(html, path, {
     required: ['href="/rust/getting-started"', 'href="/node/getting-started"'],
     forbidden: ['href="/ferromark', "sebastian-software.github.io/ferromark"],
