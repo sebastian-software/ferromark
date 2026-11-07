@@ -1,5 +1,5 @@
 import { type ChangeEvent, useState } from "ardo/react";
-import { FerraBenchmarkTable, FerraSelect } from "ferramenta-family/ferra";
+import { MonoBenchmarkTable, MonoSelect } from "ferramenta-family/monografie";
 
 import conformance from "../data/comparison-conformance.json";
 import { groups, platforms, reportUrl } from "./benchmark-data";
@@ -49,7 +49,7 @@ function ConformanceCells({ id, label }: { id: string; label: string }) {
   const row = conformanceRows.get(id);
   return (
     <>
-      <td className="ferra-benchmark-conformance">
+      <td className="mono-benchmark-conformance">
         <ConformanceResult
           value={row?.suites.commonmark}
           name="CM"
@@ -57,7 +57,7 @@ function ConformanceCells({ id, label }: { id: string; label: string }) {
           evidence={row?.evidence}
         />
       </td>
-      <td className="ferra-benchmark-conformance">
+      <td className="mono-benchmark-conformance">
         <ConformanceResult
           value={row?.suites.gfm}
           name="GFM"
@@ -79,13 +79,13 @@ function LibraryName({
   const backend = row.backend.replace(" (syntax subset)", "");
   return (
     <th scope="row">
-      <span className="ferra-benchmark-name">
-        <a className="ferra-benchmark-source" href={row.github} title={`${row.label} · ${backend}`}>
+      <span className="mono-benchmark-name">
+        <a className="mono-benchmark-source" href={row.github} title={`${row.label} · ${backend}`}>
           {row.label}
         </a>
         {differs && <sup aria-label="Output differs for some inputs">*</sup>}
       </span>
-      <span className="ferra-benchmark-detail">{backend}</span>
+      <span className="mono-benchmark-detail">{backend}</span>
     </th>
   );
 }
@@ -94,7 +94,7 @@ export function BenchmarkComparison() {
   const [selected, setSelected] = useState(platforms[0].id);
   return (
     <div id="markdown-ecosystem">
-      <FerraSelect
+      <MonoSelect
         label="Platform"
         options={platforms.map((platform) => ({ value: platform.id, label: platform.label }))}
         value={selected}
@@ -150,7 +150,7 @@ function PlatformComparison({
 }) {
   return (
     <div hidden={hidden}>
-      <FerraBenchmarkTable
+      <MonoBenchmarkTable
         caption={`Ferromark speedup over each library · ${platform.label} · fresh calls`}
       >
         <thead>
@@ -172,7 +172,7 @@ function PlatformComparison({
           </tbody>
         ))}
         <SpeedFootnotes index={index} />
-      </FerraBenchmarkTable>
+      </MonoBenchmarkTable>
     </div>
   );
 }
@@ -201,7 +201,7 @@ function SpeedFootnotes({ index }: { index: number }) {
 /** Specification agreement is measured separately from the performance profiles. */
 export function ConformanceComparison() {
   return (
-    <FerraBenchmarkTable caption="Specification agreement · public spec settings">
+    <MonoBenchmarkTable caption="Specification agreement · public spec settings">
       <thead>
         <tr>
           <th scope="col">Library</th>
@@ -218,7 +218,7 @@ export function ConformanceComparison() {
           </tr>
           <tr className="ferromark-reference-row">
             <th scope="row">
-              Ferromark <span className="ferra-benchmark-detail">Spec reference</span>
+              Ferromark <span className="mono-benchmark-detail">Spec reference</span>
             </th>
             <ConformanceCells
               id={group.id === "native" ? "ferromark-native" : "ferromark-node"}
@@ -242,6 +242,6 @@ export function ConformanceComparison() {
           </td>
         </tr>
       </tfoot>
-    </FerraBenchmarkTable>
+    </MonoBenchmarkTable>
   );
 }

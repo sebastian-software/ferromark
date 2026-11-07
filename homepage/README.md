@@ -4,21 +4,24 @@ This private workspace contains the Ardo 6 site for Ferromark.
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for repository checks and the boundaries
 between the native engine, Node.js bindings, and website.
 
-## Monografie homepage and Ferra guides
+## Monografie homepage and guides
 
-The site consumes `ferramenta-family` from a pinned Git commit. The homepage
-uses the Monografie page system (`ferramenta-family/monografie` and
-`monografie.css`, Ferramenta ADR-0012): the steel header, the instrument as the
-opening plate, one reading column with margin notes, facing sheets, cards, the
-comparison chart and the closing. The documentation keeps the Ferra reading
-layout (`ferramenta-family/ferra`, `ferra.css` and the `ferra-ardo.css`
-adapter).
+The site consumes `ferramenta-family` from a pinned Git commit. Every page uses
+the Monografie page system (`ferramenta-family/monografie`, Ferramenta
+ADR-0012). The homepage takes `monografie.css`: the steel header, the
+instrument as the opening plate, one reading column with margin notes, facing
+sheets, cards, the comparison chart and the closing. The guides add the
+documentation pages (`monografie-docs.css`) and the Ardo adapter
+(`monografie-ardo.css`), which also carries the shell fixes: no padding for a
+fixed header, a document that scrolls as a whole, anchors that clear the sticky
+header and one menu button on a phone.
 
 `app/root.tsx` passes `MonoHeader` through Ardo's header slot on every page and
 renders `MonoFooter` outside Ardo's main landmark. On the guides the header also
-carries Ardo's mobile documentation menu and search; `FerraReadingLayout`
+carries Ardo's mobile documentation menu and search; `MonoReadingLayout`
 combines the section navigation, the bounded reading surface and Ardo's live
-outline. The release tag in the header and the toolchain minimums come from the
+outline. The build fails when a page renders a class of the Ferra theme or the
+original kit, or when a source imports their stylesheets. The release tag in the header and the toolchain minimums come from the
 build-time snapshot in `app/data/release.json`.
 
 Ferromark's own specimens live in `app/components/`: the rendered sheets with
@@ -32,7 +35,7 @@ tokens, and the build fails on any selector there that is not scoped to an
 as aliases of Ardo 6's slugs. This keeps compatibility markup out of the
 generated benchmark guide, which remains owned by its publisher.
 
-`FerraBenchmarkTable` supplies the captioned, keyboard-scrollable table and
+`MonoBenchmarkTable` supplies the captioned, keyboard-scrollable table and
 shared measurement styles. `app/components/benchmark-comparison.tsx` retains
 all platform grouping, source links, missing-value handling, conformance
 qualifiers, and calculation rules. The seven benchmark fixture tests cover

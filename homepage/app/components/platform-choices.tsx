@@ -1,9 +1,9 @@
 import { ArdoLink as Link } from "ardo/runtime";
-import { FerraChoices } from "ferramenta-family/ferra";
+import { MonoChoices } from "ferramenta-family/monografie";
 
 export function PlatformChoices() {
   return (
-    <FerraChoices>
+    <MonoChoices>
       <article>
         <p>Rust crate</p>
         <h2>Build with Rust</h2>
@@ -26,6 +26,6 @@ export function PlatformChoices() {
           Start with Node.js <span aria-hidden="true">→</span>
         </Link>
       </article>
-    </FerraChoices>
+    </MonoChoices>
   );
 }

@@ -91,17 +91,17 @@ test("all main candidates have GitHub links and measured cells; variants disclos
   for (const id of ["markdown-exit", "markdown-it-ts", "md4x-wasm"]) {
     assert.ok(!projects.some((project) => project.id === id));
   }
-  assert.ok(!html.includes('class="ferra-benchmark-detail">WASM</span>'));
-  assert.ok(html.includes('class="ferra-benchmark-detail">Native addon</span>'));
+  assert.ok(!html.includes('class="mono-benchmark-detail">WASM</span>'));
+  assert.ok(html.includes('class="mono-benchmark-detail">Native addon</span>'));
 });
 
 test("each runtime group is alphabetical and implementation details remain visible", async () => {
   const html = await renderComparison(completed.figures);
   for (const backend of ["Rust", "C", "Go", "JavaScript"]) {
-    assert.ok(html.includes(`class="ferra-benchmark-detail">${backend}</span>`));
+    assert.ok(html.includes(`class="mono-benchmark-detail">${backend}</span>`));
   }
   assert.ok(!html.includes("(syntax subset)"));
-  const names = [...html.matchAll(/class="ferra-benchmark-source"[^>]*>(.*?)<\/a>/gs)].map(
+  const names = [...html.matchAll(/class="mono-benchmark-source"[^>]*>(.*?)<\/a>/gs)].map(
     (match) => match[1],
   );
   const expected = [
@@ -220,7 +220,7 @@ test("spec agreement covers every variant with separate references and evidence 
   );
   assert.equal(conformance.rows.length, projects.length + 2);
   assert.equal(
-    [...html.matchAll(/class="ferra-benchmark-conformance"/g)].length,
+    [...html.matchAll(/class="mono-benchmark-conformance"/g)].length,
     (projects.length + 2) * 2,
   );
   assert.equal([...html.matchAll(/class="ferromark-reference-row"/g)].length, 2);
@@ -245,7 +245,7 @@ test("spec agreement covers every variant with separate references and evidence 
 test("speed and conformance are separate tables", async () => {
   const speed = await renderComparison(completed.figures);
   const spec = await renderComparison(completed.figures, { conformance: true });
-  assert.ok(!speed.includes("ferra-benchmark-conformance"));
+  assert.ok(!speed.includes("mono-benchmark-conformance"));
   assert.ok(!spec.includes("times the throughput"));
   assert.match(speed, /aria-controls="markdown-ecosystem-results"/);
   assert.equal([...speed.matchAll(/<div hidden=""/g)].length, 1);
