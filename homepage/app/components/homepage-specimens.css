@@ -25,17 +25,15 @@
   min-height: 100vh;
 }
 
-/* ---------- Guides: the header carries the section menu and search too ---------- */
-@media (max-width: 420px) {
-  .fm-docs .mono-header-in {
-    gap: 10px;
-  }
-  /* the menu button keeps its accessible name and shows only its icon */
+/* ---------- Guides: one menu on narrow screens ---------- */
+/* The guides' own drawer carries their navigation below 961px; a second,
+   identical menu icon beside it would only confuse. The name leads home. */
+@media (max-width: 960px) {
   .fm-docs .mono-menu-button {
-    font-size: 0;
-    gap: 0;
-    min-width: 44px;
-    justify-content: center;
+    display: none;
+  }
+  .fm-docs .mono-header-actions {
+    margin-left: auto;
   }
 }
 
