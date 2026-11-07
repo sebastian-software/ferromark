@@ -7,4 +7,12 @@ import packageJson from "./data/release.json";
 
 export const version: string = packageJson.version;
 
+/** "4.0" for "4.0.0": the release line the homepage names. */
+export const releaseLine = version.split(".").slice(0, 2).join(".");
+
+/** The minimum toolchains, as "1.95" for "1.95.0", from Cargo.toml and the npm manifest. */
+const short = (value: string) => value.replace(/\.0$/, "");
+export const rustVersion = short(packageJson.rustVersion);
+export const nodeVersion = short(packageJson.nodeVersion);
+
 export const docsRsUrl = `https://docs.rs/ferromark/${version}/ferromark/`;
