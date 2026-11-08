@@ -1,10 +1,4 @@
-import {
-  MonoLeadIn,
-  MonoPassage,
-  MonoProofs,
-  MonoSection,
-  MonoTerms,
-} from "ferramenta-family/monografie";
+import { MonoPassage, MonoProofs, MonoSection, MonoTerms } from "ferramenta-family/monografie";
 
 import { EngineDrawing } from "./engine-drawing";
 import { measured, ownAgreement, samples, suiteLabels } from "./homepage-data";
@@ -44,12 +38,12 @@ export function Explainer() {
         }}
       >
         <p>
-          <MonoLeadIn>Markdown is how</MonoLeadIn> most technical writing is typed today. READMEs on
-          GitHub, documentation sites, release notes, chat messages, notes apps and the answers of
-          AI assistants are written as plain text with a few marks: a pound sign for a heading,
-          asterisks for emphasis, hyphens for a list. The marks stay readable for the person who
-          writes them. A browser cannot display them, though. Something has to translate the text
-          into HTML, the language of web pages.
+          Markdown is how most technical writing is typed today. READMEs on GitHub, documentation
+          sites, release notes, chat messages, notes apps and the answers of AI assistants are
+          written as plain text with a few marks: a pound sign for a heading, asterisks for
+          emphasis, hyphens for a list. The marks stay readable for the person who writes them. A
+          browser cannot display them, though. Something has to translate the text into HTML, the
+          language of web pages.
         </p>
       </MonoPassage>
       <MonoPassage
@@ -93,11 +87,10 @@ export function Speed() {
         note={{ figure: measured.documents, children: "real documents, every one of them counted" }}
       >
         <p>
-          <MonoLeadIn>Why speed matters</MonoLeadIn> for text: a documentation site with a few
-          thousand pages renders all of them on every build. A chat app renders each message as it
-          arrives. A search index rereads everything when the content changes. Each millisecond is
-          paid thousands of times over: in waiting developers, in CI minutes, in server costs, in
-          battery.
+          Why speed matters for text: a documentation site with a few thousand pages renders all of
+          them on every build. A chat app renders each message as it arrives. A search index rereads
+          everything when the content changes. Each millisecond is paid thousands of times over: in
+          waiting developers, in CI minutes, in server costs, in battery.
         </p>
       </MonoPassage>
       <SpeedChart />
@@ -120,11 +113,11 @@ export function Inside() {
         }}
       >
         <p>
-          <MonoLeadIn>One block of memory.</MonoLeadIn> Ferromark keeps a whole document in one
-          arena, a single block of memory that is filled, used and released at once instead of in
-          thousands of small pieces. It scans bytes with specialized routines and SIMD instructions
-          where the processor offers them, and it reuses buffers from one document to the next. None
-          of this changes the result.
+          One block of memory. Ferromark keeps a whole document in one arena, a single block of
+          memory that is filled, used and released at once instead of in thousands of small pieces.
+          It scans bytes with specialized routines and SIMD instructions where the processor offers
+          them, and it reuses buffers from one document to the next. None of this changes the
+          result.
         </p>
       </MonoPassage>
       <p>
@@ -159,10 +152,10 @@ export function Correctness() {
         }}
       >
         <p>
-          <MonoLeadIn>In 2014,</MonoLeadIn> a group of developers set out to settle what Markdown
-          actually means. The result, CommonMark, is a specification with hundreds of worked
-          examples: this input, exactly this output. GitHub documented its own extensions, tables,
-          strikethrough, task lists and autolinks, the same way.
+          In 2014, a group of developers set out to settle what Markdown actually means. The result,
+          CommonMark, is a specification with hundreds of worked examples: this input, exactly this
+          output. GitHub documented its own extensions, tables, strikethrough, task lists and
+          autolinks, the same way.
         </p>
       </MonoPassage>
       <p>

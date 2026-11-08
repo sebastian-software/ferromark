@@ -1,4 +1,4 @@
-import { MonoCredit, MonoLeadIn, MonoPassage, MonoSection } from "ferramenta-family/monografie";
+import { MonoCredit, MonoPassage, MonoSection } from "ferramenta-family/monografie";
 
 import { nodeVersion, rustVersion } from "../version";
 import {
@@ -55,9 +55,9 @@ export function Ffm() {
       standfirst="Captions, credits, merged table cells, highlights and notes, written in Markdown and rendered as proper HTML."
     >
       <p>
-        <MonoLeadIn>Plain Markdown stops</MonoLeadIn> where real publishing begins. A photo needs a
-        caption, a quotation needs its source, a price table needs a cell that spans two columns.
-        Usually that means falling back to raw HTML, or to a shortcode only one tool understands.
+        Plain Markdown stops where real publishing begins. A photo needs a caption, a quotation
+        needs its source, a price table needs a cell that spans two columns. Usually that means
+        falling back to raw HTML, or to a shortcode only one tool understands.
       </p>
       <MonoPassage
         note={{
@@ -97,12 +97,12 @@ export function Typography() {
       standfirst="Straight quotes become proper ones, in fifteen languages, each by its own rules."
     >
       <p>
-        <MonoLeadIn>The typewriter</MonoLeadIn> gave us one straight quotation mark for everything.
-        Typesetters never accepted it, and neither do careful readers. English opens a quotation
-        with “, German with „, French sets « guillemets » with space inside them. An optional
-        typography pass turns straight quotes, apostrophes and ellipses into the right characters
-        after parsing, for the one language your application chooses. Ferromark never guesses the
-        language. Code, links and raw HTML stay exactly as written.
+        The typewriter gave us one straight quotation mark for everything. Typesetters never
+        accepted it, and neither do careful readers. English opens a quotation with “, German with
+        „, French sets « guillemets » with space inside them. An optional typography pass turns
+        straight quotes, apostrophes and ellipses into the right characters after parsing, for the
+        one language your application chooses. Ferromark never guesses the language. Code, links and
+        raw HTML stay exactly as written.
       </p>
       <TypographyLoupe />
     </MonoSection>
@@ -117,12 +117,11 @@ export function Trust() {
       standfirst="Ferromark can read raw HTML without letting it through."
     >
       <p>
-        <MonoLeadIn>Markdown allows</MonoLeadIn> raw HTML. That is handy for trusted authors and
-        dangerous for everyone else: a comment field that passes an <code>onerror</code> handler
-        through is an attack waiting to happen. Ferromark keeps recognizing HTML separate from
-        emitting it. In Node.js the untrusted mode is the default: raw HTML is escaped, and unsafe
-        link schemes such as <code>javascript:</code> are filtered. In Rust, one option turns
-        sanitizing on.
+        Markdown allows raw HTML. That is handy for trusted authors and dangerous for everyone else:
+        a comment field that passes an <code>onerror</code> handler through is an attack waiting to
+        happen. Ferromark keeps recognizing HTML separate from emitting it. In Node.js the untrusted
+        mode is the default: raw HTML is escaped, and unsafe link schemes such as{" "}
+        <code>javascript:</code> are filtered. In Rust, one option turns sanitizing on.
       </p>
       <MonoPassage
         note={{ figure: 100, children: "levels of block nesting by default, then an error" }}
@@ -144,12 +143,11 @@ export function Code() {
   return (
     <MonoSection id="code" title="Code highlighted. Diagrams drawn.">
       <p>
-        <MonoLeadIn>Technical writing</MonoLeadIn> is full of code samples and diagrams. Ferromark
-        hands each code block to a hook. Connect Ferriki and the code comes back highlighted with
-        Shiki-compatible grammars and themes. Connect Ferrigura and a Mermaid block becomes a static
-        SVG diagram, rendered on the server without a browser. Both are separate engines from the
-        same workshop. Ferromark contains neither until you add it, and any other highlighter fits
-        the same hook.
+        Technical writing is full of code samples and diagrams. Ferromark hands each code block to a
+        hook. Connect Ferriki and the code comes back highlighted with Shiki-compatible grammars and
+        themes. Connect Ferrigura and a Mermaid block becomes a static SVG diagram, rendered on the
+        server without a browser. Both are separate engines from the same workshop. Ferromark
+        contains neither until you add it, and any other highlighter fits the same hook.
       </p>
       <CodeCards />
     </MonoSection>
@@ -160,11 +158,11 @@ export function Mdx() {
   return (
     <MonoSection id="mdx" title="From Markdown to components. Parse once, use it everywhere.">
       <p>
-        <MonoLeadIn>Documentation sites</MonoLeadIn> built with React and similar frameworks mix
-        Markdown with components: an interactive chart inside an article, a tabbed code example.
-        That format is called MDX. <code>compileJsx</code> turns an MDX document into JSX, and your
-        build supplies the components. Ferromark never executes the authored JavaScript while
-        compiling and adds no framework imports of its own.
+        Documentation sites built with React and similar frameworks mix Markdown with components: an
+        interactive chart inside an article, a tabbed code example. That format is called MDX.{" "}
+        <code>compileJsx</code> turns an MDX document into JSX, and your build supplies the
+        components. Ferromark never executes the authored JavaScript while compiling and adds no
+        framework imports of its own.
       </p>
       <p>
         A parsed document holds more than HTML. Ask it for every link and image with its exact
