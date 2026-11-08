@@ -231,8 +231,8 @@ const forbiddenFragments = ['class="ardo-header', 'class="ardo-footer'];
 const requiredGuideFragments = [
   'class="mono-header"',
   'class="mono-footer"',
-  'class="mono-guide-navigation"',
-  'class="mono-reading-surface"',
+  'class="ardo-sidebar ',
+  'class="mono-prose"',
   'aria-label="Toggle menu"',
 ];
 
