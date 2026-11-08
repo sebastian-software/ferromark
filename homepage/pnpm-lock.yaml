@@ -29,8 +29,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0(@types/node@26.5.1)(@typescript/typescript6@6.0.2)(esbuild@0.28.1)(jiti@2.7.0)(lightningcss@1.33.0)(supports-color@9.4.0)
       ferramenta-family:
-        specifier: github:sebastian-software/ferramenta#def96f8a69b4336579ce5f0e37a32a3c88dd432a&path:/packages/family
-        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/def96f8a69b4336579ce5f0e37a32a3c88dd432a#path:/packages/family(react@19.3.1)
+        specifier: github:sebastian-software/ferramenta#602111da4e066409c03a66ac07d84c8be1a6be22&path:/packages/family
+        version: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/602111da4e066409c03a66ac07d84c8be1a6be22#path:/packages/family(ardo@6.0.0(@types/node@26.5.1)(@typescript/typescript6@6.0.2)(esbuild@0.28.1)(jiti@2.7.0)(lightningcss@1.33.0)(supports-color@9.4.0))(react@19.3.1)
     devDependencies:
       eslint:
         specifier: 10.4.0
@@ -2639,11 +2639,12 @@ packages:
       picomatch:
         optional: true
 
-  ferramenta-family@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/def96f8a69b4336579ce5f0e37a32a3c88dd432a#path:/packages/family:
-    resolution: {gitHosted: true, integrity: sha512-3vuExxapDCfhBmyvCH3Qnb0KBjRuXFna5bKsi9bGNHQdK4lyNjushnY7BJ7FMM/sMJnBNMyUBpfnPur3xIUAmw==, path: /packages/family, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/def96f8a69b4336579ce5f0e37a32a3c88dd432a}
+  ferramenta-family@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/602111da4e066409c03a66ac07d84c8be1a6be22#path:/packages/family:
+    resolution: {gitHosted: true, integrity: sha512-7lDUUXBdD6S5DpsPMblMOD9NvkTBSkHUk+enNzVlgFunOTZG8wmuB3sgVpWqAoJpcwZqRkxjcjjTjqfNKsRzuw==, path: /packages/family, tarball: https://codeload.github.com/sebastian-software/ferramenta/tar.gz/602111da4e066409c03a66ac07d84c8be1a6be22}
     version: 2.0.0
     engines: {node: '>=20.11.0'}
     peerDependencies:
+      ardo: ^6.0.0
       react: '>=19.0.0 <20.0.0'
 
   ferrolink@0.2.1:
@@ -6788,8 +6789,9 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  ferramenta-family@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/def96f8a69b4336579ce5f0e37a32a3c88dd432a#path:/packages/family(react@19.3.1):
+  ferramenta-family@https://codeload.github.com/sebastian-software/ferramenta/tar.gz/602111da4e066409c03a66ac07d84c8be1a6be22#path:/packages/family(ardo@6.0.0(@types/node@26.5.1)(@typescript/typescript6@6.0.2)(esbuild@0.28.1)(jiti@2.7.0)(lightningcss@1.33.0)(supports-color@9.4.0))(react@19.3.1):
     dependencies:
+      ardo: 6.0.0(@types/node@26.5.1)(@typescript/typescript6@6.0.2)(esbuild@0.28.1)(jiti@2.7.0)(lightningcss@1.33.0)(supports-color@9.4.0)
       react: 19.3.1
 
   ferrolink@0.2.1(vite@8.3.5(@types/node@26.5.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.8.3)):

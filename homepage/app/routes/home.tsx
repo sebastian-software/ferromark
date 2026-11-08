@@ -53,7 +53,6 @@ function Opening() {
     <MonoOpening
       product="ferromark"
       instrumentLabel="Ferromark's instrument: a steel registration bridge holding three thin leaves in alignment, an engraved source sheet, a ruled output sheet with a small table and a rust-brown metadata index."
-      caption="A registration bridge holds three leaves in alignment: the engraved source, the structured output and the copper index of its metadata."
       kicker={`Ferromark ${releaseLine}, a Markdown renderer for Rust and Node.js`}
       title="Markdown, rendered exactly."
       subtitle="And faster than every engine we measured."
