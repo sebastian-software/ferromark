@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31
-- Last updated: 2026-11-05
+- Last updated: 2026-11-10
 - Extends [ADR-0024](ADR-0024-native-code-plugins.md) and
   [ADR-0025](ADR-0025-static-mermaid-output.md); follows the Ferriki placement in
   [ADR-0018](ADR-0018-single-rust-crate.md).
@@ -39,7 +39,7 @@ code when the renderer throws. Ferromark neither imports nor pins
 the Ferriki highlighter. Its output is trusted application HTML, like every
 code-renderer callback; the SVG policy applies to the native integration only.
 
-Depend on Ferrigura `0.4` with a caret requirement, as `ferriki` does. Moving
+Depend on Ferrigura `0.6` with a caret requirement, as `ferriki` does. Moving
 the adapter into the published crate makes Ferrigura's dependency licenses part
 of the crate's policy. `deny.toml` allows them as version-scoped exceptions that
 reach users only through the optional feature: MPL-2.0 for `cssparser` and
@@ -52,7 +52,7 @@ upgrade must review these exceptions again.
 ## Consequences and validation
 
 Rust applications enable one feature instead of depending on an unpublished
-crate. Node.js applications use Ferrigura from npm (`@ferrigura/core` 0.4)
+crate. Node.js applications use Ferrigura from npm (`@ferrigura/core` 0.6)
 without a custom bundle, through the same code hooks as Ferriki
 ([ADR-0027](ADR-0027-injected-code-engines.md)); the custom bundle remains the
 native path with the SVG policy.
@@ -72,3 +72,8 @@ made.
   flowchart fixture changed; geometry, text and the other four fixtures are
   byte-identical. The license exceptions moved to the 0.4 crates. Node.js
   injection now follows [ADR-0027](ADR-0027-injected-code-engines.md).
+- 2026-11-10: Upgraded to Ferrigura 0.6. Diagram colors are `light-dark()`
+  values that follow the page's `color-scheme` instead of a
+  `prefers-color-scheme` block, so the pinned bytes of all five fixtures
+  changed. The SVG policy already allowed `light-dark()`. The dependency
+  licenses are unchanged, and the exceptions moved to the 0.6 crates.

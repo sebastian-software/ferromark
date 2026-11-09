@@ -119,7 +119,7 @@ fn fixture_bytes_are_pinned_across_processes_and_platforms() {
         let first = renderer.render_with_code_hooks(&document, &mut plugin);
         assert_eq!(plugin.take_diagnostics(), [], "{name}");
         assert!(first.starts_with("<svg "), "{name}: {first}");
-        assert!(first.contains("prefers-color-scheme"), "{name}");
+        assert!(first.contains("light-dark("), "{name}");
         let xml = roxmltree::Document::parse(&first).unwrap();
         let text: String = xml
             .descendants()
