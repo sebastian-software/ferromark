@@ -467,9 +467,9 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "ferrigura"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43f2bcdc4e2c395f9f5ca69948459c09d9e972a7662e7cd7ee61ddb33bb8937e"
+checksum = "2dccb5a81545db8caa4fc6dd225176ba3360b3dca6926341f46009aceedae263"
 dependencies = [
  "ferrigura-model",
  "ferrigura-render",
@@ -479,18 +479,18 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-cose"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "994292067102762722f62657e3b45e72bfb072946f33547b338c7148c8dc4919"
+checksum = "685a6e3dd14df2d62330cd67281466c5e771cc33abee28e5db21ed193c5d36dc"
 dependencies = [
  "ferrigura-jsmath",
 ]
 
 [[package]]
 name = "ferrigura-elk"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "611f84393c2bfc29c59cb13369c4510c3f4cecca6003408fc8663a9e2e4ff4dd"
+checksum = "2637a2c5f612120fc3735168ada7fb8e8541cbfaa437d232d5dc9641afee8de5"
 dependencies = [
  "indexmap",
  "serde",
@@ -499,17 +499,17 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-jsmath"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f767bed60bdfb1a06d6d3ae746df95446ec6a340564a90abc73b884f2008047a"
+checksum = "68bb94cb4be6568d61c673ce3f28c2f959ca175d88ed291e17bfca407589dae8"
 
 [[package]]
 name = "ferrigura-model"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92f386e77728dad03041a422f36e38e7708434abffd6c24249ef5316f0332882"
+checksum = "029866f2cf90fb5b24e84dc33bc17c620d6b31ac73cc62132c8c019c63bac2c7"
 dependencies = [
- "regex",
+ "ferroni",
  "serde",
  "serde_json",
  "serde_yaml_ng",
@@ -517,18 +517,18 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-path"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99eba72224c6f25e448fbb555008e8ebad47ceab373b47ed95af7c9c73eadb0c"
+checksum = "c51cd1fe8f17bb7d459e8ed63fc3ff09f5bf5ec8b9230f1e73447db8afc13cc0"
 dependencies = [
  "ferrigura-jsmath",
 ]
 
 [[package]]
 name = "ferrigura-render"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13db31d5115d7e77e182e8d83bb0d384cf8f2308a0e3e531e42c978dc34aa392"
+checksum = "edb4863febd6899cdee8b2d112a7aad92d0003e5fffbc3c86aaf39489da8d6a6"
 dependencies = [
  "base64",
  "ferrigura-cose",
@@ -547,9 +547,9 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-swimlane"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "149dbe41750d1311f6312ac443a7077f5c47e428a4344780a7bc1a7bad0fc441"
+checksum = "e872c9d26589efa919adbc6cd385298475bdc46c63db33f870e6e2c671d4b221"
 dependencies = [
  "ferrigura-jsmath",
  "indexmap",
@@ -558,23 +558,23 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-syntax"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ea168dcf9599d537e6550f68b4eb66a3911048bee370a2c8564cd985b5203f3"
+checksum = "7c5f5693f29746770e570a432bebd7f2e127c53abbef0b9dc3ec2aa032356af6"
 dependencies = [
  "ferrigura-model",
+ "ferroni",
  "indexmap",
  "logos",
- "regex",
  "serde_json",
  "url",
 ]
 
 [[package]]
 name = "ferrigura-text"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff06b6733247bbac593befdc77beb7ab789838edf88193e6c9ec75c635d2e0ef"
+checksum = "93009c598e3101377352e4839bd43a644e8fcf27c9d5699aff39b775f006f6ba"
 dependencies = [
  "base64",
  "harfrust",
@@ -585,9 +585,9 @@ dependencies = [
 
 [[package]]
 name = "ferrigura-venn"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23b8127113d68deb9a1750288bcbf67d708c3535040aec1f33d9a35bcc48274e"
+checksum = "2f6a50c14f19c5ed15d6612a94a87ad96b1d779c2511dde08b36f4001fb1a3ea"
 dependencies = [
  "ferrigura-jsmath",
 ]

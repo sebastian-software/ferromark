@@ -98,7 +98,7 @@ Options are validated once:
 | Option | Behavior |
 | --- | --- |
 | `config` | Object passed to Ferrigura's renderer configuration; defaults to an empty object. Engine-specific validation belongs to Ferrigura. |
-| `colorScheme` | `auto` by default: embedded CSS follows `prefers-color-scheme` without JavaScript. Explicit `light` and `dark` select one theme. |
+| `colorScheme` | `auto` by default: colors are `light-dark()` values that follow the page's `color-scheme` without JavaScript; a standalone SVG follows the viewer's. Explicit `light` and `dark` select one theme. |
 | `idPrefix` | Optional output namespace. Starts with an ASCII letter and contains only ASCII letters, digits, `-`, or `_`. |
 | `errorPolicy` | `code` by default: failed or unsafe diagrams retain escaped code and a diagnostic. `throw` also records a diagnostic, then rejects the render. |
 

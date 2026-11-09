@@ -32,7 +32,7 @@ const result = compiler.transform(source);
 assert.equal(result.headings[0].text, "Demo");
 assert.match(result.html, /<blockquote>\n<svg /);
 assert.match(result.html, /id="article-10"/);
-assert.match(result.html, /prefers-color-scheme/);
+assert.match(result.html, /light-dark\(/);
 if (combined) assert.match(result.html, /#bb1100/i);
 assert.doesNotMatch(result.html, /<script>/);
 const jsx = compiler.compile(source);
