@@ -56,15 +56,6 @@ const links = [
   <NavLink key="node" to="/node/getting-started">
     Node.js
   </NavLink>,
-  <a key="speed" href="/#speed">
-    Benchmarks
-  </a>,
-  <a key="correctness" href="/#correctness">
-    Correctness
-  </a>,
-  <a key="github" href="https://github.com/sebastian-software/ferromark">
-    GitHub
-  </a>,
 ];
 
 /** Every page on Monografie's Ardo shell; the documentation adds its menu, search and reading layout. */
@@ -75,6 +66,7 @@ export default function Root() {
       name="Ferromark"
       release={version}
       links={links}
+      repository="https://github.com/sebastian-software/ferromark"
       sections={sections}
       groups={groups}
       components={{ h2: DocumentHeading }}
