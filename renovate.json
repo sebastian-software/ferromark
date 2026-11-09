@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>sebastian-software/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "description": "Keep historical performance-report reproductions at the dependency versions recorded with their measurements.",
+      "matchFileNames": [
+        "docs/reports/**"
+      ],
+      "enabled": false
+    }
+  ]
+}
