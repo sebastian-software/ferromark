@@ -1,17 +1,15 @@
 import assert from "node:assert/strict";
 import { cp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [casesPath, facadePath, output, assetRoot, peerRoot] = process.argv.slice(2);
 const require = createRequire(
   peerRoot ? pathToFileURL(join(peerRoot, "package.json")) : import.meta.url,
 );
-const core = dirname(require.resolve("@ferriki/core/package.json"));
-const { createHighlighterCoreSync, ferrikiVersion } = await import(
-  pathToFileURL(join(core, "index.mjs")).href
-);
+const peerUrl = pathToFileURL(require.resolve("@ferriki/core")).href;
+const { createHighlighterCoreSync, ferrikiVersion } = await import(peerUrl);
 const cases = JSON.parse(await readFile(casesPath, "utf8"));
 assert.equal(ferrikiVersion(), cases.ferrikiVersion, "published native version");
 const { toHtmlWithHighlighter } = await import(pathToFileURL(facadePath).href);
@@ -81,7 +79,7 @@ async function assetError(name, corrupt) {
   } else {
     await rm(nordPath);
   }
-  const api = await import(pathToFileURL(join(core, "index.mjs")).href);
+  const api = await import(peerUrl);
   const failing = api.createHighlighterCoreSync({
     assets: { remote: false, cacheDir: isolatedCache },
   });

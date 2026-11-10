@@ -1,5 +1,10 @@
 # Ferriki public Rust/Node fixture contract
 
+For the current checkout, use the [current Ferriki release commands](../ferriki-current/README.md)
+with `--release scripts/ferriki-current`. They test Ferriki 1.3.0 against the
+unchanged 1.1.2 expectations documented here. The historical run commands below
+require matching 1.1.2 locked crates and do not match the current Cargo lock.
+
 This lane exercises the shared authored fixtures from Ferromark [#462] and
 [#393] against the published Ferriki 1.1.2 crates and Node package, providing
 the executable consumer evidence requested in Ferriki [#123]. The cases pin
