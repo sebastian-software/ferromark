@@ -13,10 +13,10 @@ is compact and maintained upstream. The Ferramenta footer excludes this project
 and includes sibling descriptions and the family icon.
 
 Pin the CLI with mise and both Git theme revisions in mdtheme.yaml. CI checks
-the generated output. Source and output are committed together. Standards
-repositories explicitly delegate README ownership to mdtheme, so standards
-cannot append a second company footer. Published subpackage READMEs keep their
-compact registry format and existing generator.
+the generated output. Source and output are committed together. The project
+owns its generator and theme pins; mdtheme owns the composed root README.
+Published subpackage READMEs keep their compact registry format and existing
+generator, without a second tool appending a company footer.
 
 ## Consequences
 
