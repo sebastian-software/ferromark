@@ -51,6 +51,11 @@ registries**, so a change that lands on `main` is a change you are willing to
 ship. See [releasing](docs/releasing.md) and
 [ADR-0020](docs/arch/ADR-0020-standards-release-blueprint.md).
 
+Ferriki dependency changes also require both [current release checks](scripts/ferriki-current/README.md).
+They exercise the current Cargo archive and Node addon against pinned published
+Ferriki crates, npm peer, and assets while retaining the original 1.1.2 expected
+output. Do not regenerate historical snapshots to make a dependency bump pass.
+
 The [shared native npm tooling](docs/native-npm-tooling.md) owns the common build,
 loader, platform generation, and package checks.
 
