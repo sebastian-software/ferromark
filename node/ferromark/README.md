@@ -5,7 +5,7 @@ Native Node.js bindings for the [Ferromark](https://github.com/sebastian-softwar
 [Documentation site](https://ferromark.dev/) ·
 [Rust crate](https://crates.io/crates/ferromark)
 
-Upgrading from v3? Follow the [v3-to-v4 migration guide](../../docs/migration-v4.md)
+Upgrading from v3? Follow the [v3-to-v4 migration guide](https://github.com/sebastian-software/ferromark/blob/main/docs/migration-v4.md)
 for explicit engine setup, callback locations, and diagram result changes.
 
 ## Measured performance

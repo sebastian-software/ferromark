@@ -15,15 +15,15 @@ test("README source and generated output prominently link the live documentation
   }
 });
 
-test("README introduces the v3 release and delegates detailed documentation", () => {
+test("README introduces the current major release and delegates detailed documentation", () => {
   const source = read("README.md.src");
-  assert.match(source, /^# Ferromark v3$/m);
+  const version = read("Cargo.toml").match(/^version = "([^"]+)"$/m)[1];
+  const major = version.split(".")[0];
+  assert.ok(source.includes(`# Ferromark v${major}\n`));
   assert.match(source, /arena-allocated/);
-  assert.match(source, /breaking upgrade of the Rust API/);
   assert.match(source, /CHANGELOG\.md/);
   // Install lines carry no version. The release pull request bumps the docs.rs
   // reference alone, from the root package version the rust strategy owns.
-  const version = read("Cargo.toml").match(/^version = "([^"]+)"$/m)[1];
   assert.ok(
     source.includes(`https://docs.rs/ferromark/${version}/ferromark/`),
     `README links the docs.rs reference for ${version}`,
@@ -32,6 +32,18 @@ test("README introduces the v3 release and delegates detailed documentation", ()
   assert.ok(source.includes("cargo add ferromark\n"), "README adds the crate");
   assert.match(source, /docs\/migration-v2\.md/);
   assert.match(source, /docs\/migration-v3\.md/);
+  const migration = `docs/migration-v${major}.md`;
+  assert.ok(read(migration).length > 0);
+  for (const entry of [
+    "README.md.src",
+    "node/ferromark/README.md",
+    "homepage/app/routes/guide/getting-started.mdx",
+    "homepage/app/routes/node/getting-started.mdx",
+    "homepage/app/routes/rust/getting-started.mdx",
+  ]) {
+    assert.ok(read(entry).includes(migration), `${entry} links the current major upgrade guide`);
+  }
+
   assert.match(source, /node\/ferromark\/README\.md/);
   assert.match(source, /UPSTREAM\.md/);
   assert.match(source, /HtmlRendererOptions::sanitize/);
