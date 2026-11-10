@@ -4,7 +4,7 @@ Part of [Ferramenta](https://ferramenta.dev), a family of Rust tools.
 
 [![Powered by Sebastian Software](https://img.shields.io/badge/Powered_by-Sebastian_Software-005164?style=flat)](https://oss.sebastian-software.com)
 
-# Ferromark v3
+# Ferromark v4
 
 **Markdown at native speed.**
 
@@ -22,10 +22,10 @@ native Node.js bindings.
 
 <!-- x-release-please-end-version -->
 
-**V3 is a breaking upgrade of the Rust API.** Documents render as before unless
-you enable a new option. Read the [changelog](CHANGELOG.md) and the
-[v3 upgrade notes](docs/migration-v3.md); coming from v1, start with the
-[v2 migration guide](docs/migration-v2.md).
+**V4 changes code-engine setup and hook contracts.** Plain Markdown rendering
+keeps its defaults. Read the [v3-to-v4 upgrade guide](docs/migration-v4.md) and
+[changelog](CHANGELOG.md). For earlier upgrades, follow the
+[v1-to-v2](docs/migration-v2.md) and [v2-to-v3](docs/migration-v3.md) guides first.
 
 ## Why Ferromark
 

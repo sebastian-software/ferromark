@@ -1,9 +1,12 @@
-# ferromark v3 for Node.js
+# ferromark v4 for Node.js
 
 Native Node.js bindings for the [Ferromark](https://github.com/sebastian-software/ferromark) Markdown-to-HTML compiler.
 
 [Documentation site](https://ferromark.dev/) ·
 [Rust crate](https://crates.io/crates/ferromark)
+
+Upgrading from v3? Follow the [v3-to-v4 migration guide](../../docs/migration-v4.md)
+for explicit engine setup, callback locations, and diagram result changes.
 
 ## Measured performance
 
