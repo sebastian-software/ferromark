@@ -11,8 +11,8 @@ development workspace and
 renderer are modules inside the core library; consumers can use them
 individually through `ferromark`. Since
 [ADR-0020](arch/ADR-0020-standards-release-blueprint.md) that crate is the
-repository root package, and the release follows the organization's
-[release blueprint](https://github.com/sebastian-software/standards/blob/main/reference/release-please/README.md):
+repository root package. Project-owned release configuration follows the shared
+[project-infra guidance](https://github.com/sebastian-software/project-infra/blob/v0.3.0/skills/project-infra/references/ci-and-releases.md):
 **merging the release pull request publishes.**
 
 ## The flow
