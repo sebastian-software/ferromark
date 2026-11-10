@@ -24,8 +24,8 @@ jobs:
       - run: cargo test -p ferromark --features ferriki --test ferriki_integration --locked
       - run: cargo check -p ferromark --features ferriki --example ferriki --locked
       - run: cargo bench -p ferromark --features ferriki --bench ferriki --no-run --locked
-      - name: Verify packaged Rust consumer and frozen highlighting fixtures
-        run: python3 scripts/ferriki-compatibility/run.py "$RUNNER_TEMP/ferriki-rust"
+      - name: Verify current packaged Rust consumer against frozen highlighting fixtures
+        run: python3 scripts/ferriki-compatibility/run.py "$RUNNER_TEMP/ferriki-rust" --release scripts/ferriki-current
       - name: Upload Rust fixture evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -57,10 +57,10 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: scripts/ferriki-compatibility/package-lock.json
-      - run: npm ci --prefix scripts/ferriki-compatibility --ignore-scripts --no-audit --no-fund
+          cache-dependency-path: scripts/ferriki-current/package-lock.json
+      - run: npm ci --prefix scripts/ferriki-current --ignore-scripts --no-audit --no-fund
       - run: cargo fetch --locked
-      - run: python3 scripts/ferriki-compatibility/run.py "$RUNNER_TEMP/ferriki-peers" --node
+      - run: python3 scripts/ferriki-compatibility/run.py "$RUNNER_TEMP/ferriki-peers" --node --release scripts/ferriki-current
       - name: Upload shared fixture evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

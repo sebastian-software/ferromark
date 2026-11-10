@@ -4,9 +4,14 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { createHighlighterCoreSync, ferrikiVersion } from "@ferriki/core";
-
-const [casesPath, facadePath, output, assetRoot] = process.argv.slice(2);
+const [casesPath, facadePath, output, assetRoot, peerRoot] = process.argv.slice(2);
+const require = createRequire(
+  peerRoot ? pathToFileURL(join(peerRoot, "package.json")) : import.meta.url,
+);
+const core = dirname(require.resolve("@ferriki/core/package.json"));
+const { createHighlighterCoreSync, ferrikiVersion } = await import(
+  pathToFileURL(join(core, "index.mjs")).href
+);
 const cases = JSON.parse(await readFile(casesPath, "utf8"));
 assert.equal(ferrikiVersion(), cases.ferrikiVersion, "published native version");
 const { toHtmlWithHighlighter } = await import(pathToFileURL(facadePath).href);
@@ -62,8 +67,6 @@ assert.match(result.dualThemeHtml, /--shiki-dark/);
 
 // Exercise the public offline cache contract. The main peer run uses a fresh
 // cache populated only after each CDN payload matches the release manifest.
-const require = createRequire(import.meta.url);
-const core = dirname(require.resolve("@ferriki/core/package.json"));
 const release = JSON.parse(await readFile(join(assetRoot, "release-manifest.json"), "utf8"));
 const nord = release.assets["themes/nord.fktheme"];
 

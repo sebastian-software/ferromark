@@ -33,7 +33,7 @@ def command(args, output, name, **kwargs):
 
 
 BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-PAYLOAD_KEY = re.compile(r'^(languages|themes)/([a-z0-9-]+)\.(fkgram|fktheme)$')
+PAYLOAD_KEY = re.compile(r'^(languages|themes)/([a-z0-9-]+)\.(fkgram|fkbc|fktheme)$')
 
 
 def short_hash(digest):
@@ -51,7 +51,7 @@ def short_hash(digest):
 def payload_path(key, digest, layout):
     """Immutable CDN object path for a catalog payload, as Ferriki's payloadPath()."""
     match = PAYLOAD_KEY.fullmatch(key)
-    if not match or (match[1] == 'languages') != (match[3] == 'fkgram'):
+    if not match or (match[1] == 'languages') != (match[3] in ('fkgram', 'fkbc')):
         raise ValueError(f'invalid catalog payload path: {key}')
     if layout not in ('language-hash-v1', 'language-hash-v2'):
         raise ValueError(f'unknown asset storage layout: {layout}')
@@ -59,9 +59,9 @@ def payload_path(key, digest, layout):
     return f'{match[2]}/{name}' if match[1] == 'languages' else f'themes/{match[2]}/{name}'
 
 
-def prepare_assets(output):
-    source = json.loads((HERE / 'asset-source.json').read_text(encoding='utf-8'))
-    if source['version'] != json.loads(CASES.read_text(encoding='utf-8'))['ferrikiVersion']:
+def prepare_assets(output, release=HERE, cases=CASES):
+    source = json.loads((release / 'asset-source.json').read_text(encoding='utf-8'))
+    if source['version'] != json.loads(cases.read_text(encoding='utf-8'))['ferrikiVersion']:
         raise ValueError('fixture and asset versions differ')
     algorithm, expected = source['integrity'].split('-', 1)
     with urllib.request.urlopen(source['url'], timeout=60) as response:
@@ -126,7 +126,7 @@ def prepare_assets(output):
     return assets
 
 
-def rust_consumer(output, assets):
+def rust_consumer(output, assets, cases=CASES):
     command(['cargo', 'package', '-p', 'ferromark', '--features', 'ferriki', '--locked',
              '--offline', '--allow-dirty', '--no-verify', '--target-dir', str(output / 'target')],
             output, 'package')
@@ -164,7 +164,7 @@ serde_json = "={serde_version}"
     manifest_args = ['--manifest-path', str(consumer / 'Cargo.toml')]
     command(['cargo', 'metadata', '--offline', '--format-version', '1', *manifest_args], output, 'resolve')
     resolved = tomllib.loads((consumer / 'Cargo.lock').read_text(encoding='utf-8'))['package']
-    fixture_version = json.loads(CASES.read_text(encoding='utf-8'))['ferrikiVersion']
+    fixture_version = json.loads(cases.read_text(encoding='utf-8'))['ferrikiVersion']
     for name in ['ferriki', 'ferriki-asset-gen', 'ferriki-textmate']:
         versions = [p['version'] for p in resolved if p['name'] == name]
         if versions != [fixture_version]:
@@ -178,12 +178,12 @@ serde_json = "={serde_version}"
     tree = command(['cargo', 'tree', '--edges', 'normal', '--locked', '--offline', *manifest_args], output, 'rust-tree')
     if any(f'{name} v' in tree for name in ['napi', 'napi-derive', 'bincode', 'ureq', 'rustls']):
         raise ValueError('network, advisory-blocked or N-API dependency in Rust consumer')
-    data = command(['cargo', 'run', '--locked', '--offline', *manifest_args, '--', str(assets), str(CASES)],
+    data = command(['cargo', 'run', '--locked', '--offline', *manifest_args, '--', str(assets), str(cases)],
                    output, 'rust-consumer')
     return json.loads(data), hashlib.sha256(archive.read_bytes()).hexdigest()
 
 
-def node_consumer(output, assets):
+def node_consumer(output, assets, cases=CASES, release=HERE):
     command(['cargo', 'build', '-p', 'ferromark-node', '--profile', 'release-node', '--locked', '--offline'],
             output, 'node-addon')
     facade = output / 'node-package'
@@ -197,7 +197,7 @@ def node_consumer(output, assets):
     filename = ('ferromark_node.dll' if target.startswith('win32') else
                 'libferromark_node.dylib' if target.startswith('darwin') else 'libferromark_node.so')
     shutil.copyfile(ROOT / 'target/release-node' / filename, facade / f'ferromark.{target}.node')
-    data = command(['node', str(HERE / 'node.mjs'), str(CASES), str(facade / 'index.mjs'), str(output), str(assets)],
+    data = command(['node', str(HERE / 'node.mjs'), str(cases), str(facade / 'index.mjs'), str(output), str(assets), str(release)],
                    output, 'node-consumer')
     return json.loads(data)
 
@@ -244,8 +244,8 @@ def markdown_text(html):
     return re.sub(r'\n{2,}', '\n', visible_text(html)).strip('\n')
 
 
-def compare_peers(rust, node):
-    corpus = json.loads(CASES.read_text(encoding='utf-8'))
+def compare_peers(rust, node, cases=CASES):
+    corpus = json.loads(cases.read_text(encoding='utf-8'))
     token_ids = [case['id'] for case in corpus['tokens']]
     if len(token_ids) != len(set(token_ids)):
         raise ValueError('authored highlighting case identities are not unique')
@@ -309,22 +309,40 @@ def compare_peers(rust, node):
             )
 
 
+def release_cases(output, version):
+    """Keep the authored baseline immutable; select the tested peer explicitly."""
+    corpus = json.loads(CASES.read_text(encoding='utf-8'))
+    baseline = corpus['ferrikiVersion']
+    if version == baseline:
+        return CASES, baseline
+    corpus['ferrikiVersion'] = version
+    selected = output / 'cases.json'
+    selected.write_text(json.dumps(corpus, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    return selected, baseline
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path, help='fresh directory for archives, logs and results')
+    parser.add_argument('--release', type=Path, default=HERE, help='explicit pinned peer directory; default: historical 1.1.2 reference')
     parser.add_argument('--node', action='store_true', help='also test the published Node highlighter')
     parser.add_argument('--update-node-snapshot', action='store_true', help='review and replace only the Node HTML snapshot')
     args = parser.parse_args()
+    if args.update_node_snapshot and args.release.resolve() != HERE:
+        parser.error('current release checks cannot update the historical snapshots')
     if args.update_node_snapshot and not args.node:
         parser.error('updating the Node snapshot requires --node')
     output = args.output.resolve()
     output.mkdir(parents=True)
-    assets = prepare_assets(output)
-    rust, archive_hash = rust_consumer(output, assets)
+    release = args.release.resolve()
+    source = json.loads((release / 'asset-source.json').read_text(encoding='utf-8'))
+    cases, baseline = release_cases(output, source['version'])
+    assets = prepare_assets(output, release, cases)
+    rust, archive_hash = rust_consumer(output, assets, cases)
     result = {'rust': rust}
     if args.node:
-        result['node'] = node_consumer(output, assets)
-        compare_peers(rust, result['node'])
+        result['node'] = node_consumer(output, assets, cases, release)
+        compare_peers(rust, result['node'], cases)
     expected = json.loads(SNAPSHOTS.read_text(encoding='utf-8'))
     if args.update_node_snapshot:
         check_snapshot('frozen Rust output', rust, expected['rust'])
@@ -334,7 +352,8 @@ def main():
             check_snapshot(name, actual, expected[name])
     (output / 'results.json').write_text(json.dumps(result, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     (output / 'summary.json').write_text(json.dumps({
-        'ferriki': json.loads(CASES.read_text(encoding='utf-8'))['ferrikiVersion'], 'cargoArchiveSha256': archive_hash,
+        'ferriki': json.loads(cases.read_text(encoding='utf-8'))['ferrikiVersion'], 'fixtureBaselineFerriki': baseline, 'assetCommit': source['assetCommit'],
+        'assetArchiveIntegrity': source['integrity'], 'cargoArchiveSha256': archive_hash,
         'tokenCases': len(rust['tokens']), 'markdownCases': len(rust['markdown']),
         'packagedRustConsumer': 'passed', 'nodePeer': 'passed' if args.node else 'not requested',
         'assetErrors': rust['assetErrors'], 'reuse': rust['reuse'],
