@@ -1,8 +1,8 @@
-# ADR-0020: Adopt the standards release blueprint
+# ADR-0020: Coordinated releases through shared infrastructure
 
 - Status: Accepted
 - Date: 2026-09-16
-- Last updated: 2026-10-03
+- Last updated: 2026-11-10
 - Supersedes the publication decisions in
   [ADR-0016](ADR-0016-coordinated-workspace-releases.md) and
   [ADR-0017](ADR-0017-verified-release-candidates.md)
@@ -18,9 +18,8 @@ different, deliberate act.
 
 The owner has decided that merging the release pull request must publish, and
 that the flow must be the same one across the organization's repositories. The
-organization's blueprint for that flow is
-`reference/release-please/` in
-[sebastian-software/standards](https://github.com/sebastian-software/standards):
+blueprint adopted on 2026-09-16 came from `reference/release-please/` in the
+historical [standards repository](https://github.com/sebastian-software/standards/tree/a840766444dbb0e421f1f1868c48bee315ead769/reference/release-please):
 a real root package with `release-type: rust`, Node versions as typed JSON
 `extra-files`, no `version.txt`, no Cargo version `extra-files`, no lockfile
 jsonpaths, a lockfile no-diff check, and one publish workflow whose jobs are all
@@ -37,7 +36,8 @@ repository quietly differs from the rest.
 
 ## Decision
 
-Adopt the blueprint as written.
+Keep the adopted coordinated release flow in project-owned configuration.
+Shared executable actions now come from `project-infra` as recorded below.
 
 **One root package.** `ferromark` moves from `crates/ferromark` to the
 repository root, v1's layout, so Cargo discovers its tests and benchmarks and
@@ -69,14 +69,18 @@ and npm both authenticate through Trusted Publishing. `workflow_dispatch` takes
 the release tag and exists only to retry a failed job against the sources the
 release was cut from.
 
-**Shared actions instead of local copies.** `publish-crates`, `napi-matrix` and
-`publish-npm` come from the standards repository, pinned by commit. The shared
-action defines eight organization-wide platform records and the
-sidecar/artifact/binary naming; Ferromark's workflow selects the seven targets
-declared by its facade. A contract test keeps that selection aligned with the
-published sidecars and CI targets. The crates.io index wait is also defined
-once for the organization. The repository-local `check-workflow-pins` is
-replaced by the shared `check-action-pins`.
+**Shared actions instead of local copies.** `publish-crates` and
+`check-action-pins` come from `project-infra`, pinned by commit. The migration
+from standards `a840766444dbb0e421f1f1868c48bee315ead769` to project-infra v0.3.0
+`c97d8db475ce5abb7e7ab7b0ac22e249346b9fab` preserves byte-identical action
+manifests and pin-checker implementation. Authentication, retry, already-published
+handling, index waits, and action-pin enforcement retain their contracts.
+
+The current native matrix is generated through the pinned `ferramenta-native`
+tooling in `node/scripts/write-native-matrix.mjs`. It retains the facade's seven
+targets and sidecar/artifact/binary identities. npm publication uses the existing
+repository scripts. Release source revisions, permissions, and exact transform
+pins stay in the project workflows and executable contracts.
 
 **Version selection is unchanged.** `versioning: prerelease` with
 `prerelease-type: rc` and `prerelease: true` keeps the candidate series
@@ -163,17 +167,17 @@ series again is deliberate and is described in
 
 ## Amendment (2026-10-03): select the published native targets
 
-The standards `napi-matrix` action offers eight platform records, while the
-Ferromark facade declares seven targets. `publish.yml` now passes those seven
-platform IDs explicitly instead of accepting the action's full default matrix.
+At that amendment, the standards `napi-matrix` action offered eight platform
+records while the facade declared seven targets. The workflow selected those
+seven platform IDs explicitly. The current generator preserves that selection.
 The workflow contract checks the selection against the facade's sidecars and
 the seven CI targets so unsupported targets cannot enter a release matrix.
 
 ## Sources
 
-- [One product release with Release Please](https://github.com/sebastian-software/standards/blob/main/reference/release-please/README.md)
-- [The publish skeleton](https://github.com/sebastian-software/standards/blob/main/reference/release-please/publish-skeleton.yml)
-- [The shared composite actions](https://github.com/sebastian-software/standards/blob/main/.github/actions/README.md)
+- [Current shared infrastructure guidance](https://github.com/sebastian-software/project-infra/blob/v0.3.0/skills/project-infra/references/ci-and-releases.md)
+- [Current shared composite actions](https://github.com/sebastian-software/project-infra/tree/v0.3.0/.github/actions)
+- [Historical adopted blueprint](https://github.com/sebastian-software/standards/tree/a840766444dbb0e421f1f1868c48bee315ead769/reference/release-please)
 - [Rust strategy](https://github.com/googleapis/release-please/blob/v17.6.0/src/strategies/rust.ts)
 - [Prerelease versioning strategy](https://github.com/googleapis/release-please/blob/v17.6.0/src/versioning-strategies/prerelease.ts)
 
@@ -181,3 +185,5 @@ the seven CI targets so unsupported targets cannot enter a release matrix.
 
 - 2026-10-03: Updated current package counts and recorded the explicit
   seven-target selection in the release matrix contract.
+- 2026-11-10: Moved the two remaining executable actions to project-infra with
+  byte-identical implementations and retained all existing release contracts.
