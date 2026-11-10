@@ -62,10 +62,10 @@ Website changes require `pnpm install --frozen-lockfile`, `pnpm format:check`,
 `pnpm lint`, `pnpm typecheck`, `pnpm run audit`, and `pnpm build` from
 `homepage/`. The build checks all prerendered routes, navigation, and documentation content.
 
-The Node and homepage workspaces use the managed Oxfmt configuration. Run
-`pnpm format` in the affected workspace before checking formatting. Their seeded
-ESLint, Oxlint, and spelling configurations may carry documented local adjustments;
-do not change the managed `.oxfmtrc.json`. The homepage's frozen benchmark guide
+The Node and homepage workspaces own their Oxfmt configuration. Run
+`pnpm format` in the affected workspace before checking formatting. Their
+ESLint, Oxlint, and spelling configurations carry project-specific adjustments.
+Keep generated-file exclusions in `.prettierignore`. The homepage's frozen benchmark guide
 and benchmark figures are excluded through
 `.prettierignore`; build output and generated route types are also excluded from
 linting. The build still checks the generated navigation and benchmark content,
@@ -89,7 +89,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 
 All `uses:` entries must be full commit SHAs with the version in a trailing
 comment. The CI `fmt` job enforces that with the organization's shared
-[`check-action-pins`](https://github.com/sebastian-software/standards/tree/main/.github/actions)
+[`check-action-pins`](https://github.com/sebastian-software/project-infra/tree/v0.3.0/.github/actions)
 action rather than a repository-local copy. Use US English and Conventional
 Commits; breaking changes use `!` or a `BREAKING CHANGE:` footer.
 

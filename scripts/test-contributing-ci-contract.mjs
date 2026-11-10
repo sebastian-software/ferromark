@@ -256,10 +256,10 @@ test("publication validates one immutable release source before publishing", () 
     assert.ok(
       uses.some(
         (entry) =>
-          entry.startsWith("sebastian-software/standards/.github/actions/" + action + "@") &&
+          entry.startsWith("sebastian-software/project-infra/.github/actions/" + action + "@") &&
           /^[a-f0-9]{40}$/.test(entry.slice(entry.lastIndexOf("@") + 1)),
       ),
-      action + " must come from the standards repository, pinned by commit",
+      action + " must come from project-infra, pinned by commit",
     );
   }
   assert.equal(
