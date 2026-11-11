@@ -11,7 +11,7 @@
   {
     "name": "sequence",
     "source": "sequenceDiagram\nAlice->>Bob: Hello",
-    "sha256": "f269ce075ab9017d89c605f5edd6ebeaeba62d1b0348110aaf99e8611bd89c94",
+    "sha256": "597684c2935bf9adcf986f69a3df4c02ff595afda581affc4b5e501d532a5cd1",
     "labels": [
       "Alice",
       "Bob",
@@ -21,7 +21,7 @@
   {
     "name": "state",
     "source": "stateDiagram-v2\n[*] --> Idle\nIdle --> [*]",
-    "sha256": "d637c0af14ca5b77d6917dd67c961e15e728b0959a24421c9c76e152b4c48e64",
+    "sha256": "0b27153f79b43ed989afa2219bf6c529f747db068373874f210e24e2aca2d4a0",
     "labels": [
       "Idle"
     ]
@@ -29,7 +29,7 @@
   {
     "name": "class",
     "source": "classDiagram\nclass User {\n+String name\n}\nUser <|-- Admin",
-    "sha256": "c4f8f022bbafab0a3d5f28e4f664a3a9e5df119e98022f6367c97ad3728cbaa5",
+    "sha256": "10188073028b67294499c923e213f4fd3ceef85f814849440b39a9d7b870ddd9",
     "labels": [
       "User",
       "Admin"
@@ -38,7 +38,7 @@
   {
     "name": "er",
     "source": "erDiagram\nUSER ||--o{ POST : writes\nUSER {\nstring name\n}\nPOST {\nstring title\n}",
-    "sha256": "dcefe519000cd52d3bfe9cad4c2acf2c643722dbda093c69cfb82409d350caa0",
+    "sha256": "d0eff39c4808054bd96e8d485d286651afdcda05d81ff69df1d8bab96f2a84f5",
     "labels": [
       "USER",
       "POST",

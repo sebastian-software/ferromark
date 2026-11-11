@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31
-- Last updated: 2026-11-10
+- Last updated: 2026-11-11
 - Extends [ADR-0024](ADR-0024-native-code-plugins.md) and
   [ADR-0025](ADR-0025-static-mermaid-output.md); follows the Ferriki placement in
   [ADR-0018](ADR-0018-single-rust-crate.md).
@@ -39,7 +39,7 @@ code when the renderer throws. Ferromark neither imports nor pins
 the Ferriki highlighter. Its output is trusted application HTML, like every
 code-renderer callback; the SVG policy applies to the native integration only.
 
-Depend on Ferrigura `0.6` with a caret requirement, as `ferriki` does. Moving
+Depend on Ferrigura `0.7` with a caret requirement, as `ferriki` does. Moving
 the adapter into the published crate makes Ferrigura's dependency licenses part
 of the crate's policy. `deny.toml` allows them as version-scoped exceptions that
 reach users only through the optional feature: MPL-2.0 for `cssparser` and
@@ -77,3 +77,20 @@ made.
   `prefers-color-scheme` block, so the pinned bytes of all five fixtures
   changed. The SVG policy already allowed `light-dark()`. The dependency
   licenses are unchanged, and the exceptions moved to the 0.6 crates.
+
+- 2026-11-11: Adopted published Ferrigura 0.7 for caller-owned custom fonts.
+  Ferromark re-exports the engine and accepts its `Renderer` in the public Rust
+  hook constructor, so upgrading from the shipped 4.0.0 dependency on 0.4
+  (or unreleased main's 0.6) is a breaking type-identity change. This belongs to
+  Ferromark 5.0, driven by the ordinary breaking Conventional Commit; callers
+  align a direct dependency to 0.7 or use the re-export. The three exact
+  Ferrigura license exceptions were reviewed against the published 0.7 crates;
+  their licenses are unchanged. Existing SVG sanitization accepts actual
+  custom-font payloads and CSS in HTML and JSX without a policy change. See
+  [the migration guide](../migration-v5.md) and
+  [issue #614](https://github.com/sebastian-software/ferromark/issues/614).
+
+  The five actual 0.6/0.7 fixtures retain their view boxes, text, and embedded
+  font bytes. Flowchart is byte-identical; four hashes reflect compact sequence
+  participants, class/state colors, and an opaque ER label mask. The fixture
+  README records the per-diagram comparison.

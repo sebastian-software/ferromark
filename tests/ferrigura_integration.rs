@@ -196,3 +196,112 @@ fn explicit_light_and_dark_schemes_need_no_client_runtime() {
     assert_eq!(light.take_diagnostics(), []);
     assert_eq!(dark.take_diagnostics(), []);
 }
+
+fn custom_font_renderer() -> Renderer {
+    Renderer::builder(&Value::empty_object())
+        .with_all()
+        .font(
+            "Document Mono",
+            include_bytes!("fixtures/ferrigura/AtkinsonHyperlegibleMono-Regular.ttf").to_vec(),
+        )
+        .unwrap()
+        .build()
+}
+
+fn styles(svg: &str) -> Vec<String> {
+    roxmltree::Document::parse(svg)
+        .unwrap()
+        .descendants()
+        .filter(|node| node.has_tag_name("style"))
+        .map(|node| node.text().unwrap_or_default().to_owned())
+        .collect()
+}
+
+#[test]
+fn caller_owned_custom_fonts_survive_the_html_svg_policy() {
+    let code = "flowchart LR\n A[Wide WWW narrow iii]";
+    let engine = custom_font_renderer();
+    let expected = engine
+        .render_with(
+            code,
+            &ferromark::ferrigura::RenderOptions {
+                id: Some("custom-0".to_owned()),
+                color_scheme: Some(ferromark::ferrigura::ColorScheme::Auto),
+                now: Some(0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let source = format!("```mermaid\n{code}\n```");
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, &source).parse().unwrap();
+    let mut plugin = FerriguraHooks::new(engine, "custom").unwrap();
+    let options = ferromark::HtmlRendererOptions {
+        sanitize: true,
+        ..Default::default()
+    };
+    let mut renderer = HtmlRenderer::with_options(options);
+    let html = renderer.render_with_code_hooks(&document, &mut plugin);
+    assert!(plugin.take_error().is_none());
+    assert!(plugin.take_diagnostics().is_empty());
+    assert_eq!(styles(&html), styles(&expected));
+    assert!(html.contains("@font-face{") && html.contains("data:font/ttf;base64,"));
+    assert!(html.contains("font-family:var(--fg-font-") && html.contains("light-dark("));
+    let actual = roxmltree::Document::parse(&html).unwrap();
+    let bundled = Renderer::new(&Value::empty_object()).render(code).unwrap();
+    let bundled = roxmltree::Document::parse(&bundled).unwrap();
+    assert_ne!(
+        actual.root_element().attribute("viewBox"),
+        bundled.root_element().attribute("viewBox")
+    );
+    assert_eq!(
+        html,
+        renderer.render_with_code_hooks(&document, &mut plugin)
+    );
+}
+
+#[cfg(feature = "jsx")]
+#[test]
+fn caller_owned_custom_fonts_survive_jsx_and_module_conversion() {
+    use ferromark::{JsxModuleOptions, JsxRenderer};
+    let code = "flowchart LR\n A[Wide WWW narrow iii]";
+    let source = format!("```mermaid\n{code}\n```");
+    let allocator = Allocator::new();
+    let document = Parser::new(&allocator, &source).parse().unwrap();
+    let engine = custom_font_renderer();
+    let expected_styles = styles(
+        &engine
+            .render_with(
+                code,
+                &ferromark::ferrigura::RenderOptions {
+                    id: Some("custom-0".to_owned()),
+                    color_scheme: Some(ferromark::ferrigura::ColorScheme::Auto),
+                    now: Some(0),
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+    );
+    let mut plugin = FerriguraHooks::new(engine, "custom").unwrap();
+    let renderer = JsxRenderer::new();
+    let result = renderer.render_with_hooks(&document, &source, &mut plugin);
+    assert!(plugin.take_error().is_none());
+    assert!(plugin.take_diagnostics().is_empty());
+    assert!(result.body.contains("data:font/ttf;base64,"));
+    assert!(result.body.contains("\"fontFamily\":\"var(--fg-font-"));
+    assert!(!result.body.contains("dangerouslySetInnerHTML"));
+    for style in &expected_styles {
+        assert!(result.body.contains(&serde_json::to_string(style).unwrap()));
+    }
+    let module = renderer
+        .render_module_with_hooks(
+            &document,
+            &source,
+            &JsxModuleOptions::default(),
+            &mut plugin,
+        )
+        .unwrap();
+    assert!(plugin.take_error().is_none());
+    assert!(module.code.contains("data:font/ttf;base64,"));
+    assert!(!module.code.contains("dangerouslySetInnerHTML"));
+}

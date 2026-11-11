@@ -165,6 +165,32 @@ fence does not prevent later diagrams from rendering. A tuple composes these
 hooks with Ferriki hooks. `FerriguraError` and `FerriguraDiagnostic` are the
 error and diagnostic types; `ferromark::ferrigura` re-exports the engine API.
 
+Applications can supply fonts through their owned renderer before passing it to
+`FerriguraHooks`:
+
+```rust
+use ferromark::ferrigura::{Renderer, Value};
+use ferromark::FerriguraHooks;
+
+let font = std::fs::read("./fonts/Document.ttf")?;
+let renderer = Renderer::builder(&Value::empty_object())
+    .with_all()
+    .font("Document Font", font)?
+    .build();
+let mut hooks = FerriguraHooks::new(renderer, "page")?;
+```
+
+The renderer owns registered bytes. The first registered family becomes the
+primary when configuration does not explicitly select one. Registration does
+not discover system fonts or download files. Ferromark's existing SVG policy
+preserves embedded font data, family bindings, and CSS in HTML and JSX output.
+Retain the licenses for fonts your application supplies.
+
+Ferrigura's types are part of this optional public Rust API. Ferromark 5 uses
+Ferrigura 0.7; applications passing a renderer from a separate dependency must
+also use 0.7, or construct it through `ferromark::ferrigura`. See the
+[v4-to-v5 migration guide](migration-v5.md).
+
 The runnable native example reads Markdown from stdin and reports ranges on
 stderr while writing HTML to stdout:
 
@@ -202,7 +228,7 @@ Ferrigura; custom bundles provide native installation.
 
 ### Engine version
 
-The `ferrigura` feature depends on Ferrigura **0.4**. Since 0.3, Ferrigura no longer
+The `ferrigura` feature depends on Ferrigura **0.7**. Since 0.3, Ferrigura no longer
 depends on Ferromark, so the optional feature lives in the published crate
 without a dependency cycle. Engine upgrades that change SVG bytes update the
 pinned fixture hashes in the same change, after the rendered fixtures are
