@@ -24,6 +24,7 @@ jobs:
       - run: cargo test -p ferromark --features ferriki --test ferriki_integration --locked
       - run: cargo check -p ferromark --features ferriki --example ferriki --locked
       - run: cargo bench -p ferromark --features ferriki --bench ferriki --no-run --locked
+      - run: cargo fetch --locked
       - name: Verify current packaged Rust consumer against frozen highlighting fixtures
         run: python3 scripts/ferriki-compatibility/run.py "$RUNNER_TEMP/ferriki-rust" --release scripts/ferriki-current
       - name: Upload Rust fixture evidence
