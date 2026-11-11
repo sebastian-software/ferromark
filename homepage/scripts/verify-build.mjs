@@ -2,6 +2,8 @@
 import { access, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { verifyHomepageSamples } from "./homepage-samples.mjs";
+
 // Product sites consume shared presentation rather than maintaining a parallel CSS system.
 // The one exception is the homepage's own specimens: every rule there is scoped to
 // an `fm-` class, so nothing reusable or global can grow in homepage/app.
@@ -178,9 +180,7 @@ const requiredComparisonFragments = [
 const homepageSamples = JSON.parse(
   await readFile(new URL("../app/data/homepage-samples.json", import.meta.url), "utf8"),
 );
-if (homepageSamples.renderedWith.ferromark !== version) {
-  throw new Error("Render the homepage samples again: node scripts/render-homepage-samples.mjs");
-}
+verifyHomepageSamples(homepageSamples, homepage);
 const featuredLibraries = new Set([
   "pulldown-cmark",
   "comrak",
@@ -211,7 +211,6 @@ const requiredFragments = [
   ].map((id) => `id="${id}"`),
   'href="/guide/benchmarks"',
   'href="/guide/correctness"',
-  `Real output of ferromark ${version}`,
   ...completedBenchmarks.figures.flatMap((figure) =>
     featuredLibraries.has(figure.id)
       ? [libraryLabels.get(figure.id), `${figure.fresh.toFixed(2)}×`, `${figure.reuse.toFixed(2)}×`]

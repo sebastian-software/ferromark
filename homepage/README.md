@@ -56,7 +56,13 @@ Every sample on the homepage is real output of the published packages.
 `@ferriki/core` and `@ferrigura/core` into a temporary directory, renders each
 sample and writes `app/data/homepage-samples.json` with the versions in
 `renderedWith`. Never edit that file by hand; run the script again after a
-release. The build fails when its Ferromark version differs from the release.
+release. A release candidate can retain samples from an earlier published
+version: their captions and per-engine labels must match `renderedWith`, while
+the product badge must match the release manifest. The build rejects missing
+or malformed package versions and mismatched attributions. These
+checks validate the recorded metadata and displayed labels; the generator's
+published-package execution establishes the sample output. Regenerate only
+after the target version is available on npm.
 
 The chart, its table and the agreement table read the repository's own
 benchmark and conformance data (`benchmark-platform-values.json`,
