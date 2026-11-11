@@ -1,5 +1,36 @@
 # Changelog
 
+## [4.1.0](https://github.com/sebastian-software/ferromark/compare/v4.0.0...v4.1.0) (2026-11-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ferrigura:** The optional public Rust API now uses Ferrigura 0.7 types. Published Ferromark 4.0.0 used 0.4; unreleased main used 0.6. Upgrade a direct ferrigura dependency to 0.7 or construct renderers via ferromark::ferrigura.
+
+### Features
+
+* **ferrigura:** support caller-owned fonts with Ferrigura 0.7 ([e317d04](https://github.com/sebastian-software/ferromark/commit/e317d04e71624c859428a5cc8f9f9c059a2f2e53)), closes [#614](https://github.com/sebastian-software/ferromark/issues/614)
+* **ferrigura:** write diagram colors as light-dark() with Ferrigura 0.6 ([04b4bc9](https://github.com/sebastian-software/ferromark/commit/04b4bc9dc4a60960a815b80335bb51b93a27cd3b))
+* **ferrigura:** write diagram colors as light-dark() with Ferrigura 0.6 ([7371d96](https://github.com/sebastian-software/ferromark/commit/7371d96c74e88c865751f27fa92aff2c02d48d98))
+* GitHub as the header's mark, on Ardo 6.4 ([#603](https://github.com/sebastian-software/ferromark/issues/603)) ([bc19db4](https://github.com/sebastian-software/ferromark/commit/bc19db48769fc90405df61b89b8460978b197dc6))
+* **homepage:** adopt the Monografie page system ([664821e](https://github.com/sebastian-software/ferromark/commit/664821e63ff1ef099b898d86075e6b1788b61919))
+* **homepage:** adopt the Monografie page system ([fe9eabd](https://github.com/sebastian-software/ferromark/commit/fe9eabd96f4749eaa0fa4d3f0e5883ba7f7c062b))
+
+
+### Bug Fixes
+
+* **homepage:** pin ferramenta-family with the Monografie fixes ([af7679b](https://github.com/sebastian-software/ferromark/commit/af7679b52159a3972c23f8e664ec2bc30b13373e))
+* **homepage:** pin ferramenta-family with the Monografie fixes ([226f0c4](https://github.com/sebastian-software/ferromark/commit/226f0c476729e1106bb5abd0f5f60354389d828f))
+* **homepage:** resolve the family package over HTTPS ([ba7a967](https://github.com/sebastian-software/ferromark/commit/ba7a96799ce770162b99262b350cad915727063a))
+* **homepage:** retain sample provenance through release preparation ([a5bfa5e](https://github.com/sebastian-software/ferromark/commit/a5bfa5e8e3bec81e586938c2e7c9657581c54a36)), closes [#618](https://github.com/sebastian-software/ferromark/issues/618)
+* **homepage:** show one menu on narrow guide pages ([3847ee0](https://github.com/sebastian-software/ferromark/commit/3847ee02b5ab538fb9278296bb0e71f4695e28cb))
+* keep table text off the frame ([#604](https://github.com/sebastian-software/ferromark/issues/604)) ([7b4060f](https://github.com/sebastian-software/ferromark/commit/7b4060facd5609985ae4c8ebdd716ecf443a92f9))
+
+
+### Miscellaneous Chores
+
+* **release:** coordinate internal Ferrigura adoption in 4.1 ([b46c475](https://github.com/sebastian-software/ferromark/commit/b46c47555e383a213e690c495996f5979827ed1f)), closes [#614](https://github.com/sebastian-software/ferromark/issues/614)
+
 ## [4.0.0](https://github.com/sebastian-software/ferromark/compare/v3.7.0...v4.0.0) (2026-11-05)
 
 
