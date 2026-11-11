@@ -99,6 +99,21 @@ breaking change the next major. The candidate series ended with `2.0.0`, and the
 `release-please-config.json` in that same release. A `Release-As: X.Y.Z` footer
 still overrides the proposal, which is how `2.0.0` left the candidate series.
 
+For the Ferrigura 0.7 adoption only, the owner confirmed internal consumers and
+approved their coordinated direct migration in Ferromark 4.1.0. Preserve the
+following footer when squashing the release-decision PR:
+
+```text
+Release-As: 4.1.0
+```
+
+The generated notes retain the original breaking Rust type-boundary warning.
+Release Please must refresh the existing release PR; do not edit its generated
+versions by hand. This one-shot footer applies to the unreleased commit range.
+Once 4.1.0 is released, ordinary patch/minor/major selection resumes. See
+[ADR-0026](arch/ADR-0026-ferrigura-crate-feature.md) and the
+[coordinated migration guide](migration-v4.1.md).
+
 Starting a candidate series again is deliberate, never automatic. Land the first
 candidate with an explicit `Release-As: X.Y.Z-rc.1` footer. The default strategy
 then keeps the suffix but still bumps from the commit range — a `feat:` on

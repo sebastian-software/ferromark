@@ -1,11 +1,17 @@
-# Upgrading from Ferromark v4 to v5
+# Upgrading from Ferromark v4.0 to v4.1
 
-Version 5 upgrades the optional Rust `ferrigura` feature to Ferrigura 0.7.
+Version 4.1 upgrades the optional Rust `ferrigura` feature to Ferrigura 0.7.
 The published Ferromark 4.0.0 crate uses Ferrigura 0.4; unreleased main also
 used 0.6. Those pre-1.0 engine versions define distinct Rust types.
 `FerriguraHooks::new` accepts the renderer re-exported by the current Ferromark,
 so a separately constructed 0.4 or 0.6 `Renderer` no longer fits that parameter.
 The engine error type exposed through `FerriguraError` changes with it.
+
+The owner confirmed that Ferromark's current consumers are internal and chose
+a coordinated direct migration in 4.1.0. Update those consumers together; no
+legacy renderer adapter is provided. The Rust type boundary remains breaking
+and stays explicit in the release notes. The one-shot override leaves Release
+Please's default strategy unchanged.
 
 ## Rust: align the renderer dependency
 
@@ -13,7 +19,7 @@ Prefer the re-export when the application does not need a separate engine pin:
 
 ```toml
 [dependencies]
-ferromark = { version = "5", features = ["ferrigura"] }
+ferromark = { version = "4.1", features = ["ferrigura"] }
 ```
 
 ```rust
@@ -29,7 +35,7 @@ requirement too:
 
 ```toml
 [dependencies]
-ferromark = { version = "5", features = ["ferrigura"] }
+ferromark = { version = "4.1", features = ["ferrigura"] }
 ferrigura = "0.7"
 ```
 

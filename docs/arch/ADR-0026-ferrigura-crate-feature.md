@@ -81,16 +81,24 @@ made.
 - 2026-11-11: Adopted published Ferrigura 0.7 for caller-owned custom fonts.
   Ferromark re-exports the engine and accepts its `Renderer` in the public Rust
   hook constructor, so upgrading from the shipped 4.0.0 dependency on 0.4
-  (or unreleased main's 0.6) is a breaking type-identity change. This belongs to
-  Ferromark 5.0, driven by the ordinary breaking Conventional Commit; callers
+  (or unreleased main's 0.6) is a breaking type-identity change. The ordinary
+  breaking Conventional Commit initially prepared Ferromark 5.0; callers
   align a direct dependency to 0.7 or use the re-export. The three exact
   Ferrigura license exceptions were reviewed against the published 0.7 crates;
   their licenses are unchanged. Existing SVG sanitization accepts actual
   custom-font payloads and CSS in HTML and JSX without a policy change. See
-  [the migration guide](../migration-v5.md) and
+  [the migration guide](../migration-v4.1.md) and
   [issue #614](https://github.com/sebastian-software/ferromark/issues/614).
 
   The five actual 0.6/0.7 fixtures retain their view boxes, text, and embedded
   font bytes. Flowchart is byte-identical; four hashes reflect compact sequence
   participants, class/state colors, and an opaque ER label mask. The fixture
   README records the per-diagram comparison.
+
+- 2026-11-11: The owner confirmed that all current Ferromark consumers are
+  internal and chose a coordinated direct migration in 4.1.0. The optional
+  Rust 0.4/0.6-to-0.7 type boundary and original `BREAKING CHANGE` history remain
+  explicit. No legacy renderer adapter is added. A one-shot `Release-As: 4.1.0`
+  commit footer makes the existing Release Please flow prepare that version;
+  generated release files are left to the updater. This exception is limited
+  to this adoption. Release Please's default version selection remains unchanged.
