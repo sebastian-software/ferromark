@@ -186,10 +186,10 @@ not discover system fonts or download files. Ferromark's existing SVG policy
 preserves embedded font data, family bindings, and CSS in HTML and JSX output.
 Retain the licenses for fonts your application supplies.
 
-Ferrigura's types are part of this optional public Rust API. Ferromark 5 uses
+Ferrigura's types are part of this optional public Rust API. Ferromark 4.1 uses
 Ferrigura 0.7; applications passing a renderer from a separate dependency must
 also use 0.7, or construct it through `ferromark::ferrigura`. See the
-[v4-to-v5 migration guide](migration-v5.md).
+[v4.0-to-v4.1 migration guide](migration-v4.1.md).
 
 The runnable native example reads Markdown from stdin and reports ranges on
 stderr while writing HTML to stdout:
