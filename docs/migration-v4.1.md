@@ -10,8 +10,8 @@ The engine error type exposed through `FerriguraError` changes with it.
 The owner confirmed that Ferromark's current consumers are internal and chose
 a coordinated direct migration in 4.1.0. Update those consumers together; no
 legacy renderer adapter is provided. The Rust type boundary remains breaking
-and stays explicit in the release notes. This scoped release decision does not
-change the versioning policy for future breaking changes.
+and stays explicit in the release notes. The one-shot override leaves Release
+Please's default strategy unchanged.
 
 ## Rust: align the renderer dependency
 

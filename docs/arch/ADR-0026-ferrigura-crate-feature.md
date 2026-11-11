@@ -101,5 +101,4 @@ made.
   explicit. No legacy renderer adapter is added. A one-shot `Release-As: 4.1.0`
   commit footer makes the existing Release Please flow prepare that version;
   generated release files are left to the updater. This exception is limited
-  to this adoption. Future breaking changes retain the normal major-version
-  policy, and subsequent maintenance resumes ordinary version selection.
+  to this adoption. Release Please's default version selection remains unchanged.
