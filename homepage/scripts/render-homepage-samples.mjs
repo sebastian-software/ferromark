@@ -24,7 +24,7 @@ const { version: ferromarkVersion } = JSON.parse(
 const packages = {
   ferromark: ferromarkVersion,
   "@ferriki/core": "1.3.0",
-  "@ferrigura/core": "0.4.0",
+  "@ferrigura/core": "0.7.0",
 };
 
 const directory = await mkdtemp(join(tmpdir(), "ferromark-homepage-samples-"));
