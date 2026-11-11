@@ -1,4 +1,4 @@
-// The documented version is the published one. Release Please updates
+// The documented product version comes from the release manifest. Release Please updates
 // `node/ferromark/package.json` in the release pull request, and the site reads
 // a build-time snapshot of it here, so a release changes the rendered pages without a
 // single homepage edit. `scripts/verify-build.mjs` fails the build when the

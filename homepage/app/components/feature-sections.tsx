@@ -172,8 +172,7 @@ export function Mdx() {
       </p>
       <AnalysisCards />
       <MonoCredit>
-        Both cards show real output of ferromark {samples.renderedWith.ferromark}, the current
-        release.
+        Both cards show real output of ferromark {samples.renderedWith.ferromark}.
       </MonoCredit>
     </MonoSection>
   );

@@ -387,3 +387,13 @@ updates, and `homepage/scripts/verify-build.mjs` fails the build unless the
 rendered pages carry exactly that version. `deploy-homepage.yml` therefore runs
 on a push that changes that manifest as well as on one that changes `homepage/`,
 because a release pull request touches no file under `homepage/` at all.
+
+Homepage samples retain their own published-package versions in
+`homepage/app/data/homepage-samples.json`. Release preparation keeps that output
+and its recorded provenance intact; captions name those versions even when the
+product badge advances. The build validates the sample metadata and all three
+package attributions independently from the target-version badge. After npm
+publication, run `pnpm samples` in `homepage` against the actual release and
+review its generated output. For the 4.1 release follow-up, update the generator's
+Ferrigura pin to the published 0.7 package before regenerating. No generated
+sample version is changed by hand to make a release candidate pass.

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/write-release-data.mjs && ardo dev",
-    "build": "node scripts/write-release-data.mjs && ardo build && node scripts/verify-build.mjs && node --test scripts/test-benchmark-platforms.mjs",
+    "build": "node scripts/write-release-data.mjs && ardo build && node scripts/verify-build.mjs && node --test scripts/test-benchmark-platforms.mjs scripts/test-homepage-samples.mjs",
     "lint": "oxlint -c oxlint.config.ts && eslint . --max-warnings=0",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
