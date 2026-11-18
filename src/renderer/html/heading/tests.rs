@@ -447,3 +447,29 @@ fn permalink_marker_matches_the_emitted_id_however_the_prefix_splits_it() {
         }
     }
 }
+
+#[test]
+fn semantic_footnote_suffixes_advance_past_claimed_natural_slugs() {
+    super::FOOTNOTE_SUFFIX_PROBES.with(|probes| probes.set(0));
+    let mut counts = rustc_hash::FxHashMap::default();
+    let mut claim = |base: &str| {
+        let mut slug = base.to_owned();
+        super::claim_footnote_slug(&mut slug, &mut counts);
+        slug
+    };
+    assert_eq!(claim("note-2"), "note-2");
+    assert_eq!(claim("note"), "note");
+    assert_eq!(claim("note"), "note-3");
+    assert_eq!(claim("note-2"), "note-2-2");
+    for suffix in 4..=1003 {
+        assert_eq!(claim("note"), format!("note-{suffix}"));
+    }
+    // The next claim resumes at the last suffix rather than rescanning the run.
+    assert_eq!(counts.get("note"), Some(&1004));
+    // One probe per allocated suffix plus one for the occupied natural suffix.
+    super::FOOTNOTE_SUFFIX_PROBES.with(|probes| assert_eq!(probes.get(), 1003));
+    counts.clear();
+    let mut slug = "note".to_owned();
+    super::claim_footnote_slug(&mut slug, &mut counts);
+    assert_eq!(slug, "note");
+}

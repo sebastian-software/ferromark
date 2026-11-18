@@ -13,8 +13,8 @@ use crate::ast::{
     walk_footnote_definition, walk_heading, walk_node,
 };
 use crate::renderer::{
-    HeadingIdPlanner, HtmlRenderer, InvalidHeadingIdPrefix, collect_heading_text,
-    map_heading_level, slugify_heading,
+    HeadingIdPlanner, HtmlRenderer, InvalidHeadingIdPrefix, claim_footnote_slug,
+    collect_heading_text, map_heading_level, slugify_heading,
 };
 
 /// One heading in a document outline.
@@ -192,14 +192,7 @@ impl<'options> OutlineCollector<'options> {
             slug.push_str("footnote-");
             slug.push_str(&(index + 1).to_string());
         }
-        let base_len = slug.len();
-        let mut suffix = 2_usize;
-        while !self.semantic.slugs_seen.insert(slug.clone()) {
-            slug.truncate(base_len);
-            slug.push('-');
-            slug.push_str(&suffix.to_string());
-            suffix += 1;
-        }
+        claim_footnote_slug(&mut slug, &mut self.semantic.slug_counts);
         self.candidate.clear();
         self.candidate.push_str("fn-");
         self.candidate.push_str(&slug);
@@ -331,7 +324,7 @@ struct LegacyFootnotes {
 struct SemanticFootnotes {
     indexes: FxHashMap<String, usize>,
     slugs: Vec<String>,
-    slugs_seen: FxHashSet<String>,
+    slug_counts: FxHashMap<compact_str::CompactString, usize>,
     reference_counts: Vec<usize>,
     definitions: FxHashSet<String>,
 }

@@ -61,6 +61,7 @@ pub use jsx::{
     NoJsxRenderHooks, html_to_jsx,
 };
 
+pub(crate) use html::claim_footnote_slug;
 pub(crate) use jsx::decode_html_entities;
 pub(crate) use jsx::heading_text as collect_jsx_heading_text;
 

@@ -16,11 +16,8 @@ use crate::ast::{FootnoteDefinition, FootnoteReference, Span};
 use compact_str::CompactString;
 
 use super::super::escape::write_escaped_into;
-use super::super::heading::slugify_heading_into;
+use super::super::heading::{claim_footnote_slug, slugify_heading_into};
 use super::{HtmlRenderHooks, HtmlRenderer, PlannedId, reserve_heading_scratch};
-
-/// First `-N` tried when a slug repeats, matching the ids the scan produced.
-const FIRST_SUFFIX: usize = 2;
 
 #[derive(Clone)]
 pub(super) struct FootnoteRecord {
@@ -336,53 +333,14 @@ impl HtmlRenderer {
             self.heading_slug_scratch.clear();
             let _ = write!(self.heading_slug_scratch, "footnote-{}", index + 1);
         }
-        self.uniquify_footnote_slug();
+        claim_footnote_slug(
+            &mut self.heading_slug_scratch,
+            &mut self.footnote_slug_counts,
+        );
         CompactString::from(self.heading_slug_scratch.as_str())
     }
 
     fn write_footnote_id(&mut self, id: PlannedId) {
         write_escaped_into(&mut self.output, self.heading_id_planner.id(id));
-    }
-
-    /// Turns the slug in `heading_slug_scratch` into one no footnote holds,
-    /// appending `-2`, `-3`, ... as the old scan did.
-    ///
-    /// The map answers "is this slug taken" in one lookup, and remembers
-    /// per base slug which suffix the last collision reached — so a run of
-    /// identical slugs walks forward instead of restarting at `-2` and
-    /// re-testing every earlier one.
-    fn uniquify_footnote_slug(&mut self) {
-        let base_len = self.heading_slug_scratch.len();
-        let Some(&start) = self
-            .footnote_slug_counts
-            .get(self.heading_slug_scratch.as_str())
-        else {
-            self.claim_footnote_slug();
-            return;
-        };
-        // Only allocated when a slug actually repeats, which is rare.
-        let base = CompactString::from(&self.heading_slug_scratch[..base_len]);
-        let mut suffix = start;
-        loop {
-            self.heading_slug_scratch.truncate(base_len);
-            let _ = write!(self.heading_slug_scratch, "-{suffix}");
-            suffix += 1;
-            if !self
-                .footnote_slug_counts
-                .contains_key(self.heading_slug_scratch.as_str())
-            {
-                self.claim_footnote_slug();
-                self.footnote_slug_counts.insert(base, suffix);
-                return;
-            }
-        }
-    }
-
-    /// Records the scratch slug as taken, starting its own suffix run at 2.
-    fn claim_footnote_slug(&mut self) {
-        self.footnote_slug_counts.insert(
-            CompactString::from(self.heading_slug_scratch.as_str()),
-            FIRST_SUFFIX,
-        );
     }
 }

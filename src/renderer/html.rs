@@ -24,6 +24,7 @@ mod tests;
 pub use autolink::{AutolinkMatcher, find_autolink_ranges};
 #[cfg(feature = "ferriki")]
 pub use ferriki_integration::FerrikiHighlightHooks;
+pub use heading::claim_footnote_slug;
 pub use heading::{
     HEADING_PERMALINK_CLASS, HeadingIdPlanner, InvalidHeadingIdPrefix, collect_heading_text,
     map_heading_level, slugify_heading,
