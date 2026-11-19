@@ -415,14 +415,14 @@ fn jsx_runs_keep_their_shape() {
         ("<A>{{{", "<p><A>{{{</p>"),
         (
             "<A>x</A>",
-            "<div class=\"ox-island\" data-ox-island=\"A\"><p>x</p>\n</div>",
+            "<div class=\"ox-island\" data-ox-island=\"A\">x</div>",
         ),
         // The brace run the tag walk steps over, with one `}` behind it.
         ("<A>{{{}", "<p><A>{{</p>"),
         ("x<A>{{{}", "<p>x<A>{{</p>"),
         (
             "<A>{{{}</A>",
-            "<div class=\"ox-island\" data-ox-island=\"A\"><p>{{</p>\n</div>",
+            "<div class=\"ox-island\" data-ox-island=\"A\">{{</div>",
         ),
         // An attribute expression that never closes leaves the tag text.
         ("<A {>", "<p>&lt;A {&gt;</p>"),
@@ -443,7 +443,7 @@ fn attribute_expressions_still_parse() {
         "<div class=\"ox-island\" data-ox-island=\"A\" data-ox-props=\"{&quot;expressions&quot;:{},\
          &quot;props&quot;:{},&quot;spreads&quot;:[&quot;x&quot;]}\">\
          <script type=\"application/json\">{\"expressions\":{},\"props\":{},\"spreads\":[\"x\"]}\
-         </script><p>t</p>\n</div>"
+         </script>t</div>"
     );
     assert_eq!(
         tree("a <A x={1} {...y}/> b", mdx_options()),
@@ -462,11 +462,11 @@ fn a_closer_hidden_from_one_tag_still_closes_a_later_one() {
     // the second `<A>`, which the same `</A>` does close.
     assert_eq!(
         render("<A>`\n<A>x</A>\n`\n", mdx_options()),
-        "<p><A>`</p>\n<div class=\"ox-island\" data-ox-island=\"A\"><p>x</p>\n</div>\n<p>`</p>"
+        "<p><A>`</p>\n<div class=\"ox-island\" data-ox-island=\"A\">x</div>\n<p>`</p>"
     );
     assert_eq!(
         render("<A>{\n<A>x</A>\n}\n", mdx_options()),
-        "<p><A>{</p>\n<div class=\"ox-island\" data-ox-island=\"A\"><p>x</p>\n</div>\n<p>}</p>"
+        "<p><A>{</p>\n<div class=\"ox-island\" data-ox-island=\"A\">x</div>\n<p>}</p>"
     );
 }
 

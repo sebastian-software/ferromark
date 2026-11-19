@@ -116,7 +116,12 @@ impl<'a> Parser<'a> {
             if !scan::only_ws_until_eol(self.source.as_bytes(), close_end) {
                 return Ok(None);
             }
-            let children = self.parse_jsx_flow_children(open.end, close_start)?;
+            let inner = &source[open.end..close_start];
+            let children = if inner.contains(['\n', '\r']) {
+                self.parse_jsx_flow_children(open.end, close_start)?
+            } else {
+                self.parse_jsx_phrasing(inner, open.end)?
+            };
             (false, children, close_end)
         };
 

@@ -153,3 +153,19 @@ fn nested_flow_children_follow_the_same_rule() {
         "the inner tag is text JSX:\n{tree}"
     );
 }
+
+#[test]
+fn flow_jsx_children_follow_the_opening_line() {
+    let nested = mdx_tree(
+        "<Tabs>\n  <TabList>\n    <Tab value=\"pnpm\">pnpm</Tab>\n  </TabList>\n</Tabs>\n",
+    );
+    assert!(nested.contains("Text \"pnpm\""), "{nested}");
+    assert!(!nested.contains("Paragraph"), "{nested}");
+
+    let inline = mdx_tree("<Card title=\"A\">Short **body**</Card>\n");
+    assert!(inline.contains("Strong"), "{inline}");
+    assert!(!inline.contains("Paragraph"), "{inline}");
+
+    let multiline = mdx_tree("<Card>\nFirst paragraph.\n\nSecond paragraph.\n</Card>\n");
+    assert_eq!(multiline.matches("Paragraph").count(), 2, "{multiline}");
+}

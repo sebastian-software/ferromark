@@ -221,7 +221,7 @@ fn intrinsic_jsx_quotes_treat_backslashes_as_literal_bytes() {
     let Node::MdxJsxFlowElement(element) = &document.children[0] else {
         panic!("expected section")
     };
-    let Node::MdxJsxFlowElement(span) = &element.children[0] else {
+    let Node::MdxJsxTextElement(span) = &element.children[0] else {
         panic!("expected span")
     };
     let MdxJsxAttributeEntry::Attribute(title) = &span.attributes[0] else {

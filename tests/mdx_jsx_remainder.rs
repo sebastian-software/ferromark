@@ -78,14 +78,14 @@ fn nested_fragments_match_by_depth() {
     // The outer fragment closes on the *second* `</>`, so its span covers
     // the whole line: matching by depth is what keeps the inner `</>` from
     // ending it. The inner fragment is followed by `outer` on the same
-    // line, so it is text JSX inside the outer element's paragraph rather
+    // line, so it is a text JSX child of the outer element rather
     // than a nested flow element (see `mdx_jsx_flow_lines.rs`).
     let tree = mdx_tree("<><>inner</>outer</>\n");
     assert_eq!(
         tree,
         "Document [0..21]\n  MdxJsxFlowElement name=None self_closing=false [0..21]\n    \
-         Paragraph [2..17]\n      MdxJsxTextElement name=None self_closing=false [2..12]\n        \
-         Text \"inner\" [4..9]\n      Text \"outer\" [12..17]\n"
+         MdxJsxTextElement name=None self_closing=false [2..12]\n      \
+         Text \"inner\" [4..9]\n    Text \"outer\" [12..17]\n"
     );
 }
 
@@ -331,15 +331,15 @@ fn text_jsx_keeps_phrasing_not_flow() {
 }
 
 #[test]
-fn same_line_open_close_is_flow_with_paragraph_child() {
+fn same_line_open_close_is_flow_with_phrasing_child() {
     let tree = mdx_tree("<Alert>hello</Alert>\n");
     assert!(
         tree.contains("MdxJsxFlowElement name=Some(\"Alert\") self_closing=false"),
         "line-start tag is flow:\n{tree}"
     );
     assert!(
-        tree.contains("Paragraph"),
-        "markdown child is a paragraph:\n{tree}"
+        !tree.contains("Paragraph"),
+        "markdown child is phrasing:\n{tree}"
     );
     assert!(tree.contains("Text \"hello\""), "expected text:\n{tree}");
 }
