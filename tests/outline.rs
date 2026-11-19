@@ -242,3 +242,28 @@ fn heading_prefix_validation_matches_renderer_validation() {
             .is_err()
     );
 }
+
+#[test]
+fn semantic_footnote_natural_suffixes_and_fallback_match_outline() {
+    let source = concat!(
+        "A[^foo-2] B[^foo] C[^FOO!] D[^!!!] A again[^foo-2].\n\n",
+        "# fn-foo-2\n\n# fn-foo-3\n\n# fn-footnote-4\n\n",
+        "[^foo-2]: First.\n\n[^foo]: Second.\n\n[^FOO!]: Third.\n\n[^!!!]: Fourth.\n",
+    );
+    let allocator = Allocator::new();
+    let document = parse(&allocator, source, ParserOptions::gfm());
+    let options = OutlineOptions::default().with_semantic_footnotes(true);
+    let entries = document.outline(&options);
+    let html = render(&document, true, 0, "");
+    assert_eq!(
+        entries.iter().map(|e| e.id.as_deref()).collect::<Vec<_>>(),
+        vec![
+            Some("fn-foo-2-1"),
+            Some("fn-foo-3-1"),
+            Some("fn-footnote-4-1")
+        ]
+    );
+    assert_entries_match_html(&entries, &html);
+    assert!(html.contains("id=\"fnref-foo-2-2\""), "{html}");
+    assert_eq!(document.outline(&options), entries);
+}

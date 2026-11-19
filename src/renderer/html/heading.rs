@@ -10,12 +10,41 @@ use std::fmt::Write as _;
 use std::hash::Hasher as _;
 
 use crate::ast::{Link, Node};
+use compact_str::CompactString;
 use rustc_hash::{FxHashMap, FxHasher};
 
 #[cfg(test)]
 pub(super) mod planner_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+thread_local! {
+    static FOOTNOTE_SUFFIX_PROBES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Claims a semantic footnote slug, preserving the first available suffix.
+pub fn claim_footnote_slug(slug: &mut String, counts: &mut FxHashMap<CompactString, usize>) {
+    let base_len = slug.len();
+    let Some(&start) = counts.get(slug.as_str()) else {
+        counts.insert(CompactString::from(slug.as_str()), 2);
+        return;
+    };
+    let base = CompactString::from(slug.as_str());
+    let mut suffix = start;
+    loop {
+        #[cfg(test)]
+        FOOTNOTE_SUFFIX_PROBES.with(|probes| probes.set(probes.get() + 1));
+        slug.truncate(base_len);
+        let _ = write!(slug, "-{suffix}");
+        suffix += 1;
+        if !counts.contains_key(slug.as_str()) {
+            counts.insert(CompactString::from(slug.as_str()), 2);
+            counts.insert(base, suffix);
+            return;
+        }
+    }
+}
 
 /// Class name on the opt-in heading permalink control.
 ///
