@@ -334,7 +334,7 @@ fn children_brace_expression_stores_source() {
         "wrapper still parses:\n{tree}"
     );
     assert!(
-        tree.contains("MdxFlowExpression value=\"items.map\""),
+        tree.contains("MdxTextExpression value=\"items.map\""),
         "children expressions store source, not a evaluated result:\n{tree}"
     );
 }

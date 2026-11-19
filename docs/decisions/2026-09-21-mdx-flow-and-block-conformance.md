@@ -50,6 +50,14 @@ what MDX produces. The test keeps its purpose — the outer fragment still
 closes on the second `</>`, which is what depth matching is for — and now
 asserts the whole tree instead of counting flow elements.
 
+## JSX flow children on the opening line
+
+A flow element whose body stays on the opening tag's line parses that body
+as phrasing content. A multiline body still parses as blocks.
+This matches MDX 3 for one-line component children and avoids inserting a
+paragraph into components such as buttons. The regression cases cover nested
+components and multi-paragraph bodies. See issue #621.
+
 ## Tabs after a list marker expand to a tab stop of four (`src/parser/list_item.rs`)
 
 ### Decision
