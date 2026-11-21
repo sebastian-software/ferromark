@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.1.1](https://github.com/sebastian-software/ferromark/compare/v4.1.0...v4.1.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* keep one-line JSX children inline ([#626](https://github.com/sebastian-software/ferromark/issues/626)) ([004ef44](https://github.com/sebastian-software/ferromark/commit/004ef44724437cc35735592053f35e80df81b9c7))
+
+
+### Performance Improvements
+
+* reuse footnote slug allocation in outlines ([#624](https://github.com/sebastian-software/ferromark/issues/624)) ([344b6a0](https://github.com/sebastian-software/ferromark/commit/344b6a08584e9d71e0456c665b7c4bd6bc93782c))
+
 ## [4.1.0](https://github.com/sebastian-software/ferromark/compare/v4.0.0...v4.1.0) (2026-11-11)
 
 
