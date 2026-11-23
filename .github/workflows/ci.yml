@@ -56,7 +56,7 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "24"
+          node-version: "26"
           cache: npm
           cache-dependency-path: scripts/ferriki-current/package-lock.json
       - run: npm ci --prefix scripts/ferriki-current --ignore-scripts --no-audit --no-fund
@@ -181,7 +181,7 @@ jobs:
           package_json_file: scripts/package.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "22"
+          node-version: "26"
           cache: pnpm
           cache-dependency-path: scripts/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
@@ -254,7 +254,7 @@ jobs:
           package_json_file: homepage/package.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "22"
+          node-version: "26"
           cache: pnpm
           cache-dependency-path: homepage/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
@@ -347,7 +347,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "24"
+          node-version: "26"
       - run: pnpm -C node install --frozen-lockfile --ignore-scripts
       - id: matrix
         working-directory: node
@@ -392,7 +392,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "22"
+          node-version: "26"
           cache: pnpm
           cache-dependency-path: node/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
@@ -432,7 +432,7 @@ jobs:
           package_json_file: node/package.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "24"
+          node-version: "26"
           cache: pnpm
           cache-dependency-path: node/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
