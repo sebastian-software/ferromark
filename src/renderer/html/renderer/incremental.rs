@@ -212,4 +212,40 @@ mod tests {
         let next_html = renderer.render_incremental_fragment(&next_doc);
         assert!(next_html.contains("id=\"a-2\""), "{next_html}");
     }
+
+    #[test]
+    fn provisional_rollback_restores_empty_explicit_heading_id_counter() {
+        use crate::ast::{Document, ElementAttributes, Heading, Node, Span};
+
+        let allocator = Allocator::new();
+        let make_doc = || {
+            let mut children = allocator.new_vec();
+            children.push(Node::Heading(allocator.boxed(Heading {
+                depth: 1,
+                attributes: Some(allocator.boxed(ElementAttributes {
+                    id: Some(""),
+                    classes: allocator.new_vec(),
+                    values: allocator.new_vec(),
+                })),
+                children: allocator.new_vec(),
+                span: Span::new(0, 0),
+            })));
+            Document {
+                front_matter: None,
+                children,
+                span: Span::new(0, 0),
+            }
+        };
+        let doc = make_doc();
+        let mut renderer = HtmlRenderer::new();
+
+        let first = renderer.render_incremental_fragment(&doc);
+        assert!(first.contains("id=\"\""), "{first}");
+
+        let provisional = renderer.render_provisional_fragment(&doc);
+        assert!(provisional.contains("id=\"-1\""), "{provisional}");
+
+        let second = renderer.render_incremental_fragment(&doc);
+        assert!(second.contains("id=\"-1\""), "{second}");
+    }
 }

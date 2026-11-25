@@ -86,6 +86,7 @@ pub(super) fn find_autolink_match<P: AsRef<str>>(
 pub(super) fn find_default_http_autolink_match(s: &str, from: usize) -> Option<(usize, usize)> {
     let bytes = s.as_bytes();
     let mut search = from.saturating_add(4);
+    let mut rejected_schemes = 0u32;
     while search < bytes.len() {
         let rel = FirstByteIndex::find_colon_slash_slash(&bytes[search..])?;
         let colon = search + rel;
@@ -99,6 +100,7 @@ pub(super) fn find_default_http_autolink_match(s: &str, from: usize) -> Option<(
                 None
             };
         if let Some(url_start) = url_start {
+            rejected_schemes = 0;
             let is_boundary = url_start == 0 || !bytes[url_start - 1].is_ascii_alphanumeric();
             if is_boundary {
                 let url_end = scan_url_end(s, prefix_end);
@@ -109,8 +111,32 @@ pub(super) fn find_default_http_autolink_match(s: &str, from: usize) -> Option<(
                     }
                 }
             }
+            search = prefix_end;
+            continue;
         }
-        search = prefix_end;
+        rejected_schemes += 1;
+        if rejected_schemes >= 4 {
+            // Input holds repeated non-HTTP `://` schemes (such as `ftp://`).
+            // Skip straight to the next `ht` prefix via SIMD `memchr2` so
+            // inputs with no `h`/`H` exit in one vector scan instead of
+            // restarting on every `://`.
+            let mut h_scan = prefix_end;
+            let next_search = loop {
+                let h_rel = memchr::memchr2(b'h', b'H', &bytes[h_scan..])?;
+                let h = h_scan + h_rel;
+                if bytes
+                    .get(h + 1)
+                    .is_some_and(|byte| byte.eq_ignore_ascii_case(&b't'))
+                {
+                    break h + 4;
+                }
+                h_scan = h + 1;
+            };
+            rejected_schemes = 0;
+            search = next_search;
+        } else {
+            search = prefix_end;
+        }
     }
     None
 }
@@ -650,6 +676,9 @@ mod tests {
             "hhttps://bad.test (https://ok.test)",
             "http://http://nested.test",
             "The quick brown fox jumps over the lazy dog: see https://example.com/1 and http://example.org/2!",
+            "ftp://a.test/1 ftp://b.test/2 ftp://c.test/3 ftp://d.test/4 ftp://e.test/5",
+            "ftp://a.test/1 ftp://b.test/2 ftp://c.test/3 ftp://d.test/4 ftp://host.test/5 https://ok.test/6",
+            "ftp://a.test/1 ftp://b.test/2 ftp://c.test/3 ftp://d.test/4 HTTP://OK.TEST/5",
         ] {
             for from in 0..=text.len() {
                 if !text.is_char_boundary(from) {
