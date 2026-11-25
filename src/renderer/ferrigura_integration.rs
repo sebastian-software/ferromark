@@ -123,12 +123,16 @@ impl FerriguraHooks {
             },
         )?;
         let document = roxmltree::Document::parse(&raw_svg)?;
-        svg::validate(&document)?;
+        let direct_jsx_safe = svg::validate(&document)?;
         #[cfg(feature = "jsx")]
         if jsx {
-            return Ok(jsx::convert_document(&document, raw_svg.len(), true));
+            if direct_jsx_safe {
+                return Ok(jsx::convert_document(&document, raw_svg.len(), true));
+            }
+            let sanitized = svg::serialize_html(&document, raw_svg.len());
+            return jsx::convert(&sanitized).map_err(FerriguraError::from);
         }
-        let _ = jsx;
+        let _ = (jsx, direct_jsx_safe);
         let mut output = svg::serialize_html(&document, raw_svg.len());
         output.push('\n');
         Ok(output)
