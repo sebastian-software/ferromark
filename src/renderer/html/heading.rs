@@ -184,7 +184,6 @@ impl HeadingIdPlanner {
                 *slot = claim.previous_with_hash;
             }
             if let Some((base, suffix_str)) = id.rsplit_once('-')
-                && !base.is_empty()
                 && let Ok(suffix) = suffix_str.parse::<usize>()
                 && suffix >= 1
             {
