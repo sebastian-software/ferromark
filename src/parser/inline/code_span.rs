@@ -100,14 +100,17 @@ impl BacktickDeadEnds {
         if open_len <= 64 {
             self.short_mask |= 1u64 << (open_len - 1);
         }
-        // Keep only `> 64` widths that appeared at least twice ahead.
+        // Keep only `> 64` widths that appeared at least twice ahead,
+        // excluding `open_len` itself because the scan proved no actual closer
+        // of width `open_len` exists ahead (even if backslash-split runs of
+        // `open_len + 1` were recorded).
         let mut long_twice: SmallVec<[usize; 4]> = SmallVec::new();
         if seen_long.len() >= 2 {
             seen_long.sort_unstable();
             let mut idx = 0usize;
             while idx + 1 < seen_long.len() {
                 let width = seen_long[idx];
-                if seen_long[idx + 1] == width {
+                if width != open_len && seen_long[idx + 1] == width {
                     long_twice.push(width);
                     while idx < seen_long.len() && seen_long[idx] == width {
                         idx += 1;
@@ -329,6 +332,33 @@ mod tests {
                 .any(|node| matches!(node, Node::InlineCode(code) if code.value == "foo")),
             "backslash-split backtick opener should still close on trailing single backtick: {:?}",
             p.children
+        );
+    }
+
+    #[test]
+    fn failed_long_width_stays_dead_despite_backslash_split_runs() {
+        let source_arena = Allocator::new();
+        let mut source = source_arena.new_string();
+        for _ in 0..65 {
+            source.push('`');
+        }
+        for _ in 0..2 {
+            source.push_str(" \\");
+            for _ in 0..66 {
+                source.push('`');
+            }
+        }
+        let source = source.into_bump_str();
+        let allocator = Allocator::for_source_len(source.len());
+        let parser = Parser::new(&allocator, source);
+        let mut children = allocator.new_vec();
+        let mut dead = BacktickDeadEnds::default();
+        let mut pos = 0usize;
+        parser.parse_inline_code(source, 0, &mut children, &mut pos, &mut dead);
+        assert_eq!(dead.eof_scans, 1);
+        assert!(
+            dead.is_dead(65),
+            "failed width > 64 must remain dead even when `\\` + 66 backticks appears twice ahead"
         );
     }
 }

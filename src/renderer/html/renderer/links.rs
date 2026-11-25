@@ -166,8 +166,10 @@ impl HtmlRenderer {
                 let tag_name_start = i + 1;
                 let mut tag_name_end = tag_name_start + 1;
                 while tag_name_end < bytes.len()
-                    && (bytes[tag_name_end].is_ascii_alphanumeric()
-                        || matches!(bytes[tag_name_end], b'-' | b':'))
+                    && !matches!(
+                        bytes[tag_name_end],
+                        b'>' | b'/' | b' ' | b'\t' | b'\n' | b'\r' | b'\x0c'
+                    )
                 {
                     tag_name_end += 1;
                 }
@@ -180,9 +182,12 @@ impl HtmlRenderer {
 
             match bytes[i] {
                 b'>' => {
+                    let self_closing = i > 0 && bytes[i - 1] == b'/';
                     in_tag = false;
                     i += 1;
-                    if let Some(raw_tag) = pending_raw_text_tag.take() {
+                    if let Some(raw_tag) = pending_raw_text_tag.take()
+                        && !self_closing
+                    {
                         if let Some(next) = skip_html_raw_text_body(bytes, i, raw_tag) {
                             i = next;
                         } else {

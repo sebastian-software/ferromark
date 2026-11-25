@@ -43,33 +43,36 @@ test("an override map alone does not enable automatic markup", () => {
 });
 
 test("undefined override values leave built-in terms unchanged", () => {
+  const expected = '<p><abbr title="Application Programming Interface">API</abbr></p>\n';
   assert.equal(
     toHtml("API", { autoAbbreviations: true, abbreviations: { API: undefined } }),
-    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+    expected,
   );
 
   const compiler = new CodeCompiler({ plugins: [] });
   assert.equal(
     compiler.toHtml("API", { autoAbbreviations: true, abbreviations: { API: undefined } }),
-    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+    expected,
   );
   assert.equal(
     compiler.transform("API", { autoAbbreviations: true, abbreviations: { API: undefined } }).html,
-    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+    expected,
   );
+});
 
+test("CodeCompiler preserves inherited options", () => {
+  const expected = '<p><abbr title="Application Programming Interface">API</abbr></p>\n';
+  const compiler = new CodeCompiler({ plugins: [] });
   const inherited = Object.assign(Object.create({ autoAbbreviations: true }), {
     abbreviations: { API: undefined },
   });
-  assert.equal(
-    compiler.toHtml("API", inherited),
-    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
-  );
-  assert.equal(
-    compiler.transform("API", inherited).html,
-    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
-  );
+  assert.equal(compiler.toHtml("API", inherited), expected);
+  assert.equal(compiler.transform("API", inherited).html, expected);
+});
 
+test("CodeCompiler reads abbreviation getters only once", () => {
+  const expected = '<p><abbr title="Application Programming Interface">API</abbr></p>\n';
+  const compiler = new CodeCompiler({ plugins: [] });
   for (const method of ["toHtml", "transform"]) {
     let reads = 0;
     const singleRead = {
@@ -83,10 +86,14 @@ test("undefined override values leave built-in terms unchanged", () => {
       },
     };
     const result = compiler[method]("API", singleRead);
-    const html = typeof result === "string" ? result : result.html;
-    assert.equal(html, '<p><abbr title="Application Programming Interface">API</abbr></p>\n');
+    assert.equal(typeof result === "string" ? result : result.html, expected);
     assert.equal(reads, 1);
+  }
+});
 
+test("CodeCompiler preserves native option conversion order", () => {
+  const compiler = new CodeCompiler({ plugins: [] });
+  for (const method of ["toHtml", "transform"]) {
     const typography = { language: "en", ellipses: true };
     const ordered = {
       typography,
@@ -95,10 +102,14 @@ test("undefined override values leave built-in terms unchanged", () => {
         return undefined;
       },
     };
-    const orderedResult = compiler[method]("Wait...", ordered);
-    const orderedHtml = typeof orderedResult === "string" ? orderedResult : orderedResult.html;
-    assert.equal(orderedHtml, "<p>Wait…</p>\n");
+    const result = compiler[method]("Wait...", ordered);
+    assert.equal(typeof result === "string" ? result : result.html, "<p>Wait…</p>\n");
+  }
+});
 
+test("CodeCompiler stops before reading passes when typography is invalid", () => {
+  const compiler = new CodeCompiler({ plugins: [] });
+  for (const method of ["toHtml", "transform"]) {
     let passesRead = false;
     const invalidTypography = {
       typography: { language: 123 },

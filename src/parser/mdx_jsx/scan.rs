@@ -160,8 +160,19 @@ pub(super) fn compatible_matching_close<'a>(
     let mut names: SmallVec<[&str; 16]> = SmallVec::new();
     names.push(name.unwrap_or_else(|| &source[opening_start + 1..opening_start + 1]));
     let mut cursor = from;
+    let mut at_line_indent = false;
     while cursor < bytes.len() {
+        let previous = cursor;
         match bytes[cursor] {
+            b'\n' | b'\r' => {
+                at_line_indent = true;
+                cursor += 1;
+                continue;
+            }
+            b' ' | b'\t' => {
+                cursor += 1;
+                continue;
+            }
             b'\\' => cursor = (cursor + 2).min(bytes.len()),
             b'{' => {
                 cursor = skip_brace(cursor).ok_or_else(|| {
@@ -173,7 +184,7 @@ pub(super) fn compatible_matching_close<'a>(
                 })?;
             }
             b'`' | b'~' => {
-                cursor = compatible_fence_end(source, cursor)
+                cursor = compatible_fence_end(source, cursor, at_line_indent)
                     .or_else(|| {
                         (bytes[cursor] == b'`')
                             .then(|| skip_backticks(bytes, cursor))
@@ -190,6 +201,7 @@ pub(super) fn compatible_matching_close<'a>(
             b'<' => {
                 if let Some(end) = super::super::inline::autolink_end(source, cursor) {
                     cursor = end;
+                    at_line_indent = at_line_indent_after(bytes, previous, cursor);
                     continue;
                 }
                 let closing = bytes.get(cursor + 1) == Some(&b'/');
@@ -200,6 +212,7 @@ pub(super) fn compatible_matching_close<'a>(
                 } else if let Some(end) = scan_compatible_name(source, name_start) {
                     (Some(&source[name_start..end]), end)
                 } else {
+                    at_line_indent = false;
                     cursor += 1;
                     continue;
                 };
@@ -246,8 +259,13 @@ pub(super) fn compatible_matching_close<'a>(
                 }
                 cursor = end;
             }
-            _ => cursor += 1,
+            _ => {
+                at_line_indent = false;
+                cursor += 1;
+                continue;
+            }
         }
+        at_line_indent = at_line_indent_after(bytes, previous, cursor);
     }
     Err(failure(
         Span::new(source.len() as u32, source.len() as u32),
@@ -293,21 +311,27 @@ pub(in crate::parser) fn compatible_closing_end(source: &str, start: usize) -> O
 }
 
 #[cfg(feature = "jsx")]
-pub(super) fn compatible_fence_end(source: &str, at: usize) -> Option<usize> {
+pub(super) fn at_line_indent_after(bytes: &[u8], from: usize, to: usize) -> bool {
+    let Some(rel) = memchr::memrchr2(b'\n', b'\r', &bytes[from..to]) else {
+        return false;
+    };
+    bytes[from + rel + 1..to]
+        .iter()
+        .all(|byte| matches!(byte, b' ' | b'\t'))
+}
+
+#[cfg(feature = "jsx")]
+pub(super) fn compatible_fence_end(source: &str, at: usize, at_line_indent: bool) -> Option<usize> {
     use super::super::line_scan::{line_end, next_line_start};
     use super::super::reference::{fence_open, is_fence_close};
+    if !at_line_indent {
+        return None;
+    }
     let bytes = source.as_bytes();
     let first = *bytes.get(at)?;
     if (first != b'`' && first != b'~')
         || bytes.get(at + 1) != Some(&first)
         || bytes.get(at + 2) != Some(&first)
-    {
-        return None;
-    }
-    let start = memchr::memrchr2(b'\n', b'\r', &bytes[..at]).map_or(0, |position| position + 1);
-    if !bytes[start..at]
-        .iter()
-        .all(|byte| matches!(byte, b' ' | b'\t'))
     {
         return None;
     }
@@ -331,18 +355,20 @@ pub(super) fn compatible_fence_end(source: &str, at: usize) -> Option<usize> {
 /// respecting child indentation rules (`indent - base_indent < 4`) and never
 /// swallowing through EOF when no closing fence exists.
 ///
-/// Returns `(Some(next_line_start), false)` when closed, or `(None, no_closer_anywhere)`
-/// when unclosed so the caller can memoize that no closing fence of this width
-/// or wider exists ahead.
-fn closed_fence_end(source: &str, at: usize, base_indent: usize) -> (Option<usize>, bool) {
+/// Returns `Ok(next_line_start)` when closed, or `Err(min_closer_indent)` when
+/// no eligible closer exists before EOF (`usize::MAX` if no closer of length
+/// `>= open` exists at any indentation, or the minimum indentation column among
+/// over-indented closers so callers can cache failed scans even with
+/// over-indented closers).
+fn closed_fence_end(source: &str, at: usize, base_indent: usize) -> Result<usize, usize> {
     use super::super::line_scan::{line_end, next_line_start};
     use super::super::reference::{fence_open, is_fence_close};
     let bytes = source.as_bytes();
     let Some((character, length)) = fence_open(&source[at..line_end(bytes, at)]) else {
-        return (None, false);
+        return Err(0);
     };
     let mut cursor = next_line_start(bytes, at);
-    let mut saw_indented_closer = false;
+    let mut min_closer_indent = usize::MAX;
     while cursor < bytes.len() {
         let end = line_end(bytes, cursor);
         let mut content = cursor;
@@ -357,13 +383,13 @@ fn closed_fence_end(source: &str, at: usize, base_indent: usize) -> (Option<usiz
         }
         if is_fence_close(&source[content..end], character, length) {
             if close_indent.saturating_sub(base_indent) < 4 {
-                return (Some(next_line_start(bytes, cursor)), false);
+                return Ok(next_line_start(bytes, cursor));
             }
-            saw_indented_closer = true;
+            min_closer_indent = min_closer_indent.min(close_indent);
         }
         cursor = next_line_start(bytes, cursor);
     }
-    (None, !saw_indented_closer)
+    Err(min_closer_indent)
 }
 
 fn update_line_indent(
@@ -503,8 +529,19 @@ fn walk_close<const RECORD: bool>(
     let mut on_first_line = true;
     let mut at_line_indent = true;
     let mut indent_cols = 0usize;
-    let mut min_line_indent: Option<usize> = None;
-    let mut no_fence_close_min_len = usize::MAX;
+    // Track minimum line indentation per nested JSX element so an indented
+    // child component evaluates its own fenced code blocks against its own
+    // body indentation rather than an outer component's indentation.
+    let mut indent_stack: SmallVec<[Option<usize>; 8]> = SmallVec::new();
+    indent_stack.push(None);
+    // `(min_open_len, min_closer_indent)` pairs proved to have no closing fence
+    // with `close_indent < min_closer_indent` ahead in the suffix.
+    let mut failed_fences: SmallVec<[(usize, usize); 4]> = SmallVec::new();
+    let record_min_indent = |stack: &mut SmallVec<[Option<usize>; 8]>, cols: usize| {
+        if let Some(top) = stack.last_mut() {
+            *top = Some(top.map_or(cols, |min| min.min(cols)));
+        }
+    };
     while cursor < bytes.len() {
         match bytes[cursor] {
             b'\n' | b'\r' => {
@@ -527,8 +564,7 @@ fn walk_close<const RECORD: bool>(
             }
             b'{' => {
                 if at_line_indent {
-                    min_line_indent =
-                        Some(min_line_indent.map_or(indent_cols, |min| min.min(indent_cols)));
+                    record_min_indent(&mut indent_stack, indent_cols);
                 }
                 if let Some(next) = skip_brace(cursor) {
                     update_line_indent(
@@ -548,22 +584,32 @@ fn walk_close<const RECORD: bool>(
             }
             b'`' => {
                 let open = backtick_run_len(bytes, cursor);
-                let base_indent = min_line_indent.unwrap_or(indent_cols);
+                let active_min = indent_stack.last().copied().flatten();
+                let base_indent = active_min.unwrap_or(indent_cols);
+                let cached_dead = failed_fences.iter().any(|&(min_len, min_closer_indent)| {
+                    open >= min_len && base_indent.saturating_add(4) <= min_closer_indent
+                });
                 let can_fence = !on_first_line
                     && at_line_indent
                     && open >= 3
-                    && open < no_fence_close_min_len
+                    && !cached_dead
                     && indent_cols.saturating_sub(base_indent) < 4;
                 if at_line_indent {
-                    min_line_indent =
-                        Some(min_line_indent.map_or(indent_cols, |min| min.min(indent_cols)));
+                    record_min_indent(&mut indent_stack, indent_cols);
                 }
                 let fence_next = if can_fence {
-                    let (end, no_closer) = closed_fence_end(source, cursor, base_indent);
-                    if no_closer {
-                        no_fence_close_min_len = no_fence_close_min_len.min(open);
+                    match closed_fence_end(source, cursor, base_indent) {
+                        Ok(end) => Some(end),
+                        Err(min_closer_indent) => {
+                            if min_closer_indent > 0 {
+                                failed_fences.retain(|&mut (old_len, old_indent)| {
+                                    !(old_len >= open && old_indent <= min_closer_indent)
+                                });
+                                failed_fences.push((open, min_closer_indent));
+                            }
+                            None
+                        }
                     }
-                    end
                 } else {
                     None
                 };
@@ -585,14 +631,20 @@ fn walk_close<const RECORD: bool>(
             }
             b'<' => {
                 if at_line_indent {
-                    min_line_indent =
-                        Some(min_line_indent.map_or(indent_cols, |min| min.min(indent_cols)));
+                    record_min_indent(&mut indent_stack, indent_cols);
                 }
                 let Some(tag) = scan_tag_skip(source, cursor, skip_brace) else {
                     at_line_indent = false;
                     cursor += 1;
                     continue;
                 };
+                if tag.closing {
+                    if indent_stack.len() > 1 {
+                        indent_stack.pop();
+                    }
+                } else if !tag.self_closing {
+                    indent_stack.push(None);
+                }
                 if tag.name == name {
                     if tag.closing {
                         depth = depth.saturating_sub(1);
@@ -629,8 +681,7 @@ fn walk_close<const RECORD: bool>(
             }
             _ => {
                 if at_line_indent {
-                    min_line_indent =
-                        Some(min_line_indent.map_or(indent_cols, |min| min.min(indent_cols)));
+                    record_min_indent(&mut indent_stack, indent_cols);
                     at_line_indent = false;
                 }
                 cursor += 1;

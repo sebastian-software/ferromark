@@ -67,6 +67,10 @@ fn inline_scanner_edge_cases_stay_linear() {
             "mdx_repeated_unclosed_fences",
             format!("<Box>\n{}</Box>\n", "```js\n".repeat(5_000)),
         ),
+        (
+            "mdx_repeated_unclosed_fences_with_overindented_closer",
+            format!("<Box>\n{}        ```\n</Box>\n", "```js\n".repeat(5_000)),
+        ),
     ];
 
     let mut options = ParserOptions::gfm();
@@ -172,6 +176,51 @@ fn mdx_flow_indented_code_block_with_backticks_preserves_outer_element() {
         "expected indented code block inside <Box>: {:?}",
         el.children
     );
+}
+
+#[test]
+fn mdx_nested_component_fence_with_outer_closing_tag_preserves_outer_element() {
+    let source =
+        "<Outer>\npara\n\n    <Inner>\n    ```\n    </Outer>\n    ````\n    </Inner>\n</Outer>\n";
+    let arena = Allocator::for_source_len(source.len());
+    let opts = ParserOptions {
+        mdx: true,
+        ..ParserOptions::default()
+    };
+    let doc = Parser::with_options(&arena, source, opts)
+        .parse()
+        .expect("parse should succeed");
+    assert_eq!(
+        doc.children.len(),
+        1,
+        "outer <Outer> must not close inside nested fence"
+    );
+    let Node::MdxJsxFlowElement(outer) = &doc.children[0] else {
+        panic!("expected MdxJsxFlowElement, got {:?}", doc.children[0]);
+    };
+    assert_eq!(outer.name, Some("Outer"));
+    assert_eq!(outer.span, Span::new(0, source.len() as u32));
+}
+
+#[test]
+fn strict_mdx_single_line_triple_backticks_stay_linear() {
+    let source = format!("<Box>{}</Box>\n", "```x``` ".repeat(5_000));
+    let start = Instant::now();
+    let arena = Allocator::for_source_len(source.len());
+    let opts = ParserOptions {
+        mdx: true,
+        mdx_compatible: true,
+        ..ParserOptions::default()
+    };
+    let doc = Parser::with_options(&arena, &source, opts)
+        .parse()
+        .expect("parse should succeed");
+    assert!(
+        start.elapsed() < Duration::from_secs(2),
+        "strict MDX single-line backticks took {:?}",
+        start.elapsed()
+    );
+    assert_eq!(doc.children.len(), 1);
 }
 
 #[test]
@@ -293,6 +342,8 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
         "<div><!---><a href=\"/guide\">empty2</a></div>\n\n",
         "<div><!-- comment --!><a href=\"/guide\">abrupt</a></div>\n\n",
         "<div><textarea>1 < 2. That's fine.</textarea><a href=\"/guide\">after-ta</a></div>\n\n",
+        "<div><svg><title/></svg><a href=\"/guide.md\">after-svg</a></div>\n\n",
+        "<div><script.demo-box><a href=\"/guide.md\">after-dotted</a></script.demo-box></div>\n\n",
         "<p>1 < 2. That's fine. <a href=\"/guide\">after-lt</a></p>\n\n",
         "<a title=\"see href=/guide\" href=\"/guide\">link</a>\n\n",
         "<a title=\"a > b\" href=\"/guide\">gt</a>\n"
@@ -327,6 +378,18 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
             "<div><textarea>1 < 2. That's fine.</textarea><a href=\"/docs/guide\">after-ta</a></div>"
         ),
         "raw-text `<textarea>` containing `<` and apostrophe should not suppress following anchor rewrite: {html}"
+    );
+    assert!(
+        html.contains(
+            "<div><svg><title/></svg><a href=\"/docs/guide/index.html\">after-svg</a></div>"
+        ),
+        "self-closing `<title/>` inside SVG should not wait for `</title>`: {html}"
+    );
+    assert!(
+        html.contains(
+            "<div><script.demo-box><a href=\"/docs/guide/index.html\">after-dotted</a></script.demo-box></div>"
+        ),
+        "dotted custom tag `<script.demo-box>` should not be truncated to `<script>`: {html}"
     );
     assert!(
         html.contains("<p>1 < 2. That's fine. <a href=\"/docs/guide\">after-lt</a></p>"),
