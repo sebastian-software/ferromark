@@ -20,7 +20,6 @@ fn plain_skip(bytes: &[u8]) -> impl FnMut(usize) -> Option<usize> + '_ {
 /// reports and the ones its range leaves unreported.
 #[test]
 fn recorded_closers_agree_with_a_walk_from_each_opener() {
-    let allocator = crate::allocator::Allocator::new();
     for source in [
         "<A><A><A></A>",
         "<A></A><A></A>",
@@ -80,14 +79,9 @@ fn recorded_closers_agree_with_a_walk_from_each_opener() {
                 // closes it.
                 let (read_from, until) = walk.read;
                 for at in read_from..until {
-                    let mut attributes = allocator.new_vec();
-                    let Some(open) = scan_jsx_open(
-                        source,
-                        at,
-                        0,
-                        &mut attributes,
-                        &mut plain_skip(source.as_bytes()),
-                    ) else {
+                    let Some(open) =
+                        scan_jsx_open(source, at, 0, None, &mut plain_skip(source.as_bytes()))
+                    else {
                         continue;
                     };
                     if open.self_closing
@@ -124,7 +118,7 @@ fn recorded_openers_are_keyed_by_the_end_of_the_opening_tag() {
             source,
             0,
             0,
-            &mut attributes,
+            Some(&mut attributes),
             &mut plain_skip(source.as_bytes()),
         )
         .expect("opening tag");
@@ -143,7 +137,7 @@ fn recorded_openers_are_keyed_by_the_end_of_the_opening_tag() {
             source,
             open.end,
             0,
-            &mut nested_attributes,
+            Some(&mut nested_attributes),
             &mut plain_skip(source.as_bytes()),
         )
         .expect("nested opening tag");

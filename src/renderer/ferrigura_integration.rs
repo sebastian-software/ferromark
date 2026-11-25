@@ -106,8 +106,13 @@ impl FerriguraHooks {
         id
     }
 
-    fn render_svg(&self, code: &str, span: Span) -> Result<String, FerriguraError> {
-        let svg = self.renderer.render_with(
+    fn render_validated(
+        &self,
+        code: &str,
+        span: Span,
+        jsx: bool,
+    ) -> Result<String, FerriguraError> {
+        let raw_svg = self.renderer.render_with(
             code,
             &ferrigura::RenderOptions {
                 id: Some(self.diagram_id(span)),
@@ -117,9 +122,16 @@ impl FerriguraHooks {
                 ..ferrigura::RenderOptions::default()
             },
         )?;
-        let mut svg = svg::sanitize(&svg)?;
-        svg.push('\n');
-        Ok(svg)
+        let document = roxmltree::Document::parse(&raw_svg)?;
+        svg::validate(&document)?;
+        #[cfg(feature = "jsx")]
+        if jsx {
+            return Ok(jsx::convert_document(&document, raw_svg.len(), true));
+        }
+        let _ = jsx;
+        let mut output = svg::serialize_html(&document, raw_svg.len());
+        output.push('\n');
+        Ok(output)
     }
 
     fn record(&mut self, span: Span, error: FerriguraError) {
@@ -142,15 +154,7 @@ impl FerriguraHooks {
         if language != Some("mermaid") {
             return None;
         }
-        let result = self.render_svg(code, span).and_then(|svg| {
-            #[cfg(feature = "jsx")]
-            if jsx {
-                return jsx::convert(&svg).map_err(FerriguraError::from);
-            }
-            let _ = jsx;
-            Ok(svg)
-        });
-        match result {
+        match self.render_validated(code, span, jsx) {
             Ok(output) => Some(output),
             Err(error) => {
                 self.record(span, error);

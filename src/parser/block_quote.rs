@@ -35,6 +35,7 @@ impl<'a> Parser<'a> {
         let mut source_map = SourceMap::default();
         let mut immediate_attribution = None;
         let mut confirmed_callout = None;
+        let mut probed_children = None;
 
         loop {
             if self.position >= bytes.len() {
@@ -142,9 +143,10 @@ impl<'a> Parser<'a> {
                         let is_callout = if let Some(value) = confirmed_callout {
                             value
                         } else {
-                            let value =
+                            let (value, children) =
                                 self.parsed_callout_in_quote(&inner, &lazy_lines, &source_map)?;
                             confirmed_callout = Some(value);
+                            probed_children = Some((inner.len(), children));
                             value
                         };
                         !is_callout
@@ -183,13 +185,21 @@ impl<'a> Parser<'a> {
             }
         }
 
-        // Recursively parse the inner content from the same arena — no copy.
-        let inner_str = inner.into_bump_str();
-        let sub_parser = self.sub_parser_with_source_map(inner_str, lazy_lines, &source_map);
-        let sub_doc = sub_parser
-            .parse()
-            .map_err(|error| error.remapped(&source_map))?;
-        let mut children = sub_doc.children;
+        // Reuse the speculative callout probe when the loop ended without
+        // appending any further lines to `inner`, avoiding a duplicate parse.
+        let mut children = match probed_children {
+            Some((probed_len, children)) if probed_len == inner.len() => children,
+            _ => {
+                // Recursively parse the inner content from the same arena — no copy.
+                let inner_str = inner.into_bump_str();
+                let sub_parser =
+                    self.sub_parser_with_source_map(inner_str, lazy_lines, &source_map);
+                let sub_doc = sub_parser
+                    .parse()
+                    .map_err(|error| error.remapped(&source_map))?;
+                sub_doc.children
+            }
+        };
         for child in &mut children {
             source_map.remap_node_spans(child);
         }
@@ -209,18 +219,20 @@ impl<'a> Parser<'a> {
     /// A marker-shaped source line can become a heading, link definition, or
     /// resolved link. Probe only when an eligible immediate attribution meets
     /// such a line; the root parser already has document-wide definitions.
+    #[inline(never)]
     fn parsed_callout_in_quote(
         &self,
         inner: &str,
         lazy_lines: &rustc_hash::FxHashSet<u32>,
         source_map: &SourceMap,
-    ) -> ParseResult<bool> {
+    ) -> ParseResult<(bool, crate::allocator::Vec<'a, Node<'a>>)> {
         let source = self.allocator.alloc_str(inner);
         let document = self
             .sub_parser_with_source_map(source, lazy_lines.clone(), source_map)
             .parse()
             .map_err(|error| error.remapped(source_map))?;
-        Ok(Self::parsed_callout_at_open_end(&document.children))
+        let is_callout = Self::parsed_callout_at_open_end(&document.children);
+        Ok((is_callout, document.children))
     }
 
     fn parsed_callout_at_open_end(children: &[Node<'_>]) -> bool {

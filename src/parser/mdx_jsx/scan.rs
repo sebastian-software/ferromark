@@ -78,7 +78,7 @@ pub(super) fn scan_jsx_open<'a>(
     source: &'a str,
     start: usize,
     offset: usize,
-    attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    attributes: Option<&mut Vec<'a, MdxJsxAttributeEntry<'a>>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<JsxOpen<'a>> {
     scan_jsx_open_mode(source, start, offset, attributes, skip_brace, false)
@@ -89,7 +89,7 @@ pub(super) fn scan_compatible_jsx_open<'a>(
     source: &'a str,
     start: usize,
     offset: usize,
-    attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    attributes: Option<&mut Vec<'a, MdxJsxAttributeEntry<'a>>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<JsxOpen<'a>> {
     scan_jsx_open_mode(source, start, offset, attributes, skip_brace, true)
@@ -99,7 +99,7 @@ fn scan_jsx_open_mode<'a>(
     source: &'a str,
     start: usize,
     offset: usize,
-    attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    attributes: Option<&mut Vec<'a, MdxJsxAttributeEntry<'a>>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
     compatible: bool,
 ) -> Option<JsxOpen<'a>> {
@@ -536,7 +536,7 @@ fn scan_attributes<'a>(
     source: &'a str,
     mut cursor: usize,
     offset: usize,
-    attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    mut attributes: Option<&mut Vec<'a, MdxJsxAttributeEntry<'a>>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
     compatible: bool,
 ) -> Option<(bool, usize)> {
@@ -547,12 +547,23 @@ fn scan_attributes<'a>(
             b'/' if bytes.get(cursor + 1) == Some(&b'>') => return Some((true, cursor + 2)),
             b'>' => return Some((false, cursor + 1)),
             b'{' if had_ws => {
-                cursor = push_expression_attribute(source, cursor, offset, attributes, skip_brace)?;
+                cursor = push_expression_attribute(
+                    source,
+                    cursor,
+                    offset,
+                    attributes.as_deref_mut(),
+                    skip_brace,
+                )?;
             }
             _ if !had_ws => return None,
             _ => {
                 cursor = push_named_attribute(
-                    source, cursor, offset, attributes, skip_brace, compatible,
+                    source,
+                    cursor,
+                    offset,
+                    attributes.as_deref_mut(),
+                    skip_brace,
+                    compatible,
                 )?;
             }
         }
@@ -563,16 +574,18 @@ fn push_expression_attribute<'a>(
     source: &'a str,
     start: usize,
     offset: usize,
-    attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    attributes: Option<&mut Vec<'a, MdxJsxAttributeEntry<'a>>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
 ) -> Option<usize> {
     let end = skip_brace(start)?;
-    attributes.push(MdxJsxAttributeEntry::Expression(
-        MdxJsxExpressionAttribute {
-            value: &source[start + 1..end - 1],
-            span: Span::new((offset + start) as u32, (offset + end) as u32),
-        },
-    ));
+    if let Some(attributes) = attributes {
+        attributes.push(MdxJsxAttributeEntry::Expression(
+            MdxJsxExpressionAttribute {
+                value: &source[start + 1..end - 1],
+                span: Span::new((offset + start) as u32, (offset + end) as u32),
+            },
+        ));
+    }
     Some(end)
 }
 
@@ -580,7 +593,7 @@ fn push_named_attribute<'a>(
     source: &'a str,
     start: usize,
     offset: usize,
-    attributes: &mut Vec<'a, MdxJsxAttributeEntry<'a>>,
+    attributes: Option<&mut Vec<'a, MdxJsxAttributeEntry<'a>>>,
     skip_brace: &mut impl FnMut(usize) -> Option<usize>,
     compatible: bool,
 ) -> Option<usize> {
@@ -594,21 +607,25 @@ fn push_named_attribute<'a>(
     let mut cursor = name_end;
     skip_ws(bytes, &mut cursor);
     if bytes.get(cursor) != Some(&b'=') {
-        attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
-            name,
-            value: None,
-            span: Span::new((offset + start) as u32, (offset + name_end) as u32),
-        }));
+        if let Some(attributes) = attributes {
+            attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
+                name,
+                value: None,
+                span: Span::new((offset + start) as u32, (offset + name_end) as u32),
+            }));
+        }
         return Some(name_end);
     }
     cursor += 1;
     skip_ws(bytes, &mut cursor);
     let (value, value_end) = scan_attr_value(source, cursor, offset, skip_brace, compatible)?;
-    attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
-        name,
-        value: Some(value),
-        span: Span::new((offset + start) as u32, (offset + value_end) as u32),
-    }));
+    if let Some(attributes) = attributes {
+        attributes.push(MdxJsxAttributeEntry::Attribute(MdxJsxAttribute {
+            name,
+            value: Some(value),
+            span: Span::new((offset + start) as u32, (offset + value_end) as u32),
+        }));
+    }
     Some(value_end)
 }
 

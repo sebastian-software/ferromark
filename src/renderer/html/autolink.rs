@@ -29,6 +29,9 @@ pub(super) fn find_autolink_match<P: AsRef<str>>(
     patterns: &[P],
     index: &FirstByteIndex,
 ) -> Option<(usize, usize)> {
+    if index.is_default_http() {
+        return find_default_http_autolink_match(s, from);
+    }
     let bytes = s.as_bytes();
     let mut base = from;
     while base < bytes.len() {
@@ -71,6 +74,43 @@ pub(super) fn find_autolink_match<P: AsRef<str>>(
             }
         }
         base = i + 1;
+    }
+    None
+}
+
+/// Anchored fast path for the default `["http://", "https://"]` patterns.
+///
+/// Jumps directly to `://` via SIMD `memmem` instead of visiting every `'h'`
+/// and `'H'` in surrounding prose, then checks the 4- or 5-byte scheme and
+/// word boundary immediately preceding `://`.
+pub(super) fn find_default_http_autolink_match(s: &str, from: usize) -> Option<(usize, usize)> {
+    let bytes = s.as_bytes();
+    let mut search = from.saturating_add(4);
+    while search < bytes.len() {
+        let rel = FirstByteIndex::find_colon_slash_slash(&bytes[search..])?;
+        let colon = search + rel;
+        let prefix_end = colon + 3;
+        let url_start =
+            if colon >= from + 5 && bytes[colon - 5..colon].eq_ignore_ascii_case(b"https") {
+                Some(colon - 5)
+            } else if colon >= from + 4 && bytes[colon - 4..colon].eq_ignore_ascii_case(b"http") {
+                Some(colon - 4)
+            } else {
+                None
+            };
+        if let Some(url_start) = url_start {
+            let is_boundary = url_start == 0 || !bytes[url_start - 1].is_ascii_alphanumeric();
+            if is_boundary {
+                let url_end = scan_url_end(s, prefix_end);
+                if url_end > prefix_end {
+                    let trimmed_end = trim_trailing_punct(bytes, url_start, url_end);
+                    if trimmed_end > prefix_end {
+                        return Some((url_start, trimmed_end));
+                    }
+                }
+            }
+        }
+        search = prefix_end;
     }
     None
 }
@@ -183,6 +223,23 @@ fn scan_url_end(s: &str, from: usize) -> usize {
     end
 }
 
+/// Nibble-pair lookup tables for `scan_ascii_url_prefix` on AArch64 NEON.
+///
+/// A byte stops the ASCII URL scan iff `LOW[b & 0x0F] & HIGH[b >> 4] != 0`:
+/// - `0x01`: `\t` (0x09), `\n` (0x0A), `\r` (0x0D)
+/// - `0x02`: `' '` (0x20), `'"'` (0x22), `'\''` (0x27)
+/// - `0x04`: `'<'` (0x3C), `'>'` (0x3E)
+/// - `0x08`: ``'`'`` (0x60)
+/// - `0x10`: every non-ASCII byte (`0x80..=0xFF`)
+#[cfg(target_arch = "aarch64")]
+const URL_STOP_LOW: [u8; 16] = [
+    0x1A, 0x10, 0x12, 0x10, 0x10, 0x10, 0x10, 0x12, 0x10, 0x11, 0x11, 0x10, 0x14, 0x11, 0x14, 0x10,
+];
+#[cfg(target_arch = "aarch64")]
+const URL_STOP_HIGH: [u8; 16] = [
+    0x01, 0x00, 0x02, 0x04, 0x00, 0x00, 0x08, 0x00, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+];
+
 #[cfg(target_arch = "aarch64")]
 #[allow(unsafe_code)]
 #[inline]
@@ -195,13 +252,13 @@ fn scan_ascii_url_prefix(bytes: &[u8], from: usize) -> usize {
     // tail starts at len - 16 and masks positions before the unconsumed cursor.
     // AArch64 guarantees NEON support. No pointer outlives the borrowed slice.
     unsafe {
-        let high_bit = vdupq_n_u8(0x7f);
+        let low = vld1q_u8(URL_STOP_LOW.as_ptr());
+        let high = vld1q_u8(URL_STOP_HIGH.as_ptr());
+        let nibble = vdupq_n_u8(0x0F);
         let classify = |v: uint8x16_t| {
-            let mut stop = vcgtq_u8(v, high_bit);
-            for terminator in [b' ', b'\t', b'\n', b'\r', b'<', b'>', b'"', b'\'', b'`'] {
-                stop = vorrq_u8(stop, vceqq_u8(v, vdupq_n_u8(terminator)));
-            }
-            let stop = vtstq_u8(stop, stop);
+            let lo = vqtbl1q_u8(low, vandq_u8(v, nibble));
+            let hi = vqtbl1q_u8(high, vshrq_n_u8(v, 4));
+            let stop = vtstq_u8(lo, hi);
             let narrow = vshrn_n_u16(vreinterpretq_u16_u8(stop), 4);
             vget_lane_u64(vreinterpret_u64_u8(narrow), 0)
         };
@@ -226,7 +283,61 @@ fn scan_ascii_url_prefix(bytes: &[u8], from: usize) -> usize {
     scan_ascii_url_prefix_scalar(bytes, i)
 }
 
-#[cfg(not(target_arch = "aarch64"))]
+#[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+#[allow(unsafe_code)]
+#[inline]
+fn scan_ascii_url_prefix(bytes: &[u8], from: usize) -> usize {
+    use std::arch::x86_64::*;
+
+    let end = bytes.len();
+    let mut i = from;
+    // SAFETY: `cfg` guarantees SSE2, and every 16-byte load is bounded by
+    // `i + 16 <= end` or reads the final full vector at `end - 16` when
+    // `end >= 16`. `_mm_loadu_si128` has no alignment requirement.
+    unsafe {
+        let classify = |v: __m128i| -> u32 {
+            // Bit-1 fold merges `' '` (0x20)/`'"'` (0x22) -> 0x22 and
+            // `'<'` (0x3C)/`'>'` (0x3E) -> 0x3E; bit-2 fold merges
+            // `'\t'` (0x09)/`'\r'` (0x0D) -> 0x0D. ORing `v` directly adds
+            // bit 7 for all non-ASCII bytes (`>= 0x80`) before `movemask`.
+            let or2 = _mm_or_si128(v, _mm_set1_epi8(0x02));
+            let space_quote = _mm_cmpeq_epi8(or2, _mm_set1_epi8(0x22));
+            let angle = _mm_cmpeq_epi8(or2, _mm_set1_epi8(0x3E));
+            let tab_cr = _mm_cmpeq_epi8(_mm_or_si128(v, _mm_set1_epi8(0x04)), _mm_set1_epi8(0x0D));
+            let lf = _mm_cmpeq_epi8(v, _mm_set1_epi8(0x0A));
+            let apos = _mm_cmpeq_epi8(v, _mm_set1_epi8(0x27));
+            let tick = _mm_cmpeq_epi8(v, _mm_set1_epi8(0x60));
+            let stop = _mm_or_si128(
+                _mm_or_si128(_mm_or_si128(space_quote, angle), _mm_or_si128(tab_cr, lf)),
+                _mm_or_si128(_mm_or_si128(apos, tick), v),
+            );
+            _mm_movemask_epi8(stop).cast_unsigned()
+        };
+
+        while i + 16 <= end {
+            let mask = classify(_mm_loadu_si128(bytes.as_ptr().add(i).cast()));
+            if mask != 0 {
+                return i + mask.trailing_zeros() as usize;
+            }
+            i += 16;
+        }
+        if i < end && end >= 16 {
+            let base = end - 16;
+            let mask = classify(_mm_loadu_si128(bytes.as_ptr().add(base).cast()))
+                & (u32::MAX << (i - base));
+            if mask != 0 {
+                return base + mask.trailing_zeros() as usize;
+            }
+            return end;
+        }
+    }
+    scan_ascii_url_prefix_scalar(bytes, i)
+}
+
+#[cfg(not(any(
+    target_arch = "aarch64",
+    all(target_arch = "x86_64", target_feature = "sse2")
+)))]
 #[inline]
 fn scan_ascii_url_prefix(bytes: &[u8], from: usize) -> usize {
     scan_ascii_url_prefix_scalar(bytes, from)
@@ -510,6 +621,43 @@ mod tests {
                 assert_eq!(
                     scan_url_end(text, from),
                     scalar_oracle(text, from),
+                    "text {text:?}, from {from}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn default_http_anchored_scanner_matches_generic_index() {
+        // Reversing the order disables `DEFAULT_HTTP_INDEX` so we compare
+        // the anchored `://` scanner against the generic first-byte scanner.
+        let generic_patterns = ["https://", "http://"];
+        let generic_index = FirstByteIndex::from_patterns(&generic_patterns);
+        assert!(!generic_index.is_default_http());
+        let default_patterns = ["http://", "https://"];
+        let default_index = FirstByteIndex::from_patterns(&default_patterns);
+        assert!(default_index.is_default_http());
+
+        for text in [
+            "",
+            "no urls here, just http and https and colons: a:b:c",
+            "http://a",
+            "https://a",
+            "HTTP://EXAMPLE.COM/Path and HTTPS://EXAMPLE.ORG/x.",
+            "xhttp://bad.test shttps://bad.test http://good.test",
+            "http://. https://ok.test/a_(b)). tail",
+            "a:// http://b://c https://d",
+            "hhttps://bad.test (https://ok.test)",
+            "http://http://nested.test",
+            "The quick brown fox jumps over the lazy dog: see https://example.com/1 and http://example.org/2!",
+        ] {
+            for from in 0..=text.len() {
+                if !text.is_char_boundary(from) {
+                    continue;
+                }
+                assert_eq!(
+                    find_autolink_match(text, from, &default_patterns, &default_index),
+                    find_autolink_match(text, from, &generic_patterns, &generic_index),
                     "text {text:?}, from {from}"
                 );
             }

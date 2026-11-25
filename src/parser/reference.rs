@@ -41,10 +41,92 @@ pub(super) struct ParsedDefinition<'a> {
     pub consumed: usize,
 }
 
+#[inline]
+const fn is_ascii_unicode_whitespace(byte: u8) -> bool {
+    // Matches `char::is_whitespace()` on every ASCII byte (0x00..=0x7F),
+    // including vertical tab (0x0B), which `u8::is_ascii_whitespace()` omits.
+    matches!(byte, b' ' | b'\t' | b'\n' | 0x0b | 0x0c | b'\r')
+}
+
+#[inline]
+fn is_normalized_ascii_reference_label(label: &str) -> bool {
+    let bytes = label.as_bytes();
+    if bytes.is_empty() {
+        return true;
+    }
+    if bytes[0] == b' ' || bytes[bytes.len() - 1] == b' ' {
+        return false;
+    }
+    let mut prev_space = false;
+    for &byte in bytes {
+        if byte >= 0x80 || byte.is_ascii_uppercase() {
+            return false;
+        }
+        if byte == b' ' {
+            if prev_space {
+                return false;
+            }
+            prev_space = true;
+        } else if is_ascii_unicode_whitespace(byte) {
+            return false;
+        } else {
+            prev_space = false;
+        }
+    }
+    true
+}
+
+#[inline]
+fn normalize_ascii_reference_label_into(bytes: &[u8], out: &mut [u8]) -> usize {
+    let mut written = 0usize;
+    let mut pending_space = false;
+    for &byte in bytes {
+        if is_ascii_unicode_whitespace(byte) {
+            pending_space = written > 0;
+        } else {
+            if pending_space {
+                out[written] = b' ';
+                written += 1;
+                pending_space = false;
+            }
+            out[written] = byte.to_ascii_lowercase();
+            written += 1;
+        }
+    }
+    written
+}
+
 impl<'a> Parser<'a> {
     /// Normalizes a reference label: trim, collapse internal whitespace to
     /// single spaces, lowercase (approximating Unicode case fold).
     pub(super) fn normalize_reference_label(label: &str) -> CompactString {
+        if is_normalized_ascii_reference_label(label) {
+            return CompactString::from(label);
+        }
+        if label.is_ascii() {
+            let bytes = label.as_bytes();
+            if bytes.len() <= 64 {
+                let mut buf = [0u8; 64];
+                let len = normalize_ascii_reference_label_into(bytes, &mut buf);
+                if let Ok(normalized) = std::str::from_utf8(&buf[..len]) {
+                    return CompactString::from(normalized);
+                }
+            }
+            let mut out = CompactString::with_capacity(bytes.len());
+            let mut pending_space = false;
+            for &byte in bytes {
+                if is_ascii_unicode_whitespace(byte) {
+                    pending_space = !out.is_empty();
+                } else {
+                    if pending_space {
+                        out.push(' ');
+                        pending_space = false;
+                    }
+                    out.push(byte.to_ascii_lowercase() as char);
+                }
+            }
+            return out;
+        }
         let mut out = CompactString::default();
         let mut pending_space = false;
         for ch in label.chars() {
@@ -74,7 +156,17 @@ impl<'a> Parser<'a> {
         if definitions.is_empty() {
             return None;
         }
-        definitions.get(&Self::normalize_reference_label(raw_label))
+        if is_normalized_ascii_reference_label(raw_label) {
+            return definitions.get(raw_label);
+        }
+        if raw_label.is_ascii() && raw_label.len() <= 64 {
+            let mut buf = [0u8; 64];
+            let len = normalize_ascii_reference_label_into(raw_label.as_bytes(), &mut buf);
+            if let Ok(normalized) = std::str::from_utf8(&buf[..len]) {
+                return definitions.get(normalized);
+            }
+        }
+        definitions.get(Self::normalize_reference_label(raw_label).as_str())
     }
 
     /// Parses a single definition at the start of `text`. `text` must not
@@ -214,9 +306,12 @@ impl<'a> Parser<'a> {
             (parsed, end)
         };
 
-        let identifier = self
-            .allocator
-            .alloc_str(Self::normalize_reference_label(parsed.label).as_str());
+        let identifier = if is_normalized_ascii_reference_label(parsed.label) {
+            parsed.label
+        } else {
+            self.allocator
+                .alloc_str(Self::normalize_reference_label(parsed.label).as_str())
+        };
         self.position = end;
         Some(Node::Definition(self.allocator.boxed(Definition {
             identifier,
@@ -244,5 +339,73 @@ impl<'a> Parser<'a> {
 
     fn unescape_reference_component(&self, raw: &'a str) -> &'a str {
         self.unescape_link_component(raw)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use compact_str::CompactString;
+
+    use super::{Parser, is_normalized_ascii_reference_label};
+
+    fn oracle_normalize(label: &str) -> CompactString {
+        let mut out = CompactString::default();
+        let mut pending_space = false;
+        for ch in label.chars() {
+            if ch.is_whitespace() {
+                pending_space = !out.is_empty();
+            } else {
+                if pending_space {
+                    out.push(' ');
+                    pending_space = false;
+                }
+                for lowered in ch.to_lowercase() {
+                    if lowered == 'ß' {
+                        out.push_str("ss");
+                    } else {
+                        out.push(lowered);
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn ascii_reference_label_fast_path_matches_oracle() {
+        for byte in 0u8..=0x7f {
+            let raw = [b'a', byte, b'b'];
+            let s = std::str::from_utf8(&raw).unwrap();
+            let got = Parser::normalize_reference_label(s);
+            let expected = oracle_normalize(s);
+            assert_eq!(got, expected, "byte {byte:#x}");
+            assert_eq!(
+                is_normalized_ascii_reference_label(s),
+                got.as_str() == s,
+                "is_normalized mismatch for byte {byte:#x}"
+            );
+        }
+        let long_ascii = "  ABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABC   DEF\t\x0b\x0c\r\nGHI  ";
+        for sample in [
+            "",
+            " ",
+            "foo",
+            "foo bar",
+            "foo  bar",
+            " foo",
+            "foo ",
+            "Foo\tBar\x0bBaz\x0cQux",
+            "SS",
+            "ß",
+            "ẞ",
+            "Äöü  Test",
+            long_ascii,
+        ] {
+            assert_eq!(
+                Parser::normalize_reference_label(sample),
+                oracle_normalize(sample),
+                "sample {sample:?}"
+            );
+        }
     }
 }

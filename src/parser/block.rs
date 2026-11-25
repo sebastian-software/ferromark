@@ -287,6 +287,7 @@ impl<'a> Parser<'a> {
         // can close an unfinished multiline image; that rare shape remains a
         // paragraph after an earlier caption-like line was ruled out.
         let mut caption_ruled_out = false;
+        let mut immediate_image_caption = None;
 
         loop {
             if self.is_at_end() {
@@ -312,7 +313,10 @@ impl<'a> Parser<'a> {
             }
 
             if self.options.image_captions && !caption_ruled_out && bytes[cursor] == b':' {
-                if self.image_caption_interrupts_paragraph(start, content_end, line_start)? {
+                if let Some(immediate) =
+                    self.probe_immediate_image_caption(start, content_end, line_start)?
+                {
+                    immediate_image_caption = Some(immediate);
                     break;
                 }
                 caption_ruled_out = true;
@@ -379,13 +383,25 @@ impl<'a> Parser<'a> {
         {
             return self.parse_commented_paragraph(start, content_end, first_comment, None);
         }
+        let span = Span::new(start as u32, content_end as u32);
+        if let Some(immediate) = immediate_image_caption
+            && let Some(attached) = self.attach_immediate_image_caption(immediate, start)?
+        {
+            if matches!(attached, Node::Figure(_)) {
+                return Ok(Some(attached));
+            }
+            let mut children = self.allocator.new_vec_with_capacity(1);
+            children.push(attached);
+            return Ok(Some(Node::Paragraph(
+                self.allocator.boxed(Paragraph { children, span }),
+            )));
+        }
         // Inline spans start at the content, past the indentation that
         // `start` still includes.
         let (content, leading) = whitespace::trim_with_leading(&self.source[start..content_end]);
         if content.is_empty() {
             return Ok(None);
         }
-        let span = Span::new(start as u32, content_end as u32);
         let mut children = self.parse_inline_block(content, start + leading)?;
         if self.options.image_captions
             && children.len() == 1

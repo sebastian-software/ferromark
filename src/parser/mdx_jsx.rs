@@ -90,7 +90,7 @@ impl<'a> Parser<'a> {
         let source = self.source;
         let mut attributes = self.allocator.new_vec();
         let Some(open) =
-            self.scan_mdx_jsx_open(source, trimmed_start, 0, &mut attributes, &mut |at| {
+            self.scan_mdx_jsx_open(source, trimmed_start, 0, Some(&mut attributes), &mut |at| {
                 self.matching_brace_end(source, at)
             })?
         else {
@@ -152,7 +152,7 @@ impl<'a> Parser<'a> {
 
         let mut attributes = self.allocator.new_vec();
         let Some(open) =
-            self.scan_mdx_jsx_open(content, pos, offset, &mut attributes, &mut |at| {
+            self.scan_mdx_jsx_open(content, pos, offset, Some(&mut attributes), &mut |at| {
                 self.matching_brace_end(content, at)
             })?
         else {
@@ -262,7 +262,7 @@ impl<'a> Parser<'a> {
         content: &'a str,
         pos: usize,
         offset: usize,
-        attributes: &mut crate::allocator::Vec<'a, crate::ast::MdxJsxAttributeEntry<'a>>,
+        attributes: Option<&mut crate::allocator::Vec<'a, crate::ast::MdxJsxAttributeEntry<'a>>>,
         skip_brace: &mut impl FnMut(usize) -> Option<usize>,
     ) -> ParseResult<Option<scan::JsxOpen<'a>>> {
         #[cfg(feature = "jsx")]
@@ -449,14 +449,11 @@ impl<'a> Parser<'a> {
                         at_line_indent = scan::at_line_indent_after(bytes, previous, cursor);
                         continue;
                     }
-                    let mut attributes = self.allocator.new_vec();
-                    if let Some(open) = scan::scan_compatible_jsx_open(
-                        content,
-                        cursor,
-                        0,
-                        &mut attributes,
-                        &mut |at| self.matching_brace_end(content, at),
-                    ) {
+                    if let Some(open) =
+                        scan::scan_compatible_jsx_open(content, cursor, 0, None, &mut |at| {
+                            self.matching_brace_end(content, at)
+                        })
+                    {
                         ranges.push((cursor, open.end));
                         cursor = open.end;
                     } else {
@@ -507,14 +504,9 @@ impl<'a> Parser<'a> {
                         cursor = close;
                         continue;
                     }
-                    let mut attributes = self.allocator.new_vec();
-                    let open = self.scan_mdx_jsx_open(
-                        self.source,
-                        cursor,
-                        0,
-                        &mut attributes,
-                        &mut |at| self.matching_brace_end(self.source, at),
-                    )?;
+                    let open = self.scan_mdx_jsx_open(self.source, cursor, 0, None, &mut |at| {
+                        self.matching_brace_end(self.source, at)
+                    })?;
                     if let Some(open) = open {
                         cursor = if open.self_closing {
                             open.end

@@ -10,7 +10,7 @@ use crate::ast::{Heading, Node, Span};
 use smallvec::SmallVec;
 
 use super::super::abbreviation::write_abbreviations_into_with_boundaries;
-use super::super::autolink::find_autolink_match;
+use super::super::autolink::{find_autolink_match, find_default_http_autolink_match};
 use super::super::escape::{
     write_attribute_escaped_into, write_escaped_into, write_url_escaped_into,
 };
@@ -117,11 +117,49 @@ impl HtmlRenderer {
             write_escaped_into(&mut self.output, s);
             return;
         };
-        // A match must contain the index's gate needle (`://` for the
-        // default `http://`/`https://` patterns), so one memchr plus a short
-        // compare proves "nothing can match here" for almost every prose
-        // node — skipping the candidate walk with its per-first-byte
-        // boundary checks.
+        if index.is_default_http() {
+            let Some(mut next_match) = find_default_http_autolink_match(s, 0) else {
+                write_escaped_into(&mut self.output, s);
+                return;
+            };
+            let target_blank = self.options.autolink_target_blank;
+            let sanitize = self.options.sanitize;
+            let out = &mut self.output;
+            let mut cursor = 0usize;
+            loop {
+                let (match_start, url_end) = next_match;
+                if match_start > cursor {
+                    write_escaped_into(out, &s[cursor..match_start]);
+                }
+                let url = &s[match_start..url_end];
+                let href = Self::sanitized_url_with_policy(url, sanitize, "#");
+                out.push_str("<a href=\"");
+                write_url_escaped_into(out, href);
+                out.push('"');
+                if target_blank {
+                    out.push_str(" target=\"_blank\" rel=\"noopener noreferrer\"");
+                }
+                out.push('>');
+                write_escaped_into(out, url);
+                out.push_str("</a>");
+                cursor = url_end.max(match_start + 1);
+                if cursor >= bytes.len() {
+                    break;
+                }
+                let Some(found) = find_default_http_autolink_match(s, cursor) else {
+                    break;
+                };
+                next_match = found;
+            }
+            if cursor < bytes.len() {
+                write_escaped_into(out, &s[cursor..]);
+            }
+            return;
+        }
+        // A match must contain the index's gate needle, so one memchr plus a
+        // short compare proves "nothing can match here" for almost every prose
+        // node — skipping the candidate walk with its per-first-byte boundary
+        // checks.
         if !index.may_match(bytes) {
             write_escaped_into(&mut self.output, s);
             return;
@@ -357,7 +395,20 @@ impl HtmlRenderer {
         let matcher = &state.matcher;
         let bytes = value.as_bytes();
         let index = &state.url_index;
-        if !index.may_match(bytes) {
+        let mut first_default_match = None;
+        if index.is_default_http() {
+            first_default_match = find_default_http_autolink_match(value, 0);
+            if first_default_match.is_none() {
+                write_abbreviations_into_with_boundaries(
+                    &mut self.output,
+                    value,
+                    matcher,
+                    before,
+                    after,
+                );
+                return;
+            }
+        } else if !index.may_match(bytes) {
             write_abbreviations_into_with_boundaries(
                 &mut self.output,
                 value,
@@ -368,18 +419,28 @@ impl HtmlRenderer {
             return;
         }
 
-        let patterns = state
-            .url_patterns
-            .iter()
-            .map(String::as_str)
-            .collect::<SmallVec<[&str; 4]>>();
+        let patterns = if index.is_default_http() {
+            SmallVec::<[&str; 4]>::new()
+        } else {
+            state
+                .url_patterns
+                .iter()
+                .map(String::as_str)
+                .collect::<SmallVec<[&str; 4]>>()
+        };
         let sanitize = self.options.sanitize;
         let out = &mut self.output;
         let mut cursor = 0usize;
         let mut before_segment = before;
         while cursor < bytes.len() {
-            let Some((match_start, url_end)) = find_autolink_match(value, cursor, &patterns, index)
-            else {
+            let next_match = if let Some(first) = first_default_match.take() {
+                Some(first)
+            } else if index.is_default_http() {
+                find_default_http_autolink_match(value, cursor)
+            } else {
+                find_autolink_match(value, cursor, &patterns, index)
+            };
+            let Some((match_start, url_end)) = next_match else {
                 break;
             };
             if match_start > cursor {

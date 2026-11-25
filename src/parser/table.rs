@@ -102,13 +102,17 @@ impl<'a> Parser<'a> {
         )?);
 
         // Parse body rows
+        let mut immediate_attributes = None;
         loop {
             self.position = self.skip_line_comments_from(self.position);
             if self.is_at_end() {
                 break;
             }
 
-            if self.options.table_attributes && self.is_table_attributes_line(self.position) {
+            if self.options.table_attributes
+                && let Some(probed) = self.probe_table_attributes_line(self.position)
+            {
+                immediate_attributes = Some(probed);
                 break;
             }
 
@@ -134,7 +138,7 @@ impl<'a> Parser<'a> {
             )?);
         }
 
-        let attributes = self.parse_table_attributes()?;
+        let attributes = self.parse_table_attributes(immediate_attributes)?;
         let span = Span::new(start as u32, self.position as u32);
         Ok(Some(Node::Table(self.allocator.boxed(Table {
             align,

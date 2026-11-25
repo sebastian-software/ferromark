@@ -1,15 +1,23 @@
 //! Convert the engine's XML SVG to intrinsic JSX without evaluating source text.
 
-use std::fmt::Write;
-
 use roxmltree::Document;
 
+#[cfg(test)]
 pub fn convert(svg: &str) -> Result<String, roxmltree::Error> {
     let document = Document::parse(svg)?;
+    Ok(convert_document(&document, svg.len(), false))
+}
+
+pub fn convert_document(
+    document: &Document<'_>,
+    capacity_hint: usize,
+    force_xlink_xmlns: bool,
+) -> String {
     let root = document.root_element();
-    let mut output = String::with_capacity(svg.len());
+    let mut output = String::with_capacity(capacity_hint);
     // Traversal is iterative so deeply nested diagrams do not add Rust stack frames.
     let mut pending = Vec::from([(root, false)]);
+    let mut style_prop = String::new();
     while let Some((node, closing)) = pending.pop() {
         match (node, closing) {
             (node, false) if node.is_element() => {
@@ -17,16 +25,19 @@ pub fn convert(svg: &str) -> Result<String, roxmltree::Error> {
                 output.push_str(node.tag_name().name());
                 if node == root {
                     output.push_str(" xmlns=\"http://www.w3.org/2000/svg\"");
-                    if root.lookup_namespace_uri(Some("xlink")).is_some() {
+                    if force_xlink_xmlns || root.lookup_namespace_uri(Some("xlink")).is_some() {
                         output.push_str(" xmlnsXlink=\"http://www.w3.org/1999/xlink\"");
                     }
                 }
                 for attribute in node.attributes() {
                     if attribute.name() == "style" && attribute.namespace().is_none() {
-                        write_style(&mut output, attribute.value());
+                        write_style(&mut output, attribute.value(), &mut style_prop);
                     } else {
-                        let name = attribute_name(attribute.name(), attribute.namespace());
-                        let _ = write!(output, " {name}={{{}}}", string(attribute.value()));
+                        output.push(' ');
+                        write_attribute_name(&mut output, attribute.name(), attribute.namespace());
+                        output.push_str("={");
+                        write_json_string(&mut output, attribute.value());
+                        output.push('}');
                     }
                 }
                 output.push('>');
@@ -34,48 +45,79 @@ pub fn convert(svg: &str) -> Result<String, roxmltree::Error> {
                 pending.extend(node.children().rev().map(|child| (child, false)));
             }
             (node, true) if node.is_element() => {
-                let _ = write!(output, "</{}>", node.tag_name().name());
+                output.push_str("</");
+                output.push_str(node.tag_name().name());
+                output.push('>');
             }
             (node, false) if node.is_text() => {
-                let _ = write!(output, "{{{}}}", string(node.text().unwrap_or_default()));
+                output.push('{');
+                write_json_string(&mut output, node.text().unwrap_or_default());
+                output.push('}');
             }
             _ => {}
         }
     }
     output.push('\n');
-    Ok(output)
+    output
 }
 
-fn string(value: &str) -> String {
-    // Serializing a `&str` cannot fail; an empty JSON string is unreachable.
-    serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_owned())
+fn write_json_string(output: &mut String, value: &str) {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    output.push('"');
+    let bytes = value.as_bytes();
+    let mut start = 0;
+    for (idx, &byte) in bytes.iter().enumerate() {
+        let escaped = match byte {
+            b'"' => "\\\"",
+            b'\\' => "\\\\",
+            0x08 => "\\b",
+            0x0c => "\\f",
+            b'\n' => "\\n",
+            b'\r' => "\\r",
+            b'\t' => "\\t",
+            0x00..=0x1f => {
+                output.push_str(&value[start..idx]);
+                output.push_str("\\u00");
+                output.push(HEX[(byte >> 4) as usize] as char);
+                output.push(HEX[(byte & 0x0f) as usize] as char);
+                start = idx + 1;
+                continue;
+            }
+            _ => continue,
+        };
+        output.push_str(&value[start..idx]);
+        output.push_str(escaped);
+        start = idx + 1;
+    }
+    output.push_str(&value[start..]);
+    output.push('"');
 }
 
-fn attribute_name(name: &str, namespace: Option<&str>) -> String {
+fn write_attribute_name(output: &mut String, name: &str, namespace: Option<&str>) {
     let prefix = match namespace {
         Some("http://www.w3.org/1999/xlink") => Some("xlink"),
         Some("http://www.w3.org/XML/1998/namespace") => Some("xml"),
         _ => None,
     };
     if let Some(prefix) = prefix {
+        output.push_str(prefix);
         let mut chars = name.chars();
-        return prefix.to_owned()
-            + &chars
-                .next()
-                .map_or_else(String::new, |ch| ch.to_uppercase().to_string())
-            + chars.as_str();
+        if let Some(first) = chars.next() {
+            output.extend(first.to_uppercase());
+            output.push_str(chars.as_str());
+        }
+        return;
     }
     match name {
-        "class" => "className".to_owned(),
-        "for" => "htmlFor".to_owned(),
-        "tabindex" => "tabIndex".to_owned(),
-        name if name.starts_with("data-") || name.starts_with("aria-") => name.to_owned(),
-        name => camel_case(name),
+        "class" => output.push_str("className"),
+        "for" => output.push_str("htmlFor"),
+        "tabindex" => output.push_str("tabIndex"),
+        name if name.starts_with("data-") || name.starts_with("aria-") => output.push_str(name),
+        name => write_camel_case(output, name),
     }
 }
 
-fn camel_case(name: &str) -> String {
-    let mut output = String::with_capacity(name.len());
+fn write_camel_case(output: &mut String, name: &str) {
     let mut upper = false;
     for ch in name.chars() {
         if ch == '-' {
@@ -87,40 +129,52 @@ fn camel_case(name: &str) -> String {
             output.push(ch);
         }
     }
-    output
 }
 
-fn write_style(output: &mut String, value: &str) {
+fn write_style(output: &mut String, value: &str, prop_buf: &mut String) {
     output.push_str(" style={{");
     let mut emitted = false;
-    for declaration in declarations(value) {
+    for_each_declaration(value, |declaration| {
         let Some((property, value)) = declaration.split_once(':') else {
-            continue;
+            return;
         };
         let (property, value) = (property.trim(), value.trim());
         if property.is_empty() || value.is_empty() {
-            continue;
+            return;
         }
-        let name = if property.starts_with("--") {
-            property.to_owned()
-        } else if let Some(tail) = property.strip_prefix("-ms-") {
-            let mut name = camel_case(&["-", tail].concat());
-            name.insert_str(0, "ms");
-            name
-        } else {
-            camel_case(property)
-        };
         if emitted {
             output.push(',');
         }
-        let _ = write!(output, "{}:{}", string(&name), string(value));
+        if property.starts_with("--") || !property.contains('-') {
+            write_json_string(output, property);
+        } else {
+            prop_buf.clear();
+            if let Some(tail) = property.strip_prefix("-ms-") {
+                prop_buf.push_str("ms");
+                let mut upper = true;
+                for ch in tail.chars() {
+                    if ch == '-' {
+                        upper = true;
+                    } else if upper {
+                        prop_buf.extend(ch.to_uppercase());
+                        upper = false;
+                    } else {
+                        prop_buf.push(ch);
+                    }
+                }
+            } else {
+                write_camel_case(prop_buf, property);
+            }
+            write_json_string(output, prop_buf);
+        }
+        output.push(':');
+        write_json_string(output, value);
         emitted = true;
-    }
+    });
     output.push_str("}}");
 }
 
-fn declarations(style: &str) -> Vec<&str> {
-    let mut result = Vec::new();
+fn for_each_declaration<'a>(style: &'a str, mut on_decl: impl FnMut(&'a str)) {
     let mut start = 0;
     let mut quote = None;
     let mut depth = 0usize;
@@ -151,15 +205,14 @@ fn declarations(style: &str) -> Vec<&str> {
                 '(' | '[' | '{' => depth = depth.saturating_add(1),
                 ')' | ']' | '}' => depth = depth.saturating_sub(1),
                 ';' if depth == 0 => {
-                    result.push(&style[start..index]);
+                    on_decl(&style[start..index]);
                     start = index + 1;
                 }
                 _ => {}
             }
         }
     }
-    result.push(&style[start..]);
-    result
+    on_decl(&style[start..]);
 }
 
 #[cfg(test)]
@@ -186,5 +239,31 @@ mod tests {
             assert!(jsx.contains(expected), "missing {expected} in {jsx}");
         }
         assert!(!jsx.contains("dangerouslySetInnerHTML"));
+    }
+
+    #[test]
+    fn write_json_string_matches_serde_json_for_ascii_and_unicode() {
+        for byte in 0u8..=0x7f {
+            let raw = [b'x', byte, b'y'];
+            let s = std::str::from_utf8(&raw).unwrap();
+            let mut got = String::new();
+            super::write_json_string(&mut got, s);
+            assert_eq!(got, serde_json::to_string(s).unwrap(), "byte {byte:#x}");
+        }
+        for sample in [
+            "",
+            "plain text",
+            "\"quoted\" \\ backslash \n\r\t\x08\x0c\x00\x1f",
+            "<script>&'\"/</script>",
+            "日本語 😀 \u{2028}\u{2029}",
+        ] {
+            let mut got = String::new();
+            super::write_json_string(&mut got, sample);
+            assert_eq!(
+                got,
+                serde_json::to_string(sample).unwrap(),
+                "sample {sample:?}"
+            );
+        }
     }
 }

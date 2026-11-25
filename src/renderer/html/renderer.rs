@@ -24,8 +24,6 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::ast::{Document, Node};
-use compact_str::CompactString;
-use rustc_hash::FxHashMap;
 
 use super::abbreviation::AbbreviationMatcher;
 use super::autolink::FirstByteIndex;
@@ -51,27 +49,10 @@ pub struct HtmlRenderer {
     /// Shared by heading and footnote IDs, and with Node metadata for matching
     /// heading IDs. It is retained across incremental fragments.
     heading_id_planner: HeadingIdPlanner,
-    /// How many times each footnote identifier has been referenced so
-    /// far in this render, so repeated references can be given unique
-    /// `fnref-` ids. Cleared per `render()` like the heading id map.
-    footnote_ref_counts: FxHashMap<String, usize>,
-    /// Legacy source identifier → claimed target ID. Kept across incremental
-    /// fragments so a later reference points to the same target.
-    legacy_footnote_targets: FxHashMap<CompactString, PlannedId>,
-    /// Reserved first reference ID for each legacy footnote. Definitions use
-    /// it for their backlink even when the reference appears later.
-    legacy_footnote_first_references: FxHashMap<CompactString, PlannedId>,
-    /// Source identifier → list index for semantic footnotes. One insert
-    /// per unique footnote; later markers look up this map.
-    footnote_index: FxHashMap<CompactString, u32>,
-    /// Document-order footnote list used when `semantic_footnotes` is on.
-    footnote_records: Vec<footnotes::FootnoteRecord>,
-    /// Slugs already handed to a footnote, mapped to the next `-N` suffix
-    /// to try for that slug as a base. Presence means "taken", so one
-    /// lookup answers both questions the uniquifier asks. This replaces a
-    /// scan of `footnote_records` per footnote, which made a document of
-    /// many footnotes quadratic. Cleared per render like the heading map.
-    footnote_slug_counts: FxHashMap<CompactString, usize>,
+    /// Lazily allocated footnote tracking state. Most documents have no
+    /// footnotes, so keeping the six footnote collections boxed avoids
+    /// initializing, moving, clearing, and cloning them on ordinary renders.
+    footnotes: Option<Box<footnotes::FootnoteState>>,
     /// Reusable scratch buffer for the raw concatenated heading text in
     /// `prepare_heading_id`. A long-lived buffer avoids paying for a fresh
     /// `String` allocation per heading — `slugify_heading` previously
@@ -297,12 +278,7 @@ impl HtmlRenderer {
             options,
             output: String::new(),
             heading_id_planner: HeadingIdPlanner::new(),
-            footnote_ref_counts: FxHashMap::default(),
-            legacy_footnote_targets: FxHashMap::default(),
-            legacy_footnote_first_references: FxHashMap::default(),
-            footnote_index: FxHashMap::default(),
-            footnote_records: Vec::new(),
-            footnote_slug_counts: FxHashMap::default(),
+            footnotes: None,
             // The heading scratch buffers and the planner's ID storage start
             // empty. Constructing them pre-sized cost allocations per renderer
             // even for a document that has no heading at all — the common
