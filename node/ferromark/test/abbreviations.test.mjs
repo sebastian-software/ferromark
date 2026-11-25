@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CodeCompiler,
   Renderer,
   toHtml,
   toHtmlBuffer,
@@ -42,10 +43,84 @@ test("an override map alone does not enable automatic markup", () => {
 });
 
 test("undefined override values leave built-in terms unchanged", () => {
+  const expected = '<p><abbr title="Application Programming Interface">API</abbr></p>\n';
   assert.equal(
     toHtml("API", { autoAbbreviations: true, abbreviations: { API: undefined } }),
-    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+    expected,
   );
+
+  const compiler = new CodeCompiler({ plugins: [] });
+  assert.equal(
+    compiler.toHtml("API", { autoAbbreviations: true, abbreviations: { API: undefined } }),
+    expected,
+  );
+  assert.equal(
+    compiler.transform("API", { autoAbbreviations: true, abbreviations: { API: undefined } }).html,
+    expected,
+  );
+});
+
+test("CodeCompiler preserves inherited options", () => {
+  const expected = '<p><abbr title="Application Programming Interface">API</abbr></p>\n';
+  const compiler = new CodeCompiler({ plugins: [] });
+  const inherited = Object.assign(Object.create({ autoAbbreviations: true }), {
+    abbreviations: { API: undefined },
+  });
+  assert.equal(compiler.toHtml("API", inherited), expected);
+  assert.equal(compiler.transform("API", inherited).html, expected);
+});
+
+test("CodeCompiler reads abbreviation getters only once", () => {
+  const expected = '<p><abbr title="Application Programming Interface">API</abbr></p>\n';
+  const compiler = new CodeCompiler({ plugins: [] });
+  for (const method of ["toHtml", "transform"]) {
+    let reads = 0;
+    const singleRead = {
+      autoAbbreviations: true,
+      get abbreviations() {
+        reads += 1;
+        if (reads > 1) {
+          throw new Error("getter read more than once");
+        }
+        return { API: undefined };
+      },
+    };
+    const result = compiler[method]("API", singleRead);
+    assert.equal(typeof result === "string" ? result : result.html, expected);
+    assert.equal(reads, 1);
+  }
+});
+
+test("CodeCompiler preserves native option conversion order", () => {
+  const compiler = new CodeCompiler({ plugins: [] });
+  for (const method of ["toHtml", "transform"]) {
+    const typography = { language: "en", ellipses: true };
+    const ordered = {
+      typography,
+      get passes() {
+        typography.ellipses = false;
+        return undefined;
+      },
+    };
+    const result = compiler[method]("Wait...", ordered);
+    assert.equal(typeof result === "string" ? result : result.html, "<p>Wait…</p>\n");
+  }
+});
+
+test("CodeCompiler stops before reading passes when typography is invalid", () => {
+  const compiler = new CodeCompiler({ plugins: [] });
+  for (const method of ["toHtml", "transform"]) {
+    let passesRead = false;
+    const invalidTypography = {
+      typography: { language: 123 },
+      get passes() {
+        passesRead = true;
+        return undefined;
+      },
+    };
+    assert.throws(() => compiler[method]("Wait...", invalidTypography));
+    assert.equal(passesRead, false);
+  }
 });
 
 test("trusted raw HTML remains untouched and its text is not wrapped", () => {

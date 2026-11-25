@@ -244,6 +244,7 @@ fn node_children_are_inline(node: &Node<'_>) -> bool {
         Node::Paragraph(_)
             | Node::Heading(_)
             | Node::DefinitionListTerm(_)
+            | Node::Span(_)
             | Node::Emphasis(_)
             | Node::Strong(_)
             | Node::Link(_)

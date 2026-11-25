@@ -440,6 +440,18 @@ pub fn raw_html_text_spans(document: &Document<'_>, visit_link_labels: bool) -> 
     spans
 }
 
+fn collect_scoped_raw_html_text_spans(
+    nodes: &[Node<'_>],
+    visit_link_labels: bool,
+    spans: &mut Vec<Span>,
+) {
+    // Inline raw HTML tags are scoped to one inline container so an unclosed
+    // tag in one paragraph, heading, or table cell cannot disable transforms
+    // across the rest of the document.
+    let mut open_tags = Vec::new();
+    collect_raw_html_text_spans(nodes, visit_link_labels, &mut open_tags, spans);
+}
+
 fn collect_raw_html_text_spans(
     nodes: &[Node<'_>],
     visit_link_labels: bool,
@@ -458,70 +470,62 @@ fn collect_raw_html_text_spans(
             }
             Node::Html(html) => update_open_html_tags(html.value, open_tags),
             Node::Paragraph(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::Heading(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::BlockQuote(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::List(node) => {
                 for item in &node.children {
-                    collect_raw_html_text_spans(
-                        &item.children,
-                        visit_link_labels,
-                        open_tags,
-                        spans,
-                    );
+                    collect_scoped_raw_html_text_spans(&item.children, visit_link_labels, spans);
                 }
             }
             Node::ListItem(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::Table(node) => {
                 if let Some(attributes) = &node.attributes {
-                    collect_raw_html_text_spans(
+                    collect_scoped_raw_html_text_spans(
                         &attributes.caption,
                         visit_link_labels,
-                        open_tags,
                         spans,
                     );
                 }
                 for row in &node.children {
                     for cell in &row.children {
-                        collect_raw_html_text_spans(
+                        collect_scoped_raw_html_text_spans(
                             &cell.children,
                             visit_link_labels,
-                            open_tags,
                             spans,
                         );
                     }
                 }
             }
             Node::Figure(node) => {
-                collect_raw_html_text_spans(
+                collect_scoped_raw_html_text_spans(
                     std::slice::from_ref(&node.content),
                     visit_link_labels,
-                    open_tags,
                     spans,
                 );
-                collect_raw_html_text_spans(&node.caption, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.caption, visit_link_labels, spans);
             }
             Node::DefinitionList(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::DefinitionListTerm(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::DefinitionListDefinition(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::FootnoteDefinition(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::MdxJsxFlowElement(node) => {
-                collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);
+                collect_scoped_raw_html_text_spans(&node.children, visit_link_labels, spans);
             }
             Node::Emphasis(node) => {
                 collect_raw_html_text_spans(&node.children, visit_link_labels, open_tags, spans);

@@ -45,11 +45,11 @@ impl<'a> Parser<'a> {
         if *pos < content.len() && bytes[*pos] == b']' {
             let close = *pos;
             let raw_alt = &content[alt_start..close];
-            let (alt, alt_content) = self.image_alt(raw_alt, offset + alt_start)?;
 
             if bytes.get(close + 1) == Some(&b'(')
                 && let Some(target) = self.parse_link_target(content, close + 1)
             {
+                let (alt, alt_content) = self.image_alt(raw_alt, offset + alt_start)?;
                 let (attributes, end) = self.parse_image_attributes(content, target.end);
                 children.push(Node::Image(self.allocator.boxed(Image {
                     url: target.url,
@@ -83,6 +83,7 @@ impl<'a> Parser<'a> {
                         raw_label
                     };
                     if let Some(reference) = self.lookup_reference(key) {
+                        let (alt, alt_content) = self.image_alt(raw_alt, offset + alt_start)?;
                         let (attributes, end) = self.parse_image_attributes(content, label_end + 1);
                         children.push(Node::Image(self.allocator.boxed(Image {
                             url: reference.url,
@@ -99,6 +100,7 @@ impl<'a> Parser<'a> {
             }
 
             if !well_formed_reference && let Some(reference) = self.lookup_reference(raw_alt) {
+                let (alt, alt_content) = self.image_alt(raw_alt, offset + alt_start)?;
                 let (attributes, end) = self.parse_image_attributes(content, close + 1);
                 children.push(Node::Image(self.allocator.boxed(Image {
                     url: reference.url,

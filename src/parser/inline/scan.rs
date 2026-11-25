@@ -154,24 +154,44 @@ pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
 
 #[cfg(target_arch = "x86_64")]
 #[inline]
-pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
-    // AVX2 / SSSE3 are not in the x86-64 baseline, so they are detected
-    // rather than assumed. `is_x86_feature_detected!` caches its answer
-    // in an atomic, and a machine without either keeps the scalar scan.
-    if std::arch::is_x86_feature_detected!("avx2") {
-        // SAFETY: guarded by the detection above.
-        #[allow(unsafe_code)]
-        unsafe {
-            next_special_avx2(bytes, from)
-        }
+fn x86_simd_level() -> u8 {
+    use std::sync::atomic::{AtomicU8, Ordering};
+    // 0 = uninitialized, 1 = scalar, 2 = ssse3, 3 = avx2.
+    static LEVEL: AtomicU8 = AtomicU8::new(0);
+    let level = LEVEL.load(Ordering::Relaxed);
+    if level != 0 {
+        return level;
+    }
+    let detected = if std::arch::is_x86_feature_detected!("avx2") {
+        3
     } else if std::arch::is_x86_feature_detected!("ssse3") {
-        // SAFETY: guarded by the detection above.
-        #[allow(unsafe_code)]
-        unsafe {
-            next_special_ssse3(bytes, from)
-        }
+        2
     } else {
-        next_inline_special_scalar(bytes, from)
+        1
+    };
+    LEVEL.store(detected, Ordering::Relaxed);
+    detected
+}
+
+#[cfg(target_arch = "x86_64")]
+#[inline]
+pub(super) fn next_inline_special(bytes: &[u8], from: usize) -> usize {
+    match x86_simd_level() {
+        3 => {
+            // SAFETY: guarded by the detection above.
+            #[allow(unsafe_code)]
+            unsafe {
+                next_special_avx2(bytes, from)
+            }
+        }
+        2 => {
+            // SAFETY: guarded by the detection above.
+            #[allow(unsafe_code)]
+            unsafe {
+                next_special_ssse3(bytes, from)
+            }
+        }
+        _ => next_inline_special_scalar(bytes, from),
     }
 }
 
@@ -190,18 +210,22 @@ fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize 
 #[cfg(target_arch = "x86_64")]
 #[inline]
 fn next_inline_special_options(bytes: &[u8], from: usize, options: u8) -> usize {
-    if std::arch::is_x86_feature_detected!("avx2") {
-        #[allow(unsafe_code)]
-        unsafe {
-            next_special_avx2_options(bytes, from, options)
+    match x86_simd_level() {
+        3 => {
+            // SAFETY: guarded by the detection above.
+            #[allow(unsafe_code)]
+            unsafe {
+                next_special_avx2_options(bytes, from, options)
+            }
         }
-    } else if std::arch::is_x86_feature_detected!("ssse3") {
-        #[allow(unsafe_code)]
-        unsafe {
-            next_special_ssse3_options(bytes, from, options)
+        2 => {
+            // SAFETY: guarded by the detection above.
+            #[allow(unsafe_code)]
+            unsafe {
+                next_special_ssse3_options(bytes, from, options)
+            }
         }
-    } else {
-        next_inline_special_options_scalar(bytes, from, options)
+        _ => next_inline_special_options_scalar(bytes, from, options),
     }
 }
 

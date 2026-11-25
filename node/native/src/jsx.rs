@@ -404,12 +404,11 @@ pub(crate) fn prepare_jsx_document(
 ) -> Result<ParsedJsxDocument> {
     let resolved = core_options(options)?;
     let defaults = render_defaults(&resolved);
-    let tree = prepare_tree(
-        markdown.try_into_string()?,
-        resolved,
-        format,
-        track_references,
-    )?;
+    let mut source = markdown.try_into_string()?;
+    // `Utf8Input::convert_string` reserves 3× UTF-16 units for one-shot calls;
+    // shrink before retaining the source inside a long-lived prepared handle.
+    source.shrink_to_fit();
+    let tree = prepare_tree(source, resolved, format, track_references)?;
     Ok(ParsedJsxDocument { tree, defaults })
 }
 

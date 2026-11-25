@@ -144,7 +144,7 @@ impl JsxRenderHooks for NativePlugins {
 }
 
 /// Names of the factories compiled into this particular addon.
-#[napi]
+#[napi(catch_unwind)]
 pub fn available_code_plugins() -> Vec<String> {
     let names: &[&str] = &[
         #[cfg(feature = "ferriki")]

@@ -72,7 +72,7 @@ pub(super) fn next_special_neon(bytes: &[u8], from: usize) -> usize {
 
 #[inline]
 pub(super) fn next_special_neon_options(bytes: &[u8], from: usize, options: u8) -> usize {
-    if bytes.len().saturating_sub(from) < 16 {
+    if bytes.len() < 16 {
         return next_inline_special_options_scalar(bytes, from, options);
     }
     let (low, high) = selected_marker_tables(options);

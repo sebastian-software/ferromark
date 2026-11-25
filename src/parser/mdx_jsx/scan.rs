@@ -9,7 +9,9 @@ use crate::ast::{
 };
 
 use super::super::line_scan::{is_line_ending_byte, line_terminator_end};
-use super::braces::{skip_backticks, skip_quoted};
+#[cfg(feature = "jsx")]
+use super::braces::skip_backticks;
+use super::braces::{BacktickSuffixMax, backtick_run_len, skip_backticks_at_least, skip_quoted};
 
 /// Opening tag accepted by this slice.
 pub(super) struct JsxOpen<'a> {
@@ -160,8 +162,19 @@ pub(super) fn compatible_matching_close<'a>(
     let mut names: SmallVec<[&str; 16]> = SmallVec::new();
     names.push(name.unwrap_or_else(|| &source[opening_start + 1..opening_start + 1]));
     let mut cursor = from;
+    let mut at_line_indent = false;
     while cursor < bytes.len() {
+        let previous = cursor;
         match bytes[cursor] {
+            b'\n' | b'\r' => {
+                at_line_indent = true;
+                cursor += 1;
+                continue;
+            }
+            b' ' | b'\t' => {
+                cursor += 1;
+                continue;
+            }
             b'\\' => cursor = (cursor + 2).min(bytes.len()),
             b'{' => {
                 cursor = skip_brace(cursor).ok_or_else(|| {
@@ -173,17 +186,24 @@ pub(super) fn compatible_matching_close<'a>(
                 })?;
             }
             b'`' | b'~' => {
-                cursor = compatible_fence_end(source, cursor)
+                cursor = compatible_fence_end(source, cursor, at_line_indent)
                     .or_else(|| {
                         (bytes[cursor] == b'`')
                             .then(|| skip_backticks(bytes, cursor))
                             .flatten()
                     })
-                    .unwrap_or(cursor + 1);
+                    .unwrap_or_else(|| {
+                        if bytes[cursor] == b'`' {
+                            cursor + backtick_run_len(bytes, cursor)
+                        } else {
+                            cursor + 1
+                        }
+                    });
             }
             b'<' => {
                 if let Some(end) = super::super::inline::autolink_end(source, cursor) {
                     cursor = end;
+                    at_line_indent = at_line_indent_after(bytes, previous, cursor);
                     continue;
                 }
                 let closing = bytes.get(cursor + 1) == Some(&b'/');
@@ -194,6 +214,7 @@ pub(super) fn compatible_matching_close<'a>(
                 } else if let Some(end) = scan_compatible_name(source, name_start) {
                     (Some(&source[name_start..end]), end)
                 } else {
+                    at_line_indent = false;
                     cursor += 1;
                     continue;
                 };
@@ -240,8 +261,13 @@ pub(super) fn compatible_matching_close<'a>(
                 }
                 cursor = end;
             }
-            _ => cursor += 1,
+            _ => {
+                at_line_indent = false;
+                cursor += 1;
+                continue;
+            }
         }
+        at_line_indent = at_line_indent_after(bytes, previous, cursor);
     }
     Err(failure(
         Span::new(source.len() as u32, source.len() as u32),
@@ -287,17 +313,27 @@ pub(in crate::parser) fn compatible_closing_end(source: &str, start: usize) -> O
 }
 
 #[cfg(feature = "jsx")]
-pub(super) fn compatible_fence_end(source: &str, at: usize) -> Option<usize> {
-    use super::super::line_scan::{line_end, next_line_start};
-    use super::super::reference::{fence_open, is_fence_close};
-    let bytes = source.as_bytes();
-    let start = bytes[..at]
-        .iter()
-        .rposition(|byte| matches!(byte, b'\n' | b'\r'))
-        .map_or(0, |position| position + 1);
-    if !bytes[start..at]
+pub(super) fn at_line_indent_after(bytes: &[u8], from: usize, to: usize) -> bool {
+    let Some(rel) = memchr::memrchr2(b'\n', b'\r', &bytes[from..to]) else {
+        return false;
+    };
+    bytes[from + rel + 1..to]
         .iter()
         .all(|byte| matches!(byte, b' ' | b'\t'))
+}
+
+#[cfg(feature = "jsx")]
+pub(super) fn compatible_fence_end(source: &str, at: usize, at_line_indent: bool) -> Option<usize> {
+    use super::super::line_scan::{line_end, next_line_start};
+    use super::super::reference::{fence_open, is_fence_close};
+    if !at_line_indent {
+        return None;
+    }
+    let bytes = source.as_bytes();
+    let first = *bytes.get(at)?;
+    if (first != b'`' && first != b'~')
+        || bytes.get(at + 1) != Some(&first)
+        || bytes.get(at + 2) != Some(&first)
     {
         return None;
     }
@@ -424,6 +460,7 @@ fn walk_close<const RECORD: bool>(
     let mut cursor = from;
     let mut depth = 1u32;
     let mut read_from = from;
+    let mut backtick_suffix_max: Option<BacktickSuffixMax> = None;
     while cursor < bytes.len() {
         match bytes[cursor] {
             b'{' => {
@@ -435,11 +472,13 @@ fn walk_close<const RECORD: bool>(
                 }
             }
             b'`' => {
-                if let Some(next) = skip_backticks(bytes, cursor) {
-                    cursor = next;
-                    read_from = next;
-                } else {
-                    cursor += 1;
+                let open = backtick_run_len(bytes, cursor);
+                match skip_backticks_at_least(bytes, cursor, open, &mut backtick_suffix_max) {
+                    Ok(next) => {
+                        cursor = next;
+                        read_from = next;
+                    }
+                    Err(next) => cursor = next,
                 }
             }
             b'<' => {

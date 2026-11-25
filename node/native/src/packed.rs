@@ -218,7 +218,12 @@ pub fn transform_packed(
         typography,
         passes,
     );
-    render_document(markdown.try_as_str()?, core_options(Some(options))?, None)
+    render_document(
+        markdown.try_as_str()?,
+        core_options(Some(options))?,
+        None,
+        true,
+    )
 }
 
 /// Internal to the `ferromark` facade: `toHtmlWithRenderer` with packed
@@ -252,6 +257,7 @@ pub fn to_html_with_renderer_packed(
         markdown.try_as_str()?,
         core_options(Some(options))?,
         Some(renderer),
+        false,
     )?
     .html)
 }
@@ -287,5 +293,6 @@ pub fn transform_with_renderer_packed(
         markdown.try_as_str()?,
         core_options(Some(options))?,
         Some(renderer),
+        true,
     )
 }

@@ -261,7 +261,7 @@ impl PreparedJsxDocument {
     }
 
     /// Metadata computed from the prepared tree without rendering its body.
-    #[napi(getter)]
+    #[napi(getter, catch_unwind)]
     pub fn metadata(&self) -> JsxPreparedMetadata {
         self.metadata.clone()
     }

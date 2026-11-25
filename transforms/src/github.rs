@@ -114,6 +114,9 @@ fn transform_text_runs<'arena>(
             continue;
         }
         let value = run.value();
+        if !might_contain_github_reference(value.as_bytes()) {
+            continue;
+        }
         let protected = run.protected_url_ranges(context);
         for matched in find_references(&value, &protected, local_owner, local_repository) {
             matches.push(ReferenceMatch {
@@ -133,23 +136,42 @@ fn transform_text_runs<'arena>(
             active_run = Some(start);
             boundary = matched.node_range.end;
         }
-        let replacement_span = TransformContext::replace_text_range_with_node(
+        let (_, inserted_index) = TransformContext::replace_text_range_with_node(
             nodes,
             start..boundary,
             matched.byte_range,
             |span| Some(context.text_link_node(&matched.label, &matched.url, span)),
         )?;
-        boundary = nodes
-            .iter()
-            .position(
-                |node| matches!(node, ferromark::ast::Node::Link(link) if link.span == replacement_span),
-            )
-            .ok_or_else(|| {
-                std::io::Error::other("GitHub reference link node was not inserted")
-            })?;
+        boundary = inserted_index;
     }
 
     Ok(())
+}
+
+/// Fast pre-filter: a GitHub reference requires `#`, `@`, `/`, `GH-`/`gh-`,
+/// or a contiguous 7+ ASCII hex-digit run.
+fn might_contain_github_reference(bytes: &[u8]) -> bool {
+    let mut hex_run = 0usize;
+    for (i, &byte) in bytes.iter().enumerate() {
+        if matches!(byte, b'#' | b'@' | b'/') {
+            return true;
+        }
+        if matches!(byte, b'g' | b'G')
+            && bytes.get(i + 1).is_some_and(|b| matches!(b, b'h' | b'H'))
+            && bytes.get(i + 2) == Some(&b'-')
+        {
+            return true;
+        }
+        if byte.is_ascii_hexdigit() {
+            hex_run += 1;
+            if hex_run >= 7 {
+                return true;
+            }
+        } else {
+            hex_run = 0;
+        }
+    }
+    false
 }
 
 struct TextMatch {
@@ -166,11 +188,15 @@ fn find_references(
     let bytes = value.as_bytes();
     let mut matches = Vec::new();
     let mut cursor = 0;
+    let mut protected_idx = 0;
 
     while cursor < bytes.len() {
-        if let Some(range) = protected
-            .iter()
-            .find(|range| range.start <= cursor && cursor < range.end)
+        while protected_idx < protected.len() && protected[protected_idx].end <= cursor {
+            protected_idx += 1;
+        }
+        if let Some(range) = protected.get(protected_idx)
+            && range.start <= cursor
+            && cursor < range.end
         {
             cursor = range.end;
             continue;
@@ -178,8 +204,8 @@ fn find_references(
 
         if let Some((end, url)) = match_reference(value, cursor, local_owner, local_repository)
             && !protected
-                .iter()
-                .any(|range| cursor < range.end && range.start < end)
+                .get(protected_idx)
+                .is_some_and(|range| cursor < range.end && range.start < end)
         {
             matches.push(TextMatch {
                 range: cursor..end,
@@ -218,7 +244,6 @@ fn match_reference(
 
     if bytes.get(start) == Some(&b'@')
         && let Some((end, username, team)) = parse_mention(bytes, start)
-        && left_boundary(value, start)
         && mention_right_boundary(value, end, team)
         && !matches_ignore_ascii_case(username, &["mention", "mentions"])
     {

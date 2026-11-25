@@ -4,7 +4,7 @@
 //! `href` and `src` attributes can receive the configured base URL. Keeping those rules
 //! together prevents the Markdown and raw-HTML paths from drifting apart.
 
-use super::super::html_attr::{html_attr_value_range, is_html_attr_char, is_html_attr_start};
+use super::super::html_attr::{html_attr_value_range, is_html_attr_name_byte};
 use super::HtmlRenderer;
 use crate::ast::Link;
 
@@ -98,68 +98,174 @@ impl HtmlRenderer {
         }
     }
 
-    pub(in crate::renderer::html::renderer) fn rewrite_html_root_urls(&self, html: &str) -> String {
-        let mut output = String::with_capacity(html.len());
+    pub(in crate::renderer::html::renderer) fn rewrite_html_root_urls<'a>(
+        &self,
+        html: &'a str,
+    ) -> std::borrow::Cow<'a, str> {
         let bytes = html.as_bytes();
-        let mut i = 0;
+        let mut output: Option<String> = None;
+        let mut copied = 0usize;
+        let mut i = 0usize;
         let mut in_tag = false;
+        let mut saw_self_closing_slash = false;
+        let mut pending_raw_text_tag: Option<&str> = None;
 
         while i < bytes.len() {
-            match bytes[i] {
-                b'<' => {
-                    in_tag = true;
-                    output.push('<');
-                    i += 1;
-                }
-                b'>' => {
-                    in_tag = false;
-                    output.push('>');
-                    i += 1;
-                }
-                byte if in_tag && is_html_attr_start(byte) => {
-                    let name_start = i;
-                    let mut name_end = i + 1;
-                    while name_end < bytes.len() && is_html_attr_char(bytes[name_end]) {
-                        name_end += 1;
+            if !in_tag {
+                let Some(rel) = memchr::memchr(b'<', &bytes[i..]) else {
+                    break;
+                };
+                i += rel;
+                // Skip HTML comments verbatim (including CommonMark empty forms
+                // `<!-->` / `<!--->` and HTML5 `--!>` endings).
+                if html[i..].starts_with("<!--") {
+                    if let Some(next) = skip_html_comment(bytes, i) {
+                        i = next;
+                        continue;
                     }
-
-                    let name = &html[name_start..name_end];
-                    if name.eq_ignore_ascii_case("href") || name.eq_ignore_ascii_case("src") {
-                        let Some((value_start, value_end)) =
-                            html_attr_value_range(html, bytes, name_end)
-                        else {
-                            output.push_str(name);
-                            i = name_end;
-                            continue;
-                        };
-                        let value = &html[value_start..value_end];
-                        // Raw anchors link pages the same way Markdown links
-                        // do; convert .md targets first, then fall back to
-                        // rebasing root-absolute URLs.
-                        let rewritten = self.convert_markdown_url(value);
-                        if let Some(rewritten) = rewritten {
-                            output.push_str(&html[i..value_start]);
-                            output.push_str(&rewritten);
-                            i = value_end;
+                    break;
+                }
+                if html[i..].starts_with("<![CDATA[") {
+                    if let Some(end) = memchr::memmem::find(&bytes[i + 9..], b"]]>") {
+                        i = i + 9 + end + 3;
+                        continue;
+                    }
+                    break;
+                }
+                if bytes.get(i + 1) == Some(&b'?') {
+                    if let Some(end) = memchr::memmem::find(&bytes[i + 2..], b"?>") {
+                        i = i + 2 + end + 2;
+                        continue;
+                    }
+                    break;
+                }
+                if bytes.get(i + 1) == Some(&b'!') {
+                    if let Some(end) = memchr::memchr(b'>', &bytes[i + 2..]) {
+                        i = i + 2 + end + 1;
+                        continue;
+                    }
+                    break;
+                }
+                if bytes.get(i + 1) == Some(&b'/') {
+                    if bytes.get(i + 2).is_some_and(u8::is_ascii_alphabetic) {
+                        if let Some(end) = memchr::memchr(b'>', &bytes[i + 3..]) {
+                            i = i + 3 + end + 1;
                             continue;
                         }
+                        break;
                     }
-
-                    output.push_str(name);
-                    i = name_end;
+                    i += 2;
+                    continue;
                 }
-                _ => {
-                    if let Some(ch) = html[i..].chars().next() {
-                        output.push(ch);
-                        i += ch.len_utf8();
+                // Only an ASCII letter after `<` starts an HTML opening tag;
+                // bare comparisons like `1 < 2` stay in text mode so later
+                // apostrophes cannot be misread as attribute quotes.
+                if !bytes.get(i + 1).is_some_and(u8::is_ascii_alphabetic) {
+                    i += 1;
+                    continue;
+                }
+                let tag_name_start = i + 1;
+                let mut tag_name_end = tag_name_start + 1;
+                while tag_name_end < bytes.len()
+                    && !matches!(
+                        bytes[tag_name_end],
+                        b'>' | b'/' | b' ' | b'\t' | b'\n' | b'\r' | b'\x0c'
+                    )
+                {
+                    tag_name_end += 1;
+                }
+                let tag_name = &html[tag_name_start..tag_name_end];
+                pending_raw_text_tag = is_html_raw_text_tag(tag_name).then_some(tag_name);
+                in_tag = true;
+                saw_self_closing_slash = false;
+                i = tag_name_end;
+                continue;
+            }
+
+            match bytes[i] {
+                b'>' => {
+                    let self_closing = saw_self_closing_slash;
+                    in_tag = false;
+                    saw_self_closing_slash = false;
+                    i += 1;
+                    if let Some(raw_tag) = pending_raw_text_tag.take()
+                        && !self_closing
+                    {
+                        if let Some(next) = skip_html_raw_text_body(bytes, i, raw_tag) {
+                            i = next;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                b'/' => {
+                    saw_self_closing_slash = true;
+                    i += 1;
+                }
+                b'"' | b'\'' => {
+                    saw_self_closing_slash = false;
+                    let quote = bytes[i];
+                    i += 1;
+                    if let Some(rel) = memchr::memchr(quote, &bytes[i..]) {
+                        i += rel + 1;
                     } else {
                         break;
                     }
                 }
+                b'=' => {
+                    saw_self_closing_slash = false;
+                    if let Some((value_start, value_end)) = html_attr_value_range(html, bytes, i) {
+                        i = attr_advance(bytes, value_start, value_end);
+                        continue;
+                    }
+                    i += 1;
+                }
+                byte if is_html_attr_name_byte(byte) => {
+                    saw_self_closing_slash = false;
+                    let name_start = i;
+                    let mut name_end = i + 1;
+                    while name_end < bytes.len() && is_html_attr_name_byte(bytes[name_end]) {
+                        name_end += 1;
+                    }
+
+                    let name = &html[name_start..name_end];
+                    if let Some((value_start, value_end)) =
+                        html_attr_value_range(html, bytes, name_end)
+                    {
+                        if name.eq_ignore_ascii_case("href") || name.eq_ignore_ascii_case("src") {
+                            let value = &html[value_start..value_end];
+                            // Raw anchors link pages the same way Markdown links
+                            // do; convert .md targets first, then fall back to
+                            // rebasing root-absolute URLs.
+                            if let Some(rewritten) = self.convert_markdown_url(value) {
+                                let buf = output.get_or_insert_with(|| {
+                                    String::with_capacity(html.len() + rewritten.len())
+                                });
+                                buf.push_str(&html[copied..value_start]);
+                                buf.push_str(&rewritten);
+                                copied = value_end;
+                            }
+                        }
+                        i = attr_advance(bytes, value_start, value_end);
+                        continue;
+                    }
+
+                    i = name_end;
+                }
+                _ => {
+                    saw_self_closing_slash = false;
+                    i += 1;
+                }
             }
         }
 
-        output
+        match output {
+            Some(mut buf) => {
+                buf.push_str(&html[copied..]);
+                std::borrow::Cow::Owned(buf)
+            }
+            None => std::borrow::Cow::Borrowed(html),
+        }
     }
 
     /// Converts a Markdown URL to an `.html` URL for SSG output.
@@ -401,4 +507,72 @@ fn is_non_local_url(path: &str) -> bool {
         }
     }
     false
+}
+
+/// Advances past an attribute value, including its closing quote when quoted.
+fn attr_advance(bytes: &[u8], value_start: usize, value_end: usize) -> usize {
+    let opening_quote = value_start
+        .checked_sub(1)
+        .and_then(|pos| bytes.get(pos).copied())
+        .filter(|byte| matches!(byte, b'"' | b'\''));
+    if opening_quote.is_some() && bytes.get(value_end) == opening_quote.as_ref() {
+        value_end + 1
+    } else {
+        value_end
+    }
+}
+
+/// Skips an HTML comment starting at `<!--`, handling `<!-->`, `<!--->`,
+/// `-->`, and HTML5 `--!>` closers.
+fn skip_html_comment(bytes: &[u8], start: usize) -> Option<usize> {
+    if bytes.get(start + 4) == Some(&b'>') {
+        return Some(start + 5);
+    }
+    if bytes.get(start + 4..start + 6) == Some(b"->") {
+        return Some(start + 6);
+    }
+    let mut cursor = start + 4;
+    while let Some(rel) = memchr::memmem::find(&bytes[cursor..], b"--") {
+        let pos = cursor + rel;
+        if bytes.get(pos + 2) == Some(&b'>') {
+            return Some(pos + 3);
+        }
+        if bytes.get(pos + 2..pos + 4) == Some(b"!>") {
+            return Some(pos + 4);
+        }
+        cursor = pos + 1;
+    }
+    None
+}
+
+fn is_html_raw_text_tag(tag_name: &str) -> bool {
+    tag_name.eq_ignore_ascii_case("textarea")
+        || tag_name.eq_ignore_ascii_case("title")
+        || tag_name.eq_ignore_ascii_case("style")
+        || tag_name.eq_ignore_ascii_case("script")
+        || tag_name.eq_ignore_ascii_case("xmp")
+}
+
+/// Skips raw-text/RCDATA element bodies until their matching `</tag_name>` so
+/// literal `<` and quotes inside them do not confuse tag scanning.
+fn skip_html_raw_text_body(bytes: &[u8], start: usize, tag_name: &str) -> Option<usize> {
+    let mut cursor = start;
+    while let Some(rel) = memchr::memchr(b'<', &bytes[cursor..]) {
+        let pos = cursor + rel;
+        if bytes.get(pos + 1) == Some(&b'/') {
+            let name_start = pos + 2;
+            let name_end = name_start + tag_name.len();
+            if bytes
+                .get(name_start..name_end)
+                .is_some_and(|slice| slice.eq_ignore_ascii_case(tag_name.as_bytes()))
+                && bytes.get(name_end).is_some_and(|byte| {
+                    matches!(byte, b'>' | b'/' | b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
+                })
+            {
+                return memchr::memchr(b'>', &bytes[name_end..]).map(|gt| name_end + gt + 1);
+            }
+        }
+        cursor = pos + 1;
+    }
+    None
 }

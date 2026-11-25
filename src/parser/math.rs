@@ -10,9 +10,15 @@ use super::{MathCloserKey, Parser};
 use crate::parser::error::ParseResult;
 
 /// Ranges of one content slice that a scan for a closer of one opener width
-/// read without finding one. Four covers a line with three code spans in
-/// it; the shapes that go past that are the ones the record exists for.
-pub(super) type MathGaps = SmallVec<[(usize, usize); 4]>;
+/// read byte by byte, paired with the closer it reached (`None` if none).
+/// Four covers a line with three code spans in it; the shapes that go past
+/// that are the ones the record exists for.
+pub(super) type MathGaps = SmallVec<[(usize, usize, Option<usize>); 4]>;
+
+enum CachedMathCloser {
+    Miss,
+    Hit(Option<usize>),
+}
 
 /// What one scan for an inline-math closer settled, for every opener that
 /// starts at or after the scan did.
@@ -183,8 +189,8 @@ impl<'a> Parser<'a> {
     fn inline_math_close(&self, content: &'a str, from: usize, open_len: usize) -> Option<usize> {
         let bytes = content.as_bytes();
         let key = (content.as_ptr() as usize, content.len(), open_len as u8);
-        if self.scanned_without_math_closer(key, from) {
-            return None;
+        if let CachedMathCloser::Hit(known) = self.cached_math_closer_window(key, from) {
+            return known;
         }
 
         let cached = self
@@ -216,7 +222,7 @@ impl<'a> Parser<'a> {
 
         let mut read = MathGaps::new();
         let close = scan_inline_math_close(bytes, from, open_len, &mut read);
-        if close.is_none() {
+        if !read.is_empty() {
             let mut gaps = self.extension_memos().math_closer_gaps.borrow_mut();
             let windows = gaps.entry(key).or_default();
             for window in read {
@@ -226,14 +232,19 @@ impl<'a> Parser<'a> {
         close
     }
 
-    /// Whether a walk that found no closer has already read `from`.
-    fn scanned_without_math_closer(&self, key: MathCloserKey, from: usize) -> bool {
+    /// Returns `Hit(result)` when an earlier walk already read `from` byte by
+    /// byte and settled the closer it reaches (`Some(pos)` or `None`).
+    fn cached_math_closer_window(&self, key: MathCloserKey, from: usize) -> CachedMathCloser {
         let gaps = self.extension_memos().math_closer_gaps.borrow();
         let Some(windows) = gaps.get(&key) else {
-            return false;
+            return CachedMathCloser::Miss;
         };
         let index = windows.partition_point(|window| window.0 <= from);
-        index > 0 && from < windows[index - 1].1
+        if index > 0 && from < windows[index - 1].1 {
+            CachedMathCloser::Hit(windows[index - 1].2)
+        } else {
+            CachedMathCloser::Miss
+        }
     }
 
     /// A `$` before a digit opens math only when something closes it, which
@@ -256,10 +267,14 @@ impl<'a> Parser<'a> {
 
     fn has_closing_inline_math(&self, content: &'a str, index: usize, open_len: usize) -> bool {
         let inner_start = index + open_len;
+        let first_emphasis = self.first_emphasis_byte(content, inner_start);
+        if first_emphasis == content.len() {
+            return false;
+        }
         let Some(close) = self.inline_math_close(content, inner_start, open_len) else {
             return false;
         };
-        self.first_emphasis_byte(content, inner_start) < close
+        first_emphasis < close
     }
 
     /// The first `*` or `_` at or after `from`, or the content length.
@@ -325,34 +340,44 @@ fn scan_inline_math_close(
         if bytes[candidate] == b'`' {
             cursor = Parser::closed_code_span_end(bytes, candidate)
                 .unwrap_or_else(|| candidate + Parser::marker_run_len(bytes, candidate, b'`'));
-            read.push((window_start, candidate));
+            read.push((window_start, candidate, None));
             window_start = cursor;
             continue;
         }
         if can_close_at(bytes, candidate, open_len) {
+            read.push((window_start, candidate, Some(candidate)));
+            for entry in read.iter_mut() {
+                entry.2 = Some(candidate);
+            }
             return Some(candidate);
         }
         cursor = candidate + 1;
     }
-    read.push((window_start, bytes.len()));
+    read.push((window_start, bytes.len(), None));
     None
 }
 
 /// Adds one read range to a slice's record, keeping it sorted and free of
 /// overlap so the lookup is a binary search.
-fn record_math_gap(windows: &mut MathGaps, window: (usize, usize)) {
+fn record_math_gap(windows: &mut MathGaps, window: (usize, usize, Option<usize>)) {
     if window.0 >= window.1 {
         return;
     }
     let index = windows.partition_point(|probe| probe.0 <= window.0);
-    let at = if index > 0 && windows[index - 1].1 >= window.0 {
+    let at = if index > 0 && windows[index - 1].1 >= window.0 && windows[index - 1].2 == window.2 {
         windows[index - 1].1 = windows[index - 1].1.max(window.1);
         index - 1
+    } else if index > 0 && windows[index - 1].1 > window.0 {
+        // Already covered by an existing non-overlapping window.
+        return;
     } else {
         windows.insert(index, window);
         index
     };
-    while at + 1 < windows.len() && windows[at].1 >= windows[at + 1].0 {
+    while at + 1 < windows.len()
+        && windows[at].1 >= windows[at + 1].0
+        && windows[at].2 == windows[at + 1].2
+    {
         windows[at].1 = windows[at].1.max(windows[at + 1].1);
         windows.remove(at + 1);
     }

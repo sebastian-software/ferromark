@@ -453,16 +453,35 @@ pub(super) fn slugify_heading_into(text: &str, out: &mut String) {
     }
 }
 
+/// Single-pass ASCII slug table:
+/// - `0`: ASCII separator (non-alphanumeric)
+/// - `1`: non-ASCII stop sentinel (`>= 0x80`)
+/// - otherwise: the lowercased ASCII alphanumeric byte itself.
+static SLUG_BYTE: [u8; 256] = {
+    let mut table = [0u8; 256];
+    let mut b = 0usize;
+    while b < 256 {
+        table[b] = if b >= 0x80 {
+            1
+        } else if (b as u8).is_ascii_alphanumeric() {
+            (b as u8) | 0x20
+        } else {
+            0
+        };
+        b += 1;
+    }
+    table
+};
+
 /// Appends the slug bytes for the ASCII run starting at `from`, returning the
 /// index of the first non-ASCII byte (or `bytes.len()`).
 ///
 /// `String::push` re-checks capacity and re-encodes UTF-8 for every character,
-/// which is the bulk of the work for a 20-40 byte ASCII heading. The run's
-/// length bounds the output exactly — an alphanumeric byte emits its lowercase
-/// self and any other byte emits at most one `-` — so the capacity can be
-/// claimed once and the bytes written through a plain cursor, with a single
-/// `set_len` publishing the run. No stack buffer and no `from_utf8` are
-/// involved: the bytes go straight to their final address.
+/// which is the bulk of the work for a 20-40 byte ASCII heading. Reserving for
+/// the remaining slice bounds the output of the ASCII run in one pass — an
+/// alphanumeric byte emits its lowercase self and any other byte emits at most
+/// one `-` — so the bytes go straight to their final address without first
+/// scanning for the non-ASCII boundary.
 #[allow(unsafe_code)]
 fn push_ascii_run(
     bytes: &[u8],
@@ -470,33 +489,36 @@ fn push_ascii_run(
     out: &mut String,
     last_was_separator: &mut bool,
 ) -> usize {
-    let mut end = from;
-    while end < bytes.len() && bytes[end] < 0x80 {
-        end += 1;
+    if from >= bytes.len() || bytes[from] >= 0x80 {
+        return from;
     }
-    let run = &bytes[from..end];
-    out.reserve(run.len());
+    let remaining = bytes.len() - from;
+    if out.capacity() - out.len() < remaining {
+        out.reserve(remaining);
+    }
     let mut separator = *last_was_separator;
+    let mut i = from;
 
-    // SAFETY: `reserve` above guarantees at least `run.len()` spare bytes past
-    // the current length, and no reallocation can happen between it and
-    // `set_len` because `out` is only touched through `dst` in between. The
-    // loop writes at most one byte per byte of `run`, so `written` never
-    // exceeds `run.len()` and every write lands inside that spare region;
-    // `set_len` then covers exactly the bytes written. Every written byte is
-    // ASCII (`-`, or an ASCII alphanumeric with bit 5 forced on for the
-    // uppercase letters), appended at the end of a `String`, which is a char
-    // boundary, so the buffer stays valid UTF-8.
+    // SAFETY: `reserve` above guarantees at least `bytes.len() - from` spare
+    // bytes past the current length, and no reallocation can happen between it
+    // and `set_len` because `out` is only touched through `dst` in between.
+    // The loop writes at most one byte per input byte inspected (stopping at
+    // the first byte >= 0x80 or `bytes.len()`), so `written <= remaining` and
+    // every write lands inside that spare region. Every written byte is ASCII
+    // (`-`, or a lowercased ASCII alphanumeric from `SLUG_BYTE`), appended at
+    // the end of a `String`, so the buffer stays valid UTF-8.
     unsafe {
         let vec = out.as_mut_vec();
         let at = vec.len();
         let dst = vec.as_mut_ptr().add(at);
         let mut written = 0usize;
-        for &byte in run {
-            if byte.is_ascii_alphanumeric() {
-                // Bit 5 is the ASCII case bit. Forcing it on lowercases a
-                // letter and leaves a digit alone, with no branch.
-                *dst.add(written) = byte | 0x20;
+        while i < bytes.len() {
+            let mapped = SLUG_BYTE[bytes[i] as usize];
+            if mapped == 1 {
+                break;
+            }
+            if mapped != 0 {
+                *dst.add(written) = mapped;
                 written += 1;
                 separator = false;
             } else if !separator {
@@ -504,14 +526,15 @@ fn push_ascii_run(
                 written += 1;
                 separator = true;
             }
+            i += 1;
         }
-        debug_assert!(written <= run.len());
+        debug_assert!(written <= remaining);
         debug_assert!(at + written <= vec.capacity());
         vec.set_len(at + written);
     }
 
     *last_was_separator = separator;
-    end
+    i
 }
 
 /// Appends the slug for one run of non-ASCII bytes.

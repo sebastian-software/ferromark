@@ -248,6 +248,8 @@ impl<'a> Parser<'a> {
         // that go past it are the ones this record exists for, and they
         // spill once. Never touched without `RECORD`.
         let mut open: SmallVec<[(usize, u32); 16]> = SmallVec::new();
+        let mut dead_backticks = super::inline::BacktickDeadEnds::default();
+        let mut dead_html = [false; 4];
         let mut depth = 1;
         let mut opens = 0u32;
         let mut at = cursor;
@@ -266,18 +268,43 @@ impl<'a> Parser<'a> {
                 b'`' => {
                     let run = Self::marker_run_len(bytes, at, b'`');
                     at += run;
+                    if dead_backticks.is_dead(run) {
+                        continue;
+                    }
                     let mut scan = at;
+                    let mut saw_any_tick = false;
+                    let mut seen_short_once = 0u64;
+                    let mut seen_short_twice = 0u64;
+                    let mut seen_long: SmallVec<[usize; 8]> = SmallVec::new();
+                    let mut closed = false;
                     while scan < bytes.len() {
                         let Some(off) = memchr(b'`', &bytes[scan..]) else {
                             break;
                         };
+                        saw_any_tick = true;
                         scan += off;
                         let closer = Self::marker_run_len(bytes, scan, b'`');
                         if closer == run {
                             at = scan + closer;
+                            closed = true;
                             break;
                         }
+                        super::inline::BacktickDeadEnds::note_run(
+                            closer,
+                            scan > 0 && bytes[scan - 1] == b'\\',
+                            &mut seen_short_once,
+                            &mut seen_short_twice,
+                            &mut seen_long,
+                        );
                         scan += closer;
+                    }
+                    if !closed {
+                        dead_backticks.record_eof_scan(
+                            run,
+                            saw_any_tick,
+                            seen_short_twice,
+                            seen_long,
+                        );
                     }
                 }
                 b'<' => {
@@ -290,7 +317,9 @@ impl<'a> Parser<'a> {
                     }
                     if let Some(end) = super::inline::autolink_end(content, at) {
                         at = end;
-                    } else if let Some((_, end)) = Parser::parse_inline_html(content, at, 0) {
+                    } else if let Some((_, end)) =
+                        Parser::parse_inline_html_with_dead_ends(content, at, 0, &mut dead_html)
+                    {
                         at = end;
                     } else {
                         at += 1;
@@ -438,6 +467,7 @@ static BRACKET_TEXT_STOP: ByteClass = ByteClass::from_flags({
     t[b'^' as usize] = 1;
     t[b'$' as usize] = 1;
     t[b'=' as usize] = 1;
+    t[b'+' as usize] = 1;
     t
 });
 

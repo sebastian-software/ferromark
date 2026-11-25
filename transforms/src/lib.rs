@@ -214,6 +214,7 @@ impl<'arena> TransformContext<'arena> {
         Self::replace_text_range_with_node(nodes, node_range, byte_range, |span| {
             (!replacement.is_empty()).then(|| Node::Text(self.replacement_text(replacement, span)))
         })
+        .map(|(span, _)| span)
     }
 
     pub(crate) fn replace_text_range_with_node(
@@ -221,7 +222,7 @@ impl<'arena> TransformContext<'arena> {
         node_range: Range<usize>,
         byte_range: Range<usize>,
         replacement: impl FnOnce(Span) -> Option<Node<'arena>>,
-    ) -> Result<Span, TextReplacementError> {
+    ) -> Result<(Span, usize), TextReplacementError> {
         validate_node_range(nodes, &node_range)?;
         validate_text_byte_range(nodes, &node_range, &byte_range)?;
 
@@ -231,7 +232,7 @@ impl<'arena> TransformContext<'arena> {
             if let Some(node) = replacement {
                 insert_node_at_text_offset(nodes, &node_range, byte_range.start, node);
             }
-            return Ok(Span::empty());
+            return Ok((Span::empty(), node_range.start));
         }
 
         let (first, last, first_offset, last_offset) =
@@ -256,6 +257,7 @@ impl<'arena> TransformContext<'arena> {
                 span: first_span,
             }));
         }
+        let inserted_index = first + replacements.len();
         if let Some(replacement) = replacement {
             replacements.push(replacement);
         }
@@ -281,11 +283,11 @@ impl<'arena> TransformContext<'arena> {
 
         drop(nodes.splice(first..last + 1, replacements));
 
-        Ok(replacement_span)
+        Ok((replacement_span, inserted_index))
     }
 
     pub(crate) fn text_link_node(&self, label: &str, url: &str, span: Span) -> Node<'arena> {
-        let mut children = self.allocator.new_vec();
+        let mut children = self.allocator.new_vec_with_capacity(1);
         children.push(Node::Text(self.replacement_text(label, span)));
         Node::Link(self.allocator.boxed(Link {
             url: self.alloc_str(url),

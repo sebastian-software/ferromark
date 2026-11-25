@@ -17,6 +17,75 @@ impl<'a> Parser<'a> {
         pos: usize,
         offset: usize,
     ) -> Option<(Html<'a>, usize)> {
+        let mut dead_ends = [false; 4];
+        Self::parse_inline_html_with_dead_ends(content, pos, offset, &mut dead_ends)
+    }
+
+    pub(super) fn parse_inline_html_cached(
+        &self,
+        content: &'a str,
+        pos: usize,
+        offset: usize,
+    ) -> Option<(Html<'a>, usize)> {
+        Self::parse_inline_html_inner(content, pos, offset, |slot, from, needle| {
+            let bytes = content.as_bytes();
+            let base = bytes.as_ptr() as usize;
+            let slice_end = base + bytes.len();
+            if slot < 3
+                && let Some(memos) = self.extension_memos.get()
+                && let Some((no_from, end)) = memos.html_no_closer[slot].get()
+                && end == slice_end
+                && base + from >= no_from
+            {
+                return None;
+            }
+            let found = if needle.len() == 1 {
+                memchr::memchr(needle[0], &bytes[from..])
+            } else {
+                memchr::memmem::find(&bytes[from..], needle)
+            };
+            if let Some(rel) = found {
+                Some(from + rel + needle.len())
+            } else {
+                if slot < 3 {
+                    self.extension_memos().html_no_closer[slot].set(Some((base + from, slice_end)));
+                }
+                None
+            }
+        })
+    }
+
+    pub(super) fn parse_inline_html_with_dead_ends(
+        content: &'a str,
+        pos: usize,
+        offset: usize,
+        dead_ends: &mut [bool; 4],
+    ) -> Option<(Html<'a>, usize)> {
+        Self::parse_inline_html_inner(content, pos, offset, |slot, from, needle| {
+            if dead_ends[slot] {
+                return None;
+            }
+            let bytes = content.as_bytes();
+            let found = if needle.len() == 1 {
+                memchr::memchr(needle[0], &bytes[from..])
+            } else {
+                memchr::memmem::find(&bytes[from..], needle)
+            };
+            if let Some(rel) = found {
+                Some(from + rel + needle.len())
+            } else {
+                dead_ends[slot] = true;
+                None
+            }
+        })
+    }
+
+    fn parse_inline_html_inner(
+        content: &'a str,
+        pos: usize,
+        offset: usize,
+        mut find_close: impl FnMut(usize, usize, &[u8]) -> Option<usize>,
+    ) -> Option<(Html<'a>, usize)> {
         let rest = &content[pos..];
         let bytes = content.as_bytes();
 
@@ -27,21 +96,21 @@ impl<'a> Parser<'a> {
                 return Some((Self::inline_html_node(content, pos, end, offset), end));
             }
         }
-        if let Some(comment_body) = rest.strip_prefix("<!--") {
-            let end = comment_body.find("-->").map(|found| pos + 4 + found + 3)?;
+        if rest.starts_with("<!--") {
+            let end = find_close(0, pos + 4, b"-->")?;
             return Some((Self::inline_html_node(content, pos, end, offset), end));
         }
         // Processing instructions, CDATA, then other declarations.
-        for (open, close) in [("<?", "?>"), ("<![CDATA[", "]]>")] {
-            if let Some(body) = rest.strip_prefix(open) {
-                let end = body
-                    .find(close)
-                    .map(|found| pos + open.len() + found + close.len())?;
-                return Some((Self::inline_html_node(content, pos, end, offset), end));
-            }
+        if rest.starts_with("<?") {
+            let end = find_close(1, pos + 2, b"?>")?;
+            return Some((Self::inline_html_node(content, pos, end, offset), end));
+        }
+        if rest.starts_with("<![CDATA[") {
+            let end = find_close(2, pos + 9, b"]]>")?;
+            return Some((Self::inline_html_node(content, pos, end, offset), end));
         }
         if rest.starts_with("<!") && rest.as_bytes().get(2).is_some_and(u8::is_ascii_alphabetic) {
-            let end = rest.find('>').map(|found| pos + found + 1)?;
+            let end = find_close(3, pos + 3, b">")?;
             return Some((Self::inline_html_node(content, pos, end, offset), end));
         }
 
@@ -94,7 +163,8 @@ impl<'a> Parser<'a> {
         }
 
         let raw = html.value;
-        let mut value = self.allocator.new_string();
+        let mut value =
+            crate::allocator::String::with_capacity_in(raw.len(), self.allocator.bump());
         let bytes = raw.as_bytes();
         let mut start = 0;
         let mut cursor = 0;

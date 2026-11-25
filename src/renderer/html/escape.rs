@@ -33,7 +33,7 @@ static ESCAPE_FLAG: [u8; 256] = {
 mod nibble;
 mod url;
 
-use url::{ipv6_authority_brackets, write_url_segment};
+use url::write_url_segment;
 
 use nibble::{EscapeNeedles, NeedleSet, first_flagged_simd};
 
@@ -288,18 +288,10 @@ pub(super) fn write_url_escaped_into(out: &mut String, s: &str) {
     // Same scanner as `write_escaped_into`, but with URL attribute semantics.
     // Ampersand stays HTML-escaped because the result is written inside an
     // HTML attribute, while spaces and tag delimiters are percent encoded to
-    // keep the URL value itself stable.
-    // Brackets in an IPv6 authority are URL syntax and must remain delimiters;
-    // brackets in a path or query are encoded. Split around the one authority
-    // pair when present so the common scanner remains branch-free.
+    // keep the URL value itself stable. IPv6 authority brackets are checked
+    // lazily inside `write_url_segment` only when a `[` byte is encountered.
     out.reserve(s.len());
-    if let Some((open, close)) = ipv6_authority_brackets(s) {
-        write_url_segment(out, &s[..open]);
-        out.push_str(&s[open..=close]);
-        write_url_segment(out, &s[close + 1..]);
-    } else {
-        write_url_segment(out, s);
-    }
+    write_url_segment(out, s);
 }
 
 /// Escapes attribute values, including line endings, directly into the output.

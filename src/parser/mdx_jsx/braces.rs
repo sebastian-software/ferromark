@@ -147,7 +147,7 @@ pub(super) fn skip_braces(bytes: &[u8], start: usize) -> Option<usize> {
     None
 }
 
-pub(super) fn skip_quoted(bytes: &[u8], start: usize) -> Option<usize> {
+pub(in crate::parser) fn skip_quoted(bytes: &[u8], start: usize) -> Option<usize> {
     let quote = *bytes.get(start)?;
     let mut cursor = start + 1;
     while cursor < bytes.len() {
@@ -163,26 +163,105 @@ pub(super) fn skip_quoted(bytes: &[u8], start: usize) -> Option<usize> {
     None
 }
 
-pub(super) fn skip_backticks(bytes: &[u8], start: usize) -> Option<usize> {
+pub(super) fn backtick_run_len(bytes: &[u8], start: usize) -> usize {
     let mut open = 0usize;
     while start + open < bytes.len() && bytes[start + open] == b'`' {
         open += 1;
     }
+    open
+}
+
+#[cfg(feature = "jsx")]
+pub(super) fn skip_backticks(bytes: &[u8], start: usize) -> Option<usize> {
+    let open = backtick_run_len(bytes, start);
     if open == 0 {
         return None;
     }
     let mut cursor = start + open;
-    while cursor + open <= bytes.len() {
-        if bytes[cursor..cursor + open]
-            .iter()
-            .all(|byte| *byte == b'`')
-            && bytes.get(cursor + open) != Some(&b'`')
-        {
-            return Some(cursor + open);
+    while let Some(relative) = memchr::memchr(b'`', &bytes[cursor..]) {
+        cursor += relative;
+        let close = backtick_run_len(bytes, cursor);
+        if close == open {
+            return Some(cursor + close);
         }
-        cursor += 1;
+        cursor += close;
     }
     None
+}
+
+/// Monotonic decreasing suffix-max staircase of `(pos, run_len)` built lazily on
+/// the first failed backtick scan in `walk_close`.
+///
+/// Because `walk_close` only advances forward, advancing `cursor` linearly gives
+/// O(1) amortized lookups with zero binary searches.
+pub(super) struct BacktickSuffixMax {
+    entries: smallvec::SmallVec<[(usize, usize); 8]>,
+    cursor: usize,
+}
+
+impl BacktickSuffixMax {
+    fn build(bytes: &[u8], from: usize) -> Self {
+        let mut entries: smallvec::SmallVec<[(usize, usize); 8]> = smallvec::SmallVec::new();
+        let mut scan = from;
+        while let Some(relative) = memchr::memchr(b'`', &bytes[scan..]) {
+            scan += relative;
+            let run = backtick_run_len(bytes, scan);
+            while entries.last().is_some_and(|&(_, prev_len)| prev_len <= run) {
+                entries.pop();
+            }
+            entries.push((scan, run));
+            scan += run;
+        }
+        Self { entries, cursor: 0 }
+    }
+
+    /// Maximum backtick run length starting at or after `from`.
+    #[inline]
+    fn max_len_from(&mut self, from: usize) -> usize {
+        while self.cursor < self.entries.len() && self.entries[self.cursor].0 < from {
+            self.cursor += 1;
+        }
+        self.entries.get(self.cursor).map_or(0, |&(_, len)| len)
+    }
+}
+
+/// Finds the first closing backtick run of length `>= open` after `start + open`
+/// (matching ordinary MDX `walk_close` semantics for inline spans and
+/// longer-closing fenced code blocks).
+///
+/// When `open` has no closing run ahead, returns `Err(next_cursor)` preserving
+/// `main`'s shorter-opener fallback in O(1) time: if the remaining suffix
+/// contains a shorter backtick run of maximum length `max_len` (`1 <= max_len < open`),
+/// `next_cursor` jumps directly to `(start + open) - max_len` (the exact suffix
+/// of this run that matches); otherwise `next_cursor = start + open`.
+pub(super) fn skip_backticks_at_least(
+    bytes: &[u8],
+    start: usize,
+    open: usize,
+    suffix_max: &mut Option<BacktickSuffixMax>,
+) -> Result<usize, usize> {
+    let after_open = start + open;
+    if open == 0 {
+        return Err(after_open);
+    }
+    if let Some(cache) = suffix_max.as_mut() {
+        let max_len = cache.max_len_from(after_open);
+        if max_len < open {
+            return Err(after_open - max_len);
+        }
+    }
+    let mut cursor = after_open;
+    while let Some(relative) = memchr::memchr(b'`', &bytes[cursor..]) {
+        cursor += relative;
+        let close = backtick_run_len(bytes, cursor);
+        if close >= open {
+            return Ok(cursor + close);
+        }
+        cursor += close;
+    }
+    let cache = suffix_max.get_or_insert_with(|| BacktickSuffixMax::build(bytes, after_open));
+    let max_len = cache.max_len_from(after_open);
+    Err(after_open - max_len.min(open - 1))
 }
 
 fn skip_line_comment(bytes: &[u8], start: usize) -> usize {

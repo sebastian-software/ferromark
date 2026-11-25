@@ -6,7 +6,7 @@ use super::whitespace;
 use super::{JsxCloserGap, Parser};
 use crate::parser::error::ParseResult;
 
-mod braces;
+pub(super) mod braces;
 mod children;
 mod expression;
 mod scan;
@@ -396,36 +396,44 @@ impl<'a> Parser<'a> {
         let mut ranges = smallvec::SmallVec::new();
         let bytes = content.as_bytes();
         let mut cursor = 0;
-        let mut line_start = 0;
+        let mut at_line_indent = true;
         while cursor < bytes.len() {
             let previous = cursor;
+            if matches!(bytes[cursor], b'\n' | b'\r') {
+                at_line_indent = true;
+                cursor += 1;
+                continue;
+            }
+            if matches!(bytes[cursor], b' ' | b'\t') {
+                cursor += 1;
+                continue;
+            }
             if matches!(bytes[cursor], b'i' | b'e')
-                && bytes[line_start..cursor]
-                    .iter()
-                    .all(|byte| matches!(byte, b' ' | b'\t'))
+                && at_line_indent
                 && super::mdx_esm::looks_like_esm(bytes, cursor)
                 && let Ok(end) = super::mdx_compatible::esm_end(content, cursor)
             {
                 ranges.push((cursor, end));
-                if let Some(relative) = bytes[cursor..end]
-                    .iter()
-                    .rposition(|byte| matches!(byte, b'\n' | b'\r'))
-                {
-                    line_start = cursor + relative + 1;
-                }
+                at_line_indent = scan::at_line_indent_after(bytes, cursor, end);
                 cursor = end;
                 continue;
             }
             match bytes[cursor] {
                 b'\\' => cursor = (cursor + 2).min(bytes.len()),
                 b'`' | b'~' => {
-                    cursor = scan::compatible_fence_end(content, cursor)
+                    cursor = scan::compatible_fence_end(content, cursor, at_line_indent)
                         .or_else(|| {
                             (bytes[cursor] == b'`')
                                 .then(|| braces::skip_backticks(bytes, cursor))
                                 .flatten()
                         })
-                        .unwrap_or(cursor + 1);
+                        .unwrap_or_else(|| {
+                            if bytes[cursor] == b'`' {
+                                cursor + braces::backtick_run_len(bytes, cursor)
+                            } else {
+                                cursor + 1
+                            }
+                        });
                 }
                 b'{' => {
                     if let Some(end) = self.matching_brace_end(content, cursor) {
@@ -438,6 +446,7 @@ impl<'a> Parser<'a> {
                 b'<' if looks_like_jsx_open(bytes, cursor, true) => {
                     if let Some(end) = super::inline::autolink_end(content, cursor) {
                         cursor = end;
+                        at_line_indent = scan::at_line_indent_after(bytes, previous, cursor);
                         continue;
                     }
                     let mut attributes = self.allocator.new_vec();
@@ -454,14 +463,13 @@ impl<'a> Parser<'a> {
                         cursor += 1;
                     }
                 }
-                _ => cursor += 1,
+                _ => {
+                    at_line_indent = false;
+                    cursor += 1;
+                    continue;
+                }
             }
-            if let Some(relative) = bytes[previous..cursor]
-                .iter()
-                .rposition(|byte| matches!(byte, b'\n' | b'\r'))
-            {
-                line_start = previous + relative + 1;
-            }
+            at_line_indent = scan::at_line_indent_after(bytes, previous, cursor);
         }
         ranges
     }
@@ -479,7 +487,10 @@ impl<'a> Parser<'a> {
         while cursor < end {
             match bytes[cursor] {
                 b'\\' => cursor = (cursor + 2).min(end),
-                b'`' => cursor = braces::skip_backticks(bytes, cursor).unwrap_or(cursor + 1),
+                b'`' => {
+                    cursor = braces::skip_backticks(bytes, cursor)
+                        .unwrap_or_else(|| cursor + braces::backtick_run_len(bytes, cursor));
+                }
                 b'{' => {
                     if let Some(close) = self.matching_brace_end(self.source, cursor) {
                         cursor = close;

@@ -37,7 +37,16 @@ pub fn scan_entity(rest: &str) -> Option<(EntityValue, usize)> {
     if end == 1 || bytes.get(end) != Some(&b';') {
         return None;
     }
-    let expansion = entities().get(&rest[1..end])?;
+    let name = &rest[1..end];
+    let expansion = match name {
+        "amp" => "&",
+        "lt" => "<",
+        "gt" => ">",
+        "quot" => "\"",
+        "apos" => "'",
+        "nbsp" => "\u{00a0}",
+        _ => entities().get(name)?,
+    };
     Some((EntityValue::Named(expansion), end + 1))
 }
 

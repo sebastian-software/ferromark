@@ -164,7 +164,7 @@ impl HtmlRenderer {
             // The visible text is the URL itself; escape it like any text.
             write_escaped_into(out, url);
             out.push_str("</a>");
-            cursor = url_end;
+            cursor = url_end.max(match_start + 1);
         }
         if cursor < bytes.len() {
             write_escaped_into(out, &s[cursor..]);
@@ -240,21 +240,16 @@ impl HtmlRenderer {
             return;
         }
 
-        // URL rewriting produces an owned string; the tag filter then runs
-        // over whichever form we ended up with so both paths get filtered.
-        let rewritten = if self.options.convert_md_links {
-            Some(self.rewrite_html_root_urls(value))
+        let value = if self.options.convert_md_links {
+            self.rewrite_html_root_urls(value)
         } else {
-            None
+            std::borrow::Cow::Borrowed(value)
         };
-        let value = rewritten.as_deref().unwrap_or(value);
 
-        if (self.options.disallow_raw_html || self.in_mdx_island_children)
-            && crate::renderer::html::tagfilter::needs_filtering(value)
-        {
-            crate::renderer::html::tagfilter::write_filtered_into(&mut self.output, value);
+        if self.options.disallow_raw_html || self.in_mdx_island_children {
+            crate::renderer::html::tagfilter::write_filtered_into(&mut self.output, &value);
         } else {
-            self.write(value);
+            self.write(&value);
         }
     }
 
@@ -418,7 +413,7 @@ impl HtmlRenderer {
                 write_escaped_into(out, url);
             }
             before_segment = value[..url_end].chars().next_back();
-            cursor = url_end;
+            cursor = url_end.max(match_start + 1);
         }
         if cursor < bytes.len() {
             write_abbreviations_into_with_boundaries(

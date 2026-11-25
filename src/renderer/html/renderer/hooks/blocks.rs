@@ -207,17 +207,28 @@ impl HtmlRenderer {
                 }
                 Node::Text(text) => {
                     before_body = false;
-                    self.write_inline_text_with_boundaries(
-                        text.value,
-                        super::super::write::adjacent_text_boundary_before(
-                            &paragraph.children,
-                            index,
-                        ),
-                        super::super::write::adjacent_text_boundary_after(
-                            &paragraph.children,
-                            index,
-                        ),
-                    );
+                    let control = if self.node_hooks_enabled {
+                        let mut cx = HtmlRenderContext {
+                            renderer: self,
+                            children_inline: false,
+                        };
+                        hooks.render_node(child, &mut cx)
+                    } else {
+                        HtmlRenderControl::Default
+                    };
+                    if control == HtmlRenderControl::Default {
+                        self.write_inline_text_with_boundaries(
+                            text.value,
+                            super::super::write::adjacent_text_boundary_before(
+                                &paragraph.children,
+                                index,
+                            ),
+                            super::super::write::adjacent_text_boundary_after(
+                                &paragraph.children,
+                                index,
+                            ),
+                        );
+                    }
                 }
                 _ => {
                     before_body = false;
@@ -256,12 +267,14 @@ impl HtmlRenderer {
         for child in &list_item.children {
             if tight {
                 if let Node::Paragraph(paragraph) = child {
-                    let control = {
+                    let control = if self.node_hooks_enabled {
                         let mut cx = HtmlRenderContext {
                             renderer: self,
                             children_inline: true,
                         };
                         hooks.render_node(child, &mut cx)
+                    } else {
+                        HtmlRenderControl::Default
                     };
                     if control == HtmlRenderControl::Default {
                         self.render_inline_children_with_hooks(&paragraph.children, hooks);

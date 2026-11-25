@@ -67,6 +67,7 @@ const fn url_escape_mask(word: u64) -> u64 {
 pub(super) fn write_url_segment(out: &mut String, s: &str) {
     let bytes = s.as_bytes();
     let mut start = 0usize;
+    let mut ipv6: Option<Option<(usize, usize)>> = None;
     loop {
         let i = next_url_flagged(bytes, start);
         if i >= bytes.len() {
@@ -76,6 +77,19 @@ pub(super) fn write_url_segment(out: &mut String, s: &str) {
             push_run(out, &s[start..i]);
         }
         let byte = bytes[i];
+        if byte == b'[' {
+            // Brackets in an IPv6 authority are URL syntax and must remain
+            // delimiters; brackets in a path or query are encoded. Only check
+            // for an IPv6 authority when the scanner actually sees a `[`.
+            let brackets = *ipv6.get_or_insert_with(|| ipv6_authority_brackets(s));
+            if let Some((open, close)) = brackets
+                && i == open
+            {
+                push_run(out, &s[open..=close]);
+                start = close + 1;
+                continue;
+            }
+        }
         if byte >= 0x80 {
             // `start` sits on a char boundary and this is the first non-ASCII
             // byte after it, so the run begins at a leading byte and ends at
@@ -84,9 +98,7 @@ pub(super) fn write_url_segment(out: &mut String, s: &str) {
                 .iter()
                 .position(|&byte| byte < 0x80)
                 .map_or(bytes.len(), |offset| i + offset);
-            for &byte in &bytes[i..unicode_end] {
-                push_percent_byte(out, byte);
-            }
+            push_percent_bytes(out, &bytes[i..unicode_end]);
             start = unicode_end;
         } else {
             push_run(out, URL_ESCAPE_TABLE[byte as usize]);
@@ -130,11 +142,44 @@ fn next_url_flagged(bytes: &[u8], from: usize) -> usize {
 }
 
 #[inline]
-fn push_percent_byte(out: &mut String, byte: u8) {
+const fn percent_encoded_len(byte_count: usize) -> Option<usize> {
+    byte_count.checked_mul(3)
+}
+
+#[allow(unsafe_code)]
+#[inline]
+fn push_percent_bytes(out: &mut String, run: &[u8]) {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
-    out.push('%');
-    out.push(HEX[(byte >> 4) as usize] as char);
-    out.push(HEX[(byte & 0x0F) as usize] as char);
+    let Some(needed) = percent_encoded_len(run.len()) else {
+        for &byte in run {
+            out.push('%');
+            out.push(HEX[(byte >> 4) as usize] as char);
+            out.push(HEX[(byte & 0x0F) as usize] as char);
+        }
+        return;
+    };
+    out.reserve(needed);
+    // SAFETY: `needed == run.len() * 3` without overflow (verified by
+    // `checked_mul`), `reserve(needed)` guarantees at least `needed` spare
+    // bytes, and every written byte is ASCII (`%` and uppercase hex digits),
+    // so `out` stays valid UTF-8.
+    unsafe {
+        let vec = out.as_mut_vec();
+        let start = vec.len();
+        let mut dst = vec.as_mut_ptr().add(start);
+        for &byte in run {
+            *dst = b'%';
+            *dst.add(1) = HEX[(byte >> 4) as usize];
+            *dst.add(2) = HEX[(byte & 0x0F) as usize];
+            dst = dst.add(3);
+        }
+        vec.set_len(start + needed);
+    }
+}
+
+#[cfg(test)]
+fn push_percent_byte(out: &mut String, byte: u8) {
+    push_percent_bytes(out, &[byte]);
 }
 
 /// Returns the bracket pair delimiting an IPv6 host in a URL authority.

@@ -108,6 +108,7 @@ fn starts_with_tag(rest: &[u8], tag: &str) -> bool {
 /// Whether `value` contains anything the filter would rewrite. Lets callers
 /// skip allocating a filtered copy for the overwhelmingly common case of
 /// raw HTML that holds no disallowed tag.
+#[cfg(test)]
 pub(super) fn needs_filtering(value: &str) -> bool {
     let bytes = value.as_bytes();
     let mut i = 0;
