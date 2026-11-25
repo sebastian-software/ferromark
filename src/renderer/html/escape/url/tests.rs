@@ -89,3 +89,15 @@ fn invalid_ipv6_authority_is_escaped_without_html_injection() {
     write_url_escaped_into(&mut actual, source);
     assert_eq!(actual, "https://%5B::1%5C%22onerror=%5C%22x%5D/");
 }
+
+#[test]
+fn percent_encoded_len_rejects_overflow() {
+    assert_eq!(percent_encoded_len(0), Some(0));
+    assert_eq!(percent_encoded_len(1), Some(3));
+    assert_eq!(
+        percent_encoded_len(usize::MAX / 3),
+        Some((usize::MAX / 3) * 3)
+    );
+    assert_eq!(percent_encoded_len(usize::MAX / 3 + 1), None);
+    assert_eq!(percent_encoded_len(usize::MAX), None);
+}

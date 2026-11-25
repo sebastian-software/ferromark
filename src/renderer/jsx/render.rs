@@ -2079,6 +2079,36 @@ fn css_property_to_js(property: &str) -> String {
     }
 }
 
+fn decode_numeric_html_entity(rest: &str) -> Option<(char, usize)> {
+    let bytes = rest.as_bytes();
+    if bytes.get(..2) != Some(b"&#") {
+        return None;
+    }
+    let (digits_start, radix) = match bytes.get(2) {
+        Some(b'x' | b'X') => (3, 16u32),
+        _ => (2, 10u32),
+    };
+    let mut end = digits_start;
+    let mut value = 0u32;
+    while let Some(&b) = bytes.get(end) {
+        let digit = match b {
+            b'0'..=b'9' => u32::from(b - b'0'),
+            b'a'..=b'f' if radix == 16 => u32::from(b - b'a' + 10),
+            b'A'..=b'F' if radix == 16 => u32::from(b - b'A' + 10),
+            _ => break,
+        };
+        value = value.saturating_mul(radix).saturating_add(digit);
+        end += 1;
+    }
+    if end == digits_start || bytes.get(end) != Some(&b';') {
+        return None;
+    }
+    let ch = char::from_u32(value)
+        .filter(|&c| c != '\0')
+        .unwrap_or('\u{fffd}');
+    Some((ch, end + 1))
+}
+
 pub fn decode_html_entities(value: &str) -> String {
     let Some(first) = memchr::memchr(b'&', value.as_bytes()) else {
         return value.to_owned();
@@ -2093,7 +2123,16 @@ pub fn decode_html_entities(value: &str) -> String {
         };
         let ampersand = cursor + relative_ampersand;
         output.push_str(&value[cursor..ampersand]);
-        if let Some((entity, len)) = crate::parser::scan_entity(&value[ampersand..]) {
+        let rest = &value[ampersand..];
+        if rest.as_bytes().get(1) == Some(&b'#') {
+            if let Some((ch, len)) = decode_numeric_html_entity(rest) {
+                output.push(ch);
+                cursor = ampersand + len;
+            } else {
+                output.push('&');
+                cursor = ampersand + 1;
+            }
+        } else if let Some((entity, len)) = crate::parser::scan_entity(rest) {
             match entity {
                 crate::parser::EntityValue::Named(expansion) => output.push_str(expansion),
                 crate::parser::EntityValue::Char(ch) => output.push(ch),

@@ -292,7 +292,6 @@ pub(in crate::parser) fn compatible_closing_end(source: &str, start: usize) -> O
     (bytes.get(end) == Some(&b'>')).then_some(end + 1)
 }
 
-#[cfg(feature = "jsx")]
 pub(super) fn compatible_fence_end(source: &str, at: usize) -> Option<usize> {
     use super::super::line_scan::{line_end, next_line_start};
     use super::super::reference::{fence_open, is_fence_close};
@@ -441,7 +440,9 @@ fn walk_close<const RECORD: bool>(
                 }
             }
             b'`' => {
-                if let Some(next) = skip_backticks(bytes, cursor) {
+                if let Some(next) =
+                    compatible_fence_end(source, cursor).or_else(|| skip_backticks(bytes, cursor))
+                {
                     cursor = next;
                     read_from = next;
                 } else {

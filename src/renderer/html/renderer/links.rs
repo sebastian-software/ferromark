@@ -114,9 +114,14 @@ impl HtmlRenderer {
                     break;
                 };
                 i += rel;
-                // Skip HTML comments verbatim so URLs inside comments are untouched.
+                // Skip HTML comments verbatim (including CommonMark empty forms
+                // `<!-->` and `<!--->`) so URLs inside comments are untouched.
                 if html[i..].starts_with("<!--") {
-                    if let Some(end) = memchr::memmem::find(&bytes[i + 4..], b"-->") {
+                    if bytes.get(i + 4) == Some(&b'>') {
+                        i += 5;
+                    } else if bytes.get(i + 4..i + 6) == Some(b"->") {
+                        i += 6;
+                    } else if let Some(end) = memchr::memmem::find(&bytes[i + 4..], b"-->") {
                         i = i + 4 + end + 3;
                     } else {
                         break;

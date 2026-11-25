@@ -141,14 +141,28 @@ fn next_url_flagged(bytes: &[u8], from: usize) -> usize {
     )
 }
 
+#[inline]
+const fn percent_encoded_len(byte_count: usize) -> Option<usize> {
+    byte_count.checked_mul(3)
+}
+
 #[allow(unsafe_code)]
 #[inline]
 fn push_percent_bytes(out: &mut String, run: &[u8]) {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
-    out.reserve(run.len() * 3);
-    // SAFETY: `reserve` guarantees `run.len() * 3` spare bytes, and every
-    // written byte is ASCII (`%` and uppercase hex digits), so `out` stays
-    // valid UTF-8.
+    let Some(needed) = percent_encoded_len(run.len()) else {
+        for &byte in run {
+            out.push('%');
+            out.push(HEX[(byte >> 4) as usize] as char);
+            out.push(HEX[(byte & 0x0F) as usize] as char);
+        }
+        return;
+    };
+    out.reserve(needed);
+    // SAFETY: `needed == run.len() * 3` without overflow (verified by
+    // `checked_mul`), `reserve(needed)` guarantees at least `needed` spare
+    // bytes, and every written byte is ASCII (`%` and uppercase hex digits),
+    // so `out` stays valid UTF-8.
     unsafe {
         let vec = out.as_mut_vec();
         let start = vec.len();
@@ -159,7 +173,7 @@ fn push_percent_bytes(out: &mut String, run: &[u8]) {
             *dst.add(2) = HEX[(byte & 0x0F) as usize];
             dst = dst.add(3);
         }
-        vec.set_len(start + run.len() * 3);
+        vec.set_len(start + needed);
     }
 }
 

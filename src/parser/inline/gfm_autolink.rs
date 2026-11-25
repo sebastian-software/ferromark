@@ -94,44 +94,44 @@ impl<'a> Parser<'a> {
         self.coalesce_adjacent_text(children);
         let mut rebuilt: Option<Vec<'a, Node<'a>>> = None;
         for index in 0..children.len() {
-            let needs_split = match &mut children[index] {
+            let first_candidate = match &mut children[index] {
                 Node::Span(node) => {
                     self.apply_gfm_autolinks(&mut node.children, scan);
-                    false
+                    None
                 }
                 Node::Emphasis(node) => {
                     self.apply_gfm_autolinks(&mut node.children, scan);
-                    false
+                    None
                 }
                 Node::Strong(node) => {
                     self.apply_gfm_autolinks(&mut node.children, scan);
-                    false
+                    None
                 }
                 Node::Highlight(node) => {
                     self.apply_gfm_autolinks(&mut node.children, scan);
-                    false
+                    None
                 }
                 Node::Delete(node) => {
                     self.apply_gfm_autolinks(&mut node.children, scan);
-                    false
+                    None
                 }
                 Node::Insertion(node) => {
                     self.apply_gfm_autolinks(&mut node.children, scan);
-                    false
+                    None
                 }
                 Node::Superscript(node) => {
                     self.apply_gfm_autolinks(&mut node.children, scan);
-                    false
+                    None
                 }
                 Node::Subscript(node) => {
                     self.apply_gfm_autolinks(&mut node.children, scan);
-                    false
+                    None
                 }
-                Node::Text(text) => find_candidate(text.value, scan).is_some(),
-                _ => false,
+                Node::Text(text) => find_candidate(text.value, scan),
+                _ => None,
             };
 
-            if !needs_split {
+            let Some(first_candidate) = first_candidate else {
                 if let Some(out) = &mut rebuilt {
                     let placeholder = Node::Text(Text {
                         value: "",
@@ -140,7 +140,7 @@ impl<'a> Parser<'a> {
                     out.push(std::mem::replace(&mut children[index], placeholder));
                 }
                 continue;
-            }
+            };
 
             let Node::Text(text) = &children[index] else {
                 unreachable!();
@@ -151,12 +151,15 @@ impl<'a> Parser<'a> {
             // Fast path when a single autolink covers the entire text node and
             // we have not needed to rebuild the sibling list yet.
             if rebuilt.is_none()
-                && let Some(candidate) = find_candidate(full_value, scan)
-                && candidate.start == 0
-                && candidate.end == full_value.len()
+                && first_candidate.start == 0
+                && first_candidate.end == full_value.len()
             {
+                let link_span = Span::new(
+                    full_span.start,
+                    full_span.start + first_candidate.end as u32,
+                );
                 children[index] =
-                    self.build_gfm_autolink_node(full_value, full_span, 0, &candidate);
+                    self.build_gfm_autolink_node(full_value, link_span, &first_candidate);
                 continue;
             }
 
@@ -175,39 +178,35 @@ impl<'a> Parser<'a> {
             });
 
             let mut cursor = 0usize;
-            while let Some(candidate) = find_candidate(&full_value[cursor..], scan) {
+            let mut pending = Some(first_candidate);
+            while let Some(candidate) = pending
+                .take()
+                .or_else(|| find_candidate(&full_value[cursor..], scan))
+            {
                 let start = cursor + candidate.start;
                 let end = cursor + candidate.end;
-                let span_start = full_span
-                    .start
-                    .saturating_add(cursor as u32)
-                    .min(full_span.end);
-                let link_start = full_span
-                    .start
-                    .saturating_add(start as u32)
-                    .min(full_span.end);
                 if start > cursor {
                     out.push(Node::Text(Text {
                         value: &full_value[cursor..start],
-                        span: Span::new(span_start, link_start),
+                        span: Span::new(
+                            full_span.start + cursor as u32,
+                            full_span.start + start as u32,
+                        ),
                     }));
                 }
+                let link_span =
+                    Span::new(full_span.start + start as u32, full_span.start + end as u32);
                 out.push(self.build_gfm_autolink_node(
                     &full_value[cursor..],
-                    full_span,
-                    cursor,
+                    link_span,
                     &candidate,
                 ));
                 cursor = end;
             }
             if cursor < full_value.len() {
-                let tail_start = full_span
-                    .start
-                    .saturating_add(cursor as u32)
-                    .min(full_span.end);
                 out.push(Node::Text(Text {
                     value: &full_value[cursor..],
-                    span: Span::new(tail_start, full_span.end),
+                    span: Span::new(full_span.start + cursor as u32, full_span.end),
                 }));
             }
         }
@@ -219,8 +218,7 @@ impl<'a> Parser<'a> {
     fn build_gfm_autolink_node(
         &self,
         slice: &'a str,
-        full_span: Span,
-        cursor: usize,
+        link_span: Span,
         candidate: &Candidate,
     ) -> Node<'a> {
         let link_value = &slice[candidate.start..candidate.end];
@@ -236,15 +234,6 @@ impl<'a> Parser<'a> {
             url.into_bump_str()
         };
 
-        let link_start = full_span
-            .start
-            .saturating_add((cursor + candidate.start) as u32)
-            .min(full_span.end);
-        let link_end = full_span
-            .start
-            .saturating_add((cursor + candidate.end) as u32)
-            .min(full_span.end);
-        let link_span = Span::new(link_start, link_end);
         let mut link_children = self.allocator.new_vec_with_capacity(1);
         link_children.push(Node::Text(Text {
             value: link_value,

@@ -57,6 +57,36 @@ test("undefined override values leave built-in terms unchanged", () => {
     compiler.transform("API", { autoAbbreviations: true, abbreviations: { API: undefined } }).html,
     '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
   );
+
+  const inherited = Object.assign(Object.create({ autoAbbreviations: true }), {
+    abbreviations: { API: undefined },
+  });
+  assert.equal(
+    compiler.toHtml("API", inherited),
+    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+  );
+  assert.equal(
+    compiler.transform("API", inherited).html,
+    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+  );
+
+  for (const method of ["toHtml", "transform"]) {
+    let reads = 0;
+    const singleRead = {
+      autoAbbreviations: true,
+      get abbreviations() {
+        reads += 1;
+        if (reads > 1) {
+          throw new Error("getter read more than once");
+        }
+        return { API: undefined };
+      },
+    };
+    const result = compiler[method]("API", singleRead);
+    const html = typeof result === "string" ? result : result.html;
+    assert.equal(html, '<p><abbr title="Application Programming Interface">API</abbr></p>\n');
+    assert.equal(reads, 1);
+  }
 });
 
 test("trusted raw HTML remains untouched and its text is not wrapped", () => {

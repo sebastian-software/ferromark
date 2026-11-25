@@ -25,7 +25,7 @@ use ferromark_transforms::{
     EmojiShortcodesPass, GitHubReferencesPass, TransformContext, TransformPipeline,
     TypographyLanguage, TypographyOptions, TypographyPass,
 };
-use napi::bindgen_prelude::{BufferSlice, Error, Result, Status};
+use napi::bindgen_prelude::{Buffer, Error, Result, Status};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
@@ -406,10 +406,13 @@ fn js_string<'env>(env: &'env Env, html: &str) -> Result<JsString<'env>> {
     })
 }
 
-/// Copies HTML directly into a V8-managed `Buffer` via `napi_create_buffer_copy`,
-/// avoiding an intermediate Rust `Vec` copy and external-buffer GC finalizer.
-fn html_buffer<'env>(env: &'env Env, html: &str) -> Result<BufferSlice<'env>> {
-    BufferSlice::copy_from(env, html.as_bytes())
+/// Copies HTML into a Node `Buffer`.
+///
+/// Uses `Buffer` (backed by an owned `Vec<u8>`) rather than `BufferSlice::copy_from`
+/// because locked `napi` 3.11.0 constructs its nonempty slice from the opaque
+/// `napi_value` handle instead of the allocated data pointer.
+fn html_buffer(html: &str) -> Result<Buffer> {
+    Ok(html.as_bytes().to_vec().into())
 }
 
 // Every export that takes Markdown accepts a string or a `Uint8Array` of UTF-8
@@ -428,14 +431,11 @@ pub fn to_html<'env>(
 }
 
 #[napi(catch_unwind)]
-pub fn to_html_buffer<'env>(
-    env: &'env Env,
+pub fn to_html_buffer(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
-) -> Result<BufferSlice<'env>> {
-    render_one_shot(markdown.try_as_str()?, options, |html| {
-        html_buffer(env, html)
-    })
+) -> Result<Buffer> {
+    render_one_shot(markdown.try_as_str()?, options, html_buffer)
 }
 
 /// Reuses arena storage and HTML buffers; documents never outlive a call.
@@ -490,12 +490,11 @@ impl Renderer {
     }
 
     #[napi(catch_unwind, js_name = "toHtmlBuffer")]
-    pub fn to_html_buffer<'env>(
+    pub fn to_html_buffer(
         &mut self,
-        env: &'env Env,
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
-    ) -> Result<BufferSlice<'env>> {
-        html_buffer(env, self.render_reused(markdown.try_as_str()?)?)
+    ) -> Result<Buffer> {
+        html_buffer(self.render_reused(markdown.try_as_str()?)?)
     }
 }
 

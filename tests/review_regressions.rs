@@ -33,13 +33,22 @@ fn unclosed_nested_images_stay_linear() {
 
 #[test]
 fn inline_scanner_edge_cases_stay_linear() {
+    // Distinct backtick widths (1..=128) ensure every run is genuinely unmatched,
+    // exercising both the 1..=64 bitmask and the >64 overflow SmallVec.
+    let unmatched_distinct_backticks = (1..=128)
+        .map(|n| "`".repeat(n))
+        .collect::<Vec<_>>()
+        .join(" ");
     let cases = [
         ("unclosed_lt", format!("{}>", "<".repeat(20_000))),
         ("unclosed_comment", format!("{}>", "<!-- ".repeat(5_000))),
         ("unclosed_pi", format!("{}>", "<? ".repeat(5_000))),
         ("unclosed_cdata", format!("{}>", "<![CDATA[ ".repeat(5_000))),
-        ("unmatched_backticks", "` ".repeat(5_000)),
-        ("unmatched_double_backticks", "`` ".repeat(5_000)),
+        ("unmatched_backticks_1_to_128", unmatched_distinct_backticks),
+        (
+            "unmatched_backticks_1_64_65",
+            format!("{} {} {} tail", "`", "`".repeat(64), "`".repeat(65)),
+        ),
         ("digit_prefixed_math", format!("{}$", "$1 ".repeat(5_000))),
         ("many_gfm_autolinks", "a@b.c ".repeat(5_000)),
         (
@@ -54,40 +63,82 @@ fn inline_scanner_edge_cases_stay_linear() {
     for (name, source) in cases {
         let start = Instant::now();
         let arena = Allocator::for_source_len(source.len());
-        let _ = Parser::with_options(&arena, &source, options.clone()).parse();
+        let doc = Parser::with_options(&arena, &source, options.clone())
+            .parse()
+            .unwrap_or_else(|err| panic!("case `{name}` failed to parse: {err:?}"));
         assert!(
             start.elapsed() < Duration::from_secs(2),
             "case `{name}` took {:?}",
             start.elapsed()
         );
+        assert!(!doc.children.is_empty(), "case `{name}` produced empty AST");
+        if name.starts_with("unmatched_backticks") {
+            let Node::Paragraph(p) = &doc.children[0] else {
+                panic!("case `{name}` expected paragraph");
+            };
+            assert!(
+                p.children.iter().all(|node| matches!(node, Node::Text(_))),
+                "case `{name}` unexpectedly formed inline code"
+            );
+        }
     }
 }
 
 #[test]
-fn gfm_autolink_spans_stay_in_bounds_after_entity_expansion() {
-    fn assert_valid_spans(nodes: &[Node<'_>], source_len: u32) {
-        for node in nodes {
-            let span = node.span();
-            assert!(
-                span.start <= span.end && span.end <= source_len,
-                "invalid span {span:?} for source_len {source_len}"
-            );
-            match node {
-                Node::Paragraph(p) => assert_valid_spans(&p.children, source_len),
-                Node::Link(l) => assert_valid_spans(&l.children, source_len),
-                _ => {}
-            }
-        }
-    }
-
-    let source = "&nGt;&nGt;&nGt; a@b.c tail";
+fn inline_math_closer_cache_handles_interleaved_code_spans() {
+    let source = "$a `b$` c$ $d$ and $1 `code` $2 `x$` $3";
     let arena = Allocator::for_source_len(source.len());
-    let doc = Parser::with_options(&arena, source, ParserOptions::gfm())
+    let opts = ParserOptions {
+        math: true,
+        ..ParserOptions::gfm()
+    };
+    let doc = Parser::with_options(&arena, source, opts)
         .parse()
         .expect("parse should succeed");
-    assert_valid_spans(&doc.children, source.len() as u32);
     let html = HtmlRenderer::new().render(&doc);
-    assert!(html.contains("mailto:a@b.c"));
+    assert!(
+        html.contains("data-ox-tex=\"a `b$` c\""),
+        "code span inside math should not close math early: {html}"
+    );
+    assert!(
+        html.contains("data-ox-tex=\"d\""),
+        "subsequent math after cached window should still parse: {html}"
+    );
+}
+
+#[test]
+fn mdx_flow_code_fence_closed_by_longer_fence_preserves_outer_element() {
+    let source = "<Box>\n```\n</Box>\n````\n</Box>\n";
+    let arena = Allocator::for_source_len(source.len());
+    let opts = ParserOptions {
+        mdx: true,
+        ..ParserOptions::default()
+    };
+    let doc = Parser::with_options(&arena, source, opts)
+        .parse()
+        .expect("parse should succeed");
+    assert_eq!(doc.children.len(), 1, "outer <Box> should wrap the fence");
+    let Node::MdxJsxFlowElement(el) = &doc.children[0] else {
+        panic!("expected MdxJsxFlowElement, got {:?}", doc.children[0]);
+    };
+    assert_eq!(el.name, Some("Box"));
+    assert_eq!(el.span, Span::new(0, source.len() as u32));
+}
+
+#[test]
+fn gfm_autolink_reference_ranges_stay_exact_after_entity_expansion() {
+    for source in ["&nGt;&nGt;&nGt; a@b.c tail", "&amp;éé a@b.c"] {
+        let arena = Allocator::for_source_len(source.len());
+        let doc = Parser::with_options(&arena, source, ParserOptions::gfm())
+            .parse()
+            .expect("parse should succeed");
+        let refs = doc.collect_references(source);
+        assert_eq!(refs.len(), 1);
+        assert_eq!(refs[0].destination, "mailto:a@b.c");
+        assert_eq!(refs[0].span.unwrap().source_text(source), "a@b.c");
+        let html = HtmlRenderer::new().render(&doc);
+        assert!(html.contains("mailto:a@b.c"));
+    }
 }
 
 #[test]
@@ -189,6 +240,8 @@ fn code_hooks_do_not_invoke_render_node_on_tight_list_paragraphs() {
 fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
     let source = concat!(
         "<!-- <a href=\"/guide\">ignored</a> -->\n\n",
+        "<div><!--><a href=\"/guide\">empty1</a></div>\n\n",
+        "<div><!---><a href=\"/guide\">empty2</a></div>\n\n",
         "<a title=\"see href=/guide\" href=\"/guide\">link</a>\n\n",
         "<a title=\"a > b\" href=\"/guide\">gt</a>\n"
     );
@@ -204,6 +257,14 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
     assert!(
         html.contains("<!-- <a href=\"/guide\">ignored</a> -->"),
         "HTML comment should remain untouched: {html}"
+    );
+    assert!(
+        html.contains("<div><!--><a href=\"/docs/guide\">empty1</a></div>"),
+        "empty `<!-->` comment should close immediately before anchor: {html}"
+    );
+    assert!(
+        html.contains("<div><!---><a href=\"/docs/guide\">empty2</a></div>"),
+        "empty `<!--->` comment should close immediately before anchor: {html}"
     );
     assert!(
         html.contains("<a title=\"see href=/guide\" href=\"/docs/guide\">link</a>"),
@@ -294,10 +355,18 @@ fn projection_preserves_tight_nested_inline_jsx_and_ignores_empty_heading_span()
 
 #[test]
 fn jsx_preserves_standard_attrs_with_data_siblings_and_decodes_entities_strictly() {
-    // Verify strict entity decoding through html_to_jsx (rejects `&#+65;`, maps overflow/NUL to U+FFFD).
-    let entities_jsx = html_to_jsx("<p>&#+65; &#9999999; &#0; &amp;&lt;&gt;&quot;</p>");
+    // Verify HTML5 numeric entity decoding through html_to_jsx: preserves leading
+    // zeros (`&#00000065;` -> A, `&#x00000042;` -> B) in text and unquoted attributes,
+    // rejects signs (`&#+65;`), and maps overflow/NUL to U+FFFD.
+    let entities_jsx = html_to_jsx(
+        "<p title=&#00000065;&#x00000042;>&#00000065; &#x00000042; &#+65; &#9999999; &#0; &amp;&lt;&gt;&quot;</p>",
+    );
     assert!(
-        entities_jsx.contains("&#+65; \u{fffd} \u{fffd} &<>\\\""),
+        entities_jsx.contains("title={\"AB\"}"),
+        "leading-zero numeric entities in unquoted attribute should decode: {entities_jsx}"
+    );
+    assert!(
+        entities_jsx.contains("A B &#+65; \u{fffd} \u{fffd} &<>\\\""),
         "unexpected entity decoding output: {entities_jsx}"
     );
 

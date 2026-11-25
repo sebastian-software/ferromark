@@ -37,7 +37,7 @@
 //! The entries are private to the facade. napi-rs declares them in the
 //! generated `native.d.ts`, but the package types in `index.d.mts` do not.
 
-use napi::bindgen_prelude::{BufferSlice, Result};
+use napi::bindgen_prelude::{Buffer, Result};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
@@ -174,8 +174,7 @@ pub fn to_html_packed<'env>(
 /// Internal to the `ferromark` facade: `toHtmlBuffer` with packed options.
 #[napi(catch_unwind, js_name = "toHtmlBufferPacked")]
 #[allow(clippy::too_many_arguments)]
-pub fn to_html_buffer_packed<'env>(
-    env: &'env Env,
+pub fn to_html_buffer_packed(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     set: u32,
     on: u32,
@@ -184,7 +183,7 @@ pub fn to_html_buffer_packed<'env>(
     link_base_path: Option<String>,
     typography: Option<TypographyConfig>,
     passes: Option<Vec<NativePassConfig>>,
-) -> Result<BufferSlice<'env>> {
+) -> Result<Buffer> {
     let options = unpack_present(
         set,
         on,
@@ -194,9 +193,7 @@ pub fn to_html_buffer_packed<'env>(
         typography,
         passes,
     );
-    render_one_shot(markdown.try_as_str()?, options, |html| {
-        html_buffer(env, html)
-    })
+    render_one_shot(markdown.try_as_str()?, options, html_buffer)
 }
 
 /// Internal to the `ferromark` facade: `transform` with packed options.
