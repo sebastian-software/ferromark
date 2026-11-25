@@ -101,16 +101,20 @@ impl BacktickDeadEnds {
             self.short_mask |= 1u64 << (open_len - 1);
         }
         // Keep only `> 64` widths that appeared at least twice ahead,
-        // excluding `open_len` itself because the scan proved no actual closer
-        // of width `open_len` exists ahead (even if backslash-split runs of
-        // `open_len + 1` were recorded).
+        // excluding `open_len` itself and intersecting with any prior
+        // `long_alive` set so previously excluded widths can never be revived
+        // by backslash-split runs in a later scan.
         let mut long_twice: SmallVec<[usize; 4]> = SmallVec::new();
         if seen_long.len() >= 2 {
             seen_long.sort_unstable();
             let mut idx = 0usize;
             while idx + 1 < seen_long.len() {
                 let width = seen_long[idx];
-                if width != open_len && seen_long[idx + 1] == width {
+                let still_allowed = self
+                    .long_alive
+                    .as_ref()
+                    .is_none_or(|prev| prev.binary_search(&width).is_ok());
+                if width != open_len && still_allowed && seen_long[idx + 1] == width {
                     long_twice.push(width);
                     while idx < seen_long.len() && seen_long[idx] == width {
                         idx += 1;
@@ -342,9 +346,17 @@ mod tests {
         for _ in 0..65 {
             source.push('`');
         }
+        source.push(' ');
+        for _ in 0..67 {
+            source.push('`');
+        }
         for _ in 0..2 {
             source.push_str(" \\");
             for _ in 0..66 {
+                source.push('`');
+            }
+            source.push_str(" \\");
+            for _ in 0..68 {
                 source.push('`');
             }
         }
@@ -354,11 +366,20 @@ mod tests {
         let mut children = allocator.new_vec();
         let mut dead = BacktickDeadEnds::default();
         let mut pos = 0usize;
+        // First failed scan for width 65 excludes 65 while keeping 67 alive
+        // (because `\``x68 appeared twice).
         parser.parse_inline_code(source, 0, &mut children, &mut pos, &mut dead);
         assert_eq!(dead.eof_scans, 1);
+        assert!(dead.is_dead(65));
+        assert!(!dead.is_dead(67));
+        // Second failed scan for width 67 must NOT revive 65 even though
+        // `\``x66 still appears twice ahead.
+        pos += 1; // skip space
+        parser.parse_inline_code(source, 0, &mut children, &mut pos, &mut dead);
+        assert_eq!(dead.eof_scans, 2);
         assert!(
-            dead.is_dead(65),
-            "failed width > 64 must remain dead even when `\\` + 66 backticks appears twice ahead"
+            dead.is_dead(65) && dead.is_dead(67),
+            "second failed long scan must preserve prior exclusion of width 65"
         );
     }
 }

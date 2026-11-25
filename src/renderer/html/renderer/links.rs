@@ -107,6 +107,7 @@ impl HtmlRenderer {
         let mut copied = 0usize;
         let mut i = 0usize;
         let mut in_tag = false;
+        let mut saw_self_closing_slash = false;
         let mut pending_raw_text_tag: Option<&str> = None;
 
         while i < bytes.len() {
@@ -176,14 +177,16 @@ impl HtmlRenderer {
                 let tag_name = &html[tag_name_start..tag_name_end];
                 pending_raw_text_tag = is_html_raw_text_tag(tag_name).then_some(tag_name);
                 in_tag = true;
+                saw_self_closing_slash = false;
                 i = tag_name_end;
                 continue;
             }
 
             match bytes[i] {
                 b'>' => {
-                    let self_closing = i > 0 && bytes[i - 1] == b'/';
+                    let self_closing = saw_self_closing_slash;
                     in_tag = false;
+                    saw_self_closing_slash = false;
                     i += 1;
                     if let Some(raw_tag) = pending_raw_text_tag.take()
                         && !self_closing
@@ -195,7 +198,12 @@ impl HtmlRenderer {
                         }
                     }
                 }
+                b'/' => {
+                    saw_self_closing_slash = true;
+                    i += 1;
+                }
                 b'"' | b'\'' => {
+                    saw_self_closing_slash = false;
                     let quote = bytes[i];
                     i += 1;
                     if let Some(rel) = memchr::memchr(quote, &bytes[i..]) {
@@ -205,6 +213,7 @@ impl HtmlRenderer {
                     }
                 }
                 byte if is_html_attr_start(byte) => {
+                    saw_self_closing_slash = false;
                     let name_start = i;
                     let mut name_end = i + 1;
                     while name_end < bytes.len() && is_html_attr_char(bytes[name_end]) {
@@ -248,6 +257,7 @@ impl HtmlRenderer {
                     i = name_end;
                 }
                 _ => {
+                    saw_self_closing_slash = false;
                     i += 1;
                 }
             }

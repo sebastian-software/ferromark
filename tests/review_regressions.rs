@@ -180,14 +180,16 @@ fn mdx_flow_indented_code_block_with_backticks_preserves_outer_element() {
 
 #[test]
 fn mdx_nested_component_fence_with_outer_closing_tag_preserves_outer_element() {
-    let source =
-        "<Outer>\npara\n\n    <Inner>\n    ```\n    </Outer>\n    ````\n    </Inner>\n</Outer>\n";
-    let arena = Allocator::for_source_len(source.len());
+    // Real nested `<Inner>` (indented by 2 spaces < 4) containing a 3/4-backtick
+    // fence around `</Outer>` must preserve both `<Outer>` and `<Inner>`.
+    let nested =
+        "<Outer>\npara\n\n  <Inner>\n    ```\n    </Outer>\n    ````\n  </Inner>\n</Outer>\n";
+    let arena = Allocator::for_source_len(nested.len());
     let opts = ParserOptions {
         mdx: true,
         ..ParserOptions::default()
     };
-    let doc = Parser::with_options(&arena, source, opts)
+    let doc = Parser::with_options(&arena, nested, opts.clone())
         .parse()
         .expect("parse should succeed");
     assert_eq!(
@@ -199,7 +201,29 @@ fn mdx_nested_component_fence_with_outer_closing_tag_preserves_outer_element() {
         panic!("expected MdxJsxFlowElement, got {:?}", doc.children[0]);
     };
     assert_eq!(outer.name, Some("Outer"));
-    assert_eq!(outer.span, Span::new(0, source.len() as u32));
+    assert_eq!(outer.span, Span::new(0, nested.len() as u32));
+    assert!(
+        outer.children.iter().any(
+            |node| matches!(node, Node::MdxJsxFlowElement(inner) if inner.name == Some("Inner"))
+        ),
+        "expected nested <Inner> component inside <Outer>: {:?}",
+        outer.children
+    );
+
+    // Indented code block containing literal `<Inner>` + ` ``` ` must NOT push
+    // a nested indentation context and carry the scan past the real `</Outer>`.
+    let code_block_inner = "<Outer>\npara\n\n    <Inner>\n    ```\n</Outer>\n    ```\n";
+    let arena2 = Allocator::for_source_len(code_block_inner.len());
+    let doc2 = Parser::with_options(&arena2, code_block_inner, opts)
+        .parse()
+        .expect("parse should succeed");
+    let Node::MdxJsxFlowElement(outer2) = &doc2.children[0] else {
+        panic!(
+            "literal `<Inner>` in indented code block must not lose <Outer>: {:?}",
+            doc2.children
+        );
+    };
+    assert_eq!(outer2.name, Some("Outer"));
 }
 
 #[test]
@@ -342,6 +366,7 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
         "<div><!---><a href=\"/guide\">empty2</a></div>\n\n",
         "<div><!-- comment --!><a href=\"/guide\">abrupt</a></div>\n\n",
         "<div><textarea>1 < 2. That's fine.</textarea><a href=\"/guide\">after-ta</a></div>\n\n",
+        "<div><textarea data-path=/docs/><!--</textarea><a href=\"/guide.md\">after-unquoted-slash</a></div>\n\n",
         "<div><svg><title/></svg><a href=\"/guide.md\">after-svg</a></div>\n\n",
         "<div><script.demo-box><a href=\"/guide.md\">after-dotted</a></script.demo-box></div>\n\n",
         "<p>1 < 2. That's fine. <a href=\"/guide\">after-lt</a></p>\n\n",
@@ -378,6 +403,12 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
             "<div><textarea>1 < 2. That's fine.</textarea><a href=\"/docs/guide\">after-ta</a></div>"
         ),
         "raw-text `<textarea>` containing `<` and apostrophe should not suppress following anchor rewrite: {html}"
+    );
+    assert!(
+        html.contains(
+            "<div><textarea data-path=/docs/><!--</textarea><a href=\"/docs/guide/index.html\">after-unquoted-slash</a></div>"
+        ),
+        "trailing slash inside unquoted attribute must not mark `<textarea>` self-closing: {html}"
     );
     assert!(
         html.contains(
