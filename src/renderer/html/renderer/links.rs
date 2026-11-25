@@ -107,6 +107,7 @@ impl HtmlRenderer {
         let mut copied = 0usize;
         let mut i = 0usize;
         let mut in_tag = false;
+        let mut pending_raw_text_tag: Option<&str> = None;
 
         while i < bytes.len() {
             if !in_tag {
@@ -115,21 +116,65 @@ impl HtmlRenderer {
                 };
                 i += rel;
                 // Skip HTML comments verbatim (including CommonMark empty forms
-                // `<!-->` and `<!--->`) so URLs inside comments are untouched.
+                // `<!-->` / `<!--->` and HTML5 `--!>` endings).
                 if html[i..].starts_with("<!--") {
-                    if bytes.get(i + 4) == Some(&b'>') {
-                        i += 5;
-                    } else if bytes.get(i + 4..i + 6) == Some(b"->") {
-                        i += 6;
-                    } else if let Some(end) = memchr::memmem::find(&bytes[i + 4..], b"-->") {
-                        i = i + 4 + end + 3;
-                    } else {
+                    if let Some(next) = skip_html_comment(bytes, i) {
+                        i = next;
+                        continue;
+                    }
+                    break;
+                }
+                if html[i..].starts_with("<![CDATA[") {
+                    if let Some(end) = memchr::memmem::find(&bytes[i + 9..], b"]]>") {
+                        i = i + 9 + end + 3;
+                        continue;
+                    }
+                    break;
+                }
+                if bytes.get(i + 1) == Some(&b'?') {
+                    if let Some(end) = memchr::memmem::find(&bytes[i + 2..], b"?>") {
+                        i = i + 2 + end + 2;
+                        continue;
+                    }
+                    break;
+                }
+                if bytes.get(i + 1) == Some(&b'!') {
+                    if let Some(end) = memchr::memchr(b'>', &bytes[i + 2..]) {
+                        i = i + 2 + end + 1;
+                        continue;
+                    }
+                    break;
+                }
+                if bytes.get(i + 1) == Some(&b'/') {
+                    if bytes.get(i + 2).is_some_and(u8::is_ascii_alphabetic) {
+                        if let Some(end) = memchr::memchr(b'>', &bytes[i + 3..]) {
+                            i = i + 3 + end + 1;
+                            continue;
+                        }
                         break;
                     }
+                    i += 2;
                     continue;
                 }
+                // Only an ASCII letter after `<` starts an HTML opening tag;
+                // bare comparisons like `1 < 2` stay in text mode so later
+                // apostrophes cannot be misread as attribute quotes.
+                if !bytes.get(i + 1).is_some_and(u8::is_ascii_alphabetic) {
+                    i += 1;
+                    continue;
+                }
+                let tag_name_start = i + 1;
+                let mut tag_name_end = tag_name_start + 1;
+                while tag_name_end < bytes.len()
+                    && (bytes[tag_name_end].is_ascii_alphanumeric()
+                        || matches!(bytes[tag_name_end], b'-' | b':'))
+                {
+                    tag_name_end += 1;
+                }
+                let tag_name = &html[tag_name_start..tag_name_end];
+                pending_raw_text_tag = is_html_raw_text_tag(tag_name).then_some(tag_name);
                 in_tag = true;
-                i += 1;
+                i = tag_name_end;
                 continue;
             }
 
@@ -137,6 +182,13 @@ impl HtmlRenderer {
                 b'>' => {
                     in_tag = false;
                     i += 1;
+                    if let Some(raw_tag) = pending_raw_text_tag.take() {
+                        if let Some(next) = skip_html_raw_text_body(bytes, i, raw_tag) {
+                            i = next;
+                        } else {
+                            break;
+                        }
+                    }
                 }
                 b'"' | b'\'' => {
                     let quote = bytes[i];
@@ -444,4 +496,59 @@ fn is_non_local_url(path: &str) -> bool {
         }
     }
     false
+}
+
+/// Skips an HTML comment starting at `<!--`, handling `<!-->`, `<!--->`,
+/// `-->`, and HTML5 `--!>` closers.
+fn skip_html_comment(bytes: &[u8], start: usize) -> Option<usize> {
+    if bytes.get(start + 4) == Some(&b'>') {
+        return Some(start + 5);
+    }
+    if bytes.get(start + 4..start + 6) == Some(b"->") {
+        return Some(start + 6);
+    }
+    let mut cursor = start + 4;
+    while let Some(rel) = memchr::memmem::find(&bytes[cursor..], b"--") {
+        let pos = cursor + rel;
+        if bytes.get(pos + 2) == Some(&b'>') {
+            return Some(pos + 3);
+        }
+        if bytes.get(pos + 2..pos + 4) == Some(b"!>") {
+            return Some(pos + 4);
+        }
+        cursor = pos + 1;
+    }
+    None
+}
+
+fn is_html_raw_text_tag(tag_name: &str) -> bool {
+    tag_name.eq_ignore_ascii_case("textarea")
+        || tag_name.eq_ignore_ascii_case("title")
+        || tag_name.eq_ignore_ascii_case("style")
+        || tag_name.eq_ignore_ascii_case("script")
+        || tag_name.eq_ignore_ascii_case("xmp")
+}
+
+/// Skips raw-text/RCDATA element bodies until their matching `</tag_name>` so
+/// literal `<` and quotes inside them do not confuse tag scanning.
+fn skip_html_raw_text_body(bytes: &[u8], start: usize, tag_name: &str) -> Option<usize> {
+    let mut cursor = start;
+    while let Some(rel) = memchr::memchr(b'<', &bytes[cursor..]) {
+        let pos = cursor + rel;
+        if bytes.get(pos + 1) == Some(&b'/') {
+            let name_start = pos + 2;
+            let name_end = name_start + tag_name.len();
+            if bytes
+                .get(name_start..name_end)
+                .is_some_and(|slice| slice.eq_ignore_ascii_case(tag_name.as_bytes()))
+                && bytes.get(name_end).is_some_and(|byte| {
+                    matches!(byte, b'>' | b'/' | b' ' | b'\t' | b'\n' | b'\r' | b'\x0c')
+                })
+            {
+                return memchr::memchr(b'>', &bytes[name_end..]).map(|gt| name_end + gt + 1);
+            }
+        }
+        cursor = pos + 1;
+    }
+    None
 }

@@ -55,6 +55,18 @@ fn inline_scanner_edge_cases_stay_linear() {
             "mdx_unclosed_backticks",
             format!("<A>`{}</A>", "` ".repeat(5_000)),
         ),
+        (
+            "mdx_single_line_inline_code_spans",
+            format!("<Box>{}</Box>", "`x` ".repeat(10_000)),
+        ),
+        (
+            "mdx_single_line_triple_backtick_spans",
+            format!("<Box>{}</Box>", "```x``` ".repeat(5_000)),
+        ),
+        (
+            "mdx_repeated_unclosed_fences",
+            format!("<Box>\n{}</Box>\n", "```js\n".repeat(5_000)),
+        ),
     ];
 
     let mut options = ParserOptions::gfm();
@@ -108,7 +120,30 @@ fn inline_math_closer_cache_handles_interleaved_code_spans() {
 
 #[test]
 fn mdx_flow_code_fence_closed_by_longer_fence_preserves_outer_element() {
-    let source = "<Box>\n```\n</Box>\n````\n</Box>\n";
+    for source in [
+        "<Box>\n```\n</Box>\n````\n</Box>\n",
+        "<Box>\n    ```\n    </Box>\n    ````\n</Box>\n",
+    ] {
+        let arena = Allocator::for_source_len(source.len());
+        let opts = ParserOptions {
+            mdx: true,
+            ..ParserOptions::default()
+        };
+        let doc = Parser::with_options(&arena, source, opts)
+            .parse()
+            .expect("parse should succeed");
+        assert_eq!(doc.children.len(), 1, "outer <Box> should wrap the fence");
+        let Node::MdxJsxFlowElement(el) = &doc.children[0] else {
+            panic!("expected MdxJsxFlowElement, got {:?}", doc.children[0]);
+        };
+        assert_eq!(el.name, Some("Box"));
+        assert_eq!(el.span, Span::new(0, source.len() as u32));
+    }
+}
+
+#[test]
+fn mdx_flow_indented_code_block_with_backticks_preserves_outer_element() {
+    let source = "<Box>\nparagraph\n\n    ```\n</Box>\n";
     let arena = Allocator::for_source_len(source.len());
     let opts = ParserOptions {
         mdx: true,
@@ -117,12 +152,26 @@ fn mdx_flow_code_fence_closed_by_longer_fence_preserves_outer_element() {
     let doc = Parser::with_options(&arena, source, opts)
         .parse()
         .expect("parse should succeed");
-    assert_eq!(doc.children.len(), 1, "outer <Box> should wrap the fence");
+    assert_eq!(
+        doc.children.len(),
+        1,
+        "indented code block must not swallow </Box>"
+    );
     let Node::MdxJsxFlowElement(el) = &doc.children[0] else {
         panic!("expected MdxJsxFlowElement, got {:?}", doc.children[0]);
     };
     assert_eq!(el.name, Some("Box"));
     assert_eq!(el.span, Span::new(0, source.len() as u32));
+    assert!(
+        matches!(el.children.first(), Some(Node::Paragraph(_))),
+        "expected leading paragraph inside <Box>: {:?}",
+        el.children
+    );
+    assert!(
+        matches!(el.children.get(1), Some(Node::CodeBlock(_))),
+        "expected indented code block inside <Box>: {:?}",
+        el.children
+    );
 }
 
 #[test]
@@ -242,6 +291,9 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
         "<!-- <a href=\"/guide\">ignored</a> -->\n\n",
         "<div><!--><a href=\"/guide\">empty1</a></div>\n\n",
         "<div><!---><a href=\"/guide\">empty2</a></div>\n\n",
+        "<div><!-- comment --!><a href=\"/guide\">abrupt</a></div>\n\n",
+        "<div><textarea>1 < 2. That's fine.</textarea><a href=\"/guide\">after-ta</a></div>\n\n",
+        "<p>1 < 2. That's fine. <a href=\"/guide\">after-lt</a></p>\n\n",
         "<a title=\"see href=/guide\" href=\"/guide\">link</a>\n\n",
         "<a title=\"a > b\" href=\"/guide\">gt</a>\n"
     );
@@ -265,6 +317,20 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
     assert!(
         html.contains("<div><!---><a href=\"/docs/guide\">empty2</a></div>"),
         "empty `<!--->` comment should close immediately before anchor: {html}"
+    );
+    assert!(
+        html.contains("<div><!-- comment --!><a href=\"/docs/guide\">abrupt</a></div>"),
+        "HTML5 `--!>` comment closer should not suppress following anchor rewrite: {html}"
+    );
+    assert!(
+        html.contains(
+            "<div><textarea>1 < 2. That's fine.</textarea><a href=\"/docs/guide\">after-ta</a></div>"
+        ),
+        "raw-text `<textarea>` containing `<` and apostrophe should not suppress following anchor rewrite: {html}"
+    );
+    assert!(
+        html.contains("<p>1 < 2. That's fine. <a href=\"/docs/guide\">after-lt</a></p>"),
+        "bare `<` comparison in text followed by apostrophe should not suppress following anchor rewrite: {html}"
     );
     assert!(
         html.contains("<a title=\"see href=/guide\" href=\"/docs/guide\">link</a>"),

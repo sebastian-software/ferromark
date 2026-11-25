@@ -273,6 +273,9 @@ impl<'a> Parser<'a> {
                     }
                     let mut scan = at;
                     let mut saw_any_tick = false;
+                    let mut seen_short_once = 0u64;
+                    let mut seen_short_twice = 0u64;
+                    let mut seen_long: SmallVec<[usize; 8]> = SmallVec::new();
                     let mut closed = false;
                     while scan < bytes.len() {
                         let Some(off) = memchr(b'`', &bytes[scan..]) else {
@@ -286,10 +289,22 @@ impl<'a> Parser<'a> {
                             closed = true;
                             break;
                         }
+                        super::inline::BacktickDeadEnds::note_run(
+                            closer,
+                            scan > 0 && bytes[scan - 1] == b'\\',
+                            &mut seen_short_once,
+                            &mut seen_short_twice,
+                            &mut seen_long,
+                        );
                         scan += closer;
                     }
                     if !closed {
-                        dead_backticks.mark_dead(run, saw_any_tick);
+                        dead_backticks.record_eof_scan(
+                            run,
+                            saw_any_tick,
+                            seen_short_twice,
+                            seen_long,
+                        );
                     }
                 }
                 b'<' => {

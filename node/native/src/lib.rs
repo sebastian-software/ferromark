@@ -25,7 +25,7 @@ use ferromark_transforms::{
     EmojiShortcodesPass, GitHubReferencesPass, TransformContext, TransformPipeline,
     TypographyLanguage, TypographyOptions, TypographyPass,
 };
-use napi::bindgen_prelude::{Buffer, Error, Result, Status};
+use napi::bindgen_prelude::{Buffer, Either3, Error, Null, Result, Status, Undefined};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
@@ -105,7 +105,8 @@ pub struct Options {
     pub insertions: Option<bool>,
     pub guillemet_digraphs: Option<bool>,
     pub auto_abbreviations: Option<bool>,
-    pub abbreviations: Option<HashMap<String, Option<String>>>,
+    #[napi(ts_type = "Record<string, string | undefined | null>")]
+    pub abbreviations: Option<HashMap<String, Either3<String, Null, Undefined>>>,
     pub preset: Option<String>,
 }
 
@@ -221,7 +222,14 @@ fn core_options(options: Option<Options>) -> Result<CoreOptions> {
             auto_abbreviations = enabled;
         }
         if let Some(overrides) = options.abbreviations {
-            abbreviations.overrides = overrides.into_iter().collect();
+            abbreviations.overrides = overrides
+                .into_iter()
+                .filter_map(|(term, entry)| match entry {
+                    Either3::A(title) => Some((term, Some(title))),
+                    Either3::B(_) => Some((term, None)),
+                    Either3::C(()) => None,
+                })
+                .collect();
         }
         let typography_config = options.typography;
         let pass_configs = options.passes;

@@ -292,14 +292,19 @@ pub(in crate::parser) fn compatible_closing_end(source: &str, start: usize) -> O
     (bytes.get(end) == Some(&b'>')).then_some(end + 1)
 }
 
+#[cfg(feature = "jsx")]
 pub(super) fn compatible_fence_end(source: &str, at: usize) -> Option<usize> {
     use super::super::line_scan::{line_end, next_line_start};
     use super::super::reference::{fence_open, is_fence_close};
     let bytes = source.as_bytes();
-    let start = bytes[..at]
-        .iter()
-        .rposition(|byte| matches!(byte, b'\n' | b'\r'))
-        .map_or(0, |position| position + 1);
+    let first = *bytes.get(at)?;
+    if (first != b'`' && first != b'~')
+        || bytes.get(at + 1) != Some(&first)
+        || bytes.get(at + 2) != Some(&first)
+    {
+        return None;
+    }
+    let start = memchr::memrchr2(b'\n', b'\r', &bytes[..at]).map_or(0, |position| position + 1);
     if !bytes[start..at]
         .iter()
         .all(|byte| matches!(byte, b' ' | b'\t'))
@@ -320,6 +325,72 @@ pub(super) fn compatible_fence_end(source: &str, at: usize) -> Option<usize> {
         cursor = next_line_start(bytes, cursor);
     }
     Some(bytes.len())
+}
+
+/// Scans a closed backtick code fence inside an ordinary MDX flow element,
+/// respecting child indentation rules (`indent - base_indent < 4`) and never
+/// swallowing through EOF when no closing fence exists.
+///
+/// Returns `(Some(next_line_start), false)` when closed, or `(None, no_closer_anywhere)`
+/// when unclosed so the caller can memoize that no closing fence of this width
+/// or wider exists ahead.
+fn closed_fence_end(source: &str, at: usize, base_indent: usize) -> (Option<usize>, bool) {
+    use super::super::line_scan::{line_end, next_line_start};
+    use super::super::reference::{fence_open, is_fence_close};
+    let bytes = source.as_bytes();
+    let Some((character, length)) = fence_open(&source[at..line_end(bytes, at)]) else {
+        return (None, false);
+    };
+    let mut cursor = next_line_start(bytes, at);
+    let mut saw_indented_closer = false;
+    while cursor < bytes.len() {
+        let end = line_end(bytes, cursor);
+        let mut content = cursor;
+        let mut close_indent = 0usize;
+        while content < end {
+            match bytes[content] {
+                b' ' => close_indent += 1,
+                b'\t' => close_indent += 4 - (close_indent % 4),
+                _ => break,
+            }
+            content += 1;
+        }
+        if is_fence_close(&source[content..end], character, length) {
+            if close_indent.saturating_sub(base_indent) < 4 {
+                return (Some(next_line_start(bytes, cursor)), false);
+            }
+            saw_indented_closer = true;
+        }
+        cursor = next_line_start(bytes, cursor);
+    }
+    (None, !saw_indented_closer)
+}
+
+fn update_line_indent(
+    bytes: &[u8],
+    from: usize,
+    to: usize,
+    on_first_line: &mut bool,
+    at_line_indent: &mut bool,
+    indent_cols: &mut usize,
+) {
+    if let Some(rel) = memchr::memrchr2(b'\n', b'\r', &bytes[from..to]) {
+        *on_first_line = false;
+        *at_line_indent = true;
+        *indent_cols = 0;
+        for &byte in &bytes[from + rel + 1..to] {
+            match byte {
+                b' ' => *indent_cols += 1,
+                b'\t' => *indent_cols += 4 - (*indent_cols % 4),
+                _ => {
+                    *at_line_indent = false;
+                    break;
+                }
+            }
+        }
+    } else {
+        *at_line_indent = false;
+    }
 }
 
 fn scan_compatible_name(source: &str, start: usize) -> Option<usize> {
@@ -429,28 +500,96 @@ fn walk_close<const RECORD: bool>(
     let mut cursor = from;
     let mut depth = 1u32;
     let mut read_from = from;
+    let mut on_first_line = true;
+    let mut at_line_indent = true;
+    let mut indent_cols = 0usize;
+    let mut min_line_indent: Option<usize> = None;
+    let mut no_fence_close_min_len = usize::MAX;
     while cursor < bytes.len() {
         match bytes[cursor] {
+            b'\n' | b'\r' => {
+                on_first_line = false;
+                at_line_indent = true;
+                indent_cols = 0;
+                cursor += 1;
+            }
+            b' ' => {
+                if at_line_indent {
+                    indent_cols += 1;
+                }
+                cursor += 1;
+            }
+            b'\t' => {
+                if at_line_indent {
+                    indent_cols += 4 - (indent_cols % 4);
+                }
+                cursor += 1;
+            }
             b'{' => {
+                if at_line_indent {
+                    min_line_indent =
+                        Some(min_line_indent.map_or(indent_cols, |min| min.min(indent_cols)));
+                }
                 if let Some(next) = skip_brace(cursor) {
+                    update_line_indent(
+                        bytes,
+                        cursor,
+                        next,
+                        &mut on_first_line,
+                        &mut at_line_indent,
+                        &mut indent_cols,
+                    );
                     cursor = next;
                     read_from = next;
                 } else {
+                    at_line_indent = false;
                     cursor += 1;
                 }
             }
             b'`' => {
-                if let Some(next) =
-                    compatible_fence_end(source, cursor).or_else(|| skip_backticks(bytes, cursor))
-                {
+                let open = backtick_run_len(bytes, cursor);
+                let base_indent = min_line_indent.unwrap_or(indent_cols);
+                let can_fence = !on_first_line
+                    && at_line_indent
+                    && open >= 3
+                    && open < no_fence_close_min_len
+                    && indent_cols.saturating_sub(base_indent) < 4;
+                if at_line_indent {
+                    min_line_indent =
+                        Some(min_line_indent.map_or(indent_cols, |min| min.min(indent_cols)));
+                }
+                let fence_next = if can_fence {
+                    let (end, no_closer) = closed_fence_end(source, cursor, base_indent);
+                    if no_closer {
+                        no_fence_close_min_len = no_fence_close_min_len.min(open);
+                    }
+                    end
+                } else {
+                    None
+                };
+                if let Some(next) = fence_next.or_else(|| skip_backticks(bytes, cursor)) {
+                    update_line_indent(
+                        bytes,
+                        cursor,
+                        next,
+                        &mut on_first_line,
+                        &mut at_line_indent,
+                        &mut indent_cols,
+                    );
                     cursor = next;
                     read_from = next;
                 } else {
-                    cursor += backtick_run_len(bytes, cursor);
+                    at_line_indent = false;
+                    cursor += open;
                 }
             }
             b'<' => {
+                if at_line_indent {
+                    min_line_indent =
+                        Some(min_line_indent.map_or(indent_cols, |min| min.min(indent_cols)));
+                }
                 let Some(tag) = scan_tag_skip(source, cursor, skip_brace) else {
+                    at_line_indent = false;
                     cursor += 1;
                     continue;
                 };
@@ -478,9 +617,24 @@ fn walk_close<const RECORD: bool>(
                 if memchr::memchr(b'<', &bytes[cursor + 1..tag.end]).is_some() {
                     read_from = tag.end;
                 }
+                update_line_indent(
+                    bytes,
+                    cursor,
+                    tag.end,
+                    &mut on_first_line,
+                    &mut at_line_indent,
+                    &mut indent_cols,
+                );
                 cursor = tag.end;
             }
-            _ => cursor += 1,
+            _ => {
+                if at_line_indent {
+                    min_line_indent =
+                        Some(min_line_indent.map_or(indent_cols, |min| min.min(indent_cols)));
+                    at_line_indent = false;
+                }
+                cursor += 1;
+            }
         }
     }
     if RECORD {

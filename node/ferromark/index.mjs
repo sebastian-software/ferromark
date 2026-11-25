@@ -1001,7 +1001,7 @@ export class CodeCompiler {
    */
   toHtml(markdown, options) {
     validateOptions(options);
-    return this.#native.toHtml(markdown, normalizeCodeCompilerOptions(markdown, options));
+    return this.#native.toHtml(markdown, options);
   }
 
   /**
@@ -1010,23 +1010,8 @@ export class CodeCompiler {
    */
   transform(markdown, options) {
     validateOptions(options);
-    return this.#native.transform(markdown, normalizeCodeCompilerOptions(markdown, options));
+    return this.#native.transform(markdown, options);
   }
-}
-
-/**
- * Reads `CodeCompiler` options once via `PackedOptions` so inherited flags,
- * single-read getters, and `{ API: undefined }` abbreviation normalization match
- * the top-level `toHtml`/`transform` path.
- * @param {unknown} markdown
- * @param {import('./index.mjs').Options | null | undefined} options
- */
-function normalizeCodeCompilerOptions(markdown, options) {
-  if (options == null || !isMarkdown(markdown)) {
-    return options;
-  }
-  const packed = new PackedOptions(options);
-  return packed.rejected ?? packed.toObjectOptions();
 }
 
 /**

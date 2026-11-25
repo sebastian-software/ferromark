@@ -15,16 +15,21 @@ use super::super::line_scan::{is_line_ending_byte, line_terminator_end};
 
 /// Stack-local tracker of backtick run lengths proven to have no closing run
 /// ahead in the current inline slice, preventing superlinear rescanning on
-/// unmatched backtick runs.
+/// unmatched backtick runs (including inputs with many distinct run lengths).
 #[derive(Default)]
 pub(in crate::parser) struct BacktickDeadEnds {
     /// Bit `len - 1` is set when no closing run of length `len` (`1..=64`)
-    /// exists ahead.
+    /// can exist for a future opener.
     short_mask: u64,
-    /// Unmatched run lengths `> 64`.
-    long: SmallVec<[usize; 4]>,
+    /// Once a failed scan reached the end of the slice, sorted deduplicated
+    /// run lengths `> 64` that appeared at least twice ahead. Any `> 64` width
+    /// absent from this list cannot both open and close a code span later.
+    long_alive: Option<SmallVec<[usize; 4]>>,
     /// True once a scan reached the end without encountering any backtick at all.
     no_more_ticks: bool,
+    /// Counts full suffix scans to EOF (used by unit tests to assert O(1) scans).
+    #[cfg(test)]
+    eof_scans: usize,
 }
 
 impl BacktickDeadEnds {
@@ -35,22 +40,84 @@ impl BacktickDeadEnds {
         }
         if run_len <= 64 {
             (self.short_mask & (1u64 << (run_len - 1))) != 0
+        } else if let Some(alive) = &self.long_alive {
+            alive.binary_search(&run_len).is_err()
         } else {
-            self.long.contains(&run_len)
+            false
         }
     }
 
     #[inline]
-    pub(in crate::parser) fn mark_dead(&mut self, run_len: usize, saw_any_tick: bool) {
+    pub(in crate::parser) fn note_run(
+        run: usize,
+        preceded_by_backslash: bool,
+        seen_short_once: &mut u64,
+        seen_short_twice: &mut u64,
+        seen_long: &mut SmallVec<[usize; 8]>,
+    ) {
+        if run <= 64 {
+            let bit = 1u64 << (run - 1);
+            *seen_short_twice |= *seen_short_once & bit;
+            *seen_short_once |= bit;
+        } else {
+            seen_long.push(run);
+        }
+        // A backslash immediately before a run of `run >= 2` backticks can
+        // escape the first backtick in outer inline/delimiter scanning,
+        // leaving an opener of length `run - 1`. Record `run - 1` so any
+        // single actual closer of width `run - 1` ahead stays alive.
+        if preceded_by_backslash && run >= 2 {
+            let split_len = run - 1;
+            if split_len <= 64 {
+                let bit = 1u64 << (split_len - 1);
+                *seen_short_twice |= *seen_short_once & bit;
+                *seen_short_once |= bit;
+            } else {
+                seen_long.push(split_len);
+            }
+        }
+    }
+
+    #[inline]
+    pub(in crate::parser) fn record_eof_scan(
+        &mut self,
+        open_len: usize,
+        saw_any_tick: bool,
+        seen_short_twice: u64,
+        mut seen_long: SmallVec<[usize; 8]>,
+    ) {
+        #[cfg(test)]
+        {
+            self.eof_scans += 1;
+        }
         if !saw_any_tick {
             self.no_more_ticks = true;
             return;
         }
-        if run_len <= 64 {
-            self.short_mask |= 1u64 << (run_len - 1);
-        } else if !self.long.contains(&run_len) {
-            self.long.push(run_len);
+        // Any width 1..=64 seen fewer than twice ahead cannot both open and
+        // close a later code span (and `open_len` itself was seen 0 times).
+        self.short_mask |= !seen_short_twice;
+        if open_len <= 64 {
+            self.short_mask |= 1u64 << (open_len - 1);
         }
+        // Keep only `> 64` widths that appeared at least twice ahead.
+        let mut long_twice: SmallVec<[usize; 4]> = SmallVec::new();
+        if seen_long.len() >= 2 {
+            seen_long.sort_unstable();
+            let mut idx = 0usize;
+            while idx + 1 < seen_long.len() {
+                let width = seen_long[idx];
+                if seen_long[idx + 1] == width {
+                    long_twice.push(width);
+                    while idx < seen_long.len() && seen_long[idx] == width {
+                        idx += 1;
+                    }
+                } else {
+                    idx += 1;
+                }
+            }
+        }
+        self.long_alive = Some(long_twice);
     }
 }
 
@@ -85,6 +152,9 @@ impl<'a> Parser<'a> {
         let mut cursor = code_start;
         let mut has_newline = false;
         let mut saw_any_tick = false;
+        let mut seen_short_once = 0u64;
+        let mut seen_short_twice = 0u64;
+        let mut seen_long: SmallVec<[usize; 8]> = SmallVec::new();
         while cursor < bytes.len() {
             let Some(off) = memchr3(b'`', b'\n', b'\r', &bytes[cursor..]) else {
                 break;
@@ -106,10 +176,17 @@ impl<'a> Parser<'a> {
                 *pos = cursor + run;
                 return;
             }
+            BacktickDeadEnds::note_run(
+                run,
+                cursor > 0 && bytes[cursor - 1] == b'\\',
+                &mut seen_short_once,
+                &mut seen_short_twice,
+                &mut seen_long,
+            );
             cursor += run;
         }
 
-        dead_backticks.mark_dead(open_len, saw_any_tick);
+        dead_backticks.record_eof_scan(open_len, saw_any_tick, seen_short_twice, seen_long);
 
         // No closer: the opening run is literal text.
         Self::push_text(
@@ -157,5 +234,101 @@ impl<'a> Parser<'a> {
         } else {
             value
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use smallvec::SmallVec;
+
+    use super::BacktickDeadEnds;
+    use crate::allocator::Allocator;
+    use crate::ast::Node;
+    use crate::parser::Parser;
+
+    #[test]
+    fn distinct_unmatched_backtick_widths_scan_to_eof_only_once() {
+        let source_arena = Allocator::new();
+        let mut source = source_arena.new_string();
+        for width in 1..=128 {
+            if width > 1 {
+                source.push(' ');
+            }
+            for _ in 0..width {
+                source.push('`');
+            }
+        }
+        let source = source.into_bump_str();
+        let allocator = Allocator::for_source_len(source.len());
+        let parser = Parser::new(&allocator, source);
+        let mut children = allocator.new_vec();
+        let mut dead = BacktickDeadEnds::default();
+        let mut pos = 0usize;
+        while pos < source.len() {
+            if source.as_bytes()[pos] == b'`' {
+                parser.parse_inline_code(source, 0, &mut children, &mut pos, &mut dead);
+            } else {
+                pos += 1;
+            }
+        }
+        assert_eq!(
+            dead.eof_scans, 1,
+            "all 128 distinct unmatched backtick runs should trigger exactly one suffix scan"
+        );
+        assert!(children.iter().all(|node| matches!(node, Node::Text(_))));
+    }
+
+    #[test]
+    fn dead_end_tracker_keeps_paired_short_and_long_backticks_alive() {
+        let source_arena = Allocator::new();
+        let mut source = source_arena.new_string_from("``` ``x`` ");
+        for _ in 0..70 {
+            source.push('`');
+        }
+        source.push('y');
+        for _ in 0..70 {
+            source.push('`');
+        }
+        let source = source.into_bump_str();
+        let allocator = Allocator::for_source_len(source.len());
+        let parser = Parser::new(&allocator, source);
+        let mut children = allocator.new_vec();
+        let mut dead = BacktickDeadEnds::default();
+        let mut pos = 0usize;
+        while pos < source.len() {
+            if source.as_bytes()[pos] == b'`' {
+                parser.parse_inline_code(source, 0, &mut children, &mut pos, &mut dead);
+            } else {
+                pos += 1;
+            }
+        }
+        assert_eq!(dead.eof_scans, 1);
+        let codes: SmallVec<[&str; 4]> = children
+            .iter()
+            .filter_map(|node| match node {
+                Node::InlineCode(code) => Some(code.value),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(codes.as_slice(), ["x", "y"]);
+    }
+
+    #[test]
+    fn dead_end_tracker_preserves_backslash_split_opener() {
+        let source = "``` \\``foo`";
+        let allocator = Allocator::for_source_len(source.len());
+        let doc = Parser::new(&allocator, source)
+            .parse()
+            .expect("parse should succeed");
+        let Node::Paragraph(p) = &doc.children[0] else {
+            panic!("expected paragraph");
+        };
+        assert!(
+            p.children
+                .iter()
+                .any(|node| matches!(node, Node::InlineCode(code) if code.value == "foo")),
+            "backslash-split backtick opener should still close on trailing single backtick: {:?}",
+            p.children
+        );
     }
 }

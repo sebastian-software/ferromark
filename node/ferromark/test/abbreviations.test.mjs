@@ -86,6 +86,29 @@ test("undefined override values leave built-in terms unchanged", () => {
     const html = typeof result === "string" ? result : result.html;
     assert.equal(html, '<p><abbr title="Application Programming Interface">API</abbr></p>\n');
     assert.equal(reads, 1);
+
+    const typography = { language: "en", ellipses: true };
+    const ordered = {
+      typography,
+      get passes() {
+        typography.ellipses = false;
+        return undefined;
+      },
+    };
+    const orderedResult = compiler[method]("Wait...", ordered);
+    const orderedHtml = typeof orderedResult === "string" ? orderedResult : orderedResult.html;
+    assert.equal(orderedHtml, "<p>Wait…</p>\n");
+
+    let passesRead = false;
+    const invalidTypography = {
+      typography: { language: 123 },
+      get passes() {
+        passesRead = true;
+        return undefined;
+      },
+    };
+    assert.throws(() => compiler[method]("Wait...", invalidTypography));
+    assert.equal(passesRead, false);
   }
 });
 
