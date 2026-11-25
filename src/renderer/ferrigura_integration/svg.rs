@@ -15,16 +15,37 @@ pub fn sanitize(svg: &str) -> Result<String, Error> {
     Ok(serialize_html(&document, svg.len()))
 }
 
-pub fn validate(document: &Document<'_>) -> Result<(), Error> {
+pub fn validate(document: &Document<'_>) -> Result<bool, Error> {
     // roxmltree rejects DTDs by default. Processing instructions have no place
     // in inline SVG either, including xml-stylesheet instructions.
     let root = document.root_element();
     if root.tag_name().name() != "svg" || root.tag_name().namespace() != Some(SVG) {
         return Err(reject("the root element"));
     }
+    // Direct JSX conversion skips the HTML re-serialization + XML re-parse
+    // roundtrip whenever the DOM has no XML comments, empty/split text runs,
+    // CR bytes in text, or CR/LF/TAB bytes in attribute values — the only
+    // cases where re-parsing serialized HTML can alter node boundaries or text.
+    let mut direct_jsx_safe = true;
     for node in document.descendants() {
         if node.is_pi() {
             return Err(reject("a processing instruction"));
+        }
+        if node.is_comment() {
+            direct_jsx_safe = false;
+            continue;
+        }
+        if node.is_text() {
+            let text = node.text().unwrap_or_default();
+            if text.is_empty()
+                || text.as_bytes().contains(&b'\r')
+                || node
+                    .next_sibling()
+                    .is_some_and(|next| next.is_text() || next.is_comment())
+            {
+                direct_jsx_safe = false;
+            }
+            continue;
         }
         if !node.is_element() {
             continue;
@@ -46,6 +67,13 @@ pub fn validate(document: &Document<'_>) -> Result<(), Error> {
                 }
             } else if !attribute(name) {
                 return Err(reject(["attribute '", name, "'"].concat()));
+            }
+            if attr
+                .value()
+                .bytes()
+                .any(|byte| matches!(byte, b'\r' | b'\n' | b'\t'))
+            {
+                direct_jsx_safe = false;
             }
             if matches!(
                 name,
@@ -77,7 +105,7 @@ pub fn validate(document: &Document<'_>) -> Result<(), Error> {
             css(&stylesheet)?;
         }
     }
-    Ok(())
+    Ok(direct_jsx_safe)
 }
 
 pub fn serialize_html(document: &Document<'_>, capacity_hint: usize) -> String {

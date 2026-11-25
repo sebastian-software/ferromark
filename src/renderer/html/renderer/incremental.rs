@@ -248,4 +248,48 @@ mod tests {
         let second = renderer.render_incremental_fragment(&doc);
         assert!(second.contains("id=\"-1\""), "{second}");
     }
+
+    #[test]
+    fn provisional_noncanonical_suffix_does_not_rewind_base_counter() {
+        use crate::ast::{Document, ElementAttributes, Heading, Node, Span};
+
+        let allocator = Allocator::new();
+        let make_doc = |id: &'static str| {
+            let mut children = allocator.new_vec();
+            children.push(Node::Heading(allocator.boxed(Heading {
+                depth: 1,
+                attributes: Some(allocator.boxed(ElementAttributes {
+                    id: Some(id),
+                    classes: allocator.new_vec(),
+                    values: allocator.new_vec(),
+                })),
+                children: allocator.new_vec(),
+                span: Span::new(0, 0),
+            })));
+            Document {
+                front_matter: None,
+                children,
+                span: Span::new(0, 0),
+            }
+        };
+        let empty_doc = make_doc("");
+        let leading_zero = make_doc("-01");
+        let plus_sign = make_doc("-+1");
+
+        let mut renderer = HtmlRenderer::new();
+        for _ in 0..4 {
+            let _ = renderer.render_incremental_fragment(&empty_doc);
+        }
+        let before = renderer.heading_id_planner.clone();
+        let _ = renderer.render_provisional_fragment(&leading_zero);
+        let _ = renderer.render_provisional_fragment(&plus_sign);
+        // Rolling back `-01` or `-+1` must leave `""`'s internal `next_suffix`
+        // untouched so the next `""` claim does not re-probe `-1`, `-2`, `-3`.
+        assert_eq!(
+            format!("{:?}", renderer.heading_id_planner),
+            format!("{before:?}")
+        );
+        let next = renderer.render_incremental_fragment(&empty_doc);
+        assert!(next.contains("id=\"-4\""), "{next}");
+    }
 }
