@@ -25,7 +25,7 @@ use ferromark_transforms::{
     EmojiShortcodesPass, GitHubReferencesPass, TransformContext, TransformPipeline,
     TypographyLanguage, TypographyOptions, TypographyPass,
 };
-use napi::bindgen_prelude::{Buffer, Error, Result, Status};
+use napi::bindgen_prelude::{BufferSlice, Error, Result, Status};
 use napi::{Env, JsString};
 use napi_derive::napi;
 
@@ -385,14 +385,20 @@ fn render_fresh<T>(
     options: Option<Options>,
     emit: impl FnOnce(&str) -> Result<T>,
 ) -> Result<T> {
-    let mut renderer = Renderer::new(options)?;
+    let mut renderer =
+        Renderer::with_allocator(options, Allocator::for_source_len(markdown.len()))?;
     emit(renderer.render_reused(markdown)?)
 }
 
-/// Copies HTML into a JavaScript string as napi-rs converts a returned
-/// `&str` or `String`: one `napi_create_string_utf8`, with napi-rs's error.
+/// Copies HTML into a JavaScript string, using the Latin-1 fast path when the
+/// rendered HTML is pure ASCII so V8 copies bytes directly without UTF-8 decoding.
 fn js_string<'env>(env: &'env Env, html: &str) -> Result<JsString<'env>> {
-    env.create_string(html).map_err(|error| {
+    let result = if html.is_ascii() {
+        env.create_string_latin1(html.as_bytes())
+    } else {
+        env.create_string(html)
+    };
+    result.map_err(|error| {
         Error::new(
             error.status,
             "Failed to convert rust `&str` into napi `string`",
@@ -400,9 +406,10 @@ fn js_string<'env>(env: &'env Env, html: &str) -> Result<JsString<'env>> {
     })
 }
 
-/// Copies HTML into a `Buffer`, as `toHtmlBuffer` returns it.
-fn html_buffer(html: &str) -> Result<Buffer> {
-    Ok(html.as_bytes().to_vec().into())
+/// Copies HTML directly into a V8-managed `Buffer` via `napi_create_buffer_copy`,
+/// avoiding an intermediate Rust `Vec` copy and external-buffer GC finalizer.
+fn html_buffer<'env>(env: &'env Env, html: &str) -> Result<BufferSlice<'env>> {
+    BufferSlice::copy_from(env, html.as_bytes())
 }
 
 // Every export that takes Markdown accepts a string or a `Uint8Array` of UTF-8
@@ -421,11 +428,14 @@ pub fn to_html<'env>(
 }
 
 #[napi(catch_unwind)]
-pub fn to_html_buffer(
+pub fn to_html_buffer<'env>(
+    env: &'env Env,
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
-) -> Result<Buffer> {
-    render_one_shot(markdown.try_as_str()?, options, html_buffer)
+) -> Result<BufferSlice<'env>> {
+    render_one_shot(markdown.try_as_str()?, options, |html| {
+        html_buffer(env, html)
+    })
 }
 
 /// Reuses arena storage and HTML buffers; documents never outlive a call.
@@ -442,23 +452,7 @@ pub struct Renderer {
 impl Renderer {
     #[napi(constructor, catch_unwind)]
     pub fn new(options: Option<Options>) -> Result<Self> {
-        let options = core_options(options)?;
-        let html_options = (!options.pipeline.is_empty()).then(|| options.html.clone());
-        let html = build_html_renderer(
-            options.html,
-            options.auto_abbreviations,
-            options.abbreviations,
-        )
-        .with_heading_level_offset(options.heading_level_offset)
-        .try_with_heading_id_prefix(options.heading_id_prefix)
-        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
-        Ok(Self {
-            allocator: Allocator::new(),
-            parser: options.parser,
-            html,
-            html_options,
-            pipeline: options.pipeline,
-        })
+        Self::with_allocator(options, Allocator::new())
     }
 
     /// Internal to the `ferromark` facade: the constructor with packed options.
@@ -484,37 +478,56 @@ impl Renderer {
         Self::new(Some(options))
     }
 
-    // Returns a borrow of the renderer's own output buffer. N-API copies it
-    // into a JavaScript string before anything else can touch the renderer,
-    // and keeping the buffer, instead of handing it away with
-    // `HtmlRenderer::render`, spares every later call a fresh allocation and
-    // its regrowth. (A plain comment: doc comments become the published
-    // TypeScript declarations.)
+    // Returns a JavaScript string copied from the renderer's warm output
+    // buffer, using the Latin-1 fast path for ASCII HTML.
     #[napi(catch_unwind, js_name = "toHtml")]
-    pub fn to_html(
+    pub fn to_html<'env>(
         &mut self,
+        env: &'env Env,
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
-    ) -> Result<&str> {
-        self.render_reused(markdown.try_as_str()?)
+    ) -> Result<JsString<'env>> {
+        js_string(env, self.render_reused(markdown.try_as_str()?)?)
     }
 
     #[napi(catch_unwind, js_name = "toHtmlBuffer")]
-    pub fn to_html_buffer(
+    pub fn to_html_buffer<'env>(
         &mut self,
+        env: &'env Env,
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
-    ) -> Result<Buffer> {
-        html_buffer(self.render_reused(markdown.try_as_str()?)?)
+    ) -> Result<BufferSlice<'env>> {
+        html_buffer(env, self.render_reused(markdown.try_as_str()?)?)
     }
 }
 
 impl Renderer {
+    fn with_allocator(options: Option<Options>, allocator: Allocator) -> Result<Self> {
+        let options = core_options(options)?;
+        let html_options = (!options.pipeline.is_empty()).then(|| options.html.clone());
+        let html = build_html_renderer(
+            options.html,
+            options.auto_abbreviations,
+            options.abbreviations,
+        )
+        .with_heading_level_offset(options.heading_level_offset)
+        .try_with_heading_id_prefix(options.heading_id_prefix)
+        .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))?;
+        Ok(Self {
+            allocator,
+            parser: options.parser,
+            html,
+            html_options,
+            pipeline: options.pipeline,
+        })
+    }
+
     /// The Rust side of the reused `toHtml` and `toHtmlBuffer`, and of the
     /// one-shot ones, shared with the `boundary-bench` diagnostics so they
     /// time exactly this code.
     ///
-    /// The arena is reset, and `HtmlRenderer::render_borrowed` clears the
-    /// output, heading IDs and footnote state before it writes, so a document
-    /// renders the same whatever the renderer rendered before.
+    /// The arena is reset before and after rendering (releasing any multi-chunk
+    /// growth immediately once the AST is no longer needed), and
+    /// `HtmlRenderer::render_borrowed` clears the output, heading IDs and
+    /// footnote state before writing.
     fn render_reused(&mut self, markdown: &str) -> Result<&str> {
         self.allocator.reset();
         let mut document = Parser::with_options(&self.allocator, markdown, self.parser.clone())
@@ -526,7 +539,9 @@ impl Renderer {
                 .run(&mut document, &context)
                 .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
         }
-        Ok(self.html.render_borrowed(&document))
+        let html = self.html.render_borrowed(&document);
+        self.allocator.reset();
+        Ok(html)
     }
 }
 
@@ -652,13 +667,20 @@ fn render_document(
     markdown: &str,
     options: CoreOptions,
     callback: Option<CodeCallback<'_>>,
+    collect_metadata: bool,
 ) -> Result<TransformResult> {
     if let Some(callback) = callback {
         let mut hooks = code_callback::JsCodeHooks::new(callback);
-        let output = render_document_with_hooks(markdown, options, Some(&mut hooks), true);
+        let output =
+            render_document_with_hooks(markdown, options, Some(&mut hooks), collect_metadata);
         code_callback::finish(&mut hooks, output)
     } else {
-        render_document_with_hooks::<ferromark::NoHtmlRenderHooks>(markdown, options, None, true)
+        render_document_with_hooks::<ferromark::NoHtmlRenderHooks>(
+            markdown,
+            options,
+            None,
+            collect_metadata,
+        )
     }
 }
 
@@ -679,19 +701,22 @@ pub(crate) fn render_document_with_hooks<H: HtmlRenderHooks>(
             .run(&mut document, &context)
             .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
     }
-    let mut metadata = Metadata {
-        headings: Vec::new(),
-        id_planner: HeadingIdPlanner::new(),
-        legacy_footnote_targets: HashMap::new(),
-        legacy_footnote_reference_counts: HashMap::new(),
-        legacy_footnote_first_references: HashMap::new(),
-        heading_ids: options.html.heading_ids,
-        heading_level_offset: options.heading_level_offset,
-        heading_id_prefix: options.heading_id_prefix.clone(),
-    };
-    if collect_metadata {
+    let headings = if collect_metadata {
+        let mut metadata = Metadata {
+            headings: Vec::new(),
+            id_planner: HeadingIdPlanner::new(),
+            legacy_footnote_targets: HashMap::new(),
+            legacy_footnote_reference_counts: HashMap::new(),
+            legacy_footnote_first_references: HashMap::new(),
+            heading_ids: options.html.heading_ids,
+            heading_level_offset: options.heading_level_offset,
+            heading_id_prefix: options.heading_id_prefix.clone(),
+        };
         metadata.visit_document(&document);
-    }
+        metadata.headings
+    } else {
+        Vec::new()
+    };
     let front_matter = if collect_metadata {
         document
             .front_matter
@@ -714,7 +739,7 @@ pub(crate) fn render_document_with_hooks<H: HtmlRenderHooks>(
     };
     Ok(TransformResult {
         html,
-        headings: metadata.headings,
+        headings,
         front_matter,
     })
 }
@@ -736,7 +761,7 @@ pub fn transform(
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
 ) -> Result<TransformResult> {
-    render_document(markdown.try_as_str()?, core_options(options)?, None)
+    render_document(markdown.try_as_str()?, core_options(options)?, None, true)
 }
 
 #[napi(catch_unwind)]
@@ -752,6 +777,7 @@ pub fn to_html_with_renderer(
         markdown.try_as_str()?,
         core_options(options)?,
         Some(renderer),
+        false,
     )?
     .html)
 }
@@ -769,5 +795,6 @@ pub fn transform_with_renderer(
         markdown.try_as_str()?,
         core_options(options)?,
         Some(renderer),
+        true,
     )
 }

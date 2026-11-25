@@ -57,16 +57,13 @@ pub(super) fn has_unclosed_inline_code(line: &str) -> bool {
             .count();
         let mut search = start + ticks;
         let mut closed = false;
-        while search < bytes.len() {
-            if bytes[search] != b'`' {
-                search += 1;
-                continue;
-            }
+        while let Some(rel) = memchr::memchr(b'`', &bytes[search..]) {
+            search += rel;
             let close = bytes[search..]
                 .iter()
                 .take_while(|byte| **byte == b'`')
                 .count();
-            if close >= ticks {
+            if close == ticks {
                 cursor = search + close;
                 closed = true;
                 break;

@@ -136,7 +136,7 @@ impl Document<'_> {
                         heading.span,
                         MarkdownProjectionDiagnosticKind::TitleHeadingOmitted,
                     );
-                    omitted_title_heading = Some(heading.span);
+                    omitted_title_heading = (!heading.span.is_empty()).then_some(heading.span);
                     continue;
                 }
             }
@@ -524,7 +524,7 @@ fn apply_removals(source: &str, lines: &SourceLines, removals: &mut [Removal]) -
         index += 1;
         while index < removals.len() && removals[index].span.start as usize <= end {
             end = end.max(removals[index].span.end as usize);
-            tight = false;
+            tight &= removals[index].tight;
             index += 1;
         }
         output.push_str(&source[cursor..start]);

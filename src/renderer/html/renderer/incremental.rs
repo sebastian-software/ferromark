@@ -31,10 +31,9 @@ impl HtmlRenderer {
     /// The returned HTML is meant to be replaceable by the next streaming update.
     #[must_use]
     pub fn render_provisional_fragment(&mut self, document: &Document<'_>) -> String {
-        let heading_id_planner = self
-            .options
-            .heading_ids
-            .then(|| self.heading_id_planner.clone());
+        // Always snapshot `heading_id_planner` even when `heading_ids` is false:
+        // footnotes and explicit element IDs (`{#id}`) share the same planner.
+        let heading_id_planner = self.heading_id_planner.clone();
         let footnote_ref_counts = self.footnote_ref_counts.clone();
         let legacy_footnote_targets = self.legacy_footnote_targets.clone();
         let legacy_footnote_first_references = self.legacy_footnote_first_references.clone();
@@ -43,9 +42,7 @@ impl HtmlRenderer {
         let footnote_slug_counts = self.footnote_slug_counts.clone();
         let code_block_index = self.code_block_index;
         let html = self.render_fragment(document);
-        if let Some(heading_id_planner) = heading_id_planner {
-            self.heading_id_planner = heading_id_planner;
-        }
+        self.heading_id_planner = heading_id_planner;
         self.footnote_ref_counts = footnote_ref_counts;
         self.legacy_footnote_targets = legacy_footnote_targets;
         self.legacy_footnote_first_references = legacy_footnote_first_references;
@@ -63,10 +60,7 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
-        let heading_id_planner = self
-            .options
-            .heading_ids
-            .then(|| self.heading_id_planner.clone());
+        let heading_id_planner = self.heading_id_planner.clone();
         let footnote_ref_counts = self.footnote_ref_counts.clone();
         let legacy_footnote_targets = self.legacy_footnote_targets.clone();
         let legacy_footnote_first_references = self.legacy_footnote_first_references.clone();
@@ -75,9 +69,7 @@ impl HtmlRenderer {
         let footnote_slug_counts = self.footnote_slug_counts.clone();
         let code_block_index = self.code_block_index;
         let html = self.render_fragment_with_hooks(document, hooks);
-        if let Some(heading_id_planner) = heading_id_planner {
-            self.heading_id_planner = heading_id_planner;
-        }
+        self.heading_id_planner = heading_id_planner;
         self.footnote_ref_counts = footnote_ref_counts;
         self.legacy_footnote_targets = legacy_footnote_targets;
         self.legacy_footnote_first_references = legacy_footnote_first_references;
@@ -97,6 +89,12 @@ impl HtmlRenderer {
         self.heading_slug_scratch.clear();
         self.code_block_index = 0;
         self.in_link = false;
+        self.in_mdx_island_children = false;
+        if let Some(state) = self.abbreviation_state.as_mut() {
+            state.raw_html_depth = 0;
+            state.mdx_depth = 0;
+            state.inline_depth = 0;
+        }
         // `autolink_index` is deliberately untouched: it is derived from the
         // renderer's immutable options, not from the fragments rendered so
         // far, and every fragment path used to rebuild the identical value.
@@ -105,6 +103,12 @@ impl HtmlRenderer {
     fn render_fragment(&mut self, document: &Document<'_>) -> String {
         self.output.clear();
         self.in_link = false;
+        self.in_mdx_island_children = false;
+        if let Some(state) = self.abbreviation_state.as_mut() {
+            state.raw_html_depth = 0;
+            state.mdx_depth = 0;
+            state.inline_depth = 0;
+        }
         self.reserve_output_for(document);
         self.render_document(document);
         self.finish_semantic_footnotes();
@@ -119,6 +123,12 @@ impl HtmlRenderer {
         self.node_hooks_enabled = true;
         self.output.clear();
         self.in_link = false;
+        self.in_mdx_island_children = false;
+        if let Some(state) = self.abbreviation_state.as_mut() {
+            state.raw_html_depth = 0;
+            state.mdx_depth = 0;
+            state.inline_depth = 0;
+        }
         self.reserve_output_for(document);
         self.render_document_with_hooks(document, hooks);
         self.finish_semantic_footnotes();

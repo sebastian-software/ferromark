@@ -4,24 +4,36 @@
 //! between angle brackets), independent from the GFM bare-URL extension.
 
 use crate::ast::{Link, Node, Span};
-use memchr::memchr;
 
 use crate::parser::Parser;
+
+/// Finds the closing `>` of a candidate autolink starting at `inner_start`,
+/// rejecting immediately on `<`, ASCII whitespace, or ASCII control bytes.
+///
+/// Stopping at the first disqualifying byte prevents a run of `<` followed by
+/// a single `>` from scanning quadratically to the end of the slice.
+fn scan_autolink_close(bytes: &[u8], inner_start: usize) -> Option<usize> {
+    let mut i = inner_start;
+    while i < bytes.len() {
+        let byte = bytes[i];
+        if byte == b'>' {
+            return (i > inner_start).then_some(i);
+        }
+        if byte <= 0x20 || byte == b'<' || byte == 0x7F {
+            return None;
+        }
+        i += 1;
+    }
+    None
+}
 
 /// Validation-only scan: returns the index just past `>` when an
 /// autolink starts at `pos`, without building nodes.
 pub(in crate::parser) fn autolink_end(content: &str, pos: usize) -> Option<usize> {
     let bytes = content.as_bytes();
     let inner_start = pos + 1;
-    let close = memchr(b'>', bytes.get(inner_start..)?)? + inner_start;
+    let close = scan_autolink_close(bytes, inner_start)?;
     let inner = &content[inner_start..close];
-    if inner.is_empty()
-        || inner
-            .bytes()
-            .any(|byte| byte == b'<' || byte.is_ascii_whitespace() || byte.is_ascii_control())
-    {
-        return None;
-    }
     (is_absolute_uri(inner) || is_email_address(inner)).then_some(close + 1)
 }
 
@@ -36,16 +48,8 @@ impl<'a> Parser<'a> {
     ) -> Option<(Node<'a>, usize)> {
         let bytes = content.as_bytes();
         let inner_start = pos + 1;
-        let close = memchr(b'>', bytes.get(inner_start..)?)? + inner_start;
+        let close = scan_autolink_close(bytes, inner_start)?;
         let inner = &content[inner_start..close];
-
-        if inner.is_empty()
-            || inner
-                .bytes()
-                .any(|byte| byte == b'<' || byte.is_ascii_whitespace() || byte.is_ascii_control())
-        {
-            return None;
-        }
 
         let url = if is_absolute_uri(inner) {
             inner
@@ -57,7 +61,7 @@ impl<'a> Parser<'a> {
             return None;
         };
 
-        let mut children = self.allocator.new_vec();
+        let mut children = self.allocator.new_vec_with_capacity(1);
         children.push(Node::Text(crate::ast::Text {
             value: inner,
             span: Span::new((offset + inner_start) as u32, (offset + close) as u32),

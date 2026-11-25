@@ -7,29 +7,27 @@
 //! the nodes between into `Emphasis`/`Strong`/`Delete`/`Highlight`, and trims the delimiter
 //! text nodes in place. Unpaired runs simply stay literal text.
 
+use smallvec::SmallVec;
+
 use crate::allocator::Vec;
 use crate::ast::{Node, Span, Text};
 
 use crate::parser::Parser;
 use crate::parser::error::{ParseErrorKind, ParseResult};
 
+pub(in crate::parser) type DelimiterStack = SmallVec<[Delimiter; 8]>;
+
 pub(in crate::parser) struct Delimiter {
     /// Index of the run's text node in the children vec.
-    node_index: usize,
-    marker: u8,
+    node_index: u32,
     /// Original run length, or source offset for an insertion pair.
     ///
     /// The rule of three uses the length for emphasis delimiters. Insertion
     /// tokens use the source offset to distinguish pairs from the same plus
     /// run without growing the shared delimiter record.
-    orig_len: usize,
+    orig_len: u32,
     /// Unconsumed delimiter characters remaining in the text node.
-    remaining: usize,
-    can_open: bool,
-    can_close: bool,
-    /// Whether an odd plus run left a literal marker to move after its
-    /// matching closing insertion tags.
-    extra_plus: bool,
+    remaining: u32,
     /// Depth of the emphasis node this run currently holds as an opener,
     /// counted in nodes below and including it, or zero while it holds
     /// none. Pairing reads it back to measure the tree it is building.
@@ -45,12 +43,18 @@ pub(in crate::parser) struct Delimiter {
     /// another made the walk quadratic: `~a`×n `b_`×m `a~~`×n visited the
     /// same retired entries once per closer. Unlinking a retired run costs
     /// it one visit in total.
-    prev: usize,
-    next: usize,
+    prev: u32,
+    next: u32,
+    marker: u8,
+    can_open: bool,
+    can_close: bool,
+    /// Whether an odd plus run left a literal marker to move after its
+    /// matching closing insertion tags.
+    extra_plus: bool,
 }
 
 /// The end of the delimiter list in either direction.
-const NO_DELIMITER: usize = usize::MAX;
+const NO_DELIMITER: u32 = u32::MAX;
 
 /// Takes `index` out of the list of runs still worth visiting.
 ///
@@ -65,11 +69,12 @@ fn unlink(delimiters: &mut [Delimiter], index: usize) {
         (run.prev, run.next, run.depth)
     };
     if prev != NO_DELIMITER {
-        delimiters[prev].next = next;
-        delimiters[prev].depth = delimiters[prev].depth.max(depth);
+        let prev_idx = prev as usize;
+        delimiters[prev_idx].next = next;
+        delimiters[prev_idx].depth = delimiters[prev_idx].depth.max(depth);
     }
     if next != NO_DELIMITER {
-        delimiters[next].prev = prev;
+        delimiters[next as usize].prev = prev;
     }
 }
 
@@ -81,7 +86,7 @@ impl<'a> Parser<'a> {
         content: &'a str,
         offset: usize,
         children: &mut Vec<'a, Node<'a>>,
-        delimiters: &mut Vec<'a, Delimiter>,
+        delimiters: &mut DelimiterStack,
         pos: &mut usize,
     ) {
         let bytes = content.as_bytes();
@@ -105,7 +110,7 @@ impl<'a> Parser<'a> {
         if !can_open && !can_close {
             return;
         }
-        let index = delimiters.len();
+        let index = delimiters.len() as u32;
         let prev = match delimiters.last_mut() {
             Some(last) => {
                 last.next = index;
@@ -114,16 +119,16 @@ impl<'a> Parser<'a> {
             None => NO_DELIMITER,
         };
         delimiters.push(Delimiter {
-            node_index: children.len() - 1,
-            marker,
-            orig_len: run_len,
-            remaining: run_len,
-            can_open,
-            can_close,
-            extra_plus: false,
+            node_index: (children.len() - 1) as u32,
+            orig_len: run_len as u32,
+            remaining: run_len as u32,
             depth: 0,
             prev,
             next: NO_DELIMITER,
+            marker,
+            can_open,
+            can_close,
+            extra_plus: false,
         });
     }
 
@@ -136,7 +141,7 @@ impl<'a> Parser<'a> {
         content: &'a str,
         offset: usize,
         children: &mut Vec<'a, Node<'a>>,
-        delimiters: &mut Vec<'a, Delimiter>,
+        delimiters: &mut DelimiterStack,
         pos: &mut usize,
         close_only: bool,
     ) -> bool {
@@ -171,7 +176,7 @@ impl<'a> Parser<'a> {
             if !can_open && !can_close {
                 continue;
             }
-            let index = delimiters.len();
+            let index = delimiters.len() as u32;
             let prev = match delimiters.last_mut() {
                 Some(last) => {
                     last.next = index;
@@ -180,19 +185,19 @@ impl<'a> Parser<'a> {
                 None => NO_DELIMITER,
             };
             delimiters.push(Delimiter {
-                node_index: children.len() - 1,
-                marker: b'+',
+                node_index: (children.len() - 1) as u32,
                 // Each pair is an independent token in markdown-it-ins, so
                 // the emphasis rule of three does not apply. Store the source
                 // run offset to keep its pairs from matching each other.
-                orig_len: offset + start,
+                orig_len: (offset + start) as u32,
                 remaining: 2,
-                can_open,
-                can_close,
-                extra_plus: move_extra_plus,
                 depth: 0,
                 prev,
                 next: NO_DELIMITER,
+                marker: b'+',
+                can_open,
+                can_close,
+                extra_plus: move_extra_plus,
             });
         }
         if extra_plus_at_end {
@@ -287,7 +292,7 @@ impl<'a> Parser<'a> {
     pub(in crate::parser) fn process_emphasis(
         &self,
         children: &mut Vec<'a, Node<'a>>,
-        delimiters: &mut Vec<'a, Delimiter>,
+        delimiters: &mut DelimiterStack,
     ) -> ParseResult<()> {
         // Nothing else in inline parsing produces an empty text node, so the
         // sweep at the end is only owed the ones pairing leaves behind. The
@@ -345,7 +350,7 @@ impl<'a> Parser<'a> {
                     if index == closer_idx {
                         break;
                     }
-                    index = next;
+                    index = next as usize;
                 }
                 closer_idx += 1;
                 continue;
@@ -357,8 +362,8 @@ impl<'a> Parser<'a> {
                 } else {
                     1
                 };
-            let opener_node = delimiters[opener_idx].node_index;
-            let closer_node = delimiters[closer_idx].node_index;
+            let opener_node = delimiters[opener_idx].node_index as usize;
+            let closer_node = delimiters[closer_idx].node_index as usize;
 
             // Retire the delimiters strictly inside the pair, which are now
             // unreachable, and take the depth of the nodes they hold on the
@@ -375,15 +380,16 @@ impl<'a> Parser<'a> {
             // them (see `unlink`).
             let mut enclosed = delimiters[opener_idx].depth;
             let mut inner_idx = delimiters[opener_idx].next;
-            while inner_idx != closer_idx {
+            while inner_idx != closer_idx as u32 {
                 debug_assert_ne!(
                     inner_idx, NO_DELIMITER,
                     "the closer is linked after its opener"
                 );
-                let next = delimiters[inner_idx].next;
-                enclosed = enclosed.max(delimiters[inner_idx].depth);
-                delimiters[inner_idx].remaining = 0;
-                unlink(delimiters, inner_idx);
+                let inner_pos = inner_idx as usize;
+                let next = delimiters[inner_pos].next;
+                enclosed = enclosed.max(delimiters[inner_pos].depth);
+                delimiters[inner_pos].remaining = 0;
+                unlink(delimiters, inner_pos);
                 inner_idx = next;
             }
             let depth = enclosed.max(inside) + 1;
@@ -410,7 +416,7 @@ impl<'a> Parser<'a> {
                 .then_some(delimiters[closer_idx].extra_plus)
                 .filter(|has_extra_plus| *has_extra_plus)
                 .and_then(|_| {
-                    let plus_start = delimiters[closer_idx].orig_len as u32;
+                    let plus_start = delimiters[closer_idx].orig_len;
                     (opener_node + 1..closer_node).find(|index| {
                         matches!(
                             children.get(*index),
@@ -421,8 +427,11 @@ impl<'a> Parser<'a> {
                         )
                     })
                 });
+            let inner_count = (opener_node + 1..closer_node)
+                .filter(|&index| Some(index) != extra_plus_node && !is_empty_text(&children[index]))
+                .count();
             let mut moved_plus = None;
-            let mut inner = self.allocator.new_vec();
+            let mut inner = self.allocator.new_vec_with_capacity(inner_count);
             for (index, slot) in
                 (opener_node + 1..closer_node).zip(&mut children[opener_node + 1..closer_node])
             {
@@ -486,8 +495,8 @@ impl<'a> Parser<'a> {
             // The pair has spent `use_delims` characters, and the opener now
             // holds the node just built.
             delimiters[opener_idx].depth = depth;
-            delimiters[opener_idx].remaining -= use_delims as usize;
-            delimiters[closer_idx].remaining -= use_delims as usize;
+            delimiters[opener_idx].remaining -= use_delims;
+            delimiters[closer_idx].remaining -= use_delims;
             // Stay on the closer: with characters left it retries against an
             // earlier opener, and otherwise the top of the loop steps over it.
         }
@@ -531,15 +540,15 @@ fn empty_text<'a>() -> Node<'a> {
 /// whole sequence.
 #[derive(Default)]
 struct OpenersBottom {
-    star: [[Option<usize>; 2]; 3],
-    underscore: [[Option<usize>; 2]; 3],
-    tilde: [[Option<usize>; 2]; 3],
-    equals: [[Option<usize>; 2]; 3],
-    insertions: [[Option<usize>; 2]; 3],
+    star: [[u32; 2]; 3],
+    underscore: [[u32; 2]; 3],
+    tilde: [[u32; 2]; 3],
+    equals: [[u32; 2]; 3],
+    insertions: [[u32; 2]; 3],
 }
 
 impl OpenersBottom {
-    fn slot(&mut self, closer: &Delimiter) -> &mut Option<usize> {
+    fn slot(&mut self, closer: &Delimiter) -> &mut u32 {
         let table = match closer.marker {
             b'_' => &mut self.underscore,
             b'~' => &mut self.tilde,
@@ -550,17 +559,17 @@ impl OpenersBottom {
         let run_length = if closer.marker == b'+' {
             0
         } else {
-            closer.orig_len % 3
+            (closer.orig_len % 3) as usize
         };
         &mut table[run_length][usize::from(closer.can_open)]
     }
 
-    fn get(&mut self, closer: &Delimiter) -> Option<usize> {
+    fn get(&mut self, closer: &Delimiter) -> u32 {
         *self.slot(closer)
     }
 
     fn set(&mut self, closer: &Delimiter) {
-        *self.slot(closer) = Some(closer.node_index);
+        *self.slot(closer) = closer.node_index;
     }
 }
 
@@ -571,16 +580,12 @@ impl OpenersBottom {
 /// Walks the linked runs, so retired ones cost nothing; a spent run that
 /// still holds a node stays linked (its depth is read by the pair around it)
 /// and is skipped by its `remaining` of zero.
-fn find_opener(
-    delimiters: &[Delimiter],
-    closer_idx: usize,
-    bottom: Option<usize>,
-) -> Option<usize> {
+fn find_opener(delimiters: &[Delimiter], closer_idx: usize, bottom: u32) -> Option<usize> {
     let closer = &delimiters[closer_idx];
     let mut opener_idx = closer.prev;
     while opener_idx != NO_DELIMITER {
-        let opener = &delimiters[opener_idx];
-        if bottom.is_some_and(|bottom| opener.node_index < bottom) {
+        let opener = &delimiters[opener_idx as usize];
+        if opener.node_index < bottom {
             return None;
         }
         if opener.marker == closer.marker
@@ -595,7 +600,7 @@ fn find_opener(
                 && (opener.orig_len + closer.orig_len).is_multiple_of(3)
                 && !(opener.orig_len.is_multiple_of(3) && closer.orig_len.is_multiple_of(3));
             if !sum_of_three {
-                return Some(opener_idx);
+                return Some(opener_idx as usize);
             }
         }
         opener_idx = opener.prev;

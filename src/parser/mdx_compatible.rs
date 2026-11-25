@@ -34,14 +34,68 @@ pub(super) fn invalid(
 /// expression (or a comment-only JSX expression). Candidate interiors are
 /// parsed, never evaluated; source bytes remain borrowed from the document.
 pub(super) fn expression_end(source: &str, start: usize) -> Option<usize> {
+    let bytes = source.as_bytes();
     let tail = source.get(start + 1..)?;
     let mut allocator = oxc_allocator::Allocator::default();
+    // Fast path: when there is no `/` regex ambiguity inside a balanced brace
+    // scan (strings, comments, and nested braces), jump straight to the
+    // matching `}` first so strings/comments packed with `}` do not trigger
+    // quadratic Oxc parses.
+    if let Some(balanced_end) = balanced_expression_candidate(bytes, start) {
+        let value = &source[start + 1..balanced_end - 1];
+        if valid_expression(&allocator, value) {
+            return Some(balanced_end);
+        }
+    }
     for relative in memchr::memchr_iter(b'}', tail.as_bytes()) {
         let end = start + 1 + relative;
         let value = &source[start + 1..end];
         allocator.reset();
         if valid_expression(&allocator, value) {
             return Some(end + 1);
+        }
+    }
+    None
+}
+
+/// Finds the matching `}` for `{` at `start` by skipping strings, comments,
+/// and nested `{...}` when no ambiguous `/` (potential regex literal) appears
+/// before the closing brace.
+fn balanced_expression_candidate(bytes: &[u8], start: usize) -> Option<usize> {
+    if bytes.get(start) != Some(&b'{') {
+        return None;
+    }
+    let mut cursor = start + 1;
+    let mut depth = 1u32;
+    while cursor < bytes.len() {
+        match bytes[cursor] {
+            b'"' | b'\'' | b'`' => {
+                cursor = super::mdx_jsx::braces::skip_quoted(bytes, cursor)?;
+            }
+            b'/' if bytes.get(cursor + 1) == Some(&b'/') => {
+                cursor += 2;
+                while cursor < bytes.len() && !matches!(bytes[cursor], b'\n' | b'\r') {
+                    cursor += 1;
+                }
+            }
+            b'/' if bytes.get(cursor + 1) == Some(&b'*') => {
+                let rel = memchr::memmem::find(&bytes[cursor + 2..], b"*/")?;
+                cursor = cursor + 2 + rel + 2;
+            }
+            // A bare `/` might start a regex literal containing quotes or `}`.
+            b'/' => return None,
+            b'{' => {
+                depth = depth.saturating_add(1);
+                cursor += 1;
+            }
+            b'}' => {
+                depth -= 1;
+                cursor += 1;
+                if depth == 0 {
+                    return Some(cursor);
+                }
+            }
+            _ => cursor += 1,
         }
     }
     None
@@ -139,9 +193,9 @@ pub(super) fn valid_closing(source: &str) -> bool {
 }
 
 /// Whether text that is not valid JavaScript is a valid TypeScript module.
-fn is_typescript(value: &str) -> bool {
-    let allocator = oxc_allocator::Allocator::default();
-    let result = oxc_parser::Parser::new(&allocator, value, oxc_span::SourceType::tsx()).parse();
+fn is_typescript(allocator: &mut oxc_allocator::Allocator, value: &str) -> bool {
+    allocator.reset();
+    let result = oxc_parser::Parser::new(allocator, value, oxc_span::SourceType::tsx()).parse();
     result.diagnostics.is_empty() && !result.panicked && !result.program.body.is_empty()
 }
 
@@ -152,7 +206,7 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
     let mut cursor = start;
     let mut allocator = oxc_allocator::Allocator::default();
     let mut first_error = None;
-    let mut typescript = false;
+    let mut failed_boundaries = smallvec::SmallVec::<[usize; 4]>::new();
     loop {
         let end = line_end(source.as_bytes(), cursor);
         let next = line_terminator_end(source.as_bytes(), end);
@@ -188,6 +242,7 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
                     "MDX module blocks may contain only import/export declarations; separate Markdown with a blank line",
                 ));
             }
+            failed_boundaries.push(cursor);
             if first_error.is_none() {
                 first_error = Some(invalid(
                     Span::new(start as u32, cursor as u32),
@@ -200,18 +255,20 @@ pub(super) fn esm_end(source: &str, start: usize) -> ParseResult<usize> {
                         }),
                 ));
             }
-            // The JavaScript diagnostic for a type annotation names an
-            // unrelated construct, so say what the actual cause is.
-            if !typescript && is_typescript(&source[start..cursor]) {
-                typescript = true;
-                first_error = Some(invalid(
-                    Span::new(start as u32, cursor as u32),
-                    MdxDiagnosticKind::InvalidModule,
-                    "TypeScript syntax is not supported in MDX module blocks; write JavaScript",
-                ));
-            }
         }
         if cursor == source.len() {
+            // Only probe for TypeScript syntax when the module block failed to
+            // close as JavaScript, instead of re-parsing TSX on every blank
+            // line inside an incomplete multiline template or function.
+            for boundary in failed_boundaries {
+                if is_typescript(&mut allocator, &source[start..boundary]) {
+                    return Err(invalid(
+                        Span::new(start as u32, boundary as u32),
+                        MdxDiagnosticKind::InvalidModule,
+                        "TypeScript syntax is not supported in MDX module blocks; write JavaScript",
+                    ));
+                }
+            }
             return Err(first_error.unwrap_or_else(|| {
                 invalid(
                     Span::new(start as u32, cursor as u32),

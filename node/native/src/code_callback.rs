@@ -165,11 +165,10 @@ impl HtmlRenderHooks for JsCodeHooks<'_> {
         let object =
             self.highlight_object(input.code, input.language, input.raw_meta, input.span)?;
         let lines = object.lines?;
-        let block = HighlightedCodeBlock::new(lines);
-        Some(match (object.foreground, object.background) {
-            (Some(foreground), Some(background)) => block.with_colors(foreground, background),
-            _ => block,
-        })
+        let mut block = HighlightedCodeBlock::new(lines);
+        block.foreground = object.foreground;
+        block.background = object.background;
+        Some(block)
     }
 }
 

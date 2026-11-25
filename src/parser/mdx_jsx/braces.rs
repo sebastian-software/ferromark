@@ -147,7 +147,7 @@ pub(super) fn skip_braces(bytes: &[u8], start: usize) -> Option<usize> {
     None
 }
 
-pub(super) fn skip_quoted(bytes: &[u8], start: usize) -> Option<usize> {
+pub(in crate::parser) fn skip_quoted(bytes: &[u8], start: usize) -> Option<usize> {
     let quote = *bytes.get(start)?;
     let mut cursor = start + 1;
     while cursor < bytes.len() {
@@ -163,24 +163,27 @@ pub(super) fn skip_quoted(bytes: &[u8], start: usize) -> Option<usize> {
     None
 }
 
-pub(super) fn skip_backticks(bytes: &[u8], start: usize) -> Option<usize> {
+pub(super) fn backtick_run_len(bytes: &[u8], start: usize) -> usize {
     let mut open = 0usize;
     while start + open < bytes.len() && bytes[start + open] == b'`' {
         open += 1;
     }
+    open
+}
+
+pub(super) fn skip_backticks(bytes: &[u8], start: usize) -> Option<usize> {
+    let open = backtick_run_len(bytes, start);
     if open == 0 {
         return None;
     }
     let mut cursor = start + open;
-    while cursor + open <= bytes.len() {
-        if bytes[cursor..cursor + open]
-            .iter()
-            .all(|byte| *byte == b'`')
-            && bytes.get(cursor + open) != Some(&b'`')
-        {
-            return Some(cursor + open);
+    while let Some(relative) = memchr::memchr(b'`', &bytes[cursor..]) {
+        cursor += relative;
+        let close = backtick_run_len(bytes, cursor);
+        if close == open {
+            return Some(cursor + close);
         }
-        cursor += 1;
+        cursor += close;
     }
     None
 }

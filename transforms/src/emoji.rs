@@ -58,6 +58,11 @@ fn transform_text_runs<'arena>(
             continue;
         }
         let value = run.value();
+        // Fast path: skip URL protection and shortcode scanning completely
+        // when the run contains no colon at all.
+        if !value.contains(':') {
+            continue;
+        }
         let protected = run.protected_url_ranges(context);
         for (byte_range, replacement) in find_shortcodes(&value, &protected) {
             matches.push(EmojiMatch {
@@ -76,20 +81,17 @@ fn transform_text_runs<'arena>(
             active_run = Some(start);
             boundary = matched.node_range.end;
         }
-        let replacement_span = context.replace_text_range(
+        let (_, inserted_index) = TransformContext::replace_text_range_with_node(
             nodes,
             start..boundary,
             matched.byte_range,
-            matched.replacement,
+            |span| {
+                Some(ferromark::ast::Node::Text(
+                    context.replacement_text(matched.replacement, span),
+                ))
+            },
         )?;
-        boundary = nodes
-            .iter()
-            .position(|node| {
-                matches!(node, ferromark::ast::Node::Text(text) if text.span == replacement_span && text.value == matched.replacement)
-            })
-            .ok_or_else(|| {
-                std::io::Error::other("emoji replacement text node was not inserted")
-            })?;
+        boundary = inserted_index;
     }
 
     Ok(())
@@ -99,25 +101,27 @@ fn find_shortcodes(value: &str, protected: &[Range<usize>]) -> Vec<(Range<usize>
     let bytes = value.as_bytes();
     let mut matches = Vec::new();
     let mut cursor = 0;
+    let mut protected_idx = 0;
 
-    while cursor < bytes.len() {
-        if let Some(range) = protected
-            .iter()
-            .find(|range| range.start <= cursor && cursor < range.end)
+    while let Some(rel) = value[cursor..].find(':') {
+        cursor += rel;
+        while protected_idx < protected.len() && protected[protected_idx].end <= cursor {
+            protected_idx += 1;
+        }
+        if let Some(range) = protected.get(protected_idx)
+            && range.start <= cursor
+            && cursor < range.end
         {
             cursor = range.end;
             continue;
         }
 
-        if bytes[cursor] == b':'
-            && let Some((end, name)) = parse_shortcode(bytes, cursor)
-        {
+        if let Some((end, name)) = parse_shortcode(bytes, cursor) {
             let range = cursor..end;
-            if !protected
-                .iter()
-                .any(|protected| range.start < protected.end && protected.start < range.end)
-                && let Some(emoji) = shortcode_value(name)
-            {
+            let overlaps_protected = protected
+                .get(protected_idx)
+                .is_some_and(|prot| prot.start < range.end && range.start < prot.end);
+            if !overlaps_protected && let Some(emoji) = shortcode_value(name) {
                 matches.push((range, emoji));
                 cursor = end;
                 continue;

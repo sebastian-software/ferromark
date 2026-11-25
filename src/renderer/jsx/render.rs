@@ -125,12 +125,16 @@ struct Renderer<'a, 'options, 'hooks, H> {
 
 impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> {
     fn new(source: &'a str, options: &'options JsxRendererOptions, hooks: &'hooks mut H) -> Self {
+        let mut output = JsxOutput::default();
+        if !source.is_empty() {
+            output.body.reserve(source.len().saturating_mul(2));
+        }
         Self {
             source,
             line_index: LineIndex::new(source),
             options,
             hooks,
-            output: JsxOutput::default(),
+            output,
             references: Vec::new(),
             generated_line: 0,
             generated_column: 0,
@@ -145,7 +149,16 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn push(&mut self, value: &str) {
+        if value.is_empty() {
+            return;
+        }
         self.output.body.push_str(value);
+        let bytes = value.as_bytes();
+        if bytes.is_ascii() && memchr::memchr2(b'\r', b'\n', bytes).is_none() {
+            self.generated_column = self.generated_column.saturating_add(bytes.len() as u32);
+            self.generated_previous_cr = false;
+            return;
+        }
         for ch in value.chars() {
             match ch {
                 '\r' => {
@@ -168,29 +181,88 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         }
     }
 
-    fn push_js_string(&mut self, value: &str) {
-        let mut escaped = String::with_capacity(value.len().saturating_add(2));
-        escaped.push('"');
-        for ch in value.chars() {
-            match ch {
-                '"' => escaped.push_str("\\\""),
-                '\\' => escaped.push_str("\\\\"),
-                '\n' => escaped.push_str("\\n"),
-                '\r' => escaped.push_str("\\r"),
-                '\t' => escaped.push_str("\\t"),
-                '\u{0008}' => escaped.push_str("\\b"),
-                '\u{000c}' => escaped.push_str("\\f"),
-                '\u{2028}' => escaped.push_str("\\u2028"),
-                '\u{2029}' => escaped.push_str("\\u2029"),
-                ch if ch.is_control() => {
-                    use std::fmt::Write as _;
-                    let _ = write!(escaped, "\\u{:04x}", ch as u32);
-                }
-                _ => escaped.push(ch),
+    /// Streams `value` escaped as JS string contents straight into
+    /// `self.output.body` and returns the UTF-16 column count added.
+    fn push_js_string_inner(&mut self, value: &str) -> u32 {
+        let mut added_cols = 0u32;
+        let bytes = value.as_bytes();
+        let mut start = 0usize;
+        let mut i = 0usize;
+        while i < bytes.len() {
+            let b = bytes[i];
+            if (0x20..0x7F).contains(&b) && b != b'"' && b != b'\\' {
+                i += 1;
+                continue;
             }
+            if i > start {
+                self.output.body.push_str(&value[start..i]);
+                added_cols = added_cols.saturating_add((i - start) as u32);
+            }
+            if b < 0x80 {
+                let esc: &str = match b {
+                    b'"' => "\\\"",
+                    b'\\' => "\\\\",
+                    b'\n' => "\\n",
+                    b'\r' => "\\r",
+                    b'\t' => "\\t",
+                    0x08 => "\\b",
+                    0x0C => "\\f",
+                    _ => {
+                        use std::fmt::Write as _;
+                        let _ = write!(self.output.body, "\\u{b:04x}");
+                        added_cols = added_cols.saturating_add(6);
+                        i += 1;
+                        start = i;
+                        continue;
+                    }
+                };
+                self.output.body.push_str(esc);
+                added_cols = added_cols.saturating_add(esc.len() as u32);
+                i += 1;
+            } else {
+                let Some(ch) = value[i..].chars().next() else {
+                    break;
+                };
+                let ch_len = ch.len_utf8();
+                match ch {
+                    '\u{2028}' => {
+                        self.output.body.push_str("\\u2028");
+                        added_cols = added_cols.saturating_add(6);
+                    }
+                    '\u{2029}' => {
+                        self.output.body.push_str("\\u2029");
+                        added_cols = added_cols.saturating_add(6);
+                    }
+                    ch if ch.is_control() => {
+                        use std::fmt::Write as _;
+                        let _ = write!(self.output.body, "\\u{:04x}", ch as u32);
+                        added_cols = added_cols.saturating_add(6);
+                    }
+                    _ => {
+                        self.output.body.push_str(&value[i..i + ch_len]);
+                        added_cols = added_cols.saturating_add(ch.len_utf16() as u32);
+                    }
+                }
+                i += ch_len;
+            }
+            start = i;
         }
-        escaped.push('"');
-        self.push(&escaped);
+        if start < bytes.len() {
+            self.output.body.push_str(&value[start..]);
+            added_cols = added_cols.saturating_add((bytes.len() - start) as u32);
+        }
+        added_cols
+    }
+
+    fn push_js_string(&mut self, value: &str) {
+        self.output.body.reserve(value.len().saturating_add(2));
+        self.output.body.push('"');
+        let inner_cols = self.push_js_string_inner(value);
+        self.output.body.push('"');
+        self.generated_column = self
+            .generated_column
+            .saturating_add(inner_cols.saturating_add(2));
+        self.generated_previous_cr = false;
     }
 
     fn push_string_child(&mut self, value: &str) {
@@ -208,10 +280,20 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn push_string_attribute_with_suffix(&mut self, name: &str, prefix: &str, suffix: &str) {
-        let mut value = String::with_capacity(prefix.len() + suffix.len());
-        value.push_str(prefix);
-        value.push_str(suffix);
-        self.push_string_attribute(name, &value);
+        self.push(" ");
+        self.push(name);
+        self.push("={");
+        self.output
+            .body
+            .reserve(prefix.len().saturating_add(suffix.len()).saturating_add(2));
+        self.output.body.push('"');
+        let cols = self
+            .push_js_string_inner(prefix)
+            .saturating_add(self.push_js_string_inner(suffix));
+        self.output.body.push('"');
+        self.generated_column = self.generated_column.saturating_add(cols.saturating_add(2));
+        self.generated_previous_cr = false;
+        self.push("}");
     }
 
     fn push_boolean_attribute(&mut self, name: &str, value: bool) {
@@ -328,37 +410,44 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         }
     }
 
-    fn generated_tag_name(&mut self, tag: &str) -> String {
+    fn record_generated_element(&mut self, tag: &str) {
         if !self.output.elements.iter().any(|element| element == tag) {
             self.output.elements.push(tag.to_owned());
         }
-        match self.options.component_prefix.as_deref() {
-            Some(prefix) if !prefix.is_empty() => {
-                let mut rendered = String::with_capacity(prefix.len() + 1 + tag.len());
-                rendered.push_str(prefix);
-                rendered.push('.');
-                rendered.push_str(tag);
-                rendered
-            }
-            _ => tag.to_owned(),
-        }
     }
 
-    fn start_generated(&mut self, tag: &str) -> String {
-        let rendered = self.generated_tag_name(tag);
+    fn start_generated(&mut self, tag: &str) {
+        self.record_generated_element(tag);
         self.push("<");
-        self.push(&rendered);
-        rendered
+        if let Some(prefix) = self
+            .options
+            .component_prefix
+            .as_deref()
+            .filter(|prefix| !prefix.is_empty())
+        {
+            self.push(prefix);
+            self.push(".");
+        }
+        self.push(tag);
     }
 
     fn end_generated(&mut self, tag: &str) {
         self.push("</");
+        if let Some(prefix) = self
+            .options
+            .component_prefix
+            .as_deref()
+            .filter(|prefix| !prefix.is_empty())
+        {
+            self.push(prefix);
+            self.push(".");
+        }
         self.push(tag);
         self.push(">");
     }
 
     fn render_void(&mut self, tag: &str) {
-        let _ = self.start_generated(tag);
+        self.start_generated(tag);
         self.push(" />");
     }
 
@@ -384,21 +473,22 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn render_paragraph(&mut self, paragraph: &Paragraph<'_>) {
-        let rendered = self.start_generated("p");
+        self.start_generated("p");
         self.push(">");
         self.render_inline_children(&paragraph.children);
-        self.end_generated(&rendered);
+        self.end_generated("p");
         self.push("\n");
     }
 
     fn render_heading(&mut self, heading: &Heading<'_>) {
         let level = map_heading_level(heading.depth, self.options.heading_level_offset);
+        let text = heading_text(&heading.children);
         let id = if self.options.heading_ids {
             let mut candidate = self.options.heading_id_prefix.clone();
             if let Some(explicit) = heading.explicit_id() {
                 candidate.push_str(explicit);
             } else {
-                candidate.push_str(&slugify_heading(&heading_text(&heading.children)));
+                candidate.push_str(&slugify_heading(&text));
             }
             Some(self.id_planner.plan(&candidate))
         } else {
@@ -413,7 +503,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
             5 => "h5",
             _ => "h6",
         };
-        let rendered = self.start_generated(tag);
+        self.start_generated(tag);
         if let Some(id) = id.as_deref() {
             self.push_string_attribute("id", id);
         }
@@ -427,12 +517,12 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         self.push(">");
         self.output.headings.push(OutlineEntry {
             level,
-            text: heading_text(&heading.children),
+            text,
             id,
             span: heading.span,
         });
         self.render_inline_children(&heading.children);
-        self.end_generated(&rendered);
+        self.end_generated(tag);
         self.push("\n");
     }
 
@@ -450,12 +540,12 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
             return;
         }
 
-        let rendered = self.start_generated("blockquote");
+        self.start_generated("blockquote");
         self.push(">\n");
         for child in &block_quote.children {
             self.render_node(child);
         }
-        self.end_generated(&rendered);
+        self.end_generated("blockquote");
         self.push("\n");
     }
 
@@ -467,8 +557,8 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         remaining: &[Node<'_>],
     ) {
         let key = kind.class_name();
-        let component = self.options.callout_components.get(key).cloned();
-        let callout_tag = if let Some(component) = component.as_deref() {
+        let component = self.options.callout_components.get(key).map(String::as_str);
+        if let Some(component) = component {
             self.add_component(component);
             self.push("<");
             self.push(component);
@@ -479,28 +569,25 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
             self.push("{");
             self.push_js_string(kind.label());
             self.push("}>");
-            component.to_owned()
         } else {
-            let tag = self.start_generated("blockquote");
+            self.start_generated("blockquote");
             self.push_string_attribute_with_suffix("className", "ox-callout ox-callout--", key);
-            self.push(">");
-            self.push("\n");
-            let title = self.start_generated("p");
+            self.push(">\n");
+            self.start_generated("p");
             self.push_string_attribute("className", "ox-callout-title");
             self.push(">");
             self.push_string_child(kind.label());
-            self.end_generated(&title);
+            self.end_generated("p");
             self.push("\n");
-            tag
-        };
+        }
 
         if callout_paragraph_has_body(paragraph, consumed) {
             self.add_mapping(paragraph.span);
             if component.is_none() {
-                let p = self.start_generated("p");
+                self.start_generated("p");
                 self.push(">");
                 self.render_callout_paragraph_body(paragraph, consumed);
-                self.end_generated(&p);
+                self.end_generated("p");
                 self.push("\n");
             } else {
                 self.render_callout_paragraph_body(paragraph, consumed);
@@ -509,8 +596,14 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         for child in remaining {
             self.render_node(child);
         }
-        self.end_generated(&callout_tag);
-        self.push("\n");
+        if let Some(component) = component {
+            self.push("</");
+            self.push(component);
+            self.push(">\n");
+        } else {
+            self.end_generated("blockquote");
+            self.push("\n");
+        }
     }
 
     fn render_callout_paragraph_body(&mut self, paragraph: &Paragraph<'_>, consumed: usize) {
@@ -541,7 +634,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
 
     fn render_list(&mut self, list: &List<'_>) {
         let tag = if list.ordered { "ol" } else { "ul" };
-        let rendered = self.start_generated(tag);
+        self.start_generated(tag);
         if let Some(start) = list.start.filter(|start| *start != 1)
             && list.ordered
         {
@@ -554,16 +647,15 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         for item in &list.children {
             self.render_list_item(item, tight);
         }
-        self.end_generated(&rendered);
+        self.end_generated(tag);
         self.push("\n");
     }
 
     fn render_list_item(&mut self, item: &ListItem<'_>, tight: bool) {
-        let rendered = self.start_generated("li");
+        self.start_generated("li");
         self.push(">");
         if let Some(checked) = item.checked {
-            let input = self.start_generated("input");
-            let _ = input;
+            self.start_generated("input");
             self.push_string_attribute("type", "checkbox");
             self.push_boolean_attribute("checked", checked);
             self.push_boolean_attribute("disabled", true);
@@ -582,7 +674,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
             }
             self.render_node(child);
         }
-        self.end_generated(&rendered);
+        self.end_generated("li");
         self.push("\n");
     }
 
@@ -723,7 +815,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
             line_numbers || has_ranges || metadata.title.is_some() || metadata.label.is_some();
         let wrap_lines = highlighted.is_some() || line_numbers || has_ranges;
 
-        let pre = self.start_generated("pre");
+        self.start_generated("pre");
         let mut classes = Vec::new();
         if highlighted.is_some() {
             classes.push("shiki");
@@ -758,7 +850,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         }
         self.push(">");
 
-        let code_tag = self.start_generated("code");
+        self.start_generated("code");
         if let Some(language) = language.filter(|language| !language.is_empty()) {
             self.push_string_attribute_with_suffix("className", "language-", language);
         }
@@ -783,7 +875,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
                     line_classes.push("ox-code-line--highlight");
                     line_classes.push("highlighted");
                 }
-                let line_tag = self.start_generated("span");
+                self.start_generated("span");
                 let classes = line_classes.join(" ");
                 self.push_string_attribute("className", &classes);
                 self.push_string_attribute("data-line", &(index + 1).to_string());
@@ -797,13 +889,13 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
                 } else {
                     self.push_string_child(line);
                 }
-                self.end_generated(&line_tag);
+                self.end_generated("span");
             }
         } else {
             self.push_string_child(code);
         }
-        self.end_generated(&code_tag);
-        self.end_generated(&pre);
+        self.end_generated("code");
+        self.end_generated("pre");
     }
 
     fn write_highlight_colors(&mut self, highlighted: &super::JsxHighlightedCodeBlock) {
@@ -856,18 +948,18 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn render_math_block(&mut self, math: &MathBlock<'_>) {
-        let div = self.start_generated("div");
+        self.start_generated("div");
         self.push_string_attribute("className", "ox-math ox-math-block");
         self.push_string_attribute("data-ox-tex", math.value);
         self.push(">");
-        let math_tag = self.start_generated("math");
+        self.start_generated("math");
         self.push(" display={\"block\"}>");
-        let mtext = self.start_generated("mtext");
+        self.start_generated("mtext");
         self.push(">");
         self.push_string_child(math.value);
-        self.end_generated(&mtext);
-        self.end_generated(&math_tag);
-        self.end_generated(&div);
+        self.end_generated("mtext");
+        self.end_generated("math");
+        self.end_generated("div");
         self.push("\n");
     }
 
@@ -1055,7 +1147,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn render_table(&mut self, table: &Table<'_>, planned_id: Option<&str>) {
-        let rendered = self.start_generated("table");
+        self.start_generated("table");
         if let Some(attributes) = &table.attributes {
             if let Some(id) = planned_id {
                 self.push_string_attribute("id", id);
@@ -1071,24 +1163,24 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         for (row_index, row) in table.children.iter().enumerate() {
             if row_index == 0 {
                 self.push("\n");
-                let thead = self.start_generated("thead");
+                self.start_generated("thead");
                 self.push(">");
                 self.render_table_row(row, true, table.align.as_slice());
-                self.end_generated(&thead);
+                self.end_generated("thead");
             } else if row_index == 1 {
                 self.push("\n");
-                let tbody = self.start_generated("tbody");
+                self.start_generated("tbody");
                 self.push(">");
                 self.render_table_row(row, false, table.align.as_slice());
                 // Close tbody after all remaining rows.
                 for later in table.children.iter().skip(row_index + 1) {
                     self.render_table_row(later, false, table.align.as_slice());
                 }
-                self.end_generated(&tbody);
+                self.end_generated("tbody");
                 break;
             }
         }
-        self.end_generated(&rendered);
+        self.end_generated("table");
         self.push("\n");
     }
 
@@ -1100,21 +1192,21 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
             return;
         }
         self.push("\n");
-        let caption = self.start_generated("caption");
+        self.start_generated("caption");
         self.push(">");
         self.render_inline_children(&attributes.caption);
-        self.end_generated(&caption);
+        self.end_generated("caption");
     }
 
     fn render_table_row(&mut self, row: &TableRow<'_>, header: bool, align: &[AlignKind]) {
         self.push("\n");
-        let tr = self.start_generated("tr");
+        self.start_generated("tr");
         self.push(">");
         let mut column_index = 0usize;
         for cell in &row.children {
             self.push("\n");
             let tag = if header { "th" } else { "td" };
-            let cell_tag = self.start_generated(tag);
+            self.start_generated(tag);
             if let Some(alignment) = align.get(column_index) {
                 let alignment = match alignment {
                     AlignKind::None => None,
@@ -1133,14 +1225,14 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
             }
             self.push(">");
             self.render_inline_children(&cell.children);
-            self.end_generated(&cell_tag);
+            self.end_generated(tag);
             column_index = column_index.saturating_add(cell.colspan.max(1));
         }
-        self.end_generated(&tr);
+        self.end_generated("tr");
     }
 
     fn render_figure(&mut self, figure: &Figure<'_>, planned_id: Option<&str>) {
-        let rendered = self.start_generated("figure");
+        self.start_generated("figure");
         if let Some(attributes) = &figure.attributes {
             if let Some(id) = planned_id {
                 self.push_string_attribute("id", id);
@@ -1153,36 +1245,36 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         self.push(">");
         self.render_node(&figure.content);
         self.push("\n");
-        let caption = self.start_generated("figcaption");
+        self.start_generated("figcaption");
         self.push(">");
         self.render_inline_children(&figure.caption);
-        self.end_generated(&caption);
+        self.end_generated("figcaption");
         self.push("\n");
-        self.end_generated(&rendered);
+        self.end_generated("figure");
         self.push("\n");
     }
 
     fn render_definition_list(&mut self, list: &DefinitionList<'_>) {
-        let rendered = self.start_generated("dl");
+        self.start_generated("dl");
         self.push_string_attribute("className", "ox-definition-list");
         self.push(">");
         for child in &list.children {
             self.render_node(child);
         }
-        self.end_generated(&rendered);
+        self.end_generated("dl");
         self.push("\n");
     }
 
     fn render_definition_list_term(&mut self, term: &DefinitionListTerm<'_>) {
-        let rendered = self.start_generated("dt");
+        self.start_generated("dt");
         self.push(">");
         self.render_inline_children(&term.children);
-        self.end_generated(&rendered);
+        self.end_generated("dt");
         self.push("\n");
     }
 
     fn render_definition_list_definition(&mut self, definition: &DefinitionListDefinition<'_>) {
-        let rendered = self.start_generated("dd");
+        self.start_generated("dd");
         self.push(">");
         if definition.children.len() == 1
             && let Some(Node::Paragraph(paragraph)) = definition.children.first()
@@ -1195,37 +1287,37 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
                 self.render_node(child);
             }
         }
-        self.end_generated(&rendered);
+        self.end_generated("dd");
         self.push("\n");
     }
 
     fn render_wrapped_inline(&mut self, tag: &str, children: &[Node<'_>]) {
-        let rendered = self.start_generated(tag);
+        self.start_generated(tag);
         self.push(">");
         self.render_inline_children(children);
-        self.end_generated(&rendered);
+        self.end_generated(tag);
     }
 
     fn render_inline_code(&mut self, value: &str) {
-        let rendered = self.start_generated("code");
+        self.start_generated("code");
         self.push(">");
         self.push_string_child(value);
-        self.end_generated(&rendered);
+        self.end_generated("code");
     }
 
     fn render_inline_math(&mut self, value: &str) {
-        let span = self.start_generated("span");
+        self.start_generated("span");
         self.push_string_attribute("className", "ox-math ox-math-inline");
         self.push_string_attribute("data-ox-tex", value);
         self.push(">");
-        let math = self.start_generated("math");
+        self.start_generated("math");
         self.push(">");
-        let mtext = self.start_generated("mtext");
+        self.start_generated("mtext");
         self.push(">");
         self.push_string_child(value);
-        self.end_generated(&mtext);
-        self.end_generated(&math);
-        self.end_generated(&span);
+        self.end_generated("mtext");
+        self.end_generated("math");
+        self.end_generated("span");
     }
 
     fn render_inline_children(&mut self, children: &[Node<'_>]) {
@@ -1237,7 +1329,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn render_link(&mut self, link: &Link<'_>, planned_id: Option<&str>) {
-        let rendered = self.start_generated("a");
+        self.start_generated("a");
         self.push_string_attribute("href", link.url);
         if let Some(title) = link.title {
             self.push_string_attribute("title", title);
@@ -1256,7 +1348,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         }
         self.push(">");
         self.render_inline_children(&link.children);
-        self.end_generated(&rendered);
+        self.end_generated("a");
     }
 
     fn render_image(&mut self, image: &Image<'_>, planned_id: Option<&str>) {
@@ -1284,7 +1376,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
     }
 
     fn render_span(&mut self, span: &InlineSpan<'_>, planned_id: Option<&str>) {
-        let rendered = self.start_generated("span");
+        self.start_generated("span");
         if let Some(id) = planned_id {
             self.push_string_attribute("id", id);
         }
@@ -1294,7 +1386,7 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         self.write_element_attributes(&span.attributes, &["id", "class", "className"]);
         self.push(">");
         self.render_inline_children(&span.children);
-        self.end_generated(&rendered);
+        self.end_generated("span");
     }
 
     fn render_mdx_flow_element(&mut self, element: &MdxJsxFlowElement<'_>) {
@@ -1408,35 +1500,34 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
         let occurrence = *occurrence;
         let reference = self.footnote_reference_id(footnote.identifier, occurrence);
 
-        let sup = self.start_generated("sup");
+        self.start_generated("sup");
         self.push(">");
-        let anchor = self.start_generated("a");
+        self.start_generated("a");
         self.push_string_attribute_with_suffix("href", "#", &target);
         self.push_string_attribute("id", &reference);
         self.push(">");
         self.push_string_child(footnote.identifier);
-        self.end_generated(&anchor);
-        self.end_generated(&sup);
+        self.end_generated("a");
+        self.end_generated("sup");
     }
 
     fn render_footnote_definition(&mut self, footnote: &FootnoteDefinition<'_>) {
         let target = self.footnote_target_id(footnote.identifier);
         let reference = self.footnote_reference_id(footnote.identifier, 1);
-        let rendered = self.start_generated("div");
+        self.start_generated("div");
         self.push_string_attribute("id", &target);
         self.push_string_attribute("className", "footnote");
-        self.push(">");
-        self.push("\n");
+        self.push(">\n");
         for child in &footnote.children {
             self.render_node(child);
         }
-        let anchor = self.start_generated("a");
+        self.start_generated("a");
         self.push_string_attribute_with_suffix("href", "#", &reference);
         self.push(">");
         self.push_string_child("↩");
-        self.end_generated(&anchor);
+        self.end_generated("a");
         self.push("\n");
-        self.end_generated(&rendered);
+        self.end_generated("div");
         self.push("\n");
     }
 
@@ -1476,27 +1567,28 @@ impl<'a, 'options, 'hooks, H: JsxRenderHooks> Renderer<'a, 'options, 'hooks, H> 
 
     fn write_element_attributes(&mut self, attributes: &[Attribute<'_>], reserved: &[&str]) {
         for attribute in attributes {
+            let needs_data_prefix = !is_standard_html_attribute(attribute.name)
+                && !attribute.name.starts_with("data-")
+                && !attribute.name.starts_with("aria-");
             if reserved.contains(&attribute.name)
-                || attributes.iter().any(|other| {
-                    other.name == "data-".to_owned() + attribute.name
-                        && !attribute.name.starts_with("data-")
-                })
+                || (needs_data_prefix
+                    && attributes
+                        .iter()
+                        .any(|other| other.name.strip_prefix("data-") == Some(attribute.name)))
             {
                 continue;
-            }
-            let mut name = attribute.name.to_owned();
-            if !is_standard_html_attribute(attribute.name)
-                && !attribute.name.starts_with("data-")
-                && !attribute.name.starts_with("aria-")
-            {
-                name.insert_str(0, "data-");
             }
             if attribute.name == "style" {
                 self.write_style_attribute(attribute.value);
                 continue;
             }
             self.push(" ");
-            self.push(jsx_attribute_name(&name));
+            if needs_data_prefix {
+                self.push("data-");
+                self.push(attribute.name);
+            } else {
+                self.push(jsx_attribute_name(attribute.name));
+            }
             self.push("={");
             self.push_js_string(attribute.value);
             self.push("}");
@@ -1638,10 +1730,118 @@ fn svg_jsx_attribute_name(name: &str) -> String {
 }
 
 fn is_standard_html_attribute(name: &str) -> bool {
-    const STANDARD: &str = "abbr accept accept-charset accesskey action align alt as async autocapitalize autocomplete autofocus autoplay capture charset checked cite class cols colspan content contenteditable controls coords crossorigin data datetime decoding default defer dir dirname disabled download draggable enctype enterkeyhint fetchpriority for form formaction headers height hidden high href hreflang http-equiv id inert inputmode integrity ismap kind label lang list loading loop low max maxlength media method min minlength multiple muted name nonce open optimum pattern placeholder playsinline poster preload readonly referrerpolicy rel required reversed role rows rowspan sandbox scope selected shape size sizes slot span spellcheck src srcdoc srcset start step style tabindex target title translate type usemap value width wrap";
-    STANDARD
-        .split_ascii_whitespace()
-        .any(|candidate| candidate == name)
+    const STANDARD: &[&str] = &[
+        "abbr",
+        "accept",
+        "accept-charset",
+        "accesskey",
+        "action",
+        "align",
+        "alt",
+        "as",
+        "async",
+        "autocapitalize",
+        "autocomplete",
+        "autofocus",
+        "autoplay",
+        "capture",
+        "charset",
+        "checked",
+        "cite",
+        "class",
+        "cols",
+        "colspan",
+        "content",
+        "contenteditable",
+        "controls",
+        "coords",
+        "crossorigin",
+        "data",
+        "datetime",
+        "decoding",
+        "default",
+        "defer",
+        "dir",
+        "dirname",
+        "disabled",
+        "download",
+        "draggable",
+        "enctype",
+        "enterkeyhint",
+        "fetchpriority",
+        "for",
+        "form",
+        "formaction",
+        "headers",
+        "height",
+        "hidden",
+        "high",
+        "href",
+        "hreflang",
+        "http-equiv",
+        "id",
+        "inert",
+        "inputmode",
+        "integrity",
+        "ismap",
+        "kind",
+        "label",
+        "lang",
+        "list",
+        "loading",
+        "loop",
+        "low",
+        "max",
+        "maxlength",
+        "media",
+        "method",
+        "min",
+        "minlength",
+        "multiple",
+        "muted",
+        "name",
+        "nonce",
+        "open",
+        "optimum",
+        "pattern",
+        "placeholder",
+        "playsinline",
+        "poster",
+        "preload",
+        "readonly",
+        "referrerpolicy",
+        "rel",
+        "required",
+        "reversed",
+        "role",
+        "rows",
+        "rowspan",
+        "sandbox",
+        "scope",
+        "selected",
+        "shape",
+        "size",
+        "sizes",
+        "slot",
+        "span",
+        "spellcheck",
+        "src",
+        "srcdoc",
+        "srcset",
+        "start",
+        "step",
+        "style",
+        "tabindex",
+        "target",
+        "title",
+        "translate",
+        "type",
+        "usemap",
+        "value",
+        "width",
+        "wrap",
+    ];
+    STANDARD.binary_search(&name).is_ok()
 }
 
 struct RawTag<'a> {
@@ -1782,24 +1982,23 @@ fn skip_ascii_space(bytes: &[u8], cursor: &mut usize) {
     }
 }
 
+fn cmp_ascii_ignore_case(a: &str, b: &str) -> std::cmp::Ordering {
+    for (&ab, &bb) in a.as_bytes().iter().zip(b.as_bytes()) {
+        let ord = ab.to_ascii_lowercase().cmp(&bb.to_ascii_lowercase());
+        if ord != std::cmp::Ordering::Equal {
+            return ord;
+        }
+    }
+    a.len().cmp(&b.len())
+}
+
 fn is_void_html_element(name: &str) -> bool {
-    matches!(
-        name.to_ascii_lowercase().as_str(),
-        "area"
-            | "base"
-            | "br"
-            | "col"
-            | "embed"
-            | "hr"
-            | "img"
-            | "input"
-            | "link"
-            | "meta"
-            | "param"
-            | "source"
-            | "track"
-            | "wbr"
-    )
+    const VOID: &[&str] = &[
+        "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
+        "source", "track", "wbr",
+    ];
+    VOID.binary_search_by(|candidate| cmp_ascii_ignore_case(candidate, name))
+        .is_ok()
 }
 
 fn find_raw_text_closer(raw: &str, from: usize, name: &str) -> Option<usize> {
@@ -1881,65 +2080,31 @@ fn css_property_to_js(property: &str) -> String {
 }
 
 pub fn decode_html_entities(value: &str) -> String {
+    let Some(first) = memchr::memchr(b'&', value.as_bytes()) else {
+        return value.to_owned();
+    };
     let mut output = String::with_capacity(value.len());
-    let mut cursor = 0usize;
+    output.push_str(&value[..first]);
+    let mut cursor = first;
     while cursor < value.len() {
-        let Some(relative_ampersand) = value[cursor..].find('&') else {
+        let Some(relative_ampersand) = memchr::memchr(b'&', &value.as_bytes()[cursor..]) else {
             output.push_str(&value[cursor..]);
             break;
         };
         let ampersand = cursor + relative_ampersand;
         output.push_str(&value[cursor..ampersand]);
-        let candidate = &value[ampersand..];
-        let semicolon = candidate
-            .char_indices()
-            .take_while(|(index, _)| *index <= 33)
-            .find_map(|(index, ch)| (ch == ';').then_some(index));
-        let Some(semicolon) = semicolon else {
-            output.push('&');
-            cursor = ampersand + 1;
-            continue;
-        };
-        let entity = &candidate[1..semicolon];
-        if let Some(decoded) = decode_entity(entity) {
-            output.push_str(&decoded);
-            cursor = ampersand + semicolon + 1;
+        if let Some((entity, len)) = crate::parser::scan_entity(&value[ampersand..]) {
+            match entity {
+                crate::parser::EntityValue::Named(expansion) => output.push_str(expansion),
+                crate::parser::EntityValue::Char(ch) => output.push(ch),
+            }
+            cursor = ampersand + len;
         } else {
             output.push('&');
             cursor = ampersand + 1;
         }
     }
     output
-}
-
-fn decode_entity(entity: &str) -> Option<String> {
-    if let Some(numeric) = entity.strip_prefix('#') {
-        let (digits, radix) = if let Some(hex) = numeric.strip_prefix(['x', 'X']) {
-            (hex, 16)
-        } else {
-            (numeric, 10)
-        };
-        let code = u32::from_str_radix(digits, radix).ok()?;
-        let ch = char::from_u32(code)
-            .filter(|ch| *ch != '\0')
-            .unwrap_or('\u{fffd}');
-        return Some(ch.to_string());
-    }
-    html_entities()
-        .get(entity)
-        .map(|decoded| (*decoded).to_owned())
-}
-
-fn html_entities() -> &'static std::collections::HashMap<&'static str, &'static str> {
-    use std::sync::OnceLock;
-    static ENTITIES: OnceLock<std::collections::HashMap<&'static str, &'static str>> =
-        OnceLock::new();
-    ENTITIES.get_or_init(|| {
-        include_str!("../../parser/inline/entities.txt")
-            .lines()
-            .filter_map(|line| line.split_once('\t'))
-            .collect()
-    })
 }
 
 fn raw_tag_name(name: &str) -> String {
@@ -1959,15 +2124,186 @@ fn is_js_identifier(name: &str) -> bool {
 }
 
 fn is_html_element_name(name: &str) -> bool {
-    const ELEMENTS: &str = "a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var video wbr";
+    const ELEMENTS: &[&str] = &[
+        "a",
+        "abbr",
+        "address",
+        "area",
+        "article",
+        "aside",
+        "audio",
+        "b",
+        "base",
+        "bdi",
+        "bdo",
+        "blockquote",
+        "body",
+        "br",
+        "button",
+        "canvas",
+        "caption",
+        "cite",
+        "code",
+        "col",
+        "colgroup",
+        "data",
+        "datalist",
+        "dd",
+        "del",
+        "details",
+        "dfn",
+        "dialog",
+        "div",
+        "dl",
+        "dt",
+        "em",
+        "embed",
+        "fieldset",
+        "figcaption",
+        "figure",
+        "footer",
+        "form",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "head",
+        "header",
+        "hgroup",
+        "hr",
+        "html",
+        "i",
+        "iframe",
+        "img",
+        "input",
+        "ins",
+        "kbd",
+        "label",
+        "legend",
+        "li",
+        "link",
+        "main",
+        "map",
+        "mark",
+        "menu",
+        "meta",
+        "meter",
+        "nav",
+        "noscript",
+        "object",
+        "ol",
+        "optgroup",
+        "option",
+        "output",
+        "p",
+        "picture",
+        "pre",
+        "progress",
+        "q",
+        "rp",
+        "rt",
+        "ruby",
+        "s",
+        "samp",
+        "script",
+        "search",
+        "section",
+        "select",
+        "slot",
+        "small",
+        "source",
+        "span",
+        "strong",
+        "style",
+        "sub",
+        "summary",
+        "sup",
+        "table",
+        "tbody",
+        "td",
+        "template",
+        "textarea",
+        "tfoot",
+        "th",
+        "thead",
+        "time",
+        "title",
+        "tr",
+        "track",
+        "u",
+        "ul",
+        "var",
+        "video",
+        "wbr",
+    ];
     ELEMENTS
-        .split_ascii_whitespace()
-        .any(|candidate| candidate.eq_ignore_ascii_case(name))
+        .binary_search_by(|candidate| cmp_ascii_ignore_case(candidate, name))
+        .is_ok()
 }
 
 fn is_svg_element_name(name: &str) -> bool {
-    const ELEMENTS: &str = "svg animate circle clipPath defs desc ellipse feBlend feColorMatrix feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feDistantLight feDropShadow feFlood feFuncA feFuncB feFuncG feFuncR feGaussianBlur feImage feMerge feMergeNode feMorphology feOffset fePointLight feSpecularLighting feSpotLight feTile feTurbulence filter foreignObject g image line linearGradient marker mask metadata mpath path pattern polygon polyline radialGradient rect set stop switch symbol text textPath tspan use view";
+    const ELEMENTS: &[&str] = &[
+        "animate",
+        "circle",
+        "clipPath",
+        "defs",
+        "desc",
+        "ellipse",
+        "feBlend",
+        "feColorMatrix",
+        "feComponentTransfer",
+        "feComposite",
+        "feConvolveMatrix",
+        "feDiffuseLighting",
+        "feDisplacementMap",
+        "feDistantLight",
+        "feDropShadow",
+        "feFlood",
+        "feFuncA",
+        "feFuncB",
+        "feFuncG",
+        "feFuncR",
+        "feGaussianBlur",
+        "feImage",
+        "feMerge",
+        "feMergeNode",
+        "feMorphology",
+        "feOffset",
+        "fePointLight",
+        "feSpecularLighting",
+        "feSpotLight",
+        "feTile",
+        "feTurbulence",
+        "filter",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "linearGradient",
+        "marker",
+        "mask",
+        "metadata",
+        "mpath",
+        "path",
+        "pattern",
+        "polygon",
+        "polyline",
+        "radialGradient",
+        "rect",
+        "set",
+        "stop",
+        "svg",
+        "switch",
+        "symbol",
+        "text",
+        "textPath",
+        "tspan",
+        "use",
+        "view",
+    ];
     ELEMENTS
-        .split_ascii_whitespace()
-        .any(|candidate| candidate.eq_ignore_ascii_case(name))
+        .binary_search_by(|candidate| cmp_ascii_ignore_case(candidate, name))
+        .is_ok()
 }

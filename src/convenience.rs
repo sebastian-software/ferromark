@@ -138,7 +138,7 @@ pub fn to_html_into(source: &str, output: &mut String) -> ParseResult<()> {
     // See `to_html` for why the default path skips the owned options struct.
     let arena = Allocator::for_source_len(source.len());
     let document = Parser::with_options(&arena, source, ParserOptions::default()).parse()?;
-    output.push_str(HtmlRenderer::new().render_borrowed(&document));
+    HtmlRenderer::new().render_into(&document, output);
     Ok(())
 }
 
@@ -157,6 +157,6 @@ pub fn to_html_into_with_options(
 ) -> ParseResult<()> {
     let arena = Allocator::for_source_len(source.len());
     let document = Parser::with_options(&arena, source, parser_options).parse()?;
-    output.push_str(HtmlRenderer::with_options(renderer_options).render_borrowed(&document));
+    HtmlRenderer::with_options(renderer_options).render_into(&document, output);
     Ok(())
 }

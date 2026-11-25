@@ -25,6 +25,7 @@ static COLON_SLASH_SLASH: LazyLock<memmem::Finder<'static>> =
 /// testing the word-boundary + prefix at every byte. Up to three distinct
 /// leading bytes keep the SIMD `memchr` fast path; beyond that (rare, only
 /// with many custom schemes) it falls back to a 256-entry lookup table.
+#[derive(Clone)]
 pub(in crate::renderer::html) struct FirstByteIndex {
     table: [bool; 256],
     needles: [u8; 3],
@@ -58,6 +59,27 @@ pub(in crate::renderer::html) struct FirstByteIndex {
 /// candidates starting with this first byte.
 const ANY_SECOND: u8 = 0xFF;
 
+/// Precomputed index for the default `["http://", "https://"]` patterns so
+/// `HtmlRenderer::new()` skips the 256-entry table setup on every construction.
+const DEFAULT_HTTP_INDEX: FirstByteIndex = {
+    let mut table = [false; 256];
+    table[b'h' as usize] = true;
+    table[b'H' as usize] = true;
+    let mut second = [0u8; 256];
+    second[b'h' as usize] = b't';
+    second[b'H' as usize] = b't';
+    FirstByteIndex {
+        table,
+        needles: [b'h', b'H', 0],
+        needle_len: 2,
+        overflow: false,
+        second,
+        gate: Some(b':'),
+        gate_tail: *b"//",
+        gate_tail_len: 2,
+    }
+};
+
 impl FirstByteIndex {
     /// Builds a compact candidate-start index for the configured patterns.
     ///
@@ -67,6 +89,12 @@ impl FirstByteIndex {
     /// in `needles` for `memchr`, `memchr2`, or `memchr3`; larger custom
     /// pattern sets keep correctness by falling back to the table scan.
     pub(in crate::renderer::html) fn from_patterns<P: AsRef<str>>(patterns: &[P]) -> Self {
+        if patterns.len() == 2
+            && patterns[0].as_ref() == "http://"
+            && patterns[1].as_ref() == "https://"
+        {
+            return DEFAULT_HTTP_INDEX.clone();
+        }
         let mut table = [false; 256];
         let mut needles = [0u8; 3];
         let mut needle_len = 0usize;

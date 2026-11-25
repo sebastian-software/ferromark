@@ -231,7 +231,7 @@ pub(in crate::renderer::html) fn plain_code_block_language(lang: &str) -> Option
 }
 
 pub(in crate::renderer::html) fn apply_annotation_numbers(
-    lines: &mut [CodeLineRenderState],
+    lines: &mut [CodeLineRenderState<'_>],
     line_numbers: &[usize],
     kind: CodeAnnotationKind,
 ) {
@@ -247,7 +247,7 @@ pub(in crate::renderer::html) fn apply_annotation_numbers(
 }
 
 pub(in crate::renderer::html) fn apply_btree_annotations(
-    lines: &mut [CodeLineRenderState],
+    lines: &mut [CodeLineRenderState<'_>],
     annotations: &BTreeMap<usize, SmallVec<[CodeAnnotationKind; 2]>>,
 ) {
     for (line_number, kinds) in annotations {
@@ -263,7 +263,7 @@ pub(in crate::renderer::html) fn apply_btree_annotations(
 }
 
 pub(in crate::renderer::html) fn apply_pending_annotations(
-    line: &mut CodeLineRenderState,
+    line: &mut CodeLineRenderState<'_>,
     pending_annotations: &mut SmallVec<[PendingCodeAnnotation; 2]>,
 ) {
     // Standalone VitePress directives annotate following lines. Drain the

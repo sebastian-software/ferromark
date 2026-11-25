@@ -202,6 +202,12 @@ struct ExtensionMemos<'a> {
     /// and again through the block-start probe, and the scan walks to the
     /// end of the source to report that there is none.
     math_block_close: std::cell::Cell<Option<(usize, usize)>>,
+
+    /// Known dead-end ranges `(no_closer_from_addr, slice_end_addr)` for
+    /// multi-byte inline HTML terminators (`-->`, `?>`, `]]>`), so repeated
+    /// unclosed `<!--`, `<?`, or `<![CDATA[` openers before a trailing `>`
+    /// do not scan quadratically.
+    html_no_closer: [std::cell::Cell<Option<(usize, usize)>>; 3],
 }
 
 /// A heap-owning memo table. It is boxed on first use, so parsers that never

@@ -60,11 +60,11 @@ impl HtmlRenderer {
         }
 
         let state = self.build_code_block_state(code_block, self.code_block_index + 1);
-        let normalized_code = state.copy_source.as_ref().map(|_| {
+        let normalized_code = state.copy_source.map(|_| {
             state
                 .lines
                 .iter()
-                .map(|line| line.value.as_str())
+                .map(|line| line.value)
                 .collect::<Vec<_>>()
                 .join("\n")
         });
@@ -143,11 +143,11 @@ impl HtmlRenderer {
     /// blocks become a simple line list, while VitePress inline annotations and
     /// meta annotations share the same `CodeLineRenderState` vector so later
     /// rendering walks each line once.
-    pub(in crate::renderer::html::renderer) fn build_code_block_state(
+    pub(in crate::renderer::html::renderer) fn build_code_block_state<'a>(
         &self,
-        code_block: &CodeBlock<'_>,
+        code_block: &CodeBlock<'a>,
         block_index: usize,
-    ) -> CodeBlockRenderState {
+    ) -> CodeBlockRenderState<'a> {
         let info = normalize_code_block_info(code_block.lang, code_block.meta);
         let syntax = self.options.code_annotation_syntax;
         let mut lines = if self.options.code_annotations && syntax.includes_vitepress() {
@@ -157,7 +157,7 @@ impl HtmlRenderer {
                 .value
                 .split('\n')
                 .map(|line| CodeLineRenderState {
-                    value: line.to_string(),
+                    value: line,
                     annotations: SmallVec::new(),
                 })
                 .collect()
@@ -258,7 +258,7 @@ impl HtmlRenderer {
             && syntax.includes_vitepress()
             && !line_values_match_source(&lines, code_block.value)
         {
-            Some(code_block.value.to_string())
+            Some(code_block.value)
         } else {
             None
         };
@@ -282,7 +282,7 @@ impl HtmlRenderer {
     /// when multiple annotations imply the same class.
     pub(in crate::renderer::html::renderer) fn write_code_lines(
         &mut self,
-        state: &CodeBlockRenderState,
+        state: &CodeBlockRenderState<'_>,
         highlighted_lines: Option<&[String]>,
     ) {
         let has_focus = state.has_focus();
@@ -310,7 +310,12 @@ impl HtmlRenderer {
             }
 
             self.write("<span class=\"");
-            self.write(&class_names.join(" "));
+            for (class_index, class_name) in class_names.iter().enumerate() {
+                if class_index > 0 {
+                    self.write(" ");
+                }
+                self.write(class_name);
+            }
             self.write("\" data-line=\"");
             self.write_display(line_number);
             self.write("\"");
@@ -345,7 +350,7 @@ impl HtmlRenderer {
             if let Some(highlighted) = highlighted_lines {
                 self.write(&highlighted[index]);
             } else {
-                self.write_escaped(&line.value);
+                self.write_escaped(line.value);
             }
             self.write("</span>");
 
@@ -414,10 +419,10 @@ fn push_usize(mut value: usize, output: &mut String) {
     }
 }
 
-fn line_values_match_source(lines: &[CodeLineRenderState], source: &str) -> bool {
+fn line_values_match_source(lines: &[CodeLineRenderState<'_>], source: &str) -> bool {
     let mut source_lines = source.split('\n');
     for line in lines {
-        if source_lines.next() != Some(line.value.as_str()) {
+        if source_lines.next() != Some(line.value) {
             return false;
         }
     }

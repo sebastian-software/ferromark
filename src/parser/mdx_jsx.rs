@@ -6,7 +6,7 @@ use super::whitespace;
 use super::{JsxCloserGap, Parser};
 use crate::parser::error::ParseResult;
 
-mod braces;
+pub(super) mod braces;
 mod children;
 mod expression;
 mod scan;
@@ -425,7 +425,13 @@ impl<'a> Parser<'a> {
                                 .then(|| braces::skip_backticks(bytes, cursor))
                                 .flatten()
                         })
-                        .unwrap_or(cursor + 1);
+                        .unwrap_or_else(|| {
+                            if bytes[cursor] == b'`' {
+                                cursor + braces::backtick_run_len(bytes, cursor)
+                            } else {
+                                cursor + 1
+                            }
+                        });
                 }
                 b'{' => {
                     if let Some(end) = self.matching_brace_end(content, cursor) {
@@ -479,7 +485,10 @@ impl<'a> Parser<'a> {
         while cursor < end {
             match bytes[cursor] {
                 b'\\' => cursor = (cursor + 2).min(end),
-                b'`' => cursor = braces::skip_backticks(bytes, cursor).unwrap_or(cursor + 1),
+                b'`' => {
+                    cursor = braces::skip_backticks(bytes, cursor)
+                        .unwrap_or_else(|| cursor + braces::backtick_run_len(bytes, cursor));
+                }
                 b'{' => {
                     if let Some(close) = self.matching_brace_end(self.source, cursor) {
                         cursor = close;

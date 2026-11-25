@@ -2,6 +2,7 @@
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::{Arc, LazyLock};
 
 use crate::renderer::html::escape::write_attribute_escaped_into;
 use rustc_hash::FxHashMap;
@@ -77,6 +78,18 @@ pub(super) struct AbbreviationMatch<'a> {
 }
 
 impl AbbreviationMatcher {
+    /// Returns the shared built-in matcher when `overrides` is empty, or builds
+    /// a dedicated matcher with the caller's overrides.
+    pub(super) fn for_overrides(overrides: BTreeMap<String, Option<String>>) -> Arc<Self> {
+        static DEFAULT_MATCHER: LazyLock<Arc<AbbreviationMatcher>> =
+            LazyLock::new(|| Arc::new(AbbreviationMatcher::new(BTreeMap::new())));
+        if overrides.is_empty() {
+            Arc::clone(&DEFAULT_MATCHER)
+        } else {
+            Arc::new(Self::new(overrides))
+        }
+    }
+
     /// Builds an immutable longest-term-first dictionary once per renderer.
     pub(super) fn new(overrides: BTreeMap<String, Option<String>>) -> Self {
         let mut entries = BUILT_INS
@@ -243,10 +256,14 @@ pub(super) fn write_abbreviations_into_with_boundaries(
             continue;
         }
 
-        let Some(character) = text[scan..].chars().next() else {
-            break;
-        };
-        scan += character.len_utf8();
+        if byte < 0x80 {
+            scan += 1;
+        } else {
+            let Some(character) = text[scan..].chars().next() else {
+                break;
+            };
+            scan += character.len_utf8();
+        }
     }
 
     if cursor < text.len() {

@@ -58,7 +58,7 @@ fn parse_vitepress_directive_action(value: &str) -> Option<InlineDirectiveAction
     Some(InlineDirectiveAction::Annotate { kind, count: 1 })
 }
 
-fn parse_vitepress_inline_directive(line: &str) -> Option<ParsedInlineDirective> {
+fn parse_vitepress_inline_directive(line: &str) -> Option<ParsedInlineDirective<'_>> {
     // Inline directives must be inside a recognized comment form. Validating
     // the prefix/suffix while parsing lets rendering remove directive comments
     // without a secondary cleanup pass over the code line.
@@ -91,7 +91,7 @@ fn parse_vitepress_inline_directive(line: &str) -> Option<ParsedInlineDirective>
         return None;
     }
 
-    let stripped_line = before_marker[..comment_start].trim_end().to_string();
+    let stripped_line = before_marker[..comment_start].trim_end();
     let standalone = stripped_line.trim().is_empty();
     let action = parse_vitepress_directive_action(directive)?;
     if matches!(action, InlineDirectiveAction::EscapeNextLine) && !standalone {
@@ -107,7 +107,7 @@ fn parse_vitepress_inline_directive(line: &str) -> Option<ParsedInlineDirective>
 
 pub(in crate::renderer::html) fn parse_vitepress_inline_annotations(
     value: &str,
-) -> Vec<CodeLineRenderState> {
+) -> Vec<CodeLineRenderState<'_>> {
     // Walk the code block once. Each line becomes its final render state as it
     // is seen, while standalone directives update a small pending list for the
     // following lines. This avoids first collecting directive positions and
@@ -119,7 +119,7 @@ pub(in crate::renderer::html) fn parse_vitepress_inline_annotations(
     for raw_line in value.split('\n') {
         if escape_next_line {
             lines.push(CodeLineRenderState {
-                value: raw_line.to_string(),
+                value: raw_line,
                 annotations: SmallVec::new(),
             });
             escape_next_line = false;
@@ -162,7 +162,7 @@ pub(in crate::renderer::html) fn parse_vitepress_inline_annotations(
         }
 
         let mut line = CodeLineRenderState {
-            value: raw_line.to_string(),
+            value: raw_line,
             annotations: SmallVec::new(),
         };
         apply_pending_annotations(&mut line, &mut pending_annotations);

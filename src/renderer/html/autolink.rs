@@ -53,13 +53,20 @@ pub(super) fn find_autolink_match<P: AsRef<str>>(
                     && bytes[i..i + pat_bytes.len()].eq_ignore_ascii_case(pat_bytes)
                 {
                     let url_start = i;
-                    let url_end = scan_url_end(s, i + pat_bytes.len());
-                    // Require at least one byte beyond the scheme/prefix
-                    // so `"http://"` on its own isn't auto-linked.
-                    if url_end == i + pat_bytes.len() {
+                    let prefix_end = i + pat_bytes.len();
+                    let url_end = scan_url_end(s, prefix_end);
+                    // Require at least one byte beyond the scheme/prefix after
+                    // trimming trailing punctuation so `"http://."` or `"mailto:."`
+                    // is never autolinked, and punctuation-only custom prefixes
+                    // cannot trim to an empty match and loop forever.
+                    if url_end == prefix_end {
                         continue;
                     }
-                    return Some((url_start, trim_trailing_punct(bytes, url_start, url_end)));
+                    let trimmed_end = trim_trailing_punct(bytes, url_start, url_end);
+                    if trimmed_end <= prefix_end {
+                        continue;
+                    }
+                    return Some((url_start, trimmed_end));
                 }
             }
         }

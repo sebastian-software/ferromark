@@ -98,25 +98,51 @@ impl HtmlRenderer {
         }
     }
 
-    pub(in crate::renderer::html::renderer) fn rewrite_html_root_urls(&self, html: &str) -> String {
-        let mut output = String::with_capacity(html.len());
+    pub(in crate::renderer::html::renderer) fn rewrite_html_root_urls<'a>(
+        &self,
+        html: &'a str,
+    ) -> std::borrow::Cow<'a, str> {
         let bytes = html.as_bytes();
-        let mut i = 0;
+        let mut output: Option<String> = None;
+        let mut copied = 0usize;
+        let mut i = 0usize;
         let mut in_tag = false;
 
         while i < bytes.len() {
-            match bytes[i] {
-                b'<' => {
-                    in_tag = true;
-                    output.push('<');
-                    i += 1;
+            if !in_tag {
+                let Some(rel) = memchr::memchr(b'<', &bytes[i..]) else {
+                    break;
+                };
+                i += rel;
+                // Skip HTML comments verbatim so URLs inside comments are untouched.
+                if html[i..].starts_with("<!--") {
+                    if let Some(end) = memchr::memmem::find(&bytes[i + 4..], b"-->") {
+                        i = i + 4 + end + 3;
+                    } else {
+                        break;
+                    }
+                    continue;
                 }
+                in_tag = true;
+                i += 1;
+                continue;
+            }
+
+            match bytes[i] {
                 b'>' => {
                     in_tag = false;
-                    output.push('>');
                     i += 1;
                 }
-                byte if in_tag && is_html_attr_start(byte) => {
+                b'"' | b'\'' => {
+                    let quote = bytes[i];
+                    i += 1;
+                    if let Some(rel) = memchr::memchr(quote, &bytes[i..]) {
+                        i += rel + 1;
+                    } else {
+                        break;
+                    }
+                }
+                byte if is_html_attr_start(byte) => {
                     let name_start = i;
                     let mut name_end = i + 1;
                     while name_end < bytes.len() && is_html_attr_char(bytes[name_end]) {
@@ -124,42 +150,54 @@ impl HtmlRenderer {
                     }
 
                     let name = &html[name_start..name_end];
-                    if name.eq_ignore_ascii_case("href") || name.eq_ignore_ascii_case("src") {
-                        let Some((value_start, value_end)) =
-                            html_attr_value_range(html, bytes, name_end)
-                        else {
-                            output.push_str(name);
-                            i = name_end;
-                            continue;
-                        };
-                        let value = &html[value_start..value_end];
-                        // Raw anchors link pages the same way Markdown links
-                        // do; convert .md targets first, then fall back to
-                        // rebasing root-absolute URLs.
-                        let rewritten = self.convert_markdown_url(value);
-                        if let Some(rewritten) = rewritten {
-                            output.push_str(&html[i..value_start]);
-                            output.push_str(&rewritten);
-                            i = value_end;
-                            continue;
+                    if let Some((value_start, value_end)) =
+                        html_attr_value_range(html, bytes, name_end)
+                    {
+                        if name.eq_ignore_ascii_case("href") || name.eq_ignore_ascii_case("src") {
+                            let value = &html[value_start..value_end];
+                            // Raw anchors link pages the same way Markdown links
+                            // do; convert .md targets first, then fall back to
+                            // rebasing root-absolute URLs.
+                            if let Some(rewritten) = self.convert_markdown_url(value) {
+                                let buf = output.get_or_insert_with(|| {
+                                    String::with_capacity(html.len() + rewritten.len())
+                                });
+                                buf.push_str(&html[copied..value_start]);
+                                buf.push_str(&rewritten);
+                                copied = value_end;
+                            }
                         }
+                        // Advance past the closing quote when the attribute value
+                        // was quoted so it is not misread as an opening quote.
+                        let opening_quote = value_start
+                            .checked_sub(1)
+                            .and_then(|pos| bytes.get(pos).copied())
+                            .filter(|byte| matches!(byte, b'"' | b'\''));
+                        i = if opening_quote.is_some()
+                            && bytes.get(value_end) == opening_quote.as_ref()
+                        {
+                            value_end + 1
+                        } else {
+                            value_end
+                        };
+                        continue;
                     }
 
-                    output.push_str(name);
                     i = name_end;
                 }
                 _ => {
-                    if let Some(ch) = html[i..].chars().next() {
-                        output.push(ch);
-                        i += ch.len_utf8();
-                    } else {
-                        break;
-                    }
+                    i += 1;
                 }
             }
         }
 
-        output
+        match output {
+            Some(mut buf) => {
+                buf.push_str(&html[copied..]);
+                std::borrow::Cow::Owned(buf)
+            }
+            None => std::borrow::Cow::Borrowed(html),
+        }
     }
 
     /// Converts a Markdown URL to an `.html` URL for SSG output.

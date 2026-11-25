@@ -1001,7 +1001,7 @@ export class CodeCompiler {
    */
   toHtml(markdown, options) {
     validateOptions(options);
-    return this.#native.toHtml(markdown, options);
+    return this.#native.toHtml(markdown, normalizeCodeCompilerOptions(options));
   }
 
   /**
@@ -1010,8 +1010,28 @@ export class CodeCompiler {
    */
   transform(markdown, options) {
     validateOptions(options);
-    return this.#native.transform(markdown, options);
+    return this.#native.transform(markdown, normalizeCodeCompilerOptions(options));
   }
+}
+
+/**
+ * Strips `undefined` values from `options.abbreviations` so `CodeCompiler`
+ * matches the packed `toHtml`/`transform` path, where `{ API: undefined }`
+ * leaves built-in terms unchanged rather than suppressing them like `null`.
+ * @param {import('./index.mjs').Options | undefined} options
+ */
+function normalizeCodeCompilerOptions(options) {
+  if (!options || options.abbreviations == null || typeof options.abbreviations !== "object") {
+    return options;
+  }
+  const entries = Object.entries(options.abbreviations);
+  if (!entries.some(([, title]) => title === undefined)) {
+    return options;
+  }
+  return {
+    ...options,
+    abbreviations: Object.fromEntries(entries.filter(([, title]) => title !== undefined)),
+  };
 }
 
 /**

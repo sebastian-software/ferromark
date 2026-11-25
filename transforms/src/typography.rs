@@ -1366,12 +1366,23 @@ fn transform_text<const GUILLEMET_DIGRAPHS: bool>(
     options: TypographyOptions,
     guillemet_tokens: &[GuillemetToken],
 ) -> Option<String> {
-    let mut result = String::with_capacity(value.len());
-    let mut offset = 0;
-    let mut protected_index = 0;
-    let mut escaped_index = 0;
-    let mut guillemet_index = 0;
-    let mut changed = false;
+    let mut result: Option<String> = None;
+    let mut copied = 0usize;
+    let mut offset = 0usize;
+    let mut protected_index = 0usize;
+    let mut escaped_index = 0usize;
+    let mut guillemet_index = 0usize;
+
+    let emit_edit = |result: &mut Option<String>,
+                     copied: &mut usize,
+                     edit_start: usize,
+                     replacement: &str,
+                     edit_end: usize| {
+        let buf = result.get_or_insert_with(|| String::with_capacity(value.len()));
+        buf.push_str(&value[*copied..edit_start]);
+        buf.push_str(replacement);
+        *copied = edit_end;
+    };
 
     while offset < value.len() {
         advance_range_index(protected, &mut protected_index, offset);
@@ -1391,9 +1402,7 @@ fn transform_text<const GUILLEMET_DIGRAPHS: bool>(
         {
             let end = range.end.min(value.len());
             state.reset();
-            result.push_str(&value[offset..end]);
             offset = end;
-            state.reset();
             continue;
         }
 
@@ -1406,8 +1415,7 @@ fn transform_text<const GUILLEMET_DIGRAPHS: bool>(
             && range.start <= offset
             && offset < range.end
         {
-            result.push_str(&value[offset..character_end]);
-            state.observe(&value[offset..character_end]);
+            state.previous = Some(character);
             offset = character_end;
             continue;
         }
@@ -1419,8 +1427,8 @@ fn transform_text<const GUILLEMET_DIGRAPHS: bool>(
             match token.kind {
                 GuillemetTokenKind::TrimPadding => {
                     if is_ascii_padding(value.as_bytes().get(offset).copied()) {
+                        emit_edit(&mut result, &mut copied, offset, "", offset + 1);
                         offset += 1;
-                        changed = true;
                     }
                     guillemet_index += 1;
                     continue;
@@ -1442,168 +1450,189 @@ fn transform_text<const GUILLEMET_DIGRAPHS: bool>(
                         quote_marks(options.language(), frame.is_none_or(|frame| frame.primary))
                             .close
                     };
-                    result.push_str(replacement);
+                    emit_edit(&mut result, &mut copied, offset, replacement, offset + 2);
                     state.observe(replacement);
                     offset += 2;
                     guillemet_index += 1;
-                    changed = true;
                     continue;
                 }
             }
         }
 
-        let next = next_context_char(
-            value,
-            character_end,
-            protected,
-            escaped,
-            items,
-            item_index,
-            next_after,
-        );
-
-        if options.ellipses()
+        if character == '.'
+            && options.ellipses()
             && value[offset..].starts_with("...")
             && !is_blocked(offset + 1, protected, escaped)
             && !is_blocked(offset + 2, protected, escaped)
         {
-            result.push('…');
-            state.observe("…");
+            emit_edit(&mut result, &mut copied, offset, "…", offset + 3);
+            state.previous = Some('…');
             offset += 3;
-            changed = true;
             continue;
         }
 
-        if options.dashes()
-            && options.language().converts_double_hyphens()
-            && value[offset..].starts_with("---")
-            && dash_boundary(
-                state.previous,
-                next_context_char(
+        if character == '-' && options.dashes() && options.language().converts_double_hyphens() {
+            if value[offset..].starts_with("---")
+                && dash_boundary(
+                    state.previous,
+                    next_context_char(
+                        value,
+                        offset + 3,
+                        protected,
+                        escaped,
+                        items,
+                        item_index,
+                        next_after,
+                    ),
+                )
+            {
+                emit_edit(&mut result, &mut copied, offset, "—", offset + 3);
+                state.previous = Some('—');
+                offset += 3;
+                continue;
+            }
+            if value[offset..].starts_with("--")
+                && dash_boundary(
+                    state.previous,
+                    next_context_char(
+                        value,
+                        offset + 2,
+                        protected,
+                        escaped,
+                        items,
+                        item_index,
+                        next_after,
+                    ),
+                )
+            {
+                emit_edit(&mut result, &mut copied, offset, "—", offset + 2);
+                state.previous = Some('—');
+                offset += 2;
+                continue;
+            }
+        }
+
+        if character == ' ' {
+            if options.language() == TypographyLanguage::French {
+                let next = next_context_char(
                     value,
-                    offset + 3,
+                    character_end,
                     protected,
                     escaped,
                     items,
                     item_index,
                     next_after,
-                ),
-            )
-        {
-            result.push('—');
-            state.observe("—");
-            offset += 3;
-            changed = true;
-            continue;
-        }
+                );
+                if is_french_punctuation(next) {
+                    emit_edit(&mut result, &mut copied, offset, "\u{00a0}", character_end);
+                    state.previous = Some('\u{00a0}');
+                    offset = character_end;
+                    continue;
+                }
+            }
 
-        if options.dashes()
-            && options.language().converts_double_hyphens()
-            && value[offset..].starts_with("--")
-            && dash_boundary(
-                state.previous,
-                next_context_char(
-                    value,
-                    offset + 2,
-                    protected,
-                    escaped,
-                    items,
-                    item_index,
-                    next_after,
-                ),
-            )
-        {
-            result.push('—');
-            state.observe("—");
-            offset += 2;
-            changed = true;
-            continue;
-        }
+            if options.language().converts_measurement_spaces()
+                && state
+                    .previous
+                    .is_some_and(|previous| previous.is_ascii_digit())
+                && has_unit_after(value, character_end, protected, escaped)
+            {
+                emit_edit(&mut result, &mut copied, offset, "\u{00a0}", character_end);
+                state.previous = Some('\u{00a0}');
+                offset = character_end;
+                continue;
+            }
 
-        if character == ' '
-            && options.language() == TypographyLanguage::French
-            && is_french_punctuation(next)
-        {
-            result.push('\u{00a0}');
-            state.observe("\u{00a0}");
+            if options.dashes()
+                && options.language().converts_double_hyphens()
+                && state
+                    .previous
+                    .is_some_and(|previous| !previous.is_whitespace())
+            {
+                let following_dash_length = dash_sequence_length(&value[character_end..]);
+                if following_dash_length > 0
+                    && next_context_char(
+                        value,
+                        character_end + following_dash_length,
+                        protected,
+                        escaped,
+                        items,
+                        item_index,
+                        next_after,
+                    )
+                    .is_none_or(|ch| ch.is_whitespace() || is_closing_punctuation(ch))
+                {
+                    emit_edit(&mut result, &mut copied, offset, "\u{00a0}", character_end);
+                    state.previous = Some('\u{00a0}');
+                    offset = character_end;
+                    continue;
+                }
+            }
+
+            state.previous = Some(' ');
             offset = character_end;
-            changed = true;
             continue;
         }
 
-        if character == ' '
-            && options.language().converts_measurement_spaces()
-            && state
-                .previous
-                .is_some_and(|previous| previous.is_ascii_digit())
-            && has_unit_after(value, character_end, protected, escaped)
-        {
-            result.push('\u{00a0}');
-            state.observe("\u{00a0}");
-            offset = character_end;
-            changed = true;
-            continue;
-        }
-
-        let following_dash_length = dash_sequence_length(&value[character_end..]);
-        if character == ' '
-            && options.dashes()
-            && options.language().converts_double_hyphens()
-            && state
-                .previous
-                .is_some_and(|previous| !previous.is_whitespace())
-            && following_dash_length > 0
-            && next_context_char(
+        if character == '\'' || character == '"' {
+            let next = next_context_char(
                 value,
-                character_end + following_dash_length,
+                character_end,
                 protected,
                 escaped,
                 items,
                 item_index,
                 next_after,
-            )
-            .is_none_or(|character| character.is_whitespace() || is_closing_punctuation(character))
-        {
-            result.push('\u{00a0}');
-            state.observe("\u{00a0}");
-            offset = character_end;
-            changed = true;
-            continue;
-        }
-
-        if character == '\''
-            && state.previous.is_some_and(char::is_alphanumeric)
-            && next.is_some_and(char::is_alphanumeric)
-        {
-            if options.language().converts_apostrophes() {
-                result.push('’');
-                state.observe("’");
-                changed = true;
-            } else {
-                result.push(character);
-                state.observe(&value[offset..character_end]);
+            );
+            if character == '\''
+                && state.previous.is_some_and(char::is_alphanumeric)
+                && next.is_some_and(char::is_alphanumeric)
+            {
+                if options.language().converts_apostrophes() {
+                    emit_edit(&mut result, &mut copied, offset, "’", character_end);
+                    state.previous = Some('’');
+                } else {
+                    state.previous = Some(character);
+                }
+                offset = character_end;
+                continue;
             }
+
+            if let Some(replacement) = state.replace_quote(character, next, options.language()) {
+                emit_edit(&mut result, &mut copied, offset, replacement, character_end);
+                state.observe(replacement);
+                offset = character_end;
+                continue;
+            }
+
+            state.previous = Some(character);
             offset = character_end;
             continue;
         }
 
-        if (character == '"' || character == '\'')
-            && let Some(replacement) = state.replace_quote(character, next, options.language())
-        {
-            result.push_str(replacement);
-            state.observe(replacement);
-            offset = character_end;
-            changed = true;
-            continue;
+        // Authored Unicode quotes across all supported languages are non-ASCII,
+        // so ASCII letters/digits/punctuation skip `observe_authored_quote` and
+        // `next_context_char` completely.
+        if !character.is_ascii() {
+            let next = next_context_char(
+                value,
+                character_end,
+                protected,
+                escaped,
+                items,
+                item_index,
+                next_after,
+            );
+            state.observe_authored_quote(character, next, options.language());
         }
-
-        state.observe_authored_quote(character, next, options.language());
-        result.push(character);
-        state.observe(&value[offset..character_end]);
+        state.previous = Some(character);
         offset = character_end;
     }
 
-    changed.then_some(result)
+    result.map(|mut buf| {
+        buf.push_str(&value[copied..]);
+        buf
+    })
 }
 
 fn advance_range_index(ranges: &[Range<usize>], index: &mut usize, offset: usize) {
@@ -1894,17 +1923,26 @@ fn escaped_source_ranges<const GUILLEMET_DIGRAPHS: bool>(
     let Some(raw) = source.get(span.start as usize..span.end as usize) else {
         return Vec::new();
     };
+    // Unchanged source text cannot contain backslash escapes or HTML entities
+    // (both shorten the decoded value relative to the raw Markdown slice).
+    if raw == value {
+        return Vec::new();
+    }
     let mut raw_quotes = Vec::new();
     let mut raw_offset = 0;
 
     while raw_offset < raw.len() {
         if raw[raw_offset..].starts_with('\\')
             && let Some((character, width)) = next_char_at(raw, raw_offset + 1)
-            && (matches!(character, '\'' | '"')
-                || (GUILLEMET_DIGRAPHS && matches!(character, '<' | '>')))
             && character.is_ascii_punctuation()
         {
-            raw_quotes.push((character, true));
+            if matches!(character, '\'' | '"')
+                || (GUILLEMET_DIGRAPHS && matches!(character, '<' | '>'))
+            {
+                raw_quotes.push((character, true));
+            }
+            // Always consume both bytes of a valid backslash escape (including
+            // `\\`) so `\\"` is never misread as an escaped quote.
             raw_offset += 1 + width;
             continue;
         }

@@ -62,23 +62,23 @@ impl CodeAnnotationKind {
 }
 
 #[derive(Debug, Clone)]
-pub(in crate::renderer::html) struct CodeLineRenderState {
-    pub(in crate::renderer::html) value: String,
+pub(in crate::renderer::html) struct CodeLineRenderState<'a> {
+    pub(in crate::renderer::html) value: &'a str,
     pub(in crate::renderer::html) annotations: SmallVec<[CodeAnnotationKind; 2]>,
 }
 
 #[derive(Debug, Clone)]
-pub(in crate::renderer::html) struct CodeBlockRenderState {
+pub(in crate::renderer::html) struct CodeBlockRenderState<'a> {
     pub(in crate::renderer::html) language: Option<CompactString>,
     pub(in crate::renderer::html) title: Option<CompactString>,
     pub(in crate::renderer::html) line_numbers_start: Option<usize>,
     pub(in crate::renderer::html) line_link_prefix: Option<CompactString>,
     pub(in crate::renderer::html) wrap_lines: Option<bool>,
-    pub(in crate::renderer::html) copy_source: Option<String>,
-    pub(in crate::renderer::html) lines: Vec<CodeLineRenderState>,
+    pub(in crate::renderer::html) copy_source: Option<&'a str>,
+    pub(in crate::renderer::html) lines: Vec<CodeLineRenderState<'a>>,
 }
 
-impl CodeBlockRenderState {
+impl CodeBlockRenderState<'_> {
     pub(in crate::renderer::html) fn has_annotations(&self) -> bool {
         self.lines.iter().any(|line| !line.annotations.is_empty())
     }
@@ -178,8 +178,8 @@ pub(in crate::renderer::html) enum InlineDirectiveAction {
 }
 
 #[derive(Debug, Clone)]
-pub(in crate::renderer::html) struct ParsedInlineDirective {
+pub(in crate::renderer::html) struct ParsedInlineDirective<'a> {
     pub(in crate::renderer::html) action: InlineDirectiveAction,
-    pub(in crate::renderer::html) stripped_line: String,
+    pub(in crate::renderer::html) stripped_line: &'a str,
     pub(in crate::renderer::html) standalone: bool,
 }

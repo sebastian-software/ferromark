@@ -532,7 +532,42 @@ impl<'a> Writer<'a> {
 
     /// Appends generated code that has no source position.
     fn push(&mut self, text: &str) {
+        if text.is_empty() {
+            return;
+        }
         self.code.push_str(text);
+        let bytes = text.as_bytes();
+        if bytes.is_ascii() {
+            let mut cursor = 0usize;
+            while let Some(rel) = memchr::memchr2(b'\r', b'\n', &bytes[cursor..]) {
+                let at = cursor + rel;
+                if at > cursor {
+                    self.position.column =
+                        self.position.column.saturating_add((at - cursor) as u32);
+                    self.position.previous_cr = false;
+                }
+                if bytes[at] == b'\r' {
+                    self.position.line = self.position.line.saturating_add(1);
+                    self.position.column = 0;
+                    self.position.previous_cr = true;
+                } else if self.position.previous_cr {
+                    self.position.previous_cr = false;
+                } else {
+                    self.position.line = self.position.line.saturating_add(1);
+                    self.position.column = 0;
+                    self.position.previous_cr = false;
+                }
+                cursor = at + 1;
+            }
+            if cursor < bytes.len() {
+                self.position.column = self
+                    .position
+                    .column
+                    .saturating_add((bytes.len() - cursor) as u32);
+                self.position.previous_cr = false;
+            }
+            return;
+        }
         for ch in text.chars() {
             self.position.advance(ch);
         }

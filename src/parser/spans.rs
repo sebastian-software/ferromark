@@ -29,30 +29,34 @@ pub(in crate::parser) struct SourceMap {
 
 #[derive(Debug, Clone, Copy)]
 struct SourceMapLine {
-    generated_start: usize,
-    generated_end: usize,
-    source_block_start: usize,
-    source_start: usize,
-    source_end: usize,
+    generated_start: u32,
+    generated_end: u32,
+    source_block_start: u32,
+    source_start: u32,
+    source_end: u32,
     /// A run of blank lines kept as one entry; see [`SourceMap::push_blank_line`].
     blank_run: bool,
 }
 
 impl SourceMap {
     pub(in crate::parser) fn line_origins(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
-        self.lines
-            .iter()
-            .map(|line| (line.generated_start, line.source_block_start))
+        self.lines.iter().map(|line| {
+            (
+                line.generated_start as usize,
+                line.source_block_start as usize,
+            )
+        })
     }
 
     pub(in crate::parser) fn generated_line_start(&self, original: usize) -> Option<usize> {
+        let original = original as u32;
         let index = self
             .lines
             .partition_point(|line| line.source_block_start < original);
         self.lines
             .get(index)
             .filter(|line| line.source_block_start == original)
-            .map(|line| line.generated_start)
+            .map(|line| line.generated_start as usize)
     }
 
     pub(in crate::parser) fn push_line(
@@ -80,11 +84,11 @@ impl SourceMap {
         source_len: usize,
     ) {
         self.lines.push(SourceMapLine {
-            generated_start,
-            generated_end: generated_start + generated_len,
-            source_block_start,
-            source_start,
-            source_end: source_start + source_len,
+            generated_start: generated_start as u32,
+            generated_end: (generated_start + generated_len) as u32,
+            source_block_start: source_block_start as u32,
+            source_start: source_start as u32,
+            source_end: (source_start + source_len) as u32,
             blank_run: false,
         });
     }
@@ -105,6 +109,9 @@ impl SourceMap {
         source_start: usize,
         source_len: usize,
     ) {
+        let generated_start = generated_start as u32;
+        let source_start = source_start as u32;
+        let source_len = source_len as u32;
         if let Some(last) = self.lines.last_mut()
             && last.blank_run
             && last.generated_end == generated_start
@@ -145,42 +152,42 @@ impl SourceMap {
             return span;
         }
 
-        let start = self.map_start(span.start as usize, include_indent);
+        let start = self.map_start(span.start, include_indent);
         let end = if span.start == span.end {
             start
         } else {
-            self.map_end(span.end as usize)
+            self.map_end(span.end)
         };
         Span::new(start, end)
     }
 }
 
 impl SourceMap {
-    fn map_start(&self, generated: usize, include_indent: bool) -> u32 {
+    fn map_start(&self, generated: u32, include_indent: bool) -> u32 {
         let index = self
             .lines
             .partition_point(|line| generated >= line.generated_end);
         let Some(line) = self.lines.get(index).copied() else {
-            return self.lines.last().map_or(generated, |line| line.source_end) as u32;
+            return self.lines.last().map_or(generated, |line| line.source_end);
         };
         if generated == line.generated_start && !include_indent {
-            line.source_start as u32
+            line.source_start
         } else {
-            Self::map_inside(line, generated) as u32
+            Self::map_inside(line, generated)
         }
     }
 
-    fn map_end(&self, generated: usize) -> u32 {
+    fn map_end(&self, generated: u32) -> u32 {
         let index = self
             .lines
             .partition_point(|line| generated > line.generated_end);
         let Some(line) = self.lines.get(index).copied() else {
-            return self.lines.last().map_or(generated, |line| line.source_end) as u32;
+            return self.lines.last().map_or(generated, |line| line.source_end);
         };
-        Self::map_inside(line, generated) as u32
+        Self::map_inside(line, generated)
     }
 
-    fn map_inside(line: SourceMapLine, generated: usize) -> usize {
+    fn map_inside(line: SourceMapLine, generated: u32) -> u32 {
         if generated == line.generated_start {
             return line.source_block_start;
         }

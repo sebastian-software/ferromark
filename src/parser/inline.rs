@@ -29,6 +29,7 @@ struct InlineSource<'source, 'ranges> {
 }
 
 pub(in crate::parser) use self::autolink::autolink_end;
+pub(in crate::parser) use self::code_span::BacktickDeadEnds;
 pub(in crate::parser) use self::link_target::{
     parse_destination as parse_link_destination, parse_title as parse_link_title,
 };
@@ -203,7 +204,8 @@ impl<'a> Parser<'a> {
         let mut children = self
             .allocator
             .new_vec_with_capacity(Self::inline_children_capacity(content.len()));
-        let mut delimiters = self.allocator.new_vec();
+        let mut delimiters = emphasis::DelimiterStack::new();
+        let mut dead_backticks = code_span::BacktickDeadEnds::default();
         let mut pos = 0;
         let mut first_scan = Some(first_special);
         let source = InlineSource {
@@ -259,6 +261,7 @@ impl<'a> Parser<'a> {
                 &mut children,
                 &mut delimiters,
                 &mut markers,
+                &mut dead_backticks,
                 &mut pos,
             )?;
         }
@@ -273,8 +276,9 @@ impl<'a> Parser<'a> {
         &self,
         source: InlineSource<'a, '_>,
         children: &mut Vec<'a, Node<'a>>,
-        delimiters: &mut Vec<'a, emphasis::Delimiter>,
+        delimiters: &mut emphasis::DelimiterStack,
         markers: &mut InlineMarkerScan,
+        dead_backticks: &mut code_span::BacktickDeadEnds,
         pos: &mut usize,
     ) -> ParseResult<()> {
         let InlineSource {
@@ -445,7 +449,7 @@ impl<'a> Parser<'a> {
             b'*' | b'_' => {
                 self.push_delimiter_run(content, offset, children, delimiters, pos);
             }
-            b'`' => self.parse_inline_code(content, offset, children, pos),
+            b'`' => self.parse_inline_code(content, offset, children, pos, dead_backticks),
             b'[' => {
                 // Whether the bracket became a link only matters to a
                 // bracket around it (`Parser::parse_bracket_text`).
@@ -504,7 +508,7 @@ impl<'a> Parser<'a> {
         } else if let Some((node, end)) = self.try_parse_mdx_jsx_text(content, *pos, offset)? {
             children.push(node);
             *pos = end;
-        } else if let Some((mut html, end)) = Self::parse_inline_html(content, *pos, offset) {
+        } else if let Some((mut html, end)) = self.parse_inline_html_cached(content, *pos, offset) {
             self.normalize_inline_html(&mut html);
             children.push(Node::Html(html));
             *pos = end;

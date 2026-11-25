@@ -84,7 +84,7 @@ pub(super) unsafe fn next_special_ssse3(bytes: &[u8], from: usize) -> usize {
 #[allow(unsafe_code)]
 #[inline]
 pub(super) unsafe fn next_special_ssse3_options(bytes: &[u8], from: usize, options: u8) -> usize {
-    if bytes.len().saturating_sub(from) < 16 {
+    if bytes.len() < 16 {
         return next_inline_special_options_scalar(bytes, from, options);
     }
     let (low, high) = selected_marker_tables(options);
@@ -157,8 +157,9 @@ pub(super) unsafe fn next_special_avx2(bytes: &[u8], from: usize) -> usize {
 #[allow(unsafe_code)]
 #[inline]
 pub(super) unsafe fn next_special_avx2_options(bytes: &[u8], from: usize, options: u8) -> usize {
-    if bytes.len().saturating_sub(from) < 32 {
-        return next_inline_special_options_scalar(bytes, from, options);
+    if bytes.len() < 32 {
+        // SAFETY: AVX2 implies SSSE3.
+        return unsafe { next_special_ssse3_options(bytes, from, options) };
     }
     let (low, high) = selected_marker_tables(options);
     // SAFETY: the caller guarantees AVX2; the backend bounds every load.

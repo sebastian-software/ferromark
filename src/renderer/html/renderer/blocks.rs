@@ -223,7 +223,7 @@ impl HtmlRenderer {
     pub(in crate::renderer::html::renderer) fn write_code_block_state(
         &mut self,
         code_block: &CodeBlock<'_>,
-        state: &super::super::code_annotations::CodeBlockRenderState,
+        state: &super::super::code_annotations::CodeBlockRenderState<'_>,
         highlighted: Option<&super::hooks::HighlightedCodeBlock>,
     ) {
         let block_classes = state.block_classes();
@@ -234,7 +234,12 @@ impl HtmlRenderer {
         }
         if !block_classes.is_empty() {
             self.write(" class=\"");
-            self.write(&block_classes.join(" "));
+            for (class_index, class_name) in block_classes.iter().enumerate() {
+                if class_index > 0 {
+                    self.write(" ");
+                }
+                self.write(class_name);
+            }
             self.write("\"");
         }
         self.write_source_span_attr(code_block.span);
@@ -253,7 +258,7 @@ impl HtmlRenderer {
             self.write_display(start);
             self.write("\"");
         }
-        if let Some(source) = state.copy_source.as_deref() {
+        if let Some(source) = state.copy_source {
             self.write(" data-ox-code-source=\"");
             self.write_attribute_escaped(source);
             self.write("\"");

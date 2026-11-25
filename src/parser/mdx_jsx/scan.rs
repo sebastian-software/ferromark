@@ -9,7 +9,7 @@ use crate::ast::{
 };
 
 use super::super::line_scan::{is_line_ending_byte, line_terminator_end};
-use super::braces::{skip_backticks, skip_quoted};
+use super::braces::{backtick_run_len, skip_backticks, skip_quoted};
 
 /// Opening tag accepted by this slice.
 pub(super) struct JsxOpen<'a> {
@@ -179,7 +179,13 @@ pub(super) fn compatible_matching_close<'a>(
                             .then(|| skip_backticks(bytes, cursor))
                             .flatten()
                     })
-                    .unwrap_or(cursor + 1);
+                    .unwrap_or_else(|| {
+                        if bytes[cursor] == b'`' {
+                            cursor + backtick_run_len(bytes, cursor)
+                        } else {
+                            cursor + 1
+                        }
+                    });
             }
             b'<' => {
                 if let Some(end) = super::super::inline::autolink_end(source, cursor) {
@@ -439,7 +445,7 @@ fn walk_close<const RECORD: bool>(
                     cursor = next;
                     read_from = next;
                 } else {
-                    cursor += 1;
+                    cursor += backtick_run_len(bytes, cursor);
                 }
             }
             b'<' => {

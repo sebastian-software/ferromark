@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CodeCompiler,
   Renderer,
   toHtml,
   toHtmlBuffer,
@@ -44,6 +45,16 @@ test("an override map alone does not enable automatic markup", () => {
 test("undefined override values leave built-in terms unchanged", () => {
   assert.equal(
     toHtml("API", { autoAbbreviations: true, abbreviations: { API: undefined } }),
+    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+  );
+
+  const compiler = new CodeCompiler({ plugins: [] });
+  assert.equal(
+    compiler.toHtml("API", { autoAbbreviations: true, abbreviations: { API: undefined } }),
+    '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
+  );
+  assert.equal(
+    compiler.transform("API", { autoAbbreviations: true, abbreviations: { API: undefined } }).html,
     '<p><abbr title="Application Programming Interface">API</abbr></p>\n',
   );
 });

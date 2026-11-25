@@ -112,16 +112,16 @@ impl<'a> Parser<'a> {
         item: &super::super::list_item::ParsedListItem<'a>,
         item_end: usize,
     ) -> ParseResult<Vec<'a, Node<'a>>> {
-        let mut children = self.allocator.new_vec();
         let (inline, leading) = whitespace::trim_with_leading(item.content);
         if inline.is_empty() {
-            return Ok(children);
+            return Ok(self.allocator.new_vec());
         }
 
         // The trimmed prefix starts with the made-up spaces, which the
         // content offset already skips.
         let inline_offset = item.content_offset + leading.saturating_sub(item.synthetic_indent);
         let paragraph_children = self.parse_inline_block(inline, inline_offset)?;
+        let mut children = self.allocator.new_vec_with_capacity(1);
         children.push(Node::Paragraph(self.allocator.boxed(Paragraph {
             children: paragraph_children,
             span: Span::new(item.content_offset as u32, item_end as u32),

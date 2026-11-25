@@ -21,6 +21,7 @@ mod visit;
 mod write;
 
 use std::borrow::Cow;
+use std::sync::Arc;
 
 use crate::ast::{Document, Node};
 use compact_str::CompactString;
@@ -132,7 +133,7 @@ pub struct HtmlRenderer {
 
 /// Render-time state owned only by renderers that enable abbreviations.
 struct AbbreviationState {
-    matcher: AbbreviationMatcher,
+    matcher: Arc<AbbreviationMatcher>,
     /// URL scanner used only to keep URL text outside generated abbreviation
     /// wrappers. It includes HTTP(S) even when autolinking is disabled.
     url_index: FirstByteIndex,
@@ -215,7 +216,7 @@ impl HtmlRenderer {
     /// renderer.
     #[must_use]
     pub fn with_abbreviations(mut self, abbreviations: AbbreviationOptions) -> Self {
-        let matcher = AbbreviationMatcher::new(abbreviations.overrides);
+        let matcher = AbbreviationMatcher::for_overrides(abbreviations.overrides);
         let mut patterns = self.options.autolink_patterns().to_vec();
         for default in DEFAULT_AUTOLINK_PATTERNS {
             if !patterns
@@ -343,6 +344,16 @@ impl HtmlRenderer {
         &self.output
     }
 
+    pub(crate) fn render_into(&mut self, document: &Document<'_>, output: &mut String) {
+        if output.is_empty() {
+            std::mem::swap(&mut self.output, output);
+            self.render_into_output(document);
+            std::mem::swap(&mut self.output, output);
+        } else {
+            output.push_str(self.render_borrowed(document));
+        }
+    }
+
     fn render_into_output(&mut self, document: &Document<'_>) {
         self.prepare_render(document);
         self.render_document(document);
@@ -396,7 +407,7 @@ impl HtmlRenderer {
         }
         let estimated_len = source_len.saturating_mul(2).max(MIN_OUTPUT_CAPACITY);
         if self.output.capacity() < estimated_len {
-            self.output.reserve(estimated_len - self.output.capacity());
+            self.output.reserve(estimated_len);
         }
     }
 

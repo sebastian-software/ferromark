@@ -403,7 +403,7 @@ impl<'a> Parser<'a> {
     /// any. Bracket text is parsed in place only when there is none, so a
     /// text the probe has judged keeps taking the path it took before.
     fn cached_probe_verdict(&self, link_text: &'a str) -> Option<bool> {
-        let cache = self.link_probe_cache().borrow();
+        let cache = self.link_probe_cache.get()?.borrow();
         if cache.is_empty() {
             return None;
         }
