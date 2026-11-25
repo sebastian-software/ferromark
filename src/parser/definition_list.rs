@@ -79,7 +79,9 @@ impl<'a> Parser<'a> {
         if self.options.image_captions
             && (terms.end == terms.body_start
                 || self.next_line_start(terms.end) == terms.body_start)
-            && self.image_caption_interrupts_paragraph(start, terms.end, terms.body_start)?
+            && self
+                .probe_immediate_image_caption(start, terms.end, terms.body_start)?
+                .is_some()
         {
             return Ok(None);
         }

@@ -53,6 +53,9 @@ pub(in crate::renderer::html) struct FirstByteIndex {
     /// rejects all of those with a two-byte compare.
     gate_tail: [u8; 2],
     gate_tail_len: usize,
+    /// True when this index was constructed for the exact default pattern set
+    /// `["http://", "https://"]`, enabling direct `://`-anchored scanning.
+    default_http: bool,
 }
 
 /// Sentinel in `FirstByteIndex::second`: no single second byte filters
@@ -77,6 +80,7 @@ const DEFAULT_HTTP_INDEX: FirstByteIndex = {
         gate: Some(b':'),
         gate_tail: *b"//",
         gate_tail_len: 2,
+        default_http: true,
     }
 };
 
@@ -203,7 +207,20 @@ impl FirstByteIndex {
             gate,
             gate_tail,
             gate_tail_len,
+            default_http: false,
         }
+    }
+
+    /// Whether this index matches the default `["http://", "https://"]` pair.
+    #[inline]
+    pub(in crate::renderer::html) const fn is_default_http(&self) -> bool {
+        self.default_http
+    }
+
+    /// Finds the next `://` occurrence in `haystack` using the shared SIMD finder.
+    #[inline]
+    pub(in crate::renderer::html) fn find_colon_slash_slash(haystack: &[u8]) -> Option<usize> {
+        COLON_SLASH_SLASH.find(haystack)
     }
 
     /// Whether `haystack` can hold a pattern match at all.

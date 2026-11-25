@@ -137,6 +137,14 @@ pub(super) struct PlannedId {
     end: usize,
 }
 
+/// Snapshot of append-only [`HeadingIdPlanner`] lengths for O(Δ) rollback of
+/// provisional streaming fragments without cloning the committed ID table.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct HeadingIdCheckpoint {
+    ids_len: usize,
+    claims_len: usize,
+}
+
 impl HeadingIdPlanner {
     /// Creates an empty heading ID planner.
     #[must_use]
@@ -149,6 +157,53 @@ impl HeadingIdPlanner {
         self.ids.clear();
         self.claims.clear();
         self.by_hash.clear();
+    }
+
+    /// Captures the current committed position for [`Self::rollback`].
+    #[inline]
+    pub(super) fn checkpoint(&self) -> HeadingIdCheckpoint {
+        HeadingIdCheckpoint {
+            ids_len: self.ids.len(),
+            claims_len: self.claims.len(),
+        }
+    }
+
+    /// Reverts every claim added since `checkpoint` without cloning committed state.
+    pub(super) fn rollback(&mut self, checkpoint: HeadingIdCheckpoint) {
+        if self.claims.len() == checkpoint.claims_len {
+            self.ids.truncate(checkpoint.ids_len);
+            return;
+        }
+        for index in (checkpoint.claims_len..self.claims.len()).rev() {
+            let claim = self.claims[index];
+            let id = &self.ids[claim.start..claim.end];
+            let hash = hash_id(id);
+            if claim.previous_with_hash == NO_CLAIM {
+                self.by_hash.remove(&hash);
+            } else if let Some(slot) = self.by_hash.get_mut(&hash) {
+                *slot = claim.previous_with_hash;
+            }
+            if let Some((base, suffix_str)) = id.rsplit_once('-')
+                && !base.is_empty()
+                && let Ok(suffix) = suffix_str.parse::<usize>()
+                && suffix >= 1
+            {
+                let base_hash = hash_id(base);
+                if let Some(&newest) = self.by_hash.get(&base_hash) {
+                    let mut cursor = newest;
+                    while cursor != NO_CLAIM {
+                        let existing = &mut self.claims[cursor];
+                        if &self.ids[existing.start..existing.end] == base {
+                            existing.next_suffix = existing.next_suffix.min(suffix);
+                            break;
+                        }
+                        cursor = existing.previous_with_hash;
+                    }
+                }
+            }
+        }
+        self.claims.truncate(checkpoint.claims_len);
+        self.ids.truncate(checkpoint.ids_len);
     }
 
     /// Plans a unique ID based on `base`, returning it as an owned string.

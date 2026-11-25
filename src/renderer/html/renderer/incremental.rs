@@ -31,24 +31,16 @@ impl HtmlRenderer {
     /// The returned HTML is meant to be replaceable by the next streaming update.
     #[must_use]
     pub fn render_provisional_fragment(&mut self, document: &Document<'_>) -> String {
-        // Always snapshot `heading_id_planner` even when `heading_ids` is false:
+        // Checkpoint `heading_id_planner` even when `heading_ids` is false:
         // footnotes and explicit element IDs (`{#id}`) share the same planner.
-        let heading_id_planner = self.heading_id_planner.clone();
-        let footnote_ref_counts = self.footnote_ref_counts.clone();
-        let legacy_footnote_targets = self.legacy_footnote_targets.clone();
-        let legacy_footnote_first_references = self.legacy_footnote_first_references.clone();
-        let footnote_index = self.footnote_index.clone();
-        let footnote_records = self.footnote_records.clone();
-        let footnote_slug_counts = self.footnote_slug_counts.clone();
+        // Rollback reverts only the provisional delta in O(Δ) without cloning
+        // committed IDs, and `footnotes` stays `None` when no footnotes exist.
+        let heading_checkpoint = self.heading_id_planner.checkpoint();
+        let footnotes = self.footnotes.clone();
         let code_block_index = self.code_block_index;
         let html = self.render_fragment(document);
-        self.heading_id_planner = heading_id_planner;
-        self.footnote_ref_counts = footnote_ref_counts;
-        self.legacy_footnote_targets = legacy_footnote_targets;
-        self.legacy_footnote_first_references = legacy_footnote_first_references;
-        self.footnote_index = footnote_index;
-        self.footnote_records = footnote_records;
-        self.footnote_slug_counts = footnote_slug_counts;
+        self.heading_id_planner.rollback(heading_checkpoint);
+        self.footnotes = footnotes;
         self.code_block_index = code_block_index;
         html
     }
@@ -60,22 +52,12 @@ impl HtmlRenderer {
         document: &Document<'_>,
         hooks: &mut H,
     ) -> String {
-        let heading_id_planner = self.heading_id_planner.clone();
-        let footnote_ref_counts = self.footnote_ref_counts.clone();
-        let legacy_footnote_targets = self.legacy_footnote_targets.clone();
-        let legacy_footnote_first_references = self.legacy_footnote_first_references.clone();
-        let footnote_index = self.footnote_index.clone();
-        let footnote_records = self.footnote_records.clone();
-        let footnote_slug_counts = self.footnote_slug_counts.clone();
+        let heading_checkpoint = self.heading_id_planner.checkpoint();
+        let footnotes = self.footnotes.clone();
         let code_block_index = self.code_block_index;
         let html = self.render_fragment_with_hooks(document, hooks);
-        self.heading_id_planner = heading_id_planner;
-        self.footnote_ref_counts = footnote_ref_counts;
-        self.legacy_footnote_targets = legacy_footnote_targets;
-        self.legacy_footnote_first_references = legacy_footnote_first_references;
-        self.footnote_index = footnote_index;
-        self.footnote_records = footnote_records;
-        self.footnote_slug_counts = footnote_slug_counts;
+        self.heading_id_planner.rollback(heading_checkpoint);
+        self.footnotes = footnotes;
         self.code_block_index = code_block_index;
         html
     }
@@ -193,5 +175,41 @@ mod tests {
                 .render_incremental_fragment(&next)
                 .contains("id=\"docs-a\"")
         );
+    }
+
+    #[test]
+    fn provisional_rollback_restores_duplicate_suffix_counters_and_footnotes() {
+        let a1 = Allocator::new();
+        let committed_doc = Parser::new(&a1, "# a\n\n# a-1").parse().unwrap();
+        let a2 = Allocator::new();
+        let provisional_doc = Parser::new(&a2, "# a\n\n# a\n\nText[^1]\n\n[^1]: Note")
+            .parse()
+            .unwrap();
+        let a3 = Allocator::new();
+        let next_doc = Parser::new(&a3, "# a").parse().unwrap();
+
+        let mut renderer = HtmlRenderer::new();
+        let first_html = renderer.render_incremental_fragment(&committed_doc);
+        assert!(first_html.contains("id=\"a\""), "{first_html}");
+        assert!(first_html.contains("id=\"a-1\""), "{first_html}");
+
+        let provisional_html = renderer.render_provisional_fragment(&provisional_doc);
+        assert!(
+            provisional_html.contains("id=\"a-2\""),
+            "{provisional_html}"
+        );
+        assert!(
+            provisional_html.contains("id=\"a-3\""),
+            "{provisional_html}"
+        );
+
+        // After rolling back the provisional fragment, the next committed `# a`
+        // must still claim `a-2` (not `a-4`), and repeated provisional renders
+        // must produce identical output.
+        let provisional_again = renderer.render_provisional_fragment(&provisional_doc);
+        assert_eq!(provisional_again, provisional_html);
+
+        let next_html = renderer.render_incremental_fragment(&next_doc);
+        assert!(next_html.contains("id=\"a-2\""), "{next_html}");
     }
 }

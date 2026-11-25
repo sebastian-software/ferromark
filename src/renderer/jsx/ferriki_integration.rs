@@ -172,53 +172,64 @@ fn render_dual_theme_lines(highlighted: &HighlightTokensWithThemesResult) -> Opt
 
 fn render_dual_theme_line(tokens: &[HighlightThemeToken]) -> Option<String> {
     let mut output = String::new();
+    let mut style = String::new();
     for token in tokens {
         if token.content.is_empty() {
             continue;
         }
-        let style = dual_token_style(token.variants.get("light")?, token.variants.get("dark")?);
+        style.clear();
+        write_dual_token_style(
+            &mut style,
+            token.variants.get("light")?,
+            token.variants.get("dark")?,
+        );
         if style.is_empty() {
-            output.push_str(&escape_html(&token.content));
+            write_escaped_html(&mut output, &token.content);
         } else {
             output.push_str("<span style=\"");
-            output.push_str(&escape_attribute(&style));
+            write_escaped_attribute(&mut output, &style);
             output.push_str("\">");
-            output.push_str(&escape_html(&token.content));
+            write_escaped_html(&mut output, &token.content);
             output.push_str("</span>");
         }
     }
     Some(output)
 }
 
-fn dual_token_style(light: &HighlightThemeTokenStyle, dark: &HighlightThemeTokenStyle) -> String {
-    let mut declarations = Vec::new();
+fn push_css_declaration(out: &mut String, name: &str, value: &str) {
+    if !out.is_empty() {
+        out.push(';');
+    }
+    out.push_str(name);
+    out.push(':');
+    out.push_str(value);
+}
+
+fn write_dual_token_style(
+    out: &mut String,
+    light: &HighlightThemeTokenStyle,
+    dark: &HighlightThemeTokenStyle,
+) {
     let light_color = light.color.as_deref().filter(|value| !value.is_empty());
     let dark_color = dark.color.as_deref().filter(|value| !value.is_empty());
     if let Some(color) = light_color {
-        declarations.push(css_declaration("color:", color));
-    }
-    if let Some(color) = light_color {
-        declarations.push(css_declaration("--shiki-light:", color));
+        push_css_declaration(out, "color", color);
+        push_css_declaration(out, "--shiki-light", color);
     }
     if let Some(color) = dark_color {
-        declarations.push(css_declaration("--shiki-dark:", color));
+        push_css_declaration(out, "--shiki-dark", color);
     }
 
     append_font_style_declarations(
-        &mut declarations,
+        out,
         light.font_style.unwrap_or_default(),
         dark.font_style.unwrap_or_default(),
     );
-    declarations.join(";")
 }
 
-fn append_font_style_declarations(
-    declarations: &mut Vec<String>,
-    light: FontStyle,
-    dark: FontStyle,
-) {
+fn append_font_style_declarations(out: &mut String, light: FontStyle, dark: FontStyle) {
     append_font_property(
-        declarations,
+        out,
         [
             "font-style",
             "--shiki-light-font-style",
@@ -230,7 +241,7 @@ fn append_font_style_declarations(
         dark.contains(FontStyle::ITALIC),
     );
     append_font_property(
-        declarations,
+        out,
         [
             "font-weight",
             "--shiki-light-font-weight",
@@ -246,20 +257,14 @@ fn append_font_style_declarations(
     if light_decoration.is_some() || dark_decoration.is_some() {
         let light_decoration = light_decoration.unwrap_or("none");
         let dark_decoration = dark_decoration.unwrap_or("none");
-        declarations.push(css_declaration("text-decoration:", light_decoration));
-        declarations.push(css_declaration(
-            "--shiki-light-text-decoration:",
-            light_decoration,
-        ));
-        declarations.push(css_declaration(
-            "--shiki-dark-text-decoration:",
-            dark_decoration,
-        ));
+        push_css_declaration(out, "text-decoration", light_decoration);
+        push_css_declaration(out, "--shiki-light-text-decoration", light_decoration);
+        push_css_declaration(out, "--shiki-dark-text-decoration", dark_decoration);
     }
 }
 
 fn append_font_property(
-    declarations: &mut Vec<String>,
+    out: &mut String,
     property: [&str; 5],
     light_enabled: bool,
     dark_enabled: bool,
@@ -275,25 +280,10 @@ fn append_font_property(
         } else {
             property[4]
         };
-        declarations.push(css_declaration_with_name(property[0], light_value));
-        declarations.push(css_declaration_with_name(property[1], light_value));
-        declarations.push(css_declaration_with_name(property[2], dark_value));
+        push_css_declaration(out, property[0], light_value);
+        push_css_declaration(out, property[1], light_value);
+        push_css_declaration(out, property[2], dark_value);
     }
-}
-
-fn css_declaration(prefix: &str, value: &str) -> String {
-    let mut declaration = String::with_capacity(prefix.len().saturating_add(value.len()));
-    declaration.push_str(prefix);
-    declaration.push_str(value);
-    declaration
-}
-
-fn css_declaration_with_name(name: &str, value: &str) -> String {
-    let mut declaration = String::with_capacity(name.len().saturating_add(value.len() + 1));
-    declaration.push_str(name);
-    declaration.push(':');
-    declaration.push_str(value);
-    declaration
 }
 
 fn decoration(style: FontStyle) -> Option<&'static str> {
@@ -307,32 +297,40 @@ fn decoration(style: FontStyle) -> Option<&'static str> {
     }
 }
 
-fn escape_html(value: &str) -> String {
-    let mut escaped = String::with_capacity(value.len());
-    for character in value.chars() {
-        match character {
-            '&' => escaped.push_str("&amp;"),
-            '<' => escaped.push_str("&lt;"),
-            '>' => escaped.push_str("&gt;"),
-            _ => escaped.push(character),
-        }
+fn write_escaped_html(out: &mut String, value: &str) {
+    let bytes = value.as_bytes();
+    let mut start = 0;
+    while let Some(rel) = memchr::memchr3(b'&', b'<', b'>', &bytes[start..]) {
+        let idx = start + rel;
+        out.push_str(&value[start..idx]);
+        let replacement = match bytes[idx] {
+            b'&' => "&amp;",
+            b'<' => "&lt;",
+            _ => "&gt;",
+        };
+        out.push_str(replacement);
+        start = idx + 1;
     }
-    escaped
+    out.push_str(&value[start..]);
 }
 
-fn escape_attribute(value: &str) -> String {
-    let mut escaped = String::with_capacity(value.len());
-    for character in value.chars() {
-        match character {
-            '&' => escaped.push_str("&amp;"),
-            '<' => escaped.push_str("&lt;"),
-            '>' => escaped.push_str("&gt;"),
-            '"' => escaped.push_str("&quot;"),
-            '\'' => escaped.push_str("&#39;"),
-            _ => escaped.push(character),
-        }
+fn write_escaped_attribute(out: &mut String, value: &str) {
+    let bytes = value.as_bytes();
+    let mut start = 0;
+    for (idx, &byte) in bytes.iter().enumerate() {
+        let replacement = match byte {
+            b'&' => "&amp;",
+            b'<' => "&lt;",
+            b'>' => "&gt;",
+            b'"' => "&quot;",
+            b'\'' => "&#39;",
+            _ => continue,
+        };
+        out.push_str(&value[start..idx]);
+        out.push_str(replacement);
+        start = idx + 1;
     }
-    escaped
+    out.push_str(&value[start..]);
 }
 
 #[cfg(test)]

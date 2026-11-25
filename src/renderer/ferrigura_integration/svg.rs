@@ -8,10 +8,16 @@ use super::FerriguraError as Error;
 const SVG: &str = "http://www.w3.org/2000/svg";
 const XLINK: &str = "http://www.w3.org/1999/xlink";
 
+#[cfg(test)]
 pub fn sanitize(svg: &str) -> Result<String, Error> {
+    let document = Document::parse(svg)?;
+    validate(&document)?;
+    Ok(serialize_html(&document, svg.len()))
+}
+
+pub fn validate(document: &Document<'_>) -> Result<(), Error> {
     // roxmltree rejects DTDs by default. Processing instructions have no place
     // in inline SVG either, including xml-stylesheet instructions.
-    let document = Document::parse(svg)?;
     let root = document.root_element();
     if root.tag_name().name() != "svg" || root.tag_name().namespace() != Some(SVG) {
         return Err(reject("the root element"));
@@ -71,9 +77,14 @@ pub fn sanitize(svg: &str) -> Result<String, Error> {
             css(&stylesheet)?;
         }
     }
+    Ok(())
+}
+
+pub fn serialize_html(document: &Document<'_>, capacity_hint: usize) -> String {
+    let root = document.root_element();
     // Re-serialize XML text and attributes rather than forwarding CDATA,
     // comments, namespace prefixes or parser-specific source spellings to HTML.
-    let mut output = String::with_capacity(svg.len());
+    let mut output = String::with_capacity(capacity_hint);
     let mut pending = Vec::from([(root, false)]);
     while let Some((node, closing)) = pending.pop() {
         if node.is_element() {
@@ -106,19 +117,25 @@ pub fn sanitize(svg: &str) -> Result<String, Error> {
             escape(&mut output, text, false);
         }
     }
-    Ok(output)
+    output
 }
 
 fn escape(output: &mut String, value: &str, attribute: bool) {
-    for ch in value.chars() {
-        match ch {
-            '&' => output.push_str("&amp;"),
-            '<' => output.push_str("&lt;"),
-            '>' => output.push_str("&gt;"),
-            '"' if attribute => output.push_str("&quot;"),
-            other => output.push(other),
-        }
+    let bytes = value.as_bytes();
+    let mut start = 0;
+    for (idx, &byte) in bytes.iter().enumerate() {
+        let replacement = match byte {
+            b'&' => "&amp;",
+            b'<' => "&lt;",
+            b'>' => "&gt;",
+            b'"' if attribute => "&quot;",
+            _ => continue,
+        };
+        output.push_str(&value[start..idx]);
+        output.push_str(replacement);
+        start = idx + 1;
     }
+    output.push_str(&value[start..]);
 }
 
 fn reject(reason: impl Into<String>) -> Error {

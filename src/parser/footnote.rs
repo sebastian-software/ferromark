@@ -56,9 +56,26 @@ pub(super) fn parse_footnote_opener(text: &str) -> Option<(&str, usize)> {
     Some((&text[label_start..j], j + 2))
 }
 
+#[inline]
+fn is_normalized_ascii_footnote_label(label: &str) -> bool {
+    label
+        .bytes()
+        .all(|byte| byte.is_ascii() && !byte.is_ascii_uppercase())
+}
+
 /// Normalizes a footnote label for matching. GFM matches footnote labels
 /// case-insensitively, like link labels.
 pub(super) fn normalize_footnote_label(label: &str) -> CompactString {
+    if is_normalized_ascii_footnote_label(label) {
+        return CompactString::from(label);
+    }
+    if label.is_ascii() {
+        let mut out = CompactString::with_capacity(label.len());
+        for byte in label.bytes() {
+            out.push(byte.to_ascii_lowercase() as char);
+        }
+        return out;
+    }
     CompactString::from(label.to_lowercase())
 }
 
@@ -204,9 +221,11 @@ impl<'a> Parser<'a> {
             return Ok(None);
         };
 
-        let identifier = if self.phase == super::ParsePhase::Definitions {
-            // The collector normalizes labels into its owned set; avoid
-            // allocating an intermediate normalized copy in the temporary AST.
+        let identifier = if self.phase == super::ParsePhase::Definitions
+            || is_normalized_ascii_footnote_label(label)
+        {
+            // Definitions phase normalizes into its own set; already-lowercase
+            // ASCII labels can borrow directly from source with zero arena copy.
             label
         } else {
             self.allocator
@@ -249,13 +268,6 @@ impl<'a> Parser<'a> {
         ))))
     }
 
-    /// Whether a definition exists for `label` (already normalized-able).
-    pub(super) fn has_footnote_label(&self, label: &str) -> bool {
-        self.footnote_labels
-            .as_ref()
-            .is_some_and(|labels| labels.contains(&normalize_footnote_label(label)))
-    }
-
     /// Emits a [`FootnoteReference`] for `[^label]` at `pos`. Returns
     /// false (leaving `pos` untouched) when this is not a reference to a
     /// defined footnote, so the caller can fall back to link parsing.
@@ -266,6 +278,12 @@ impl<'a> Parser<'a> {
         children: &mut crate::allocator::Vec<'a, Node<'a>>,
         pos: &mut usize,
     ) -> bool {
+        let Some(labels) = self.footnote_labels.as_ref() else {
+            return false;
+        };
+        if labels.is_empty() {
+            return false;
+        }
         let bytes = content.as_bytes();
         let label_start = *pos + 2;
         let mut end = label_start;
@@ -282,13 +300,31 @@ impl<'a> Parser<'a> {
         }
 
         let label = &content[label_start..end];
-        if !self.has_footnote_label(label) {
-            return false;
-        }
+        let identifier: &'a str = if is_normalized_ascii_footnote_label(label) {
+            if !labels.contains(label) {
+                return false;
+            }
+            label
+        } else if label.is_ascii() && label.len() <= 64 {
+            let mut buf = [0u8; 64];
+            for (dst, &src) in buf[..label.len()].iter_mut().zip(label.as_bytes()) {
+                *dst = src.to_ascii_lowercase();
+            }
+            let Ok(normalized) = std::str::from_utf8(&buf[..label.len()]) else {
+                return false;
+            };
+            if !labels.contains(normalized) {
+                return false;
+            }
+            self.allocator.alloc_str(normalized)
+        } else {
+            let normalized = normalize_footnote_label(label);
+            if !labels.contains(normalized.as_str()) {
+                return false;
+            }
+            self.allocator.alloc_str(normalized.as_str())
+        };
 
-        let identifier =
-            self.allocator
-                .alloc_str(normalize_footnote_label(label).as_str()) as &'a str;
         children.push(Node::FootnoteReference(self.allocator.boxed(
             crate::ast::FootnoteReference {
                 identifier,
