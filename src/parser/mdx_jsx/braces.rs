@@ -189,30 +189,65 @@ pub(super) fn skip_backticks(bytes: &[u8], start: usize) -> Option<usize> {
     None
 }
 
+/// Monotonic decreasing suffix-max staircase of `(pos, run_len)` built lazily on
+/// the first failed backtick scan in `walk_close`.
+///
+/// Because `walk_close` only advances forward, advancing `cursor` linearly gives
+/// O(1) amortized lookups with zero binary searches.
+pub(super) struct BacktickSuffixMax {
+    entries: smallvec::SmallVec<[(usize, usize); 8]>,
+    cursor: usize,
+}
+
+impl BacktickSuffixMax {
+    fn build(bytes: &[u8], from: usize) -> Self {
+        let mut entries: smallvec::SmallVec<[(usize, usize); 8]> = smallvec::SmallVec::new();
+        let mut scan = from;
+        while let Some(relative) = memchr::memchr(b'`', &bytes[scan..]) {
+            scan += relative;
+            let run = backtick_run_len(bytes, scan);
+            while entries.last().is_some_and(|&(_, prev_len)| prev_len <= run) {
+                entries.pop();
+            }
+            entries.push((scan, run));
+            scan += run;
+        }
+        Self { entries, cursor: 0 }
+    }
+
+    /// Maximum backtick run length starting at or after `from`.
+    #[inline]
+    fn max_len_from(&mut self, from: usize) -> usize {
+        while self.cursor < self.entries.len() && self.entries[self.cursor].0 < from {
+            self.cursor += 1;
+        }
+        self.entries.get(self.cursor).map_or(0, |&(_, len)| len)
+    }
+}
+
 /// Finds the first closing backtick run of length `>= open` after `start + open`
-/// (matching ordinary MDX `walk_close` semantics for both inline spans and
+/// (matching ordinary MDX `walk_close` semantics for inline spans and
 /// longer-closing fenced code blocks).
 ///
-/// The first failed scan builds a monotonic decreasing suffix-max staircase of
-/// `(pos, run_len)` into `suffix_max` so every subsequent unmatched backtick
-/// run in the same walk is rejected in O(log k) without rescanning to EOF.
+/// When `open` has no closing run ahead, returns `Err(next_cursor)` preserving
+/// `main`'s shorter-opener fallback in O(1) time: if the remaining suffix
+/// contains a shorter backtick run of maximum length `max_len` (`1 <= max_len < open`),
+/// `next_cursor` jumps directly to `(start + open) - max_len` (the exact suffix
+/// of this run that matches); otherwise `next_cursor = start + open`.
 pub(super) fn skip_backticks_at_least(
     bytes: &[u8],
     start: usize,
     open: usize,
-    suffix_max: &mut Option<smallvec::SmallVec<[(usize, usize); 8]>>,
-) -> Option<usize> {
-    if open == 0 {
-        return None;
-    }
+    suffix_max: &mut Option<BacktickSuffixMax>,
+) -> Result<usize, usize> {
     let after_open = start + open;
-    if let Some(staircase) = suffix_max.as_ref() {
-        let idx = staircase.partition_point(|&(pos, _)| pos < after_open);
-        if staircase
-            .get(idx)
-            .is_none_or(|&(_, max_len)| max_len < open)
-        {
-            return None;
+    if open == 0 {
+        return Err(after_open);
+    }
+    if let Some(cache) = suffix_max.as_mut() {
+        let max_len = cache.max_len_from(after_open);
+        if max_len < open {
+            return Err(after_open - max_len);
         }
     }
     let mut cursor = after_open;
@@ -220,28 +255,13 @@ pub(super) fn skip_backticks_at_least(
         cursor += relative;
         let close = backtick_run_len(bytes, cursor);
         if close >= open {
-            return Some(cursor + close);
+            return Ok(cursor + close);
         }
         cursor += close;
     }
-    if suffix_max.is_none() {
-        let mut staircase: smallvec::SmallVec<[(usize, usize); 8]> = smallvec::SmallVec::new();
-        let mut scan = after_open;
-        while let Some(relative) = memchr::memchr(b'`', &bytes[scan..]) {
-            scan += relative;
-            let run = backtick_run_len(bytes, scan);
-            while staircase
-                .last()
-                .is_some_and(|&(_, prev_len)| prev_len <= run)
-            {
-                staircase.pop();
-            }
-            staircase.push((scan, run));
-            scan += run;
-        }
-        *suffix_max = Some(staircase);
-    }
-    None
+    let cache = suffix_max.get_or_insert_with(|| BacktickSuffixMax::build(bytes, after_open));
+    let max_len = cache.max_len_from(after_open);
+    Err(after_open - max_len.min(open - 1))
 }
 
 fn skip_line_comment(bytes: &[u8], start: usize) -> usize {

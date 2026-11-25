@@ -226,6 +226,30 @@ fn mdx_nested_component_fence_with_outer_closing_tag_preserves_outer_element() {
     };
     assert_eq!(outer2.name, Some("Outer"));
     assert_eq!(outer2.span, Span::new(0, list_nested.len() as u32));
+
+    // Unmatched longer opener (` `` `) falls back to its shorter suffix (` ` `)
+    // matching the later single backtick, preserving `<Outer>` just like `main`.
+    let fallback = "<Outer>\n``x </Outer> y`\n</Outer>\n";
+    let arena3 = Allocator::for_source_len(fallback.len());
+    let doc3 = Parser::with_options(
+        &arena3,
+        fallback,
+        ParserOptions {
+            mdx: true,
+            ..ParserOptions::default()
+        },
+    )
+    .parse()
+    .expect("parse should succeed");
+    assert_eq!(doc3.children.len(), 1);
+    let Node::MdxJsxFlowElement(outer3) = &doc3.children[0] else {
+        panic!(
+            "unmatched longer backtick opener must fall back to shorter suffix: {:?}",
+            doc3.children
+        );
+    };
+    assert_eq!(outer3.name, Some("Outer"));
+    assert_eq!(outer3.span, Span::new(0, fallback.len() as u32));
 }
 
 #[test]

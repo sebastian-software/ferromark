@@ -11,7 +11,7 @@ use crate::ast::{
 use super::super::line_scan::{is_line_ending_byte, line_terminator_end};
 #[cfg(feature = "jsx")]
 use super::braces::skip_backticks;
-use super::braces::{backtick_run_len, skip_backticks_at_least, skip_quoted};
+use super::braces::{BacktickSuffixMax, backtick_run_len, skip_backticks_at_least, skip_quoted};
 
 /// Opening tag accepted by this slice.
 pub(super) struct JsxOpen<'a> {
@@ -460,7 +460,7 @@ fn walk_close<const RECORD: bool>(
     let mut cursor = from;
     let mut depth = 1u32;
     let mut read_from = from;
-    let mut backtick_suffix_max: Option<SmallVec<[(usize, usize); 8]>> = None;
+    let mut backtick_suffix_max: Option<BacktickSuffixMax> = None;
     while cursor < bytes.len() {
         match bytes[cursor] {
             b'{' => {
@@ -473,13 +473,12 @@ fn walk_close<const RECORD: bool>(
             }
             b'`' => {
                 let open = backtick_run_len(bytes, cursor);
-                if let Some(next) =
-                    skip_backticks_at_least(bytes, cursor, open, &mut backtick_suffix_max)
-                {
-                    cursor = next;
-                    read_from = next;
-                } else {
-                    cursor += open;
+                match skip_backticks_at_least(bytes, cursor, open, &mut backtick_suffix_max) {
+                    Ok(next) => {
+                        cursor = next;
+                        read_from = next;
+                    }
+                    Err(next) => cursor = next,
                 }
             }
             b'<' => {
