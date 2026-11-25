@@ -171,6 +171,7 @@ pub(super) fn backtick_run_len(bytes: &[u8], start: usize) -> usize {
     open
 }
 
+#[cfg(feature = "jsx")]
 pub(super) fn skip_backticks(bytes: &[u8], start: usize) -> Option<usize> {
     let open = backtick_run_len(bytes, start);
     if open == 0 {
@@ -184,6 +185,61 @@ pub(super) fn skip_backticks(bytes: &[u8], start: usize) -> Option<usize> {
             return Some(cursor + close);
         }
         cursor += close;
+    }
+    None
+}
+
+/// Finds the first closing backtick run of length `>= open` after `start + open`
+/// (matching ordinary MDX `walk_close` semantics for both inline spans and
+/// longer-closing fenced code blocks).
+///
+/// The first failed scan builds a monotonic decreasing suffix-max staircase of
+/// `(pos, run_len)` into `suffix_max` so every subsequent unmatched backtick
+/// run in the same walk is rejected in O(log k) without rescanning to EOF.
+pub(super) fn skip_backticks_at_least(
+    bytes: &[u8],
+    start: usize,
+    open: usize,
+    suffix_max: &mut Option<smallvec::SmallVec<[(usize, usize); 8]>>,
+) -> Option<usize> {
+    if open == 0 {
+        return None;
+    }
+    let after_open = start + open;
+    if let Some(staircase) = suffix_max.as_ref() {
+        let idx = staircase.partition_point(|&(pos, _)| pos < after_open);
+        if staircase
+            .get(idx)
+            .is_none_or(|&(_, max_len)| max_len < open)
+        {
+            return None;
+        }
+    }
+    let mut cursor = after_open;
+    while let Some(relative) = memchr::memchr(b'`', &bytes[cursor..]) {
+        cursor += relative;
+        let close = backtick_run_len(bytes, cursor);
+        if close >= open {
+            return Some(cursor + close);
+        }
+        cursor += close;
+    }
+    if suffix_max.is_none() {
+        let mut staircase: smallvec::SmallVec<[(usize, usize); 8]> = smallvec::SmallVec::new();
+        let mut scan = after_open;
+        while let Some(relative) = memchr::memchr(b'`', &bytes[scan..]) {
+            scan += relative;
+            let run = backtick_run_len(bytes, scan);
+            while staircase
+                .last()
+                .is_some_and(|&(_, prev_len)| prev_len <= run)
+            {
+                staircase.pop();
+            }
+            staircase.push((scan, run));
+            scan += run;
+        }
+        *suffix_max = Some(staircase);
     }
     None
 }

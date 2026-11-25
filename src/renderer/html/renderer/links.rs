@@ -4,7 +4,7 @@
 //! `href` and `src` attributes can receive the configured base URL. Keeping those rules
 //! together prevents the Markdown and raw-HTML paths from drifting apart.
 
-use super::super::html_attr::{html_attr_value_range, is_html_attr_char, is_html_attr_start};
+use super::super::html_attr::{html_attr_value_range, is_html_attr_name_byte};
 use super::HtmlRenderer;
 use crate::ast::Link;
 
@@ -212,11 +212,19 @@ impl HtmlRenderer {
                         break;
                     }
                 }
-                byte if is_html_attr_start(byte) => {
+                b'=' => {
+                    saw_self_closing_slash = false;
+                    if let Some((value_start, value_end)) = html_attr_value_range(html, bytes, i) {
+                        i = attr_advance(bytes, value_start, value_end);
+                        continue;
+                    }
+                    i += 1;
+                }
+                byte if is_html_attr_name_byte(byte) => {
                     saw_self_closing_slash = false;
                     let name_start = i;
                     let mut name_end = i + 1;
-                    while name_end < bytes.len() && is_html_attr_char(bytes[name_end]) {
+                    while name_end < bytes.len() && is_html_attr_name_byte(bytes[name_end]) {
                         name_end += 1;
                     }
 
@@ -238,19 +246,7 @@ impl HtmlRenderer {
                                 copied = value_end;
                             }
                         }
-                        // Advance past the closing quote when the attribute value
-                        // was quoted so it is not misread as an opening quote.
-                        let opening_quote = value_start
-                            .checked_sub(1)
-                            .and_then(|pos| bytes.get(pos).copied())
-                            .filter(|byte| matches!(byte, b'"' | b'\''));
-                        i = if opening_quote.is_some()
-                            && bytes.get(value_end) == opening_quote.as_ref()
-                        {
-                            value_end + 1
-                        } else {
-                            value_end
-                        };
+                        i = attr_advance(bytes, value_start, value_end);
                         continue;
                     }
 
@@ -511,6 +507,19 @@ fn is_non_local_url(path: &str) -> bool {
         }
     }
     false
+}
+
+/// Advances past an attribute value, including its closing quote when quoted.
+fn attr_advance(bytes: &[u8], value_start: usize, value_end: usize) -> usize {
+    let opening_quote = value_start
+        .checked_sub(1)
+        .and_then(|pos| bytes.get(pos).copied())
+        .filter(|byte| matches!(byte, b'"' | b'\''));
+    if opening_quote.is_some() && bytes.get(value_end) == opening_quote.as_ref() {
+        value_end + 1
+    } else {
+        value_end
+    }
 }
 
 /// Skips an HTML comment starting at `<!--`, handling `<!-->`, `<!--->`,

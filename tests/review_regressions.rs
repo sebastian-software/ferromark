@@ -210,20 +210,22 @@ fn mdx_nested_component_fence_with_outer_closing_tag_preserves_outer_element() {
         outer.children
     );
 
-    // Indented code block containing literal `<Inner>` + ` ``` ` must NOT push
-    // a nested indentation context and carry the scan past the real `</Outer>`.
-    let code_block_inner = "<Outer>\npara\n\n    <Inner>\n    ```\n</Outer>\n    ```\n";
-    let arena2 = Allocator::for_source_len(code_block_inner.len());
-    let doc2 = Parser::with_options(&arena2, code_block_inner, opts)
+    // Nested `<Outer>` inside a list item must not be skipped as an indented
+    // code block and cause the outer `<Outer>` to close early on the inner tag.
+    let list_nested = "<Outer>\n- item\n\n    <Outer>\n  </Outer>\n</Outer>\n";
+    let arena2 = Allocator::for_source_len(list_nested.len());
+    let doc2 = Parser::with_options(&arena2, list_nested, opts)
         .parse()
         .expect("parse should succeed");
+    assert_eq!(doc2.children.len(), 1);
     let Node::MdxJsxFlowElement(outer2) = &doc2.children[0] else {
         panic!(
-            "literal `<Inner>` in indented code block must not lose <Outer>: {:?}",
+            "nested `<Outer>` inside list item must not lose outer <Outer>: {:?}",
             doc2.children
         );
     };
     assert_eq!(outer2.name, Some("Outer"));
+    assert_eq!(outer2.span, Span::new(0, list_nested.len() as u32));
 }
 
 #[test]
@@ -367,6 +369,7 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
         "<div><!-- comment --!><a href=\"/guide\">abrupt</a></div>\n\n",
         "<div><textarea>1 < 2. That's fine.</textarea><a href=\"/guide\">after-ta</a></div>\n\n",
         "<div><textarea data-path=/docs/><!--</textarea><a href=\"/guide.md\">after-unquoted-slash</a></div>\n\n",
+        "<div><textarea data-é=/docs/><!--</textarea><a href=\"/guide.md\">after-nonascii-attr</a></div>\n\n",
         "<div><svg><title/></svg><a href=\"/guide.md\">after-svg</a></div>\n\n",
         "<div><script.demo-box><a href=\"/guide.md\">after-dotted</a></script.demo-box></div>\n\n",
         "<p>1 < 2. That's fine. <a href=\"/guide\">after-lt</a></p>\n\n",
@@ -409,6 +412,12 @@ fn rewrite_html_root_urls_skips_comments_and_quoted_non_url_attributes() {
             "<div><textarea data-path=/docs/><!--</textarea><a href=\"/docs/guide/index.html\">after-unquoted-slash</a></div>"
         ),
         "trailing slash inside unquoted attribute must not mark `<textarea>` self-closing: {html}"
+    );
+    assert!(
+        html.contains(
+            "<div><textarea data-é=/docs/><!--</textarea><a href=\"/docs/guide/index.html\">after-nonascii-attr</a></div>"
+        ),
+        "non-ASCII attribute name with unquoted trailing slash must not mark `<textarea>` self-closing: {html}"
     );
     assert!(
         html.contains(

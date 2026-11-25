@@ -3,12 +3,11 @@
 //! The renderer does not parse full HTML here; it only needs to find `href` and `src`
 //! attribute values inside raw HTML tags so SSG base paths can be applied consistently.
 
-pub(super) fn is_html_attr_start(byte: u8) -> bool {
-    byte.is_ascii_alphabetic()
-}
-
-pub(super) fn is_html_attr_char(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b':')
+pub(super) fn is_html_attr_name_byte(byte: u8) -> bool {
+    !matches!(
+        byte,
+        b' ' | b'\t' | b'\n' | b'\r' | b'\x0c' | b'/' | b'>' | b'=' | b'"' | b'\''
+    )
 }
 
 pub(super) fn html_attr_value_range(
