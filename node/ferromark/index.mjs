@@ -137,11 +137,12 @@ function validateOptions(options) {
  * or the call throws. The reader below makes the same gets in the same order
  * and stops where napi-rs stops, so a getter or proxy sees the same accesses.
  *
- * `renderPolicy` (bit 0) and 29 boolean fields (bits 1 to 30 without the
- * retired bit 24, in declaration order, as `unpack` numbers them) take one bit each of `set` (present) and
- * `on` (its value; `'trusted'` for `renderPolicy`). Enabled blockquote
- * attributions, insertions, guillemet digraphs, abbreviation settings, and a
- * `preset` use the object entry so later option bits remain available.
+ * `renderPolicy` (bit 0), 29 boolean fields (bits 1 to 30 without bit 24, in
+ * declaration order, as `unpack` numbers them), and `preset: "ffm"` (bit 24)
+ * take one bit each of `set` (present) and `on` (its value; `'trusted'` for
+ * `renderPolicy`, `'ffm'` for `preset`). Enabled blockquote attributions,
+ * insertions, guillemet digraphs, abbreviation settings, and explicit `false`
+ * overrides of those booleans alongside `preset: "ffm"` use the object entry.
  * `headingOffset`,
  * `headingIdPrefix`, `linkBasePath`, `typography` and `passes` keep their
  * values. The native side rebuilds `Options` and resolves it with the code the
@@ -174,15 +175,21 @@ class PackedOptions {
   rejected;
   /** @type {string | undefined} */
   unknownPolicy;
+  /** @type {string | undefined} */
+  unknownPreset;
   /** @type {Array<[string, boolean]>} Set boolean fields that have no packed bit. */
   objectPathFlags = [];
 
   /** @param {import('./index.mjs').Options} options Validated options. */
   constructor(options) {
-    if (this.read(options) && this.unknownPolicy !== undefined) {
-      // napi-rs converts any string for `renderPolicy`, and only rejects an
-      // unknown one after it has read every field.
-      this.reject("renderPolicy", this.unknownPolicy);
+    if (this.read(options)) {
+      // `core_options` validates `preset` before `renderPolicy`, so mirror
+      // that error precedence after every field has been read in order.
+      if (this.unknownPreset !== undefined) {
+        this.reject("preset", this.unknownPreset);
+      } else if (this.unknownPolicy !== undefined) {
+        this.reject("renderPolicy", this.unknownPolicy);
+      }
     }
   }
 
@@ -237,7 +244,7 @@ class PackedOptions {
       this.objectFlag("guillemetDigraphs", options.guillemetDigraphs) &&
       this.objectFlag("autoAbbreviations", options.autoAbbreviations) &&
       this.record("abbreviations", options.abbreviations) &&
-      this.string("preset", options.preset)
+      this.presetOption(options.preset)
     );
   }
 
@@ -285,12 +292,31 @@ class PackedOptions {
     return true;
   }
 
+  /** @param {unknown} value The `preset` value. */
+  presetOption(value) {
+    if (value === undefined) {
+      return true;
+    }
+    if (typeof value !== "string") {
+      return this.reject("preset", value);
+    }
+    if (value === "ffm") {
+      this.set |= 1 << 24;
+      this.on |= 1 << 24;
+      this.preset = value;
+    } else {
+      this.unknownPreset = value;
+    }
+    return true;
+  }
+
   /** Whether an enabled field requires the object-taking native entry. */
   get requiresObjectPath() {
     return (
-      this.objectPathFlags.some(([, value]) => value) ||
       this.abbreviations !== undefined ||
-      this.preset !== undefined
+      (this.preset !== undefined
+        ? this.objectPathFlags.length > 0
+        : this.objectPathFlags.some(([, value]) => value))
     );
   }
 
@@ -317,7 +343,7 @@ class PackedOptions {
     return true;
   }
 
-  /** @param {"headingIdPrefix" | "linkBasePath" | "preset"} key Field name. @param {unknown} value Field value. */
+  /** @param {"headingIdPrefix" | "linkBasePath"} key Field name. @param {unknown} value Field value. */
   string(key, value) {
     if (value !== undefined && typeof value !== "string") {
       return this.reject(key, value);
@@ -920,6 +946,33 @@ export function prepareDocument(markdown, preparationOptions) {
   return preparedFacade(loadNative().prepareDocument(markdown, preparationOptions, preparation));
 }
 
+/** @param {object} value Candidate options object. */
+function isPlainNonProxyObject(value) {
+  if (types.isProxy(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/** @param {string} key Option key name. */
+function isJsxOptionKey(key) {
+  return key !== "output" && (jsxOnlyKeys.has(key) || jsxRenderKeys.has(key));
+}
+
+/**
+ * Narrow plain non-Proxy JSX option objects so native `Options` or `JsxOptions`
+ * deserialization is skipped whenever none of that struct's keys are present.
+ * @param {import('./index.mjs').CompileJsxOptions | import('./index.mjs').CompileJsxModuleOptions | null | undefined} options Validated JSX options.
+ * @returns {[NativeJsxOptions | undefined, NativeJsxOptions | undefined]} Core and JSX option objects for native calls.
+ */
+function splitJsxNativeOptions(options) {
+  if (options == null) return [undefined, undefined];
+  if (!isPlainNonProxyObject(options)) return [options, options];
+  const keys = Reflect.ownKeys(options).filter((key) => typeof key === "string");
+  const hasCore = keys.some((key) => optionKeys.has(key));
+  const hasJsx = keys.some((key) => isJsxOptionKey(key));
+  return [hasCore ? options : undefined, hasJsx ? options : undefined];
+}
+
 /**
  * Compile trusted authored Markdown or MDX to framework-neutral JSX.
  * @param {string | Uint8Array} markdown Authored source.
@@ -929,11 +982,12 @@ export function prepareDocument(markdown, preparationOptions) {
  */
 export function compileJsx(markdown, options, renderCode) {
   const module = validateJsxOptions(options);
+  const [coreOptions, jsxOptions] = splitJsxNativeOptions(options);
   const dispatcher = codeDispatcher(renderCode);
   const addon = loadNative();
   return module
-    ? addon.compileJsxModule(markdown, options, options, dispatcher)
-    : addon.compileJsx(markdown, options, options, dispatcher);
+    ? addon.compileJsxModule(markdown, coreOptions, jsxOptions, dispatcher)
+    : addon.compileJsx(markdown, coreOptions, jsxOptions, dispatcher);
 }
 
 /** Names of code plugin factories compiled into the loaded addon. */
@@ -989,10 +1043,11 @@ export class CodeCompiler {
    */
   compile(markdown, options, renderCode) {
     const module = validateJsxOptions(options);
+    const [coreOptions, jsxOptions] = splitJsxNativeOptions(options);
     const dispatcher = codeDispatcher(renderCode);
     return module
-      ? this.#native.compileModule(markdown, options, options, dispatcher)
-      : this.#native.compile(markdown, options, options, dispatcher);
+      ? this.#native.compileModule(markdown, coreOptions, jsxOptions, dispatcher)
+      : this.#native.compile(markdown, coreOptions, jsxOptions, dispatcher);
   }
 
   /**
@@ -1388,6 +1443,14 @@ export function composeCodeRenderers(...renderers) {
   };
 }
 
+/** @type {WeakMap<import('./index.mjs').CodeHooks, number>} */
+const composedHookStages = new WeakMap();
+
+/** @param {import('./index.mjs').CodeRendering} item Candidate code rendering hook. */
+function itemHookStages(item) {
+  return typeof item === "object" && item !== null ? (composedHookStages.get(item) ?? 3) : 3;
+}
+
 /**
  * Compose code renderers and code hooks in priority order. Within each stage the
  * first hook that returns a result handles the block; whole-block replacements
@@ -1396,12 +1459,15 @@ export function composeCodeRenderers(...renderers) {
  * @returns {import('./index.mjs').CodeHooks} One hook object for HTML or JSX entry points.
  */
 export function composeCodeHooks(...items) {
-  const hooks = items.map((item) => checkedCodeHooks(item));
-  const renderers = hooks.flatMap((hook) => (hook.renderCodeBlock ? [hook.renderCodeBlock] : []));
-  const highlighters = hooks.flatMap((hook) =>
-    hook.highlightCodeBlock ? [hook.highlightCodeBlock] : [],
-  );
-  return Object.freeze({
+  const renderers = [];
+  const highlighters = [];
+  for (const item of items) {
+    const hook = checkedCodeHooks(item);
+    const stages = itemHookStages(item);
+    if (hook.renderCodeBlock && (stages & 1) !== 0) renderers.push(hook.renderCodeBlock);
+    if (hook.highlightCodeBlock && (stages & 2) !== 0) highlighters.push(hook.highlightCodeBlock);
+  }
+  const composed = Object.freeze({
     renderCodeBlock: composeCodeRenderers(...renderers),
     // Code hooks share the public (code, language, meta, block) shape.
     // eslint-disable-next-line max-params
@@ -1413,6 +1479,11 @@ export function composeCodeHooks(...items) {
       return null;
     },
   });
+  composedHookStages.set(
+    composed,
+    (renderers.length > 0 ? 1 : 0) | (highlighters.length > 0 ? 2 : 0),
+  );
+  return composed;
 }
 
 /**
@@ -1503,6 +1574,42 @@ function requiredCodeDispatcher(rendering) {
   return /** @type {NativeCodeDispatcher} */ (codeDispatcher(rendering));
 }
 
+/** @returns {null} No-op callback for empty code hook objects. */
+function ferromarkStageNone() {
+  return null;
+}
+
+/** @param {import('./index.mjs').CodeBlockRenderer | undefined} renderCodeBlock Render hook. */
+function renderStageDispatcher(renderCodeBlock) {
+  // Code hooks share the public (code, language, meta, block) shape.
+  // eslint-disable-next-line max-params
+  return function ferromarkStageRender(code, language, meta, block) {
+    return renderCodeBlock?.(code, language, meta, { start: block.start, end: block.end }) ?? null;
+  };
+}
+
+/** @param {import('./index.mjs').CodeLineHighlighter | undefined} highlightCodeBlock Highlight hook. */
+function highlightStageDispatcher(highlightCodeBlock) {
+  // Code hooks share the public (code, language, meta, block) shape.
+  // eslint-disable-next-line max-params
+  return function ferromarkStageHighlight(code, language, meta, block) {
+    return (
+      highlightCodeBlock?.(code, language, meta, { start: block.start, end: block.end }) ?? null
+    );
+  };
+}
+
+/** @param {import('./index.mjs').CodeHooks} composed Both code hooks. */
+function allStageDispatcher({ renderCodeBlock, highlightCodeBlock }) {
+  // Code hooks share the public (code, language, meta, block) shape.
+  // eslint-disable-next-line max-params
+  return function ferromarkStageAll(code, language, meta, block) {
+    const location = { start: block.start, end: block.end };
+    const hook = block.stage === "render" ? renderCodeBlock : highlightCodeBlock;
+    return hook?.(code, language, meta, location) ?? null;
+  };
+}
+
 /**
  * Turn public code rendering into the single native dispatcher.
  * @param {import('./index.mjs').CodeRendering | undefined} rendering Function or hooks.
@@ -1510,14 +1617,12 @@ function requiredCodeDispatcher(rendering) {
  */
 function codeDispatcher(rendering) {
   if (rendering === undefined) return;
-  const { renderCodeBlock, highlightCodeBlock } = composeCodeHooks(rendering);
-  // Code hooks share the public (code, language, meta, block) shape.
-  // eslint-disable-next-line max-params
-  return (code, language, meta, block) => {
-    const location = { start: block.start, end: block.end };
-    const hook = block.stage === "render" ? renderCodeBlock : highlightCodeBlock;
-    return hook?.(code, language, meta, location) ?? null;
-  };
+  const composed = composeCodeHooks(rendering);
+  const stages = composedHookStages.get(composed) ?? 3;
+  if (stages === 0) return ferromarkStageNone;
+  if (stages === 1) return renderStageDispatcher(composed.renderCodeBlock);
+  if (stages === 2) return highlightStageDispatcher(composed.highlightCodeBlock);
+  return allStageDispatcher(composed);
 }
 
 /**

@@ -8,14 +8,14 @@
 //! JavaScript, where V8 caches them, and passes the result to these entries as
 //! plain arguments:
 //!
-//! - `set` and `on` hold one bit each for `renderPolicy` and 29 boolean fields,
-//!   numbered in their declaration order in [`Options`]. Bit 24 stays unused
-//!   since wiki links were removed, so the later bits keep their numbers. A bit in `set` marks
-//!   the field as present, and the same bit in `on` holds its value. For
-//!   `renderPolicy`, a set value bit means `'trusted'`. Enabled blockquote
-//!   attributions and insertions use the object-taking entry, as do
-//!   abbreviation settings (`autoAbbreviations: true` or a supplied map)
-//!   and a `preset`.
+//! - `set` and `on` hold one bit each for `renderPolicy`, 29 boolean fields,
+//!   and `preset: "ffm"` (bit 24, reused after wiki links were removed). A bit
+//!   in `set` marks the field as present, and the same bit in `on` holds its
+//!   value. For `renderPolicy`, a set value bit means `'trusted'`. For bit 24,
+//!   a set value bit means `preset: "ffm"`. Enabled blockquote attributions,
+//!   insertions, guillemet digraphs, and abbreviation settings (or explicit
+//!   `false` overrides of those booleans alongside `preset: "ffm"`) use the
+//!   object-taking entry.
 //! - `headingOffset`, `headingIdPrefix`, `linkBasePath`, `typography`, and
 //!   `passes` pass through as read, and `undefined` stands for an absent field.
 //!   `insertions` has no packed bit; the facade uses the object-taking entry
@@ -105,7 +105,7 @@ pub fn unpack(
         guillemet_digraphs: None,
         auto_abbreviations: None,
         abbreviations: None,
-        preset: None,
+        preset: flag(24).filter(|&ffm| ffm).map(|_| String::from("ffm")),
     }
 }
 

@@ -220,6 +220,25 @@ impl HtmlRenderer {
         self
     }
 
+    /// Releases oversized scratch and output buffers after an outlier document.
+    ///
+    /// Configuration and options remain unchanged. Long-lived renderers can
+    /// call this after rendering a document whose output exceeded `max_bytes`
+    /// so peak memory is not retained across subsequent smaller renders.
+    pub fn shrink_retained_buffers(&mut self, max_bytes: usize) {
+        if self.output.capacity() > max_bytes {
+            self.output = String::new();
+        }
+        if self.heading_text_scratch.capacity() > max_bytes {
+            self.heading_text_scratch = String::new();
+        }
+        if self.heading_slug_scratch.capacity() > max_bytes {
+            self.heading_slug_scratch = String::new();
+        }
+        self.heading_id_planner = HeadingIdPlanner::new();
+        self.footnotes = None;
+    }
+
     /// Returns this renderer with a fixed heading level offset.
     ///
     /// Positive values move headings toward `h6`; negative values move them

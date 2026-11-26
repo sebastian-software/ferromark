@@ -288,6 +288,15 @@ pub(crate) struct ParsedJsxDocument {
 }
 
 impl ParsedJsxDocument {
+    pub(crate) fn retained_bytes(&self) -> i64 {
+        let owner = self.tree.borrow_owner();
+        let total = owner
+            .source
+            .capacity()
+            .saturating_add(owner.allocator.allocated_bytes());
+        i64::try_from(total).unwrap_or(i64::MAX)
+    }
+
     pub(crate) fn with_document<R>(&self, render: impl FnOnce(&str, &Document<'_>) -> R) -> R {
         self.tree
             .with_dependent(|owner, document| render(&owner.source, &document.document))
@@ -421,12 +430,7 @@ fn render_defaults(options: &CoreOptions) -> JsxRenderDefaults {
     }
 }
 
-fn prepare_tree(
-    source: String,
-    mut options: CoreOptions,
-    format: Option<&str>,
-    track_references: bool,
-) -> Result<PreparedJsxTree> {
+fn apply_jsx_format(options: &mut CoreOptions, format: Option<&str>) -> Result<()> {
     options.parser.mdx = match format {
         None | Some("md") => false,
         Some("mdx") => true,
@@ -438,6 +442,16 @@ fn prepare_tree(
         }
     };
     options.parser.mdx_compatible = options.parser.mdx;
+    Ok(())
+}
+
+fn prepare_tree(
+    source: String,
+    mut options: CoreOptions,
+    format: Option<&str>,
+    track_references: bool,
+) -> Result<PreparedJsxTree> {
+    apply_jsx_format(&mut options, format)?;
     let parser_options = options.parser;
     let html_options = options.html;
     let mut pipeline = options.pipeline;
@@ -687,20 +701,40 @@ pub(crate) fn compile_jsx_with_highlighter(
     module: bool,
 ) -> Result<Compiled> {
     let jsx = jsx_options.unwrap_or_default();
-    let parsed = prepare_jsx_document(markdown, options, jsx.format.as_deref(), false)?;
-    if module {
-        Ok(Compiled::Module(parsed.render_module(
-            Some(jsx),
-            render_code,
-            highlighting,
-        )?))
-    } else {
-        Ok(Compiled::Body(parsed.render_body(
-            Some(jsx),
-            render_code,
-            highlighting,
-        )?))
+    let mut resolved = core_options(options)?;
+    let defaults = render_defaults(&resolved);
+    let source = markdown.try_as_str()?;
+    apply_jsx_format(&mut resolved, jsx.format.as_deref())?;
+
+    let allocator = Allocator::for_source_len(source.len());
+    let mut document = Parser::with_options(&allocator, source, resolved.parser)
+        .parse()
+        .map_err(parse_error)?;
+    let mut scope = ModuleScope::default();
+    scope.visit_document(&document);
+    if let Some(span) = scope.nested {
+        return Err(Error::new(
+            Status::InvalidArg,
+            format!("MDX module declarations must appear at document top level (at {span:?})"),
+        ));
     }
+    if !resolved.pipeline.is_empty() {
+        let context = TransformContext::new(&allocator, source, &resolved.html);
+        resolved
+            .pipeline
+            .run(&mut document, &context)
+            .map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
+    }
+
+    render_parsed(
+        &document,
+        source,
+        &defaults,
+        jsx,
+        render_code,
+        highlighting,
+        module,
+    )
 }
 
 fn heading_offset(value: f64) -> Result<i32> {

@@ -2,7 +2,8 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use napi::bindgen_prelude::Result;
+use napi::Env;
+use napi::bindgen_prelude::{ObjectFinalize, Result};
 use napi_derive::napi;
 use serde_json::Value;
 
@@ -109,6 +110,7 @@ impl CodeCompiler {
     #[napi(catch_unwind)]
     pub fn prepare(
         &self,
+        env: Env,
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
         options: Option<Options>,
         preparation_options: Option<PreparationOptions>,
@@ -121,15 +123,14 @@ impl CodeCompiler {
             preparation.format.as_deref(),
             preparation.track_references.unwrap_or(false),
         )?;
-        let metadata = parsed.metadata()?;
-        Ok(PreparedJsxDocument {
+        Ok(PreparedJsxDocument::new(
+            env,
             parsed,
-            highlighting: Some(PreparedHighlighting {
+            Some(PreparedHighlighting {
                 plugins: Rc::clone(&self.plugins),
                 line_numbers: self.line_numbers,
             }),
-            metadata,
-        })
+        ))
     }
 
     /// Compiles source and reuses the initialized native plugins.
@@ -213,11 +214,20 @@ impl CodeCompiler {
 }
 
 /// Immutable, source-owning prepared JSX document with repeatable render methods.
-#[napi]
+#[napi(custom_finalize)]
 pub struct PreparedJsxDocument {
     pub(crate) parsed: ParsedJsxDocument,
     highlighting: Option<PreparedHighlighting>,
-    metadata: JsxPreparedMetadata,
+    external_memory_bytes: i64,
+}
+
+impl ObjectFinalize for PreparedJsxDocument {
+    fn finalize(self, env: Env) -> Result<()> {
+        if self.external_memory_bytes > 0 {
+            let _ = env.adjust_external_memory(-self.external_memory_bytes);
+        }
+        Ok(())
+    }
 }
 
 struct PreparedHighlighting {
@@ -226,13 +236,24 @@ struct PreparedHighlighting {
 }
 
 impl PreparedJsxDocument {
-    pub(crate) fn without_highlighting(parsed: ParsedJsxDocument) -> Result<Self> {
-        let metadata = parsed.metadata()?;
-        Ok(Self {
+    fn new(
+        env: Env,
+        parsed: ParsedJsxDocument,
+        highlighting: Option<PreparedHighlighting>,
+    ) -> Self {
+        let external_memory_bytes = parsed.retained_bytes();
+        if external_memory_bytes > 0 {
+            let _ = env.adjust_external_memory(external_memory_bytes);
+        }
+        Self {
             parsed,
-            metadata,
-            highlighting: None,
-        })
+            highlighting,
+            external_memory_bytes,
+        }
+    }
+
+    pub(crate) fn without_highlighting(env: Env, parsed: ParsedJsxDocument) -> Self {
+        Self::new(env, parsed, None)
     }
 }
 
@@ -262,8 +283,8 @@ impl PreparedJsxDocument {
 
     /// Metadata computed from the prepared tree without rendering its body.
     #[napi(getter, catch_unwind)]
-    pub fn metadata(&self) -> JsxPreparedMetadata {
-        self.metadata.clone()
+    pub fn metadata(&self) -> Result<JsxPreparedMetadata> {
+        self.parsed.metadata()
     }
 
     /// Extracts static text and final heading sections without highlighting or rendering.
