@@ -284,3 +284,33 @@ test("standalone code blocks use the highlighting hook only", () => {
   assert.deepEqual(seen, [["ts", 'title="a.ts"', { start: 0, end: 0 }]]);
   assert.doesNotMatch(new CodeCompiler().renderCodeBlock({ code: "x" }).jsx, /shiki/);
 });
+
+test("empty and single-stage composed hooks skip unused stages cleanly", () => {
+  const source = "```js\nconst x = 1;\n```\n\n```ts\nconst y = 2;\n```\n";
+  assert.equal(toHtmlWithCodeRenderer(source, {}), toHtml(source));
+  assert.equal(compileJsx(source, {}, {}).body, compileJsx(source).body);
+
+  let renderCalls = 0;
+  const html = toHtmlWithCodeRenderer(
+    source,
+    composeCodeHooks((_code, lang) => {
+      renderCalls += 1;
+      return lang === "js" ? "<pre>js</pre>" : null;
+    }),
+  );
+  assert.equal(renderCalls, 2);
+  assert.match(html, /^<pre>js<\/pre>[\s\S]*language-ts/);
+
+  let highlightCalls = 0;
+  const highlighted = toHtmlWithCodeRenderer(
+    source,
+    composeCodeHooks({
+      highlightCodeBlock(code) {
+        highlightCalls += 1;
+        return { lines: redLines(code) };
+      },
+    }),
+  );
+  assert.equal(highlightCalls, 2);
+  assert.match(highlighted, /color:#f00/);
+});

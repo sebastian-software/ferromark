@@ -120,7 +120,7 @@
 // The only module of the addon allowed to use `unsafe`; see above.
 #![allow(unsafe_code)]
 
-use std::cell::OnceCell;
+use std::cell::{Cell, OnceCell};
 use std::ffi::CString;
 use std::marker::PhantomData;
 use std::ptr;
@@ -142,6 +142,31 @@ const MAX_CAPACITY: usize = i32::MAX as usize;
 /// The most Markdown bytes an export accepts: the parser stores source offsets
 /// as `u32`.
 const MAX_BYTES: usize = u32::MAX as usize;
+
+/// Largest reusable thread-local input scratch buffer, in bytes.
+///
+/// Matches `default_renderer::RETAINED_LIMIT` so an outlier document never
+/// pins large allocations on the thread.
+const SCRATCH_LIMIT: usize = 1024 * 1024;
+
+thread_local! {
+    /// Reusable per-thread input buffer; empty while a call holds it.
+    static SCRATCH: Cell<Vec<u8>> = const { Cell::new(Vec::new()) };
+}
+
+fn take_scratch(needed: usize) -> Vec<u8> {
+    if needed > SCRATCH_LIMIT {
+        return Vec::new();
+    }
+    SCRATCH.try_with(Cell::take).unwrap_or_default()
+}
+
+fn put_scratch(mut bytes: Vec<u8>) {
+    if bytes.capacity() > 0 && bytes.capacity() <= SCRATCH_LIMIT {
+        bytes.clear();
+        let _ = SCRATCH.try_with(|slot| slot.set(bytes));
+    }
+}
 
 /// A Markdown argument: a string converted to UTF-8, or a `Uint8Array` whose
 /// bytes the export copies when it first uses the text.
@@ -179,8 +204,8 @@ impl Utf8Input<'_> {
     }
 
     /// The decoded text, owned.
-    pub fn try_into_string(self) -> Result<String> {
-        match self.source {
+    pub fn try_into_string(mut self) -> Result<String> {
+        match std::mem::replace(&mut self.source, Source::Text(String::new())) {
             Source::Text(text) => Ok(text),
             Source::Bytes(bytes) => {
                 let Bytes { env, value, text } = bytes;
@@ -211,6 +236,19 @@ impl Utf8Input<'_> {
                 View::Private(..) => "copied",
                 View::Shared(..) => "copied atomically",
             },
+        }
+    }
+}
+
+impl Drop for Utf8Input<'_> {
+    fn drop(&mut self) {
+        match &mut self.source {
+            Source::Text(text) => put_scratch(std::mem::take(text).into_bytes()),
+            Source::Bytes(bytes) => {
+                if let Some(Ok(text)) = bytes.text.take() {
+                    put_scratch(text.into_bytes());
+                }
+            }
         }
     }
 }
@@ -343,8 +381,13 @@ unsafe fn convert_string(
     // the exact size still might be, the exact path converts.
     let bound = units.saturating_mul(MAX_UTF8_PER_UNIT);
     let capacity = bound.saturating_add(MAX_UTF8_CHAR + 1);
-    let mut bytes = Vec::<u8>::new();
-    if capacity > MAX_CAPACITY || bytes.try_reserve_exact(capacity).is_err() {
+    if capacity > MAX_CAPACITY {
+        // SAFETY: the same handles, still within the call.
+        return unsafe { exact(env, value) };
+    }
+    let mut bytes = take_scratch(capacity);
+    if bytes.capacity() < capacity && bytes.try_reserve_exact(capacity).is_err() {
+        put_scratch(bytes);
         // SAFETY: the same handles, still within the call.
         return unsafe { exact(env, value) };
     }
@@ -363,6 +406,7 @@ unsafe fn convert_string(
         )
     };
     if status != sys::Status::napi_ok || written > bound {
+        put_scratch(bytes);
         // SAFETY: the same handles, still within the call.
         return unsafe { exact(env, value) };
     }
@@ -488,9 +532,12 @@ fn decode(bytes: Vec<u8>, max_decoded_bytes: usize) -> std::result::Result<Strin
         Ok(_) => Err(decoded_too_long(max_decoded_bytes)),
         Err(error) => {
             let bytes = error.into_bytes();
-            lossy_output_len_at_most(&bytes, max_decoded_bytes)
-                .ok_or_else(|| decoded_too_long(max_decoded_bytes))?;
-            Ok(String::from_utf8_lossy(&bytes).into_owned())
+            let result = match lossy_output_len_at_most(&bytes, max_decoded_bytes) {
+                Some(_) => Ok(String::from_utf8_lossy(&bytes).into_owned()),
+                None => Err(decoded_too_long(max_decoded_bytes)),
+            };
+            put_scratch(bytes);
+            result
         }
     }
 }
@@ -569,12 +616,14 @@ mod tests {
 /// Reserves `length` bytes for a copy, or panics with a message the export
 /// throws as a JavaScript error, rather than aborting the process.
 fn reserve(length: usize) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    let reserved = bytes.try_reserve_exact(length);
-    assert!(
-        reserved.is_ok(),
-        "ferromark could not allocate {length} bytes to copy the Markdown"
-    );
+    let mut bytes = take_scratch(length);
+    if bytes.capacity() < length {
+        let reserved = bytes.try_reserve_exact(length);
+        assert!(
+            reserved.is_ok(),
+            "ferromark could not allocate {length} bytes to copy the Markdown"
+        );
+    }
     bytes
 }
 

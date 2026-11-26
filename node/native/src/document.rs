@@ -1,5 +1,6 @@
 //! Asset-free preparation and read-only document reference extraction.
 
+use napi::Env;
 use napi::bindgen_prelude::Result;
 use napi_derive::napi;
 
@@ -10,18 +11,22 @@ use crate::{Options, input::Utf8Input};
 /// Parses and runs native passes without loading highlighting assets.
 #[napi(catch_unwind)]
 pub fn prepare_document(
+    env: Env,
     #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     options: Option<Options>,
     preparation_options: Option<PreparationOptions>,
 ) -> Result<PreparedJsxDocument> {
     validate_preparation_options(options.as_ref())?;
     let preparation = preparation_options.unwrap_or_default();
-    PreparedJsxDocument::without_highlighting(prepare_jsx_document(
-        markdown,
-        options,
-        preparation.format.as_deref(),
-        preparation.track_references.unwrap_or(false),
-    )?)
+    Ok(PreparedJsxDocument::without_highlighting(
+        env,
+        prepare_jsx_document(
+            markdown,
+            options,
+            preparation.format.as_deref(),
+            preparation.track_references.unwrap_or(false),
+        )?,
+    ))
 }
 
 /// One reference occurrence from the prepared tree.
