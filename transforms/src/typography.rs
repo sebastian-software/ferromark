@@ -983,16 +983,12 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
             if run_end - run_start == 1
                 && let Node::Text(text) = &nodes[run_start]
             {
-                let is_raw_html = !raw_html_spans.is_empty() && {
-                    let run_span = if text.value.is_empty() {
-                        Span::empty()
-                    } else {
-                        text.span
-                    };
-                    raw_html_spans
+                let is_raw_html = !raw_html_spans.is_empty()
+                    && !text.value.is_empty()
+                    && !text.span.is_empty()
+                    && raw_html_spans
                         .iter()
-                        .any(|span| run_span.start < span.end && span.start < run_span.end)
-                };
+                        .any(|span| text.span.start < span.end && span.start < text.span.end);
                 let (protected, protected_urls) = if GUILLEMET_DIGRAPHS {
                     let urls = context.find_autolink_ranges(text.value);
                     let protected = if is_raw_html {

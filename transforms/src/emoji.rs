@@ -68,7 +68,7 @@ fn transform_text_runs<'arena>(
         }
     }
 
-    context.apply_text_run_replacements(nodes, matches, |replacement, span| {
+    TransformContext::apply_text_run_replacements(nodes, matches, |replacement, span| {
         Node::Text(Text {
             value: replacement,
             span,

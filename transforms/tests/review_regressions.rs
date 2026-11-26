@@ -250,3 +250,72 @@ fn raw_html_scoping_handles_mixed_case_and_void_tags() {
         "typography after void tag should still run: {html}"
     );
 }
+
+#[test]
+fn typography_does_not_treat_zero_width_span_as_overlapping_raw_html() {
+    for guillemets in [false, true] {
+        let arena = Allocator::new();
+        let mut children = arena.new_vec();
+        children.push(Node::Html(ferromark::ast::Html {
+            value: "<i>",
+            span: Span::new(0, 3),
+        }));
+        children.push(Node::Text(Text {
+            value: "abcd",
+            span: Span::new(3, 7),
+        }));
+        children.push(Node::Html(ferromark::ast::Html {
+            value: "</i>",
+            span: Span::new(7, 11),
+        }));
+        children.push(Node::Text(Text {
+            value: "...",
+            span: Span::new(5, 5),
+        }));
+        let mut doc_children = arena.new_vec_with_capacity(1);
+        doc_children.push(Node::Paragraph(arena.boxed(ferromark::ast::Paragraph {
+            children,
+            span: Span::new(0, 11),
+        })));
+        let mut doc = ferromark::ast::Document {
+            children: doc_children,
+            front_matter: None,
+            span: Span::new(0, 11),
+        };
+
+        let renderer_options = HtmlRendererOptions::default();
+        let ctx = TransformContext::new(&arena, "", &renderer_options);
+        let options =
+            TypographyOptions::new(TypographyLanguage::English).with_guillemet_digraphs(guillemets);
+        TypographyPass::new(options).apply(&mut doc, &ctx).unwrap();
+
+        let html = HtmlRenderer::with_options(renderer_options).render(&doc);
+        assert_eq!(
+            html, "<p><i>abcd</i>…</p>\n",
+            "zero-width span 5..5 outside raw HTML should still transform (guillemets={guillemets})"
+        );
+    }
+}
+
+#[test]
+fn single_trailing_emoji_replacement_does_not_reallocate_large_sibling_list() {
+    let mut source = "*word* ".repeat(700);
+    source.push_str(":rocket:");
+    let arena = Allocator::for_source_len(source.len());
+    let mut doc = Parser::with_options(&arena, &source, ParserOptions::default())
+        .parse()
+        .expect("parse");
+    let before_bytes = arena.allocated_bytes();
+    let renderer_options = HtmlRendererOptions::default();
+    let ctx = TransformContext::new(&arena, &source, &renderer_options);
+
+    EmojiShortcodesPass::new().apply(&mut doc, &ctx).unwrap();
+
+    let after_bytes = arena.allocated_bytes();
+    assert_eq!(
+        after_bytes, before_bytes,
+        "replacing one trailing emoji node in place should not grow the arena"
+    );
+    let html = HtmlRenderer::with_options(renderer_options).render(&doc);
+    assert!(html.ends_with("🚀</p>\n"), "{html}");
+}

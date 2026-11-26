@@ -309,13 +309,15 @@ impl<'arena> TransformContext<'arena> {
             .map_or_else(Vec::new, |matcher| matcher.find_ranges(value))
     }
 
-    /// Rebuilds a sibling list in one forward linear pass, applying sorted,
-    /// non-overlapping, non-empty replacements across one or more text runs.
+    /// Rebuilds the modified slice of a sibling list in one forward linear
+    /// pass, applying sorted, non-overlapping, non-empty replacements across
+    /// one or more text runs.
     ///
     /// Preserves the exact splitting, bounding-span, and empty-text-node
-    /// semantics of repeated [`Self::replace_text_range_with_node`] calls.
+    /// semantics of repeated [`Self::replace_text_range_with_node`] calls while
+    /// avoiding $O(M^2)$ shifts and avoiding duplicating untouched siblings in
+    /// the bump arena.
     pub(crate) fn apply_text_run_replacements<T>(
-        &self,
         nodes: &mut ferromark::allocator::Vec<'arena, Node<'arena>>,
         replacements: Vec<RunReplacement<T>>,
         mut build_node: impl FnMut(T, Span) -> Node<'arena>,
@@ -324,161 +326,199 @@ impl<'arena> TransformContext<'arena> {
             return;
         }
 
-        let capacity = nodes
-            .len()
-            .saturating_add(replacements.len().saturating_mul(2));
-        let old_nodes = std::mem::replace(nodes, self.allocator.new_vec_with_capacity(capacity));
-        let mut old_iter = old_nodes.into_iter();
-        let mut old_index = 0usize;
-        let mut repl_iter = replacements.into_iter().peekable();
-
-        while let Some(first_repl) = repl_iter.peek() {
-            let run_range = first_repl.node_range.clone();
-
-            while old_index < run_range.start {
-                if let Some(node) = old_iter.next() {
-                    nodes.push(node);
-                }
-                old_index += 1;
+        // Fast path: a single replacement covering one entire Text node can
+        // overwrite that slot in place with zero shifts and zero allocations.
+        if replacements.len() == 1
+            && let Some(first) = replacements.first()
+            && first.node_range.start + 1 == first.node_range.end
+            && let Some(Node::Text(text)) = nodes.get(first.node_range.start)
+            && first.byte_range.start == 0
+            && first.byte_range.end == text.value.len()
+        {
+            let span = if text.span.is_empty() {
+                Span::empty()
+            } else {
+                text.span
+            };
+            let index = first.node_range.start;
+            if let Some(repl) = replacements.into_iter().next() {
+                nodes[index] = build_node(repl.payload, span);
             }
+            return;
+        }
 
-            let mut seg_byte_cursor = 0usize;
-            let mut emit_cursor = 0usize;
-            let mut current = pull_text_segment(
-                &mut old_iter,
-                &mut old_index,
-                run_range.end,
-                &mut seg_byte_cursor,
-                nodes,
-            );
+        let Some(first_run_start) = replacements.first().map(|repl| repl.node_range.start) else {
+            return;
+        };
+        let Some(last_run_end) = replacements.last().map(|repl| repl.node_range.end) else {
+            return;
+        };
+        let orig_len = nodes.len();
+        let rebuilt_capacity =
+            (last_run_end - first_run_start).saturating_add(replacements.len().saturating_mul(2));
+        let mut rebuilt = std::vec::Vec::with_capacity(rebuilt_capacity);
 
-            while let Some(next_repl) = repl_iter.peek() {
-                if next_repl.node_range != run_range {
-                    break;
-                }
-                let Some(repl) = repl_iter.next() else {
-                    break;
-                };
-                let m_start = repl.byte_range.start;
-                let m_end = repl.byte_range.end;
+        {
+            let mut old_iter = nodes.drain(first_run_start..last_run_end);
+            let mut old_index = first_run_start;
+            let mut repl_iter = replacements.into_iter().peekable();
 
-                // Emit untouched text strictly before `m_start` and any empty
-                // text nodes positioned at or before `m_start`.
-                while let Some((text, seg_start, seg_end)) = current {
-                    if text.value.is_empty() {
-                        nodes.push(Node::Text(text));
-                        current = pull_text_segment(
-                            &mut old_iter,
-                            &mut old_index,
-                            run_range.end,
-                            &mut seg_byte_cursor,
-                            nodes,
-                        );
-                    } else if seg_end <= m_start {
-                        let prefix = &text.value[emit_cursor - seg_start..];
-                        if !prefix.is_empty() {
-                            nodes.push(Node::Text(Text {
-                                value: prefix,
-                                span: text.span,
-                            }));
-                        }
-                        emit_cursor = seg_end;
-                        current = pull_text_segment(
-                            &mut old_iter,
-                            &mut old_index,
-                            run_range.end,
-                            &mut seg_byte_cursor,
-                            nodes,
-                        );
-                    } else {
-                        if emit_cursor < m_start {
-                            let prefix = &text.value[emit_cursor - seg_start..m_start - seg_start];
-                            if !prefix.is_empty() {
-                                nodes.push(Node::Text(Text {
-                                    value: prefix,
-                                    span: text.span,
-                                }));
-                            }
-                            emit_cursor = m_start;
-                        }
-                        current = Some((text, seg_start, seg_end));
-                        break;
+            while let Some(first_repl) = repl_iter.peek() {
+                let run_range = first_repl.node_range.clone();
+
+                while old_index < run_range.start {
+                    if let Some(node) = old_iter.next() {
+                        rebuilt.push(node);
                     }
+                    old_index += 1;
                 }
 
-                // Consume all segments overlapping `m_start..m_end`, merge
-                // non-empty spans, and retain interior empty text nodes after
-                // the replacement node.
-                let mut replacement_span: Option<Span> = None;
-                let mut deferred_empty: Vec<Text<'arena>> = Vec::new();
-                while let Some((text, seg_start, seg_end)) = current {
-                    if seg_start >= m_end {
-                        current = Some((text, seg_start, seg_end));
-                        break;
-                    }
-                    if !text.span.is_empty() {
-                        replacement_span =
-                            Some(replacement_span.map_or(text.span, |span| span.merge(text.span)));
-                    }
-                    if text.value.is_empty() {
-                        deferred_empty.push(text);
-                        current = pull_text_segment(
-                            &mut old_iter,
-                            &mut old_index,
-                            run_range.end,
-                            &mut seg_byte_cursor,
-                            nodes,
-                        );
-                    } else if seg_end <= m_end {
-                        emit_cursor = seg_end;
-                        current = pull_text_segment(
-                            &mut old_iter,
-                            &mut old_index,
-                            run_range.end,
-                            &mut seg_byte_cursor,
-                            nodes,
-                        );
-                    } else {
-                        emit_cursor = m_end;
-                        current = Some((text, seg_start, seg_end));
-                        break;
-                    }
-                }
-
-                nodes.push(build_node(
-                    repl.payload,
-                    replacement_span.unwrap_or_else(Span::empty),
-                ));
-                for empty_text in deferred_empty {
-                    nodes.push(Node::Text(empty_text));
-                }
-            }
-
-            // Emit remaining suffix text and trailing empty nodes in this run.
-            while let Some((text, seg_start, seg_end)) = current {
-                if text.value.is_empty() {
-                    nodes.push(Node::Text(text));
-                } else {
-                    let suffix = &text.value[emit_cursor - seg_start..];
-                    if !suffix.is_empty() {
-                        nodes.push(Node::Text(Text {
-                            value: suffix,
-                            span: text.span,
-                        }));
-                    }
-                    emit_cursor = seg_end;
-                }
-                current = pull_text_segment(
+                let mut seg_byte_cursor = 0usize;
+                let mut emit_cursor = 0usize;
+                let mut current = pull_text_segment(
                     &mut old_iter,
                     &mut old_index,
                     run_range.end,
                     &mut seg_byte_cursor,
-                    nodes,
+                    &mut rebuilt,
                 );
+
+                while let Some(next_repl) = repl_iter.peek() {
+                    if next_repl.node_range != run_range {
+                        break;
+                    }
+                    let Some(repl) = repl_iter.next() else {
+                        break;
+                    };
+                    let m_start = repl.byte_range.start;
+                    let m_end = repl.byte_range.end;
+
+                    // Emit untouched text strictly before `m_start` and any empty
+                    // text nodes positioned at or before `m_start`.
+                    while let Some((text, seg_start, seg_end)) = current {
+                        if text.value.is_empty() {
+                            rebuilt.push(Node::Text(text));
+                            current = pull_text_segment(
+                                &mut old_iter,
+                                &mut old_index,
+                                run_range.end,
+                                &mut seg_byte_cursor,
+                                &mut rebuilt,
+                            );
+                        } else if seg_end <= m_start {
+                            let prefix = &text.value[emit_cursor - seg_start..];
+                            if !prefix.is_empty() {
+                                rebuilt.push(Node::Text(Text {
+                                    value: prefix,
+                                    span: text.span,
+                                }));
+                            }
+                            emit_cursor = seg_end;
+                            current = pull_text_segment(
+                                &mut old_iter,
+                                &mut old_index,
+                                run_range.end,
+                                &mut seg_byte_cursor,
+                                &mut rebuilt,
+                            );
+                        } else {
+                            if emit_cursor < m_start {
+                                let prefix =
+                                    &text.value[emit_cursor - seg_start..m_start - seg_start];
+                                if !prefix.is_empty() {
+                                    rebuilt.push(Node::Text(Text {
+                                        value: prefix,
+                                        span: text.span,
+                                    }));
+                                }
+                                emit_cursor = m_start;
+                            }
+                            current = Some((text, seg_start, seg_end));
+                            break;
+                        }
+                    }
+
+                    // Consume all segments overlapping `m_start..m_end`, merge
+                    // non-empty spans, and retain interior empty text nodes after
+                    // the replacement node.
+                    let mut replacement_span: Option<Span> = None;
+                    let mut deferred_empty: Vec<Text<'arena>> = Vec::new();
+                    while let Some((text, seg_start, seg_end)) = current {
+                        if seg_start >= m_end {
+                            current = Some((text, seg_start, seg_end));
+                            break;
+                        }
+                        if !text.span.is_empty() {
+                            replacement_span = Some(
+                                replacement_span.map_or(text.span, |span| span.merge(text.span)),
+                            );
+                        }
+                        if text.value.is_empty() {
+                            deferred_empty.push(text);
+                            current = pull_text_segment(
+                                &mut old_iter,
+                                &mut old_index,
+                                run_range.end,
+                                &mut seg_byte_cursor,
+                                &mut rebuilt,
+                            );
+                        } else if seg_end <= m_end {
+                            emit_cursor = seg_end;
+                            current = pull_text_segment(
+                                &mut old_iter,
+                                &mut old_index,
+                                run_range.end,
+                                &mut seg_byte_cursor,
+                                &mut rebuilt,
+                            );
+                        } else {
+                            emit_cursor = m_end;
+                            current = Some((text, seg_start, seg_end));
+                            break;
+                        }
+                    }
+
+                    rebuilt.push(build_node(
+                        repl.payload,
+                        replacement_span.unwrap_or_else(Span::empty),
+                    ));
+                    for empty_text in deferred_empty {
+                        rebuilt.push(Node::Text(empty_text));
+                    }
+                }
+
+                // Emit remaining suffix text and trailing empty nodes in this run.
+                while let Some((text, seg_start, seg_end)) = current {
+                    if text.value.is_empty() {
+                        rebuilt.push(Node::Text(text));
+                    } else {
+                        let suffix = &text.value[emit_cursor - seg_start..];
+                        if !suffix.is_empty() {
+                            rebuilt.push(Node::Text(Text {
+                                value: suffix,
+                                span: text.span,
+                            }));
+                        }
+                        emit_cursor = seg_end;
+                    }
+                    current = pull_text_segment(
+                        &mut old_iter,
+                        &mut old_index,
+                        run_range.end,
+                        &mut seg_byte_cursor,
+                        &mut rebuilt,
+                    );
+                }
             }
+
+            rebuilt.extend(old_iter);
         }
 
-        nodes.extend(old_iter);
+        if last_run_end == orig_len {
+            nodes.extend(rebuilt);
+        } else {
+            drop(nodes.splice(first_run_start..first_run_start, rebuilt));
+        }
     }
 }
 
@@ -493,7 +533,7 @@ fn pull_text_segment<'arena>(
     old_index: &mut usize,
     run_end: usize,
     seg_byte_cursor: &mut usize,
-    nodes: &mut ferromark::allocator::Vec<'arena, Node<'arena>>,
+    rebuilt: &mut std::vec::Vec<Node<'arena>>,
 ) -> Option<(Text<'arena>, usize, usize)> {
     while *old_index < run_end {
         *old_index += 1;
@@ -504,7 +544,7 @@ fn pull_text_segment<'arena>(
                 *seg_byte_cursor = end;
                 return Some((text, start, end));
             }
-            nodes.push(node);
+            rebuilt.push(node);
         }
     }
     None
@@ -1098,7 +1138,6 @@ mod tests {
                 }
             }
 
-            let ctx_new = TransformContext::new(&arena_new, "", &renderer_options);
             let batch: Vec<_> = edits
                 .iter()
                 .map(
@@ -1109,7 +1148,7 @@ mod tests {
                     },
                 )
                 .collect();
-            ctx_new.apply_text_run_replacements(&mut new_nodes, batch, |repl, span| {
+            TransformContext::apply_text_run_replacements(&mut new_nodes, batch, |repl, span| {
                 Node::Text(Text { value: repl, span })
             });
 
