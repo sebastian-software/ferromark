@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.1.1](https://github.com/sebastian-software/ferromark/compare/v4.1.0...v4.1.1) (2026-11-26)
+
+
+### Bug Fixes
+
+* address review findings in rollback, Ferrigura JSX, and autolink ([92748b0](https://github.com/sebastian-software/ferromark/commit/92748b0d8b3ed59b58a708fea7f20470ca69b112))
+* enforce canonical rollback suffixes and exact Ferrigura JSX fallback ([ab7f5b9](https://github.com/sebastian-software/ferromark/commit/ab7f5b932735f86b1fb677909cdb2754bc63feae))
+* **html,node:** trim oversized heading/footnote buffers and split preset test ([bd10c64](https://github.com/sebastian-software/ferromark/commit/bd10c64e998ea0c0f44d1d8d17fcee60f9ba34e5))
+* **html:** clear document state before shrinking retained renderer buffers ([0ab2f92](https://github.com/sebastian-software/ferromark/commit/0ab2f9292dfa78416e57f1f7edaee35c3a93ba79))
+* keep one-line JSX children inline ([#626](https://github.com/sebastian-software/ferromark/issues/626)) ([004ef44](https://github.com/sebastian-software/ferromark/commit/004ef44724437cc35735592053f35e80df81b9c7))
+* **node:** address PR [#632](https://github.com/sebastian-software/ferromark/issues/632) review findings and typecheck errors ([312be63](https://github.com/sebastian-software/ferromark/commit/312be635f7ea0f273feef0e5fdf2a0ce3a47a165))
+* **transforms:** address review findings on spans, github scan, and arena reuse ([5e50339](https://github.com/sebastian-software/ferromark/commit/5e5033957a8f23da577129a283aa1f8dd2c79096))
+
+
+### Performance Improvements
+
+* eliminate speculative parser work and optimize HTML/JSX renderers ([d58f76a](https://github.com/sebastian-software/ferromark/commit/d58f76aba602ecd1f83e29c15e7ef0e5c90c9316))
+* harden parser scaling and optimize renderers, transforms, and N-API ([#629](https://github.com/sebastian-software/ferromark/issues/629)) ([fef7eed](https://github.com/sebastian-software/ferromark/commit/fef7eed31cf0bac95cf5e421dc1fcabbf7a41b82))
+* **node:** optimize N-API input, hooks, options, and memory retention ([ea5473b](https://github.com/sebastian-software/ferromark/commit/ea5473b64b9cddbcf9ff23b396c604fb287a2d97))
+* reuse footnote slug allocation in outlines ([#624](https://github.com/sebastian-software/ferromark/issues/624)) ([344b6a0](https://github.com/sebastian-software/ferromark/commit/344b6a08584e9d71e0456c665b7c4bd6bc93782c))
+* **transforms:** pack emoji table and optimize transform passes ([26fcb26](https://github.com/sebastian-software/ferromark/commit/26fcb26cc2881f07c8c79dbbb3f317555a517f44))
+
 ## [4.1.0](https://github.com/sebastian-software/ferromark/compare/v4.0.0...v4.1.0) (2026-11-11)
 
 
