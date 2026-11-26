@@ -16,12 +16,27 @@ const MAX_OWNER_LENGTH: usize = 39;
 const MAX_REPOSITORY_LENGTH: usize = 100;
 const DENIED_BARE_HASHES: [&str; 5] = ["acceded", "deedeed", "defaced", "effaced", "fabaceae"];
 
-const HAS_HASH: u8 = 1 << 0;
-const HAS_AT: u8 = 1 << 1;
-const HAS_SLASH: u8 = 1 << 2;
-const HAS_GH: u8 = 1 << 3;
-const HAS_HEX7: u8 = 1 << 4;
-const ALL_CANDIDATES: u8 = HAS_HASH | HAS_AT | HAS_SLASH | HAS_GH | HAS_HEX7;
+/// Byte classification for the branchless GitHub-reference pre-filter:
+/// bit 0 (`1`) = ASCII hex digit, bit 1 (`2`) = `#`, `@`, `/`, `g`, or `G`.
+const CANDIDATE_CLASS: [u8; 256] = {
+    let mut table = [0u8; 256];
+    let mut byte = 0u8;
+    loop {
+        let mut cls = 0u8;
+        if byte.is_ascii_hexdigit() {
+            cls |= 1;
+        }
+        if matches!(byte, b'#' | b'@' | b'/' | b'g' | b'G') {
+            cls |= 2;
+        }
+        table[byte as usize] = cls;
+        if byte == u8::MAX {
+            break;
+        }
+        byte += 1;
+    }
+    table
+};
 
 /// Error returned when a configured GitHub repository is not a safe `owner/repo` path.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -121,15 +136,13 @@ fn transform_text_runs<'arena>(
             continue;
         }
         let value = run.value();
-        let flags = scan_github_candidates(value.as_bytes());
-        if flags == 0 {
+        if !might_contain_github_reference(value.as_bytes()) {
             continue;
         }
         let protected = run.protected_url_ranges(context);
         let node_range = run.node_range();
         scan_references_into(
             &value,
-            flags,
             &protected,
             local_owner,
             local_repository,
@@ -151,58 +164,36 @@ fn transform_text_runs<'arena>(
         );
     }
 
-    context.apply_text_run_replacements(nodes, matches, |payload, span| {
+    TransformContext::apply_text_run_replacements(nodes, matches, |payload, span| {
         context.text_link_node_allocated(payload.label, payload.url, span)
     });
 
     Ok(())
 }
 
-/// Fast single-pass pre-filter returning which reference kinds can possibly
-/// appear in `bytes`. A GitHub reference requires `#`, `@`, `/`, `GH-`/`gh-`,
-/// or a contiguous 7+ ASCII hex-digit run.
-fn scan_github_candidates(bytes: &[u8]) -> u8 {
-    let mut flags = 0u8;
+/// Fast early-return pre-filter: a GitHub reference requires `#`, `@`, `/`,
+/// `GH-`/`gh-`, or a contiguous 7+ ASCII hex-digit run.
+fn might_contain_github_reference(bytes: &[u8]) -> bool {
     let mut hex_run = 0usize;
     for (i, &byte) in bytes.iter().enumerate() {
-        match byte {
-            b'#' => {
-                flags |= HAS_HASH;
-                hex_run = 0;
-            }
-            b'@' => {
-                flags |= HAS_AT;
-                hex_run = 0;
-            }
-            b'/' => {
-                flags |= HAS_SLASH;
-                hex_run = 0;
-            }
-            _ => {
-                if (flags & HAS_GH) == 0
-                    && matches!(byte, b'g' | b'G')
-                    && bytes.get(i + 1).is_some_and(|b| matches!(b, b'h' | b'H'))
+        let cls = CANDIDATE_CLASS[usize::from(byte)];
+        if (cls & 2) != 0 {
+            if matches!(byte, b'g' | b'G') {
+                if bytes.get(i + 1).is_some_and(|b| matches!(b, b'h' | b'H'))
                     && bytes.get(i + 2) == Some(&b'-')
                 {
-                    flags |= HAS_GH;
+                    return true;
                 }
-                if (flags & HAS_HEX7) == 0 {
-                    if byte.is_ascii_hexdigit() {
-                        hex_run += 1;
-                        if hex_run >= MIN_COMMIT_LENGTH {
-                            flags |= HAS_HEX7;
-                        }
-                    } else {
-                        hex_run = 0;
-                    }
-                }
+            } else {
+                return true;
             }
         }
-        if flags == ALL_CANDIDATES {
-            break;
+        hex_run = if (cls & 1) != 0 { hex_run + 1 } else { 0 };
+        if hex_run >= MIN_COMMIT_LENGTH {
+            return true;
         }
     }
-    flags
+    false
 }
 
 #[cfg(test)]
@@ -218,15 +209,13 @@ fn find_references(
     local_owner: &str,
     local_repository: &str,
 ) -> Vec<TextMatch> {
-    let flags = scan_github_candidates(value.as_bytes());
-    if flags == 0 {
+    if !might_contain_github_reference(value.as_bytes()) {
         return Vec::new();
     }
     let mut matches = Vec::new();
     let mut url_buf = String::new();
     scan_references_into(
         value,
-        flags,
         protected,
         local_owner,
         local_repository,
@@ -241,17 +230,8 @@ fn find_references(
     matches
 }
 
-fn next_trigger_offset(slice: &str, flags: u8) -> Option<usize> {
-    match flags & (HAS_HASH | HAS_AT) {
-        HAS_HASH => slice.find('#'),
-        HAS_AT => slice.find('@'),
-        _ => slice.find(['#', '@']),
-    }
-}
-
 fn scan_references_into(
     value: &str,
-    flags: u8,
     protected: &[Range<usize>],
     local_owner: &str,
     local_repository: &str,
@@ -261,58 +241,33 @@ fn scan_references_into(
     let bytes = value.as_bytes();
     let mut cursor = 0usize;
     let mut protected_idx = 0usize;
-
-    // Fast path: when only `#` and/or `@` candidates exist, jump directly
-    // between those bytes instead of inspecting every character.
-    if (flags & (HAS_SLASH | HAS_GH | HAS_HEX7)) == 0 {
-        while let Some(rel) = next_trigger_offset(&value[cursor..], flags) {
-            cursor += rel;
-            while protected_idx < protected.len() && protected[protected_idx].end <= cursor {
-                protected_idx += 1;
-            }
-            if let Some(range) = protected.get(protected_idx)
-                && range.start <= cursor
-                && cursor < range.end
-            {
-                cursor = range.end;
-                continue;
-            }
-
-            if left_boundary(value, cursor)
-                && let Some(end) =
-                    match_reference_at(value, cursor, flags, local_owner, local_repository, url_buf)
-                && !protected
-                    .get(protected_idx)
-                    .is_some_and(|range| cursor < range.end && range.start < end)
-            {
-                on_match(cursor..end, url_buf.as_str());
-                cursor = end;
-            } else {
-                cursor += 1;
-            }
-        }
-        return;
-    }
-
     let mut can_start = true;
+
     while cursor < bytes.len() {
         while protected_idx < protected.len() && protected[protected_idx].end <= cursor {
             protected_idx += 1;
         }
-        if let Some(range) = protected.get(protected_idx)
-            && range.start <= cursor
-            && cursor < range.end
-        {
-            cursor = range.end;
-            can_start = left_boundary(value, cursor);
-            continue;
+        if let Some(range) = protected.get(protected_idx) {
+            if range.start <= cursor && cursor < range.end {
+                cursor = range.end;
+                can_start = left_boundary(value, cursor);
+                continue;
+            }
+            // The shortest GitHub reference (`#1` / `@a`) is 2 bytes long. A
+            // 1-byte gap directly before a non-empty protected range cannot
+            // hold a non-overlapping reference.
+            if range.start < range.end && range.start.saturating_sub(cursor) < 2 {
+                cursor = range.end;
+                can_start = left_boundary(value, cursor);
+                continue;
+            }
         }
 
         let byte = bytes[cursor];
         if can_start
             && (matches!(byte, b'@' | b'#') || byte.is_ascii_alphanumeric())
             && let Some(end) =
-                match_reference_at(value, cursor, flags, local_owner, local_repository, url_buf)
+                match_reference_at(value, cursor, local_owner, local_repository, url_buf)
             && !protected
                 .get(protected_idx)
                 .is_some_and(|range| cursor < range.end && range.start < end)
@@ -338,7 +293,6 @@ fn scan_references_into(
 fn match_reference_at(
     value: &str,
     start: usize,
-    flags: u8,
     local_owner: &str,
     local_repository: &str,
     url_buf: &mut String,
@@ -347,8 +301,7 @@ fn match_reference_at(
     let first = *bytes.get(start)?;
 
     if first == b'@' {
-        if (flags & HAS_AT) != 0
-            && let Some((end, username, team)) = parse_mention(bytes, start)
+        if let Some((end, username, team)) = parse_mention(bytes, start)
             && mention_right_boundary(value, end, team)
             && !matches_ignore_ascii_case(username, &["mention", "mentions"])
         {
@@ -360,8 +313,7 @@ fn match_reference_at(
     }
 
     if first == b'#' {
-        if (flags & HAS_HASH) != 0
-            && let Some((end, number)) = parse_issue_number(bytes, start + 1)
+        if let Some((end, number)) = parse_issue_number(bytes, start + 1)
             && right_boundary(value, end)
         {
             write_issue_url(url_buf, local_owner, local_repository, number);
@@ -370,10 +322,8 @@ fn match_reference_at(
         return None;
     }
 
-    if (flags & HAS_SLASH) != 0
-        && (flags & (HAS_HASH | HAS_AT)) != 0
-        && let Some((end, owner, repository, reference)) =
-            parse_cross_repository_reference(bytes, start)
+    if let Some((end, owner, repository, reference)) =
+        parse_cross_repository_reference(bytes, start)
         && right_boundary(value, end)
     {
         match reference {
@@ -387,8 +337,7 @@ fn match_reference_at(
         return Some(end);
     }
 
-    if (flags & HAS_GH) != 0
-        && matches!(first, b'g' | b'G')
+    if matches!(first, b'g' | b'G')
         && is_gh_prefix(bytes, start)
         && let Some((end, number)) = parse_issue_number(bytes, start + 3)
         && right_boundary(value, end)
@@ -397,8 +346,7 @@ fn match_reference_at(
         return Some(end);
     }
 
-    if (flags & HAS_HEX7) != 0
-        && first.is_ascii_hexdigit()
+    if first.is_ascii_hexdigit()
         && let Some((base_end, base)) = parse_commit_hash(bytes, start)
     {
         if bytes.get(base_end..base_end + 3) == Some(b"...") {
