@@ -124,3 +124,129 @@ fn typography_handles_escaped_backslash_before_punctuation() {
         "backslash-escaped quotes should stay straight: {html2}"
     );
 }
+
+#[test]
+fn single_pass_emoji_and_github_preserve_empty_nodes_and_dense_runs() {
+    let arena = Allocator::new();
+    let mut children = arena.new_vec();
+    // Mix of split text nodes, empty text nodes (at start, between matches,
+    // inside a multi-node match, and at end), plus non-text siblings.
+    children.push(Node::Text(Text {
+        value: "",
+        span: Span::new(0, 1),
+    }));
+    children.push(Node::Text(Text {
+        value: "Hi :",
+        span: Span::new(1, 5),
+    }));
+    children.push(Node::Text(Text {
+        value: "",
+        span: Span::new(5, 6),
+    }));
+    children.push(Node::Text(Text {
+        value: "rocket",
+        span: Span::new(6, 12),
+    }));
+    children.push(Node::Text(Text {
+        value: ":",
+        span: Span::new(12, 13),
+    }));
+    children.push(Node::Text(Text {
+        value: "",
+        span: Span::new(13, 14),
+    }));
+    children.push(Node::Text(Text {
+        value: ":smile: #12 and #34",
+        span: Span::new(14, 33),
+    }));
+    children.push(Node::Text(Text {
+        value: "",
+        span: Span::new(33, 34),
+    }));
+
+    let mut doc_children = arena.new_vec_with_capacity(1);
+    doc_children.push(Node::Paragraph(arena.boxed(ferromark::ast::Paragraph {
+        children,
+        span: Span::new(0, 34),
+    })));
+    let mut doc = ferromark::ast::Document {
+        children: doc_children,
+        front_matter: None,
+        span: Span::new(0, 34),
+    };
+
+    let renderer_options = HtmlRendererOptions::default();
+    let ctx = TransformContext::new(&arena, "", &renderer_options);
+    EmojiShortcodesPass::new().apply(&mut doc, &ctx).unwrap();
+
+    let Node::Paragraph(paragraph) = &doc.children[0] else {
+        panic!("expected paragraph");
+    };
+    let summary: Vec<(&str, Span)> = paragraph
+        .children
+        .iter()
+        .map(|node| match node {
+            Node::Text(text) => (text.value, text.span),
+            _ => panic!("expected text"),
+        })
+        .collect();
+    assert_eq!(
+        summary,
+        vec![
+            ("", Span::new(0, 1)),
+            ("Hi ", Span::new(1, 5)),
+            ("🚀", Span::new(1, 13)),
+            ("", Span::new(5, 6)),
+            ("", Span::new(13, 14)),
+            ("😄", Span::new(14, 33)),
+            (" #12 and #34", Span::new(14, 33)),
+            ("", Span::new(33, 34)),
+        ]
+    );
+
+    GitHubReferencesPass::new("sebastian-software/ferromark")
+        .unwrap()
+        .apply(&mut doc, &ctx)
+        .unwrap();
+    let html = HtmlRenderer::with_options(renderer_options).render(&doc);
+    assert_eq!(
+        html,
+        "<p>Hi 🚀😄 <a href=\"https://github.com/sebastian-software/ferromark/issues/12\" target=\"_blank\" rel=\"noopener noreferrer\">#12</a> and <a href=\"https://github.com/sebastian-software/ferromark/issues/34\" target=\"_blank\" rel=\"noopener noreferrer\">#34</a></p>\n"
+    );
+}
+
+#[test]
+fn raw_html_scoping_handles_mixed_case_and_void_tags() {
+    let source = "<SPAN>:rocket: #1</span ><BR>:smile: #2 \"quoted\"";
+    let arena = Allocator::for_source_len(source.len());
+    let mut doc = Parser::with_options(&arena, source, ParserOptions::gfm())
+        .parse()
+        .expect("parse");
+    let renderer_options = HtmlRendererOptions::default();
+    let ctx = TransformContext::new(&arena, source, &renderer_options);
+
+    EmojiShortcodesPass::new().apply(&mut doc, &ctx).unwrap();
+    GitHubReferencesPass::new("sebastian-software/ferromark")
+        .unwrap()
+        .apply(&mut doc, &ctx)
+        .unwrap();
+    TypographyPass::new(TypographyOptions::new(TypographyLanguage::English))
+        .apply(&mut doc, &ctx)
+        .unwrap();
+
+    let html = HtmlRenderer::with_options(renderer_options).render(&doc);
+    assert!(
+        html.contains("<SPAN>:rocket: #1</span >"),
+        "mixed-case open/close tags should protect enclosed text: {html}"
+    );
+    assert!(
+        html.contains(
+            "<BR>😄 <a href=\"https://github.com/sebastian-software/ferromark/issues/2\""
+        ),
+        "uppercase void tag BR should not suppress later transforms: {html}"
+    );
+    assert!(
+        html.contains("\u{201c}quoted\u{201d}"),
+        "typography after void tag should still run: {html}"
+    );
+}

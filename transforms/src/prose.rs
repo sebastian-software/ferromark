@@ -27,6 +27,9 @@ where
 }
 
 pub fn is_in_raw_html(run: &TextRun<'_, '_>, raw_html_spans: &[Span]) -> bool {
+    if raw_html_spans.is_empty() {
+        return false;
+    }
     let run_span = run.source_span();
     !run_span.is_empty()
         && raw_html_spans
@@ -452,10 +455,10 @@ fn collect_scoped_raw_html_text_spans(
     collect_raw_html_text_spans(nodes, visit_link_labels, &mut open_tags, spans);
 }
 
-fn collect_raw_html_text_spans(
-    nodes: &[Node<'_>],
+fn collect_raw_html_text_spans<'arena>(
+    nodes: &[Node<'arena>],
     visit_link_labels: bool,
-    open_tags: &mut Vec<String>,
+    open_tags: &mut Vec<&'arena str>,
     spans: &mut Vec<Span>,
 ) {
     for node in nodes {
@@ -571,7 +574,7 @@ fn collect_raw_html_text_spans(
     }
 }
 
-fn update_open_html_tags(value: &str, open_tags: &mut Vec<String>) {
+fn update_open_html_tags<'arena>(value: &'arena str, open_tags: &mut Vec<&'arena str>) {
     // Block HTML nodes contain whole lines or whole blocks, not a single
     // inline tag. Their contents are already opaque Html nodes in the AST.
     if value.ends_with('\n') {
@@ -581,21 +584,24 @@ fn update_open_html_tags(value: &str, open_tags: &mut Vec<String>) {
         return;
     };
     if tag.closing {
-        if let Some(index) = open_tags.iter().rposition(|open| open == &tag.name) {
+        if let Some(index) = open_tags
+            .iter()
+            .rposition(|open| open.eq_ignore_ascii_case(tag.name))
+        {
             open_tags.truncate(index);
         }
-    } else if !tag.self_closing && !is_void_html_tag(&tag.name) {
+    } else if !tag.self_closing && !is_void_html_tag(tag.name) {
         open_tags.push(tag.name);
     }
 }
 
-struct HtmlTag {
-    name: String,
+struct HtmlTag<'a> {
+    name: &'a str,
     closing: bool,
     self_closing: bool,
 }
 
-fn parse_html_tag(value: &str) -> Option<HtmlTag> {
+fn parse_html_tag(value: &str) -> Option<HtmlTag<'_>> {
     if !value.starts_with('<') || !value.ends_with('>') {
         return None;
     }
@@ -613,30 +619,35 @@ fn parse_html_tag(value: &str) -> Option<HtmlTag> {
         return None;
     }
     Some(HtmlTag {
-        name: value[start..end].to_ascii_lowercase(),
+        name: &value[start..end],
         closing,
         self_closing: !closing && value[..value.len() - 1].trim_end().ends_with('/'),
     })
 }
 
 fn is_void_html_tag(name: &str) -> bool {
-    matches!(
-        name,
-        "area"
-            | "base"
-            | "br"
-            | "col"
-            | "embed"
-            | "hr"
-            | "img"
-            | "input"
-            | "link"
-            | "meta"
-            | "param"
-            | "source"
-            | "track"
-            | "wbr"
-    )
+    match name.len() {
+        2 => name.eq_ignore_ascii_case("br") || name.eq_ignore_ascii_case("hr"),
+        3 => {
+            name.eq_ignore_ascii_case("col")
+                || name.eq_ignore_ascii_case("img")
+                || name.eq_ignore_ascii_case("wbr")
+        }
+        4 => {
+            name.eq_ignore_ascii_case("area")
+                || name.eq_ignore_ascii_case("base")
+                || name.eq_ignore_ascii_case("link")
+                || name.eq_ignore_ascii_case("meta")
+        }
+        5 => {
+            name.eq_ignore_ascii_case("embed")
+                || name.eq_ignore_ascii_case("input")
+                || name.eq_ignore_ascii_case("param")
+                || name.eq_ignore_ascii_case("track")
+        }
+        6 => name.eq_ignore_ascii_case("source"),
+        _ => false,
+    }
 }
 
 fn is_url_label(url: &str, children: &[Node<'_>]) -> bool {

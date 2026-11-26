@@ -2,11 +2,11 @@
 
 use std::ops::Range;
 
-use ferromark::ast::{Document, Span};
+use ferromark::ast::{Document, Node, Span, Text};
 
-use crate::emoji_data::SHORTCODES;
+use crate::emoji_data::{BLOB, ENTRIES};
 use crate::prose::{NodeList, is_in_raw_html, visit_document_prose};
-use crate::{BoxError, TransformContext, TransformPass, text_runs};
+use crate::{BoxError, RunReplacement, TransformContext, TransformPass, text_runs};
 
 /// Replaces known `gemoji@8.1.0` shortcode aliases in prose with Unicode emoji.
 ///
@@ -41,18 +41,12 @@ impl TransformPass for EmojiShortcodesPass {
     }
 }
 
-struct EmojiMatch {
-    node_range: Range<usize>,
-    byte_range: Range<usize>,
-    replacement: &'static str,
-}
-
 fn transform_text_runs<'arena>(
     nodes: &mut NodeList<'arena>,
     context: &TransformContext<'arena>,
     raw_html_spans: &[Span],
 ) -> Result<(), BoxError> {
-    let mut matches = Vec::new();
+    let mut matches: Vec<RunReplacement<&'static str>> = Vec::new();
     for run in text_runs(nodes) {
         if is_in_raw_html(&run, raw_html_spans) {
             continue;
@@ -64,35 +58,22 @@ fn transform_text_runs<'arena>(
             continue;
         }
         let protected = run.protected_url_ranges(context);
+        let node_range = run.node_range();
         for (byte_range, replacement) in find_shortcodes(&value, &protected) {
-            matches.push(EmojiMatch {
-                node_range: run.node_range(),
+            matches.push(RunReplacement {
+                node_range: node_range.clone(),
                 byte_range,
-                replacement,
+                payload: replacement,
             });
         }
     }
 
-    let mut active_run = None;
-    let mut boundary = 0;
-    for matched in matches.into_iter().rev() {
-        let start = matched.node_range.start;
-        if active_run != Some(start) {
-            active_run = Some(start);
-            boundary = matched.node_range.end;
-        }
-        let (_, inserted_index) = TransformContext::replace_text_range_with_node(
-            nodes,
-            start..boundary,
-            matched.byte_range,
-            |span| {
-                Some(ferromark::ast::Node::Text(
-                    context.replacement_text(matched.replacement, span),
-                ))
-            },
-        )?;
-        boundary = inserted_index;
-    }
+    context.apply_text_run_replacements(nodes, matches, |replacement, span| {
+        Node::Text(Text {
+            value: replacement,
+            span,
+        })
+    });
 
     Ok(())
 }
@@ -163,15 +144,53 @@ fn is_shortcode_byte(byte: u8) -> bool {
 }
 
 fn shortcode_value(name: &str) -> Option<&'static str> {
-    SHORTCODES
-        .binary_search_by(|(candidate, _)| candidate.cmp(&name))
-        .ok()
-        .map(|index| SHORTCODES[index].1)
+    let needle = name.as_bytes();
+    let blob = BLOB.as_bytes();
+    let index = ENTRIES
+        .binary_search_by(|&(offset, name_len, _)| {
+            let start = usize::from(offset);
+            let end = start + usize::from(name_len);
+            blob.get(start..end).unwrap_or(&[]).cmp(needle)
+        })
+        .ok()?;
+    let &(offset, name_len, value_len) = ENTRIES.get(index)?;
+    let start = usize::from(offset) + usize::from(name_len);
+    let end = start + usize::from(value_len);
+    BLOB.get(start..end)
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::emoji_data::{BLOB, ENTRIES};
+
     use super::{find_shortcodes, shortcode_value};
+
+    #[test]
+    fn packed_emoji_table_is_sorted_and_round_trips_every_entry() {
+        assert_eq!(ENTRIES.len(), 1913);
+        let mut previous_name: Option<&str> = None;
+        for &(offset, name_len, value_len) in &ENTRIES {
+            let start = usize::from(offset);
+            let name_end = start + usize::from(name_len);
+            let value_end = name_end + usize::from(value_len);
+            let name = BLOB.get(start..name_end);
+            let value = BLOB.get(name_end..value_end);
+            assert!(name.is_some(), "invalid name slice at offset {offset}");
+            assert!(value.is_some(), "invalid value slice at offset {offset}");
+            let name = name.unwrap_or_default();
+            let value = value.unwrap_or_default();
+            assert!(!name.is_empty());
+            assert!(!value.is_empty());
+            if let Some(prev) = previous_name {
+                assert!(
+                    prev < name,
+                    "table not strictly sorted: {prev:?} >= {name:?}"
+                );
+            }
+            assert_eq!(shortcode_value(name), Some(value));
+            previous_name = Some(name);
+        }
+    }
 
     #[test]
     fn scans_aliases_case_sensitively_and_keeps_overlapping_unknown_prefixes() {

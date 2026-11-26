@@ -8,7 +8,7 @@ use std::str::FromStr;
 use ferromark::ast::{Document, Node, Span};
 
 use crate::prose::raw_html_text_spans;
-use crate::{BoxError, TransformContext, TransformPass, text_runs};
+use crate::{BoxError, TextRun, TransformContext, TransformPass};
 
 /// A supported language for the optional typography pass.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -971,55 +971,127 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
     items: &mut Vec<InlineItem<'arena>>,
     protected_urls_by_item: &mut Vec<Option<Vec<Range<usize>>>>,
 ) {
-    let mut protected_by_node: Vec<Vec<Range<usize>>> =
-        (0..nodes.len()).map(|_| Vec::new()).collect();
-    let mut protected_urls_by_node =
-        GUILLEMET_DIGRAPHS.then(|| (0..nodes.len()).map(|_| Vec::new()).collect::<Vec<_>>());
-
-    for run in text_runs(nodes) {
-        let node_range = run.node_range();
-        let run_span = run.source_span();
-        let is_raw_html = raw_html_spans
-            .iter()
-            .any(|span| run_span.start < span.end && span.start < run_span.end);
-        let protected_urls = GUILLEMET_DIGRAPHS.then(|| run.protected_url_ranges(context));
-        let protected = if is_raw_html {
-            std::iter::once(0..run.value().len()).collect()
-        } else if let Some(protected_urls) = &protected_urls {
-            protected_urls.clone()
-        } else {
-            run.protected_url_ranges(context)
-        };
-        let mut byte_cursor = 0;
-
-        for node_index in node_range.clone() {
-            let Node::Text(text) = &nodes[node_index] else {
-                continue;
-            };
-            let segment_end = byte_cursor + text.value.len();
-            for range in &protected {
-                let start = range.start.max(byte_cursor);
-                let end = range.end.min(segment_end);
-                if start < end {
-                    protected_by_node[node_index].push(start - byte_cursor..end - byte_cursor);
-                }
+    let mut index = 0usize;
+    while index < nodes.len() {
+        if matches!(nodes[index], Node::Text(_)) {
+            let run_start = index;
+            while index < nodes.len() && matches!(nodes[index], Node::Text(_)) {
+                index += 1;
             }
-            if let (Some(protected_urls), Some(protected_by_node)) =
-                (&protected_urls, &mut protected_urls_by_node)
+            let run_end = index;
+
+            if run_end - run_start == 1
+                && let Node::Text(text) = &nodes[run_start]
             {
-                for range in protected_urls {
+                let is_raw_html = !raw_html_spans.is_empty() && {
+                    let run_span = if text.value.is_empty() {
+                        Span::empty()
+                    } else {
+                        text.span
+                    };
+                    raw_html_spans
+                        .iter()
+                        .any(|span| run_span.start < span.end && span.start < run_span.end)
+                };
+                let (protected, protected_urls) = if GUILLEMET_DIGRAPHS {
+                    let urls = context.find_autolink_ranges(text.value);
+                    let protected = if is_raw_html {
+                        if text.value.is_empty() {
+                            Vec::new()
+                        } else {
+                            std::iter::once(0..text.value.len()).collect()
+                        }
+                    } else {
+                        urls.clone()
+                    };
+                    (protected, Some(urls))
+                } else {
+                    let protected = if is_raw_html {
+                        if text.value.is_empty() {
+                            Vec::new()
+                        } else {
+                            std::iter::once(0..text.value.len()).collect()
+                        }
+                    } else {
+                        context.find_autolink_ranges(text.value)
+                    };
+                    (protected, None)
+                };
+                items.push(InlineItem::Text {
+                    value: text.value,
+                    protected,
+                    escaped: escaped_source_ranges::<GUILLEMET_DIGRAPHS>(
+                        context.source(),
+                        text.span,
+                        text.value,
+                    ),
+                });
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(protected_urls);
+                }
+                continue;
+            }
+
+            let run = TextRun::from_slice(&nodes[run_start..run_end], run_start..run_end);
+            let is_raw_html = !raw_html_spans.is_empty() && {
+                let run_span = run.source_span();
+                raw_html_spans
+                    .iter()
+                    .any(|span| run_span.start < span.end && span.start < run_span.end)
+            };
+            let protected_urls = GUILLEMET_DIGRAPHS.then(|| run.protected_url_ranges(context));
+            let protected = if is_raw_html {
+                std::iter::once(0..run.value().len()).collect()
+            } else if let Some(protected_urls) = &protected_urls {
+                protected_urls.clone()
+            } else {
+                run.protected_url_ranges(context)
+            };
+            let mut byte_cursor = 0usize;
+
+            for node in &nodes[run_start..run_end] {
+                let Node::Text(text) = node else {
+                    continue;
+                };
+                let segment_end = byte_cursor + text.value.len();
+                let mut node_protected = Vec::new();
+                for range in &protected {
                     let start = range.start.max(byte_cursor);
                     let end = range.end.min(segment_end);
                     if start < end {
-                        protected_by_node[node_index].push(start - byte_cursor..end - byte_cursor);
+                        node_protected.push(start - byte_cursor..end - byte_cursor);
                     }
                 }
+                let node_protected_urls = protected_urls.as_ref().map(|urls| {
+                    let mut sliced = Vec::new();
+                    for range in urls {
+                        let start = range.start.max(byte_cursor);
+                        let end = range.end.min(segment_end);
+                        if start < end {
+                            sliced.push(start - byte_cursor..end - byte_cursor);
+                        }
+                    }
+                    sliced
+                });
+                items.push(InlineItem::Text {
+                    value: text.value,
+                    protected: node_protected,
+                    escaped: escaped_source_ranges::<GUILLEMET_DIGRAPHS>(
+                        context.source(),
+                        text.span,
+                        text.value,
+                    ),
+                });
+                if GUILLEMET_DIGRAPHS {
+                    protected_urls_by_item.push(node_protected_urls);
+                }
+                byte_cursor = segment_end;
             }
-            byte_cursor = segment_end;
+            continue;
         }
-    }
 
-    for (index, node) in nodes.iter().enumerate() {
+        let node = &nodes[index];
+        index += 1;
         match node {
             Node::Span(node) => {
                 collect_inline_items::<GUILLEMET_DIGRAPHS>(
@@ -1030,23 +1102,7 @@ fn collect_inline_items<'arena, const GUILLEMET_DIGRAPHS: bool>(
                     protected_urls_by_item,
                 );
             }
-            Node::Text(text) => {
-                let protected_urls = protected_urls_by_node
-                    .as_mut()
-                    .map(|protected| std::mem::take(&mut protected[index]));
-                items.push(InlineItem::Text {
-                    value: text.value,
-                    protected: std::mem::take(&mut protected_by_node[index]),
-                    escaped: escaped_source_ranges::<GUILLEMET_DIGRAPHS>(
-                        context.source(),
-                        text.span,
-                        text.value,
-                    ),
-                });
-                if GUILLEMET_DIGRAPHS {
-                    protected_urls_by_item.push(protected_urls);
-                }
-            }
+            Node::Text(_) => {}
             Node::Emphasis(node) => {
                 collect_inline_items::<GUILLEMET_DIGRAPHS>(
                     &node.children,
@@ -1925,7 +1981,7 @@ fn escaped_source_ranges<const GUILLEMET_DIGRAPHS: bool>(
     };
     // Unchanged source text cannot contain backslash escapes or HTML entities
     // (both shorten the decoded value relative to the raw Markdown slice).
-    if raw == value {
+    if raw == value || !raw.as_bytes().iter().any(|&b| b == b'\\' || b == b'&') {
         return Vec::new();
     }
     let mut raw_quotes = Vec::new();
