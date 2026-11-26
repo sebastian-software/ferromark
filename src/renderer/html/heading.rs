@@ -159,6 +159,23 @@ impl HeadingIdPlanner {
         self.by_hash.clear();
     }
 
+    /// Returns the approximate heap capacity currently retained by the planner.
+    #[inline]
+    pub(super) fn retained_bytes(&self) -> usize {
+        self.ids
+            .capacity()
+            .saturating_add(
+                self.claims
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<Claim>()),
+            )
+            .saturating_add(
+                self.by_hash
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<(u64, usize)>()),
+            )
+    }
+
     /// Captures the current committed position for [`Self::rollback`].
     #[inline]
     pub(super) fn checkpoint(&self) -> HeadingIdCheckpoint {
