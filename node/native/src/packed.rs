@@ -13,8 +13,9 @@
 //!   in `set` marks the field as present, and the same bit in `on` holds its
 //!   value. For `renderPolicy`, a set value bit means `'trusted'`. For bit 24,
 //!   a set value bit means `preset: "ffm"`. Enabled blockquote attributions,
-//!   insertions, guillemet digraphs, and abbreviation settings (or explicit
-//!   `false` overrides of those booleans alongside `preset: "ffm"`) use the
+//!   insertions, guillemet digraphs, abbreviation settings, non-`"ffm"`
+//!   presets, and `preset: "ffm"` paired with `typography`, `passes`, or
+//!   explicit `false` overrides of those unpacked booleans use the
 //!   object-taking entry.
 //! - `headingOffset`, `headingIdPrefix`, `linkBasePath`, `typography`, and
 //!   `passes` pass through as read, and `undefined` stands for an absent field.
@@ -50,9 +51,10 @@ use crate::{
 /// Rebuilds the `Options` napi-rs reads from the object the facade packed.
 ///
 /// The bit numbers follow the declaration order of [`Options`], skipping the
-/// five fields that pass through unpacked; `blockquote_attributions`,
-/// `insertions`, `guillemet_digraphs`, the abbreviation settings, and `preset`
-/// use the object-taking entry.
+/// five fields that pass through unpacked and assigning bit 24 to
+/// `preset: "ffm"`; `blockquote_attributions`, `insertions`,
+/// `guillemet_digraphs`, the abbreviation settings, and other `preset`
+/// combinations use the object-taking entry.
 pub fn unpack(
     set: u32,
     on: u32,

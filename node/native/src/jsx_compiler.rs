@@ -241,10 +241,13 @@ impl PreparedJsxDocument {
         parsed: ParsedJsxDocument,
         highlighting: Option<PreparedHighlighting>,
     ) -> Self {
-        let external_memory_bytes = parsed.retained_bytes();
-        if external_memory_bytes > 0 {
-            let _ = env.adjust_external_memory(external_memory_bytes);
-        }
+        let retained = parsed.retained_bytes();
+        let external_memory_bytes = if retained > 0 && env.adjust_external_memory(retained).is_ok()
+        {
+            retained
+        } else {
+            0
+        };
         Self {
             parsed,
             highlighting,
