@@ -40,6 +40,16 @@ pub(super) struct FootnoteState {
 }
 
 impl FootnoteState {
+    #[cfg(test)]
+    pub(super) fn is_empty(&self) -> bool {
+        self.ref_counts.is_empty()
+            && self.legacy_targets.is_empty()
+            && self.legacy_first_references.is_empty()
+            && self.index.is_empty()
+            && self.records.is_empty()
+            && self.slug_counts.is_empty()
+    }
+
     #[inline]
     pub(super) fn retained_bytes(&self) -> usize {
         self.ref_counts
