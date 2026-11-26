@@ -286,17 +286,228 @@ impl<'arena> TransformContext<'arena> {
         Ok((replacement_span, inserted_index))
     }
 
-    pub(crate) fn text_link_node(&self, label: &str, url: &str, span: Span) -> Node<'arena> {
+    pub(crate) fn text_link_node_allocated(
+        &self,
+        label: &'arena str,
+        url: &'arena str,
+        span: Span,
+    ) -> Node<'arena> {
         let mut children = self.allocator.new_vec_with_capacity(1);
-        children.push(Node::Text(self.replacement_text(label, span)));
+        children.push(Node::Text(Text { value: label, span }));
         Node::Link(self.allocator.boxed(Link {
-            url: self.alloc_str(url),
+            url,
             title: None,
             attributes: None,
             children,
             span,
         }))
     }
+
+    pub(crate) fn find_autolink_ranges(&self, value: &str) -> Vec<Range<usize>> {
+        self.autolink_matcher
+            .as_ref()
+            .map_or_else(Vec::new, |matcher| matcher.find_ranges(value))
+    }
+
+    /// Rebuilds a sibling list in one forward linear pass, applying sorted,
+    /// non-overlapping, non-empty replacements across one or more text runs.
+    ///
+    /// Preserves the exact splitting, bounding-span, and empty-text-node
+    /// semantics of repeated [`Self::replace_text_range_with_node`] calls.
+    pub(crate) fn apply_text_run_replacements<T>(
+        &self,
+        nodes: &mut ferromark::allocator::Vec<'arena, Node<'arena>>,
+        replacements: Vec<RunReplacement<T>>,
+        mut build_node: impl FnMut(T, Span) -> Node<'arena>,
+    ) {
+        if replacements.is_empty() {
+            return;
+        }
+
+        let capacity = nodes
+            .len()
+            .saturating_add(replacements.len().saturating_mul(2));
+        let old_nodes = std::mem::replace(nodes, self.allocator.new_vec_with_capacity(capacity));
+        let mut old_iter = old_nodes.into_iter();
+        let mut old_index = 0usize;
+        let mut repl_iter = replacements.into_iter().peekable();
+
+        while let Some(first_repl) = repl_iter.peek() {
+            let run_range = first_repl.node_range.clone();
+
+            while old_index < run_range.start {
+                if let Some(node) = old_iter.next() {
+                    nodes.push(node);
+                }
+                old_index += 1;
+            }
+
+            let mut seg_byte_cursor = 0usize;
+            let mut emit_cursor = 0usize;
+            let mut current = pull_text_segment(
+                &mut old_iter,
+                &mut old_index,
+                run_range.end,
+                &mut seg_byte_cursor,
+                nodes,
+            );
+
+            while let Some(next_repl) = repl_iter.peek() {
+                if next_repl.node_range != run_range {
+                    break;
+                }
+                let Some(repl) = repl_iter.next() else {
+                    break;
+                };
+                let m_start = repl.byte_range.start;
+                let m_end = repl.byte_range.end;
+
+                // Emit untouched text strictly before `m_start` and any empty
+                // text nodes positioned at or before `m_start`.
+                while let Some((text, seg_start, seg_end)) = current {
+                    if text.value.is_empty() {
+                        nodes.push(Node::Text(text));
+                        current = pull_text_segment(
+                            &mut old_iter,
+                            &mut old_index,
+                            run_range.end,
+                            &mut seg_byte_cursor,
+                            nodes,
+                        );
+                    } else if seg_end <= m_start {
+                        let prefix = &text.value[emit_cursor - seg_start..];
+                        if !prefix.is_empty() {
+                            nodes.push(Node::Text(Text {
+                                value: prefix,
+                                span: text.span,
+                            }));
+                        }
+                        emit_cursor = seg_end;
+                        current = pull_text_segment(
+                            &mut old_iter,
+                            &mut old_index,
+                            run_range.end,
+                            &mut seg_byte_cursor,
+                            nodes,
+                        );
+                    } else {
+                        if emit_cursor < m_start {
+                            let prefix = &text.value[emit_cursor - seg_start..m_start - seg_start];
+                            if !prefix.is_empty() {
+                                nodes.push(Node::Text(Text {
+                                    value: prefix,
+                                    span: text.span,
+                                }));
+                            }
+                            emit_cursor = m_start;
+                        }
+                        current = Some((text, seg_start, seg_end));
+                        break;
+                    }
+                }
+
+                // Consume all segments overlapping `m_start..m_end`, merge
+                // non-empty spans, and retain interior empty text nodes after
+                // the replacement node.
+                let mut replacement_span: Option<Span> = None;
+                let mut deferred_empty: Vec<Text<'arena>> = Vec::new();
+                while let Some((text, seg_start, seg_end)) = current {
+                    if seg_start >= m_end {
+                        current = Some((text, seg_start, seg_end));
+                        break;
+                    }
+                    if !text.span.is_empty() {
+                        replacement_span =
+                            Some(replacement_span.map_or(text.span, |span| span.merge(text.span)));
+                    }
+                    if text.value.is_empty() {
+                        deferred_empty.push(text);
+                        current = pull_text_segment(
+                            &mut old_iter,
+                            &mut old_index,
+                            run_range.end,
+                            &mut seg_byte_cursor,
+                            nodes,
+                        );
+                    } else if seg_end <= m_end {
+                        emit_cursor = seg_end;
+                        current = pull_text_segment(
+                            &mut old_iter,
+                            &mut old_index,
+                            run_range.end,
+                            &mut seg_byte_cursor,
+                            nodes,
+                        );
+                    } else {
+                        emit_cursor = m_end;
+                        current = Some((text, seg_start, seg_end));
+                        break;
+                    }
+                }
+
+                nodes.push(build_node(
+                    repl.payload,
+                    replacement_span.unwrap_or_else(Span::empty),
+                ));
+                for empty_text in deferred_empty {
+                    nodes.push(Node::Text(empty_text));
+                }
+            }
+
+            // Emit remaining suffix text and trailing empty nodes in this run.
+            while let Some((text, seg_start, seg_end)) = current {
+                if text.value.is_empty() {
+                    nodes.push(Node::Text(text));
+                } else {
+                    let suffix = &text.value[emit_cursor - seg_start..];
+                    if !suffix.is_empty() {
+                        nodes.push(Node::Text(Text {
+                            value: suffix,
+                            span: text.span,
+                        }));
+                    }
+                    emit_cursor = seg_end;
+                }
+                current = pull_text_segment(
+                    &mut old_iter,
+                    &mut old_index,
+                    run_range.end,
+                    &mut seg_byte_cursor,
+                    nodes,
+                );
+            }
+        }
+
+        nodes.extend(old_iter);
+    }
+}
+
+pub(crate) struct RunReplacement<T> {
+    pub(crate) node_range: Range<usize>,
+    pub(crate) byte_range: Range<usize>,
+    pub(crate) payload: T,
+}
+
+fn pull_text_segment<'arena>(
+    old_iter: &mut impl Iterator<Item = Node<'arena>>,
+    old_index: &mut usize,
+    run_end: usize,
+    seg_byte_cursor: &mut usize,
+    nodes: &mut ferromark::allocator::Vec<'arena, Node<'arena>>,
+) -> Option<(Text<'arena>, usize, usize)> {
+    while *old_index < run_end {
+        *old_index += 1;
+        if let Some(node) = old_iter.next() {
+            if let Node::Text(text) = node {
+                let start = *seg_byte_cursor;
+                let end = start + text.value.len();
+                *seg_byte_cursor = end;
+                return Some((text, start, end));
+            }
+            nodes.push(node);
+        }
+    }
+    None
 }
 
 /// A maximal sequence of adjacent `Text` nodes in one sibling list.
@@ -311,6 +522,13 @@ pub struct TextRun<'nodes, 'arena> {
 }
 
 impl<'nodes, 'arena> TextRun<'nodes, 'arena> {
+    pub(crate) const fn from_slice(
+        nodes: &'nodes [Node<'arena>],
+        node_range: Range<usize>,
+    ) -> Self {
+        Self { nodes, node_range }
+    }
+
     /// The selected nodes' range within the sibling slice passed to [`text_runs`].
     #[must_use]
     pub fn node_range(&self) -> Range<usize> {
@@ -339,11 +557,14 @@ impl<'nodes, 'arena> TextRun<'nodes, 'arena> {
     /// disabled or no prefixes are configured, this returns no ranges.
     #[must_use]
     pub fn protected_url_ranges(&self, context: &TransformContext<'_>) -> Vec<Range<usize>> {
-        let mut ranges = Vec::new();
         let Some(matcher) = &context.autolink_matcher else {
-            return ranges;
+            return Vec::new();
         };
+        if let [Node::Text(text)] = self.nodes {
+            return matcher.find_ranges(text.value);
+        }
 
+        let mut ranges = Vec::new();
         let mut offset = 0;
         for segment in self.segments() {
             ranges.extend(
@@ -765,5 +986,134 @@ impl fmt::Display for TransformError {
 impl Error for TransformError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         Some(&*self.source)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ferromark::Allocator;
+    use ferromark::HtmlRendererOptions;
+    use ferromark::ast::{Node, Span, Text};
+
+    use super::{RunReplacement, TransformContext};
+
+    fn node_summary<'a>(nodes: &[Node<'a>]) -> Vec<(u8, &'a str, Span)> {
+        nodes
+            .iter()
+            .map(|node| match node {
+                Node::Text(text) => (0, text.value, text.span),
+                Node::Break(br) => (1, "", br.span),
+                _ => (2, "", Span::empty()),
+            })
+            .collect()
+    }
+
+    type TestSegment<'a> = Option<(&'a str, Span)>;
+    type TestEdit<'a> = (usize, usize, usize, usize, &'a str);
+
+    #[test]
+    fn single_pass_replacements_match_reverse_replace_text_range_with_node() {
+        let cases: &[(&[TestSegment<'_>], &[TestEdit<'_>])] = &[
+            // Single node, multiple matches including start, adjacent, and end.
+            (
+                &[Some(("aa:bb:cc:dd", Span::new(0, 11)))],
+                &[(0, 1, 0, 2, "X"), (0, 1, 2, 5, "Y"), (0, 1, 8, 11, "Z")],
+            ),
+            // Empty text nodes at start, middle of match, between adjacent matches, and end.
+            (
+                &[
+                    Some(("", Span::new(0, 1))),
+                    Some(("ab", Span::new(1, 3))),
+                    Some(("", Span::new(3, 4))),
+                    Some(("cd", Span::new(4, 6))),
+                    Some(("", Span::new(6, 7))),
+                    Some(("ef", Span::new(7, 9))),
+                    Some(("", Span::new(9, 10))),
+                ],
+                &[(0, 7, 1, 4, "M1"), (0, 7, 4, 5, "M2")],
+            ),
+            // Two matches sharing a middle segment plus a second run separated by a Break node.
+            (
+                &[
+                    Some(("x:", Span::new(0, 2))),
+                    Some(("a", Span::new(2, 3))),
+                    Some((":y:", Span::new(3, 6))),
+                    Some(("b", Span::new(6, 7))),
+                    Some((":z", Span::new(7, 9))),
+                    None,
+                    Some(("hello", Span::new(10, 15))),
+                    Some(("", Span::empty())),
+                    Some(("world", Span::new(15, 20))),
+                ],
+                &[(0, 5, 1, 4, "R1"), (0, 5, 5, 8, "R2"), (6, 9, 2, 7, "R3")],
+            ),
+            // Empty spans mixed with non-empty spans across a match.
+            (
+                &[
+                    Some(("foo", Span::empty())),
+                    Some(("", Span::new(10, 12))),
+                    Some(("bar", Span::empty())),
+                ],
+                &[(0, 3, 1, 5, "Q")],
+            ),
+        ];
+
+        let renderer_options = HtmlRendererOptions::default();
+        for (segments, edits) in cases {
+            let arena_ref = Allocator::new();
+            let arena_new = Allocator::new();
+            let mut ref_nodes = arena_ref.new_vec();
+            let mut new_nodes = arena_new.new_vec();
+            for segment in *segments {
+                if let Some((value, span)) = segment {
+                    ref_nodes.push(Node::Text(Text { value, span: *span }));
+                    new_nodes.push(Node::Text(Text { value, span: *span }));
+                } else {
+                    ref_nodes.push(Node::Break(ferromark::ast::Break {
+                        span: Span::new(9, 10),
+                    }));
+                    new_nodes.push(Node::Break(ferromark::ast::Break {
+                        span: Span::new(9, 10),
+                    }));
+                }
+            }
+
+            let ctx_ref = TransformContext::new(&arena_ref, "", &renderer_options);
+            let mut active_run = None;
+            let mut boundary = 0;
+            for &(run_start, run_end, byte_start, byte_end, repl) in edits.iter().rev() {
+                if active_run != Some(run_start) {
+                    active_run = Some(run_start);
+                    boundary = run_end;
+                }
+                let result = TransformContext::replace_text_range_with_node(
+                    &mut ref_nodes,
+                    run_start..boundary,
+                    byte_start..byte_end,
+                    |span| Some(Node::Text(ctx_ref.replacement_text(repl, span))),
+                );
+                assert!(result.is_ok(), "reference replacement failed: {result:?}");
+                if let Ok((_, inserted_index)) = result {
+                    boundary = inserted_index;
+                }
+            }
+
+            let ctx_new = TransformContext::new(&arena_new, "", &renderer_options);
+            let batch: Vec<_> = edits
+                .iter()
+                .map(
+                    |&(run_start, run_end, byte_start, byte_end, repl)| RunReplacement {
+                        node_range: run_start..run_end,
+                        byte_range: byte_start..byte_end,
+                        payload: repl,
+                    },
+                )
+                .collect();
+            ctx_new.apply_text_run_replacements(&mut new_nodes, batch, |repl, span| {
+                Node::Text(Text { value: repl, span })
+            });
+
+            assert_eq!(node_summary(&new_nodes), node_summary(&ref_nodes));
+        }
     }
 }

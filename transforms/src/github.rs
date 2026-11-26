@@ -1,19 +1,27 @@
 //! Optional links for explicit GitHub issue, user, team, and commit references.
 
+use std::borrow::Cow;
 use std::error::Error;
-use std::fmt;
+use std::fmt::{self, Write as _};
 use std::ops::Range;
 
 use ferromark::ast::{Document, Span};
 
 use crate::prose::{NodeList, is_in_raw_html, visit_document_prose};
-use crate::{BoxError, TransformContext, TransformPass, text_runs};
+use crate::{BoxError, RunReplacement, TransformContext, TransformPass, text_runs};
 
 const MIN_COMMIT_LENGTH: usize = 7;
 const MAX_COMMIT_LENGTH: usize = 40;
 const MAX_OWNER_LENGTH: usize = 39;
 const MAX_REPOSITORY_LENGTH: usize = 100;
 const DENIED_BARE_HASHES: [&str; 5] = ["acceded", "deedeed", "defaced", "effaced", "fabaceae"];
+
+const HAS_HASH: u8 = 1 << 0;
+const HAS_AT: u8 = 1 << 1;
+const HAS_SLASH: u8 = 1 << 2;
+const HAS_GH: u8 = 1 << 3;
+const HAS_HEX7: u8 = 1 << 4;
+const ALL_CANDIDATES: u8 = HAS_HASH | HAS_AT | HAS_SLASH | HAS_GH | HAS_HEX7;
 
 /// Error returned when a configured GitHub repository is not a safe `owner/repo` path.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -94,11 +102,9 @@ impl TransformPass for GitHubReferencesPass {
     }
 }
 
-struct ReferenceMatch {
-    node_range: Range<usize>,
-    byte_range: Range<usize>,
-    label: String,
-    url: String,
+struct ReferencePayload<'arena> {
+    label: &'arena str,
+    url: &'arena str,
 }
 
 fn transform_text_runs<'arena>(
@@ -108,88 +114,187 @@ fn transform_text_runs<'arena>(
     local_owner: &str,
     local_repository: &str,
 ) -> Result<(), BoxError> {
-    let mut matches = Vec::new();
+    let mut matches: Vec<RunReplacement<ReferencePayload<'arena>>> = Vec::new();
+    let mut url_buf = String::new();
     for run in text_runs(nodes) {
         if is_in_raw_html(&run, raw_html_spans) {
             continue;
         }
         let value = run.value();
-        if !might_contain_github_reference(value.as_bytes()) {
+        let flags = scan_github_candidates(value.as_bytes());
+        if flags == 0 {
             continue;
         }
         let protected = run.protected_url_ranges(context);
-        for matched in find_references(&value, &protected, local_owner, local_repository) {
-            matches.push(ReferenceMatch {
-                node_range: run.node_range(),
-                label: value[matched.range.clone()].to_owned(),
-                byte_range: matched.range,
-                url: matched.url,
-            });
-        }
+        let node_range = run.node_range();
+        scan_references_into(
+            &value,
+            flags,
+            &protected,
+            local_owner,
+            local_repository,
+            &mut url_buf,
+            |byte_range, url| {
+                let label = match &value {
+                    Cow::Borrowed(borrowed) => &borrowed[byte_range.clone()],
+                    Cow::Owned(owned) => context.alloc_str(&owned[byte_range.clone()]),
+                };
+                matches.push(RunReplacement {
+                    node_range: node_range.clone(),
+                    byte_range,
+                    payload: ReferencePayload {
+                        label,
+                        url: context.alloc_str(url),
+                    },
+                });
+            },
+        );
     }
 
-    let mut active_run = None;
-    let mut boundary = 0;
-    for matched in matches.into_iter().rev() {
-        let start = matched.node_range.start;
-        if active_run != Some(start) {
-            active_run = Some(start);
-            boundary = matched.node_range.end;
-        }
-        let (_, inserted_index) = TransformContext::replace_text_range_with_node(
-            nodes,
-            start..boundary,
-            matched.byte_range,
-            |span| Some(context.text_link_node(&matched.label, &matched.url, span)),
-        )?;
-        boundary = inserted_index;
-    }
+    context.apply_text_run_replacements(nodes, matches, |payload, span| {
+        context.text_link_node_allocated(payload.label, payload.url, span)
+    });
 
     Ok(())
 }
 
-/// Fast pre-filter: a GitHub reference requires `#`, `@`, `/`, `GH-`/`gh-`,
+/// Fast single-pass pre-filter returning which reference kinds can possibly
+/// appear in `bytes`. A GitHub reference requires `#`, `@`, `/`, `GH-`/`gh-`,
 /// or a contiguous 7+ ASCII hex-digit run.
-fn might_contain_github_reference(bytes: &[u8]) -> bool {
+fn scan_github_candidates(bytes: &[u8]) -> u8 {
+    let mut flags = 0u8;
     let mut hex_run = 0usize;
     for (i, &byte) in bytes.iter().enumerate() {
-        if matches!(byte, b'#' | b'@' | b'/') {
-            return true;
-        }
-        if matches!(byte, b'g' | b'G')
-            && bytes.get(i + 1).is_some_and(|b| matches!(b, b'h' | b'H'))
-            && bytes.get(i + 2) == Some(&b'-')
-        {
-            return true;
-        }
-        if byte.is_ascii_hexdigit() {
-            hex_run += 1;
-            if hex_run >= 7 {
-                return true;
+        match byte {
+            b'#' => {
+                flags |= HAS_HASH;
+                hex_run = 0;
             }
-        } else {
-            hex_run = 0;
+            b'@' => {
+                flags |= HAS_AT;
+                hex_run = 0;
+            }
+            b'/' => {
+                flags |= HAS_SLASH;
+                hex_run = 0;
+            }
+            _ => {
+                if (flags & HAS_GH) == 0
+                    && matches!(byte, b'g' | b'G')
+                    && bytes.get(i + 1).is_some_and(|b| matches!(b, b'h' | b'H'))
+                    && bytes.get(i + 2) == Some(&b'-')
+                {
+                    flags |= HAS_GH;
+                }
+                if (flags & HAS_HEX7) == 0 {
+                    if byte.is_ascii_hexdigit() {
+                        hex_run += 1;
+                        if hex_run >= MIN_COMMIT_LENGTH {
+                            flags |= HAS_HEX7;
+                        }
+                    } else {
+                        hex_run = 0;
+                    }
+                }
+            }
+        }
+        if flags == ALL_CANDIDATES {
+            break;
         }
     }
-    false
+    flags
 }
 
+#[cfg(test)]
 struct TextMatch {
     range: Range<usize>,
     url: String,
 }
 
+#[cfg(test)]
 fn find_references(
     value: &str,
     protected: &[Range<usize>],
     local_owner: &str,
     local_repository: &str,
 ) -> Vec<TextMatch> {
-    let bytes = value.as_bytes();
+    let flags = scan_github_candidates(value.as_bytes());
+    if flags == 0 {
+        return Vec::new();
+    }
     let mut matches = Vec::new();
-    let mut cursor = 0;
-    let mut protected_idx = 0;
+    let mut url_buf = String::new();
+    scan_references_into(
+        value,
+        flags,
+        protected,
+        local_owner,
+        local_repository,
+        &mut url_buf,
+        |range, url| {
+            matches.push(TextMatch {
+                range,
+                url: url.to_owned(),
+            });
+        },
+    );
+    matches
+}
 
+fn next_trigger_offset(slice: &str, flags: u8) -> Option<usize> {
+    match flags & (HAS_HASH | HAS_AT) {
+        HAS_HASH => slice.find('#'),
+        HAS_AT => slice.find('@'),
+        _ => slice.find(['#', '@']),
+    }
+}
+
+fn scan_references_into(
+    value: &str,
+    flags: u8,
+    protected: &[Range<usize>],
+    local_owner: &str,
+    local_repository: &str,
+    url_buf: &mut String,
+    mut on_match: impl FnMut(Range<usize>, &str),
+) {
+    let bytes = value.as_bytes();
+    let mut cursor = 0usize;
+    let mut protected_idx = 0usize;
+
+    // Fast path: when only `#` and/or `@` candidates exist, jump directly
+    // between those bytes instead of inspecting every character.
+    if (flags & (HAS_SLASH | HAS_GH | HAS_HEX7)) == 0 {
+        while let Some(rel) = next_trigger_offset(&value[cursor..], flags) {
+            cursor += rel;
+            while protected_idx < protected.len() && protected[protected_idx].end <= cursor {
+                protected_idx += 1;
+            }
+            if let Some(range) = protected.get(protected_idx)
+                && range.start <= cursor
+                && cursor < range.end
+            {
+                cursor = range.end;
+                continue;
+            }
+
+            if left_boundary(value, cursor)
+                && let Some(end) =
+                    match_reference_at(value, cursor, flags, local_owner, local_repository, url_buf)
+                && !protected
+                    .get(protected_idx)
+                    .is_some_and(|range| cursor < range.end && range.start < end)
+            {
+                on_match(cursor..end, url_buf.as_str());
+                cursor = end;
+            } else {
+                cursor += 1;
+            }
+        }
+        return;
+    }
+
+    let mut can_start = true;
     while cursor < bytes.len() {
         while protected_idx < protected.len() && protected[protected_idx].end <= cursor {
             protected_idx += 1;
@@ -199,90 +304,122 @@ fn find_references(
             && cursor < range.end
         {
             cursor = range.end;
+            can_start = left_boundary(value, cursor);
             continue;
         }
 
-        if let Some((end, url)) = match_reference(value, cursor, local_owner, local_repository)
+        let byte = bytes[cursor];
+        if can_start
+            && (matches!(byte, b'@' | b'#') || byte.is_ascii_alphanumeric())
+            && let Some(end) =
+                match_reference_at(value, cursor, flags, local_owner, local_repository, url_buf)
             && !protected
                 .get(protected_idx)
                 .is_some_and(|range| cursor < range.end && range.start < end)
         {
-            matches.push(TextMatch {
-                range: cursor..end,
-                url,
-            });
+            on_match(cursor..end, url_buf.as_str());
             cursor = end;
+            can_start = left_boundary(value, cursor);
+            continue;
+        }
+
+        if byte < 0x80 {
+            can_start = is_ascii_left_boundary(byte);
+            cursor += 1;
+        } else if let Some(ch) = value[cursor..].chars().next() {
+            can_start = is_left_boundary_char(ch);
+            cursor += ch.len_utf8();
         } else {
-            cursor += value[cursor..].chars().next().map_or(1, char::len_utf8);
+            break;
         }
     }
-
-    matches
 }
 
-fn match_reference(
+fn match_reference_at(
     value: &str,
     start: usize,
+    flags: u8,
     local_owner: &str,
     local_repository: &str,
-) -> Option<(usize, String)> {
+    url_buf: &mut String,
+) -> Option<usize> {
     let bytes = value.as_bytes();
-    if !left_boundary(value, start) {
+    let first = *bytes.get(start)?;
+
+    if first == b'@' {
+        if (flags & HAS_AT) != 0
+            && let Some((end, username, team)) = parse_mention(bytes, start)
+            && mention_right_boundary(value, end, team)
+            && !matches_ignore_ascii_case(username, &["mention", "mentions"])
+        {
+            url_buf.clear();
+            let _ = write!(url_buf, "https://github.com/{username}");
+            return Some(end);
+        }
         return None;
     }
 
-    if let Some((end, owner, repository, reference)) =
-        parse_cross_repository_reference(bytes, start)
+    if first == b'#' {
+        if (flags & HAS_HASH) != 0
+            && let Some((end, number)) = parse_issue_number(bytes, start + 1)
+            && right_boundary(value, end)
+        {
+            write_issue_url(url_buf, local_owner, local_repository, number);
+            return Some(end);
+        }
+        return None;
+    }
+
+    if (flags & HAS_SLASH) != 0
+        && (flags & (HAS_HASH | HAS_AT)) != 0
+        && let Some((end, owner, repository, reference)) =
+            parse_cross_repository_reference(bytes, start)
         && right_boundary(value, end)
     {
-        let url = match reference {
-            RepositoryReference::Issue(number) => issue_url(owner, repository, number),
-            RepositoryReference::Commit(hash) => commit_url(owner, repository, hash),
-        };
-        return Some((end, url));
+        match reference {
+            RepositoryReference::Issue(number) => {
+                write_issue_url(url_buf, owner, repository, number);
+            }
+            RepositoryReference::Commit(hash) => {
+                write_commit_url(url_buf, owner, repository, hash);
+            }
+        }
+        return Some(end);
     }
 
-    if bytes.get(start) == Some(&b'@')
-        && let Some((end, username, team)) = parse_mention(bytes, start)
-        && mention_right_boundary(value, end, team)
-        && !matches_ignore_ascii_case(username, &["mention", "mentions"])
-    {
-        return Some((end, format!("https://github.com/{username}")));
-    }
-
-    if is_gh_prefix(bytes, start)
+    if (flags & HAS_GH) != 0
+        && matches!(first, b'g' | b'G')
+        && is_gh_prefix(bytes, start)
         && let Some((end, number)) = parse_issue_number(bytes, start + 3)
         && right_boundary(value, end)
     {
-        return Some((end, issue_url(local_owner, local_repository, number)));
+        write_issue_url(url_buf, local_owner, local_repository, number);
+        return Some(end);
     }
 
-    if bytes.get(start) == Some(&b'#')
-        && let Some((end, number)) = parse_issue_number(bytes, start + 1)
-        && right_boundary(value, end)
+    if (flags & HAS_HEX7) != 0
+        && first.is_ascii_hexdigit()
+        && let Some((base_end, base)) = parse_commit_hash(bytes, start)
     {
-        return Some((end, issue_url(local_owner, local_repository, number)));
-    }
+        if bytes.get(base_end..base_end + 3) == Some(b"...") {
+            if let Some((end, compare)) = parse_commit_hash(bytes, base_end + 3)
+                && right_boundary(value, end)
+            {
+                url_buf.clear();
+                let _ = write!(
+                    url_buf,
+                    "https://github.com/{local_owner}/{local_repository}/compare/{base}...{compare}"
+                );
+                return Some(end);
+            }
+            return None;
+        }
 
-    if let Some((end, base, compare)) = parse_commit_range(bytes, start)
-        && right_boundary(value, end)
-    {
-        return Some((
-            end,
-            format!(
-                "https://github.com/{local_owner}/{local_repository}/compare/{base}...{compare}"
-            ),
-        ));
-    }
-
-    if let Some((end, hash)) = parse_commit_hash(bytes, start)
-        && right_boundary(value, end)
-        && !matches_ignore_ascii_case(hash, &DENIED_BARE_HASHES)
-        && !bytes
-            .get(end..)
-            .is_some_and(|suffix| suffix.starts_with(b"..."))
-    {
-        return Some((end, commit_url(local_owner, local_repository, hash)));
+        if right_boundary(value, base_end) && !matches_ignore_ascii_case(base, &DENIED_BARE_HASHES)
+        {
+            write_commit_url(url_buf, local_owner, local_repository, base);
+            return Some(base_end);
+        }
     }
 
     None
@@ -400,31 +537,41 @@ fn parse_commit_hash(bytes: &[u8], start: usize) -> Option<(usize, &str)> {
     Some((cursor, std::str::from_utf8(&bytes[start..cursor]).ok()?))
 }
 
-fn parse_commit_range(bytes: &[u8], start: usize) -> Option<(usize, &str, &str)> {
-    let (base_end, base) = parse_commit_hash(bytes, start)?;
-    if bytes
-        .get(base_end..base_end + 3)
-        .is_none_or(|separator| separator != b"...")
-    {
-        return None;
-    }
-    let (end, compare) = parse_commit_hash(bytes, base_end + 3)?;
-    Some((end, base, compare))
-}
-
 fn is_gh_prefix(bytes: &[u8], start: usize) -> bool {
     bytes
         .get(start..start + 3)
         .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"gh-"))
 }
 
+const fn is_ascii_left_boundary(byte: u8) -> bool {
+    !byte.is_ascii_alphanumeric() && !matches!(byte, b'_' | b'-' | b'.' | b'/' | b'@' | b'\\')
+}
+
+fn is_left_boundary_char(previous: char) -> bool {
+    !previous.is_alphanumeric() && !matches!(previous, '_' | '-' | '.' | '/' | '@' | '\\')
+}
+
 fn left_boundary(value: &str, start: usize) -> bool {
-    value[..start].chars().next_back().is_none_or(|previous| {
-        !previous.is_alphanumeric() && !matches!(previous, '_' | '-' | '.' | '/' | '@' | '\\')
-    })
+    if start == 0 {
+        return true;
+    }
+    let prev_byte = value.as_bytes()[start - 1];
+    if prev_byte < 0x80 {
+        return is_ascii_left_boundary(prev_byte);
+    }
+    value[..start]
+        .chars()
+        .next_back()
+        .is_none_or(is_left_boundary_char)
 }
 
 fn right_boundary(value: &str, end: usize) -> bool {
+    let Some(&next_byte) = value.as_bytes().get(end) else {
+        return true;
+    };
+    if next_byte < 0x80 {
+        return !next_byte.is_ascii_alphanumeric() && !matches!(next_byte, b'_' | b'-' | b'/');
+    }
     value[end..]
         .chars()
         .next()
@@ -465,12 +612,20 @@ fn validated_repository(value: &str) -> Option<(&str, &str)> {
     (owner_end == owner.len() && repository_end == repository.len()).then_some((owner, repository))
 }
 
-fn issue_url(owner: &str, repository: &str, number: &str) -> String {
-    format!("https://github.com/{owner}/{repository}/issues/{number}")
+fn write_issue_url(url_buf: &mut String, owner: &str, repository: &str, number: &str) {
+    url_buf.clear();
+    let _ = write!(
+        url_buf,
+        "https://github.com/{owner}/{repository}/issues/{number}"
+    );
 }
 
-fn commit_url(owner: &str, repository: &str, hash: &str) -> String {
-    format!("https://github.com/{owner}/{repository}/commit/{hash}")
+fn write_commit_url(url_buf: &mut String, owner: &str, repository: &str, hash: &str) {
+    url_buf.clear();
+    let _ = write!(
+        url_buf,
+        "https://github.com/{owner}/{repository}/commit/{hash}"
+    );
 }
 
 #[cfg(test)]
