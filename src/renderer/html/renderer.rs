@@ -226,19 +226,23 @@ impl HtmlRenderer {
     /// call this after rendering a document so retained buffer capacity above
     /// `max_bytes` is not kept across subsequent smaller renders.
     pub fn shrink_retained_buffers(&mut self, max_bytes: usize) {
-        let trim = |buf: &mut String| {
-            if buf.capacity() > max_bytes {
-                *buf = String::new();
-                true
-            } else {
-                false
-            }
-        };
-        let oversized = trim(&mut self.output)
-            | trim(&mut self.heading_text_scratch)
-            | trim(&mut self.heading_slug_scratch);
-        if oversized {
+        if self.output.capacity() > max_bytes {
+            self.output = String::new();
+        }
+        if self.heading_text_scratch.capacity() > max_bytes {
+            self.heading_text_scratch = String::new();
+        }
+        if self.heading_slug_scratch.capacity() > max_bytes {
+            self.heading_slug_scratch = String::new();
+        }
+        if self.heading_id_planner.retained_bytes() > max_bytes {
             self.heading_id_planner = HeadingIdPlanner::new();
+        }
+        if self
+            .footnotes
+            .as_ref()
+            .is_some_and(|footnotes| footnotes.retained_bytes() > max_bytes)
+        {
             self.footnotes = None;
         }
     }
@@ -464,5 +468,44 @@ impl HtmlRenderer {
 impl Default for HtmlRenderer {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::HtmlRenderer;
+    use crate::{Allocator, HtmlRendererOptions, Parser};
+
+    #[test]
+    fn shrink_retained_buffers_releases_oversized_output_and_heading_planner() {
+        const LIMIT: usize = 1024 * 1024;
+
+        let options = HtmlRendererOptions {
+            heading_ids: true,
+            ..HtmlRendererOptions::default()
+        };
+        let mut renderer = HtmlRenderer::with_options(options);
+
+        let long_paragraph = "x".repeat(600_000);
+        let allocator = Allocator::for_source_len(long_paragraph.len());
+        let doc = Parser::new(&allocator, &long_paragraph).parse().unwrap();
+        let html_len = renderer.render_borrowed(&doc).len();
+        assert_eq!(html_len, 600_008);
+        assert!(renderer.output.capacity() > LIMIT);
+        renderer.shrink_retained_buffers(LIMIT);
+        assert_eq!(renderer.output.capacity(), 0);
+
+        let many_headings = "# a\n\n\n".repeat(32_769);
+        let allocator = Allocator::for_source_len(many_headings.len());
+        let doc = Parser::new(&allocator, &many_headings).parse().unwrap();
+        let _ = renderer.render_borrowed(&doc);
+        assert!(renderer.output.capacity() <= LIMIT);
+        assert!(renderer.heading_id_planner.retained_bytes() > LIMIT);
+        renderer.shrink_retained_buffers(LIMIT);
+        assert_eq!(renderer.heading_id_planner.retained_bytes(), 0);
+
+        let allocator = Allocator::new();
+        let doc = Parser::new(&allocator, "z").parse().unwrap();
+        assert_eq!(renderer.render_borrowed(&doc), "<p>z</p>\n");
     }
 }

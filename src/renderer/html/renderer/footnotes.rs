@@ -39,6 +39,40 @@ pub(super) struct FootnoteState {
     slug_counts: FxHashMap<CompactString, usize>,
 }
 
+impl FootnoteState {
+    #[inline]
+    pub(super) fn retained_bytes(&self) -> usize {
+        self.ref_counts
+            .capacity()
+            .saturating_mul(std::mem::size_of::<(CompactString, usize)>())
+            .saturating_add(
+                self.legacy_targets
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<(CompactString, PlannedId)>()),
+            )
+            .saturating_add(
+                self.legacy_first_references
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<(CompactString, PlannedId)>()),
+            )
+            .saturating_add(
+                self.index
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<(CompactString, u32)>()),
+            )
+            .saturating_add(
+                self.records
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<FootnoteRecord>()),
+            )
+            .saturating_add(
+                self.slug_counts
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<(CompactString, usize)>()),
+            )
+    }
+}
+
 #[derive(Clone)]
 pub(super) struct FootnoteRecord {
     pub(super) slug: CompactString,

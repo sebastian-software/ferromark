@@ -991,31 +991,29 @@ test("routes preset: 'ffm' through packed entries unless an unpacked override is
     const [object, packed] = entry.natives;
     spies.reset();
     entry.facade(probe, { preset: "ffm", tables: false });
-    assert.deepEqual(
-      [spies.count(packed), spies.count(object)],
-      [1, 0],
-      `${entry.name} packs preset: 'ffm'`,
-    );
+    assert.deepEqual([spies.count(packed), spies.count(object)], [1, 0], `${entry.name} packed`);
 
     spies.reset();
     entry.facade(probe, { preset: "ffm", insertions: false });
-    assert.deepEqual(
-      [spies.count(packed), spies.count(object)],
-      [0, 1],
-      `${entry.name} uses object path when overriding an unpacked FFM flag`,
-    );
+    assert.deepEqual([spies.count(packed), spies.count(object)], [0, 1], `${entry.name} unset`);
     const [, rebuilt] = spies.args(object);
     assert.equal(Object.getPrototypeOf(rebuilt), null, `${entry.name} object prototype`);
     assert.equal(rebuilt.preset, "ffm", `${entry.name} preset value`);
     assert.equal(rebuilt.insertions, false, `${entry.name} insertions override`);
+  }
+});
 
+test("keeps preset error precedence and nested typography on the object path", (t) => {
+  const routed = entries.filter(({ natives }) => natives);
+  const spies = spyOn(
+    t,
+    routed.flatMap(({ natives }) => natives),
+  );
+  for (const entry of routed) {
+    const [object, packed] = entry.natives;
     spies.reset();
     entry.facade(probe, { preset: "ffm", typography: { language: "en" } });
-    assert.deepEqual(
-      [spies.count(packed), spies.count(object)],
-      [0, 1],
-      `${entry.name} keeps nested typography with preset on the object path`,
-    );
+    assert.deepEqual([spies.count(packed), spies.count(object)], [0, 1], `${entry.name} nested`);
   }
 
   assert.throws(
