@@ -49,28 +49,16 @@ pub(crate) type CodeCallback<'a> = Function<
     CodeCallbackResult,
 >;
 
-const STAGE_RENDER: u8 = 1 << 0;
-const STAGE_HIGHLIGHT: u8 = 1 << 1;
-const STAGE_ALL: u8 = STAGE_RENDER | STAGE_HIGHLIGHT;
-
 /// Calls the dispatcher and keeps the first JavaScript error for the caller.
 pub(crate) struct JsCodeHooks<'a> {
     callback: CodeCallback<'a>,
-    stages: u8,
     error: Option<Error>,
 }
 
 impl<'a> JsCodeHooks<'a> {
-    pub(crate) fn new(callback: CodeCallback<'a>) -> Self {
-        let stages = match callback.name().ok().as_deref() {
-            Some("ferromarkStageRender") => STAGE_RENDER,
-            Some("ferromarkStageHighlight") => STAGE_HIGHLIGHT,
-            Some("ferromarkStageNone") => 0,
-            _ => STAGE_ALL,
-        };
+    pub(crate) const fn new(callback: CodeCallback<'a>) -> Self {
         Self {
             callback,
-            stages,
             error: None,
         }
     }
@@ -116,9 +104,6 @@ impl<'a> JsCodeHooks<'a> {
 
     /// Whole-block replacement for JSX output: JSX source, or HTML to convert.
     pub(crate) fn render_jsx(&mut self, input: JsxCodeBlockInput<'_>) -> Option<String> {
-        if (self.stages & STAGE_RENDER) == 0 {
-            return None;
-        }
         match self.call("render", input.code, input.language, input.meta, input.span)? {
             Either::A(jsx) => Some(jsx),
             Either::B(object) => match object.html {
@@ -133,9 +118,6 @@ impl<'a> JsCodeHooks<'a> {
         &mut self,
         input: JsxCodeBlockInput<'_>,
     ) -> Option<JsxHighlightedCodeBlock> {
-        if (self.stages & STAGE_HIGHLIGHT) == 0 {
-            return None;
-        }
         let object = self.highlight_object(input.code, input.language, input.meta, input.span)?;
         let lines = object.lines?;
         let mut block = JsxHighlightedCodeBlock::new(lines);
@@ -167,9 +149,6 @@ const HIGHLIGHT_RESULT: &str =
 
 impl HtmlRenderHooks for JsCodeHooks<'_> {
     fn render_code_block(&mut self, input: HtmlCodeBlockInput<'_>) -> Option<String> {
-        if (self.stages & STAGE_RENDER) == 0 {
-            return None;
-        }
         match self.call("render", input.code, input.language, input.meta, input.span)? {
             Either::A(html) => Some(html),
             Either::B(object) => match object.html {
@@ -183,9 +162,6 @@ impl HtmlRenderHooks for JsCodeHooks<'_> {
         &mut self,
         input: CodeHighlightInput<'_>,
     ) -> Option<HighlightedCodeBlock> {
-        if (self.stages & STAGE_HIGHLIGHT) == 0 {
-            return None;
-        }
         let object =
             self.highlight_object(input.code, input.language, input.raw_meta, input.span)?;
         let lines = object.lines?;

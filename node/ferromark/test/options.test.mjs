@@ -1008,7 +1008,32 @@ test("routes preset: 'ffm' through packed entries unless an unpacked override is
     assert.equal(Object.getPrototypeOf(rebuilt), null, `${entry.name} object prototype`);
     assert.equal(rebuilt.preset, "ffm", `${entry.name} preset value`);
     assert.equal(rebuilt.insertions, false, `${entry.name} insertions override`);
+
+    spies.reset();
+    entry.facade(probe, { preset: "ffm", typography: { language: "en" } });
+    assert.deepEqual(
+      [spies.count(packed), spies.count(object)],
+      [0, 1],
+      `${entry.name} keeps nested typography with preset on the object path`,
+    );
   }
+
+  assert.throws(
+    () =>
+      toHtml("x", {
+        preset: "bad",
+        typography: {
+          get language() {
+            throw new Error("language getter");
+          },
+        },
+      }),
+    /language getter/,
+  );
+  assert.throws(
+    () => toHtml("x", { preset: "bad", renderPolicy: "bad" }),
+    /renderPolicy must be either 'untrusted' or 'trusted'/,
+  );
 });
 
 test("routes Uint8Array Markdown through the packed entries", (t) => {

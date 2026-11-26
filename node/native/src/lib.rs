@@ -495,9 +495,8 @@ impl Renderer {
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     ) -> Result<JsString<'env>> {
         let html = self.render_reused(markdown.try_as_str()?)?;
-        let html_len = html.len();
         let output = js_string(env, html);
-        self.trim_retained_buffers(html_len);
+        self.trim_retained_buffers();
         output
     }
 
@@ -507,9 +506,8 @@ impl Renderer {
         #[napi(ts_arg_type = "string | Uint8Array")] markdown: Utf8Input,
     ) -> Result<Buffer> {
         let html = self.render_reused(markdown.try_as_str()?)?;
-        let html_len = html.len();
         let output = html_buffer(html);
-        self.trim_retained_buffers(html_len);
+        self.trim_retained_buffers();
         output
     }
 }
@@ -561,14 +559,12 @@ impl Renderer {
 
     /// Releases oversized arena and renderer buffers after an outlier document
     /// so long-lived `Renderer` instances keep bounded idle memory.
-    fn trim_retained_buffers(&mut self, html_len: usize) {
+    fn trim_retained_buffers(&mut self) {
         if self.allocator.allocated_bytes() > default_renderer::RETAINED_LIMIT {
             self.allocator = Allocator::new();
         }
-        if html_len > default_renderer::RETAINED_LIMIT {
-            self.html
-                .shrink_retained_buffers(default_renderer::RETAINED_LIMIT);
-        }
+        self.html
+            .shrink_retained_buffers(default_renderer::RETAINED_LIMIT);
     }
 }
 

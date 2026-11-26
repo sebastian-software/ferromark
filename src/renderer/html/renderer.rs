@@ -223,20 +223,24 @@ impl HtmlRenderer {
     /// Releases oversized scratch and output buffers after an outlier document.
     ///
     /// Configuration and options remain unchanged. Long-lived renderers can
-    /// call this after rendering a document whose output exceeded `max_bytes`
-    /// so peak memory is not retained across subsequent smaller renders.
+    /// call this after rendering a document so retained buffer capacity above
+    /// `max_bytes` is not kept across subsequent smaller renders.
     pub fn shrink_retained_buffers(&mut self, max_bytes: usize) {
-        if self.output.capacity() > max_bytes {
-            self.output = String::new();
+        let trim = |buf: &mut String| {
+            if buf.capacity() > max_bytes {
+                *buf = String::new();
+                true
+            } else {
+                false
+            }
+        };
+        let oversized = trim(&mut self.output)
+            | trim(&mut self.heading_text_scratch)
+            | trim(&mut self.heading_slug_scratch);
+        if oversized {
+            self.heading_id_planner = HeadingIdPlanner::new();
+            self.footnotes = None;
         }
-        if self.heading_text_scratch.capacity() > max_bytes {
-            self.heading_text_scratch = String::new();
-        }
-        if self.heading_slug_scratch.capacity() > max_bytes {
-            self.heading_slug_scratch = String::new();
-        }
-        self.heading_id_planner = HeadingIdPlanner::new();
-        self.footnotes = None;
     }
 
     /// Returns this renderer with a fixed heading level offset.
