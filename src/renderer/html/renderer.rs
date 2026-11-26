@@ -220,12 +220,18 @@ impl HtmlRenderer {
         self
     }
 
-    /// Releases oversized scratch and output buffers after an outlier document.
+    /// Clears completed-document state and releases retained buffers above
+    /// `max_bytes`.
     ///
     /// Configuration and options remain unchanged. Long-lived renderers can
-    /// call this after rendering a document so retained buffer capacity above
-    /// `max_bytes` is not kept across subsequent smaller renders.
+    /// call this at a document boundary after rendering a document so entry
+    /// allocations from the finished document are dropped immediately and
+    /// retained buffer capacity above `max_bytes` is not kept across
+    /// subsequent smaller renders. Like [`Self::reset_incremental_state`],
+    /// this clears cross-fragment heading and footnote state together so their
+    /// ID tables stay consistent.
     pub fn shrink_retained_buffers(&mut self, max_bytes: usize) {
+        self.reset_incremental_state();
         if self.output.capacity() > max_bytes {
             self.output = String::new();
         }
@@ -507,5 +513,64 @@ mod tests {
         let allocator = Allocator::new();
         let doc = Parser::new(&allocator, "z").parse().unwrap();
         assert_eq!(renderer.render_borrowed(&doc), "<p>z</p>\n");
+    }
+
+    #[test]
+    fn shrink_retained_buffers_clears_footnote_entries_and_incremental_state_consistently() {
+        use crate::ParserOptions;
+
+        let parser_options = ParserOptions {
+            footnotes: true,
+            ..ParserOptions::default()
+        };
+
+        // Semantic footnote with many references owns a large `reference_ids` vector
+        // inside a single record; clearing completed-document state drops it.
+        let mut semantic_renderer = HtmlRenderer::with_options(HtmlRendererOptions {
+            semantic_footnotes: true,
+            ..HtmlRendererOptions::default()
+        });
+        let repeated_refs = format!("{}[^a]: note\n", "[^a] ".repeat(1_000));
+        let allocator = Allocator::for_source_len(repeated_refs.len());
+        let doc = Parser::with_options(&allocator, &repeated_refs, parser_options.clone())
+            .parse()
+            .unwrap();
+        let _ = semantic_renderer.render_borrowed(&doc);
+        semantic_renderer.shrink_retained_buffers(1024 * 1024);
+        assert!(
+            semantic_renderer
+                .footnotes
+                .as_deref()
+                .is_none_or(super::footnotes::FootnoteState::is_empty)
+        );
+
+        // Incremental fragment followed by `shrink_retained_buffers` must not
+        // leave footnote IDs pointing into a discarded heading planner.
+        let mut inc_renderer = HtmlRenderer::with_options(HtmlRendererOptions {
+            heading_ids: true,
+            ..HtmlRendererOptions::default()
+        });
+        let first = format!("[^a]\n\n[^a]: note\n\n{}", "# h\n\n".repeat(200));
+        let allocator = Allocator::for_source_len(first.len());
+        let doc = Parser::with_options(&allocator, &first, parser_options.clone())
+            .parse()
+            .unwrap();
+        let _ = inc_renderer.render_incremental_fragment(&doc);
+        inc_renderer.shrink_retained_buffers(1024);
+        assert_eq!(inc_renderer.heading_id_planner.retained_bytes(), 0);
+        assert!(
+            inc_renderer
+                .footnotes
+                .as_deref()
+                .is_none_or(super::footnotes::FootnoteState::is_empty)
+        );
+
+        let allocator = Allocator::new();
+        let second = Parser::with_options(&allocator, "[^a]\n\n[^a]: next\n", parser_options)
+            .parse()
+            .unwrap();
+        let html = inc_renderer.render_incremental_fragment(&second);
+        assert!(html.contains("id=\"fn-a\""));
+        assert!(html.contains("href=\"#fn-a\""));
     }
 }
